@@ -63,7 +63,7 @@ function loadProfile(){
 function newProfile(){
   return {name:"",totalGames:0,totalQuestions:0,totalCorrect:0,bestStreak:0,sessions:[],catStats:{},exerciseStats:{},playDays:[],unlockedBadges:[],
     xp:0,cristaux:0,dragonnets:[],mainDragon:"main",stage:0,
-    dailyQuest:null,aiExercises:[]};
+    dailyQuest:null};
 }
 function migrate(p){
   const base=newProfile();
@@ -123,28 +123,10 @@ async function generateAIExercises(level,count){
     if(!r.ok) throw new Error('status '+r.status);
     const data=await r.json();
     if(data.error) throw new Error(data.error.message||'API error');
-    // Persiste dans le profil pour cross-device + sessions futures
-    if(!profile.aiExercises) profile.aiExercises=[];
-    profile.aiExercises=profile.aiExercises.concat(data.exercises);
-    // Limite à 200 max pour éviter explosion de taille
-    if(profile.aiExercises.length>200) profile.aiExercises=profile.aiExercises.slice(-200);
-    saveProfile();
+    state.aiExercises=(state.aiExercises||[]).concat(data.exercises);
     state.generating=false;
     return data.exercises;
   }catch(e){state.generating=false;throw e}
-}
-
-// Auto-generation en arrière-plan (fire & forget) si pool insuffisant
-function maybeAutoGenerate(level){
-  const pool=EX.filter(e=>e.lv===level);
-  const aiPool=(profile.aiExercises||[]).filter(e=>e.lv===level);
-  // Compte les exos jamais vus
-  const allPool=[...pool,...aiPool];
-  const unseen=allPool.filter(e=>!profile.exerciseStats[e.id]||!profile.exerciseStats[e.id].att);
-  // Si moins de 15 exos jamais vus → génère 10 nouveaux en arrière-plan
-  if(unseen.length<15){
-    generateAIExercises(level,10).catch(e=>console.warn('auto-gen failed',e));
-  }
 }
 
 // Override saveProfile to push to cloud (debounced)
@@ -317,10 +299,9 @@ function renderMode(){
       <h3 class="card-title" style="color:#f9b344">${m.name}</h3>
       <p class="sub">${m.desc}</p></div></div></div>`).join('')}
   <div class="card mb-4" style="border-color:#c4b5fd;background:linear-gradient(145deg,rgba(139,92,246,.1),rgba(59,130,246,.1))">
-    <h3 class="cinzel" style="color:#c4b5fd;font-size:.85rem;text-transform:uppercase;letter-spacing:.1em;margin-bottom:8px">\u{1F52E} Forge du Dragon (IA)</h3>
-    <p style="color:#d4c0a8;font-size:.85rem;margin-bottom:6px">Le Dragon forge automatiquement de nouveaux d\u00e9fis quand tu en as besoin. Tu en as actuellement <strong style="color:#c4b5fd">${(profile.aiExercises||[]).filter(e=>e.lv===state.level).length} exercices IA</strong> disponibles pour ce niveau.</p>
-    <p style="color:#8a6538;font-size:.75rem;margin-bottom:10px;font-style:italic">\u{1F4A1} Astuce : les exos AI ont des nombres et des sc\u00e9narios diff\u00e9rents \u00e0 chaque g\u00e9n\u00e9ration.</p>
-    <button class="btn-stone btn-small" onclick="reqGen('${state.level}',10)" id="genBtn">\u{1F525} Forger 10 nouveaux d\u00e9fis maintenant</button>
+    <h3 class="cinzel" style="color:#c4b5fd;font-size:.85rem;text-transform:uppercase;letter-spacing:.1em;margin-bottom:8px">\u{1F52E} G\u00e9n\u00e9ration IA</h3>
+    <p style="color:#d4c0a8;font-size:.85rem;margin-bottom:10px">Demande au Dragon de cr\u00e9er des exercices flambant neufs (avec des nombres diff\u00e9rents \u00e0 chaque fois !).</p>
+    <button class="btn-stone btn-small" onclick="reqGen('${state.level}',10)" id="genBtn">\u{1F525} Demander 10 nouveaux d\u00e9fis</button>
     <div id="genStatus" style="margin-top:8px;font-size:.8rem;color:#93c5fd"></div>
   </div>
   <button class="btn-stone mt-4" onclick="navigate('home')">\u2190 Retour</button>`;
@@ -343,8 +324,8 @@ async function reqGen(lvId,n){
 
 /* ════════ ROTATION INTELLIGENTE ════════ */
 function pickExercises(mode,lvId){
-  // Inclure les exercices AI g\u00e9n\u00e9r\u00e9s (persist\u00e9s dans le profil)
-  const aiPool=(profile.aiExercises||[]).filter(e=>e.lv===lvId);
+  // Inclure les exercices AI g\u00e9n\u00e9r\u00e9s pour ce niveau
+  const aiPool=(state.aiExercises||[]).filter(e=>e.lv===lvId);
   const pool=EX.filter(e=>e.lv===lvId).concat(aiPool);
   if(mode==='progression'){
     return shuffle(EX.filter(e=>e.lv!=='cp')).sort((a,b)=>a.diff-b.diff).slice(0,10);
@@ -378,8 +359,6 @@ function pickExercises(mode,lvId){
 function startGame(mode){
   const exercises=pickExercises(mode,state.level);
   state.mode=mode;state.exercises=exercises;state.idx=0;state.selected=null;state.score=0;state.streak=0;state.maxStreak=0;state.results=[];state.timer=60;state.gameOver=false;state.startTime=Date.now();state.detailOpen=false;state.sessionXP=0;state.sessionCristaux=0;
-  // D\u00e9clenche g\u00e9n\u00e9ration auto en arri\u00e8re-plan si pool faible
-  if(state.level&&state.level!=='cp') maybeAutoGenerate(state.level);
   navigate('game');
 }
 
@@ -541,8 +520,6 @@ function finishGame(abandoned){
       }
     });
     d.newDragonnets=newDragonnets;
-    // G\u00e9n\u00e9ration auto pour la prochaine session (en arri\u00e8re-plan)
-    if(state.level&&state.level!=='cp'&&!abandoned) maybeAutoGenerate(state.level);
     // \u00c9volution dragon
     const newStage=getCurrentStage();
     d.evolved=newStage>oldStage;
