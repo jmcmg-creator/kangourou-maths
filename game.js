@@ -63,7 +63,7 @@ function loadProfile(){
 function newProfile(){
   return {name:"",totalGames:0,totalQuestions:0,totalCorrect:0,bestStreak:0,sessions:[],catStats:{},exerciseStats:{},playDays:[],unlockedBadges:[],
     xp:0,cristaux:0,dragonnets:[],mainDragon:"main",stage:0,
-    dailyQuest:null,aiExercises:[]};
+    dailyQuest:null};
 }
 function migrate(p){
   const base=newProfile();
@@ -80,51 +80,21 @@ const backArrow=$('backArrow');
 function shuffle(a){a=[...a];for(let i=a.length-1;i>0;i--){let j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]]}return a}
 function today(){return new Date().toISOString().slice(0,10)}
 
-/* ════════ BACKEND API (sync sécurisé via AID + AI generation) ════════ */
+/* ════════ BACKEND API (sync + AI generation) ════════ */
 const API_BASE="https://royaume-api.square-paris75.workers.dev";
 
-// AID = identifiant unique aléatoire (32 hex), généré et stocké localement.
-// Sert de "clé secrète" pour le profil. Impossible à deviner.
-function getAid(){
-  let aid=localStorage.getItem('royaume_aid');
-  if(!aid){
-    // Génère UUID v4 sans tirets = 32 chars hex
-    aid=(crypto.randomUUID?crypto.randomUUID():'xxxxxxxxxxxx4xxxyxxxxxxxxxxxxxxx'.replace(/[xy]/g,c=>{const r=Math.random()*16|0;return (c==='x'?r:(r&0x3|0x8)).toString(16)})).replace(/-/g,'');
-    localStorage.setItem('royaume_aid',aid);
-  }
-  return aid;
-}
-
-// Au chargement : si URL contient ?sync=AID, on remplace l'AID local (transfert depuis autre appareil)
-(function checkSyncLink(){
-  const params=new URLSearchParams(window.location.search);
-  const incoming=params.get('sync');
-  if(incoming&&/^[a-f0-9]{32}$/.test(incoming)){
-    const current=localStorage.getItem('royaume_aid');
-    if(current!==incoming){
-      if(confirm('Tu vas récupérer le Royaume d\'un autre appareil. Cela remplacera tes données locales. Continuer ?')){
-        localStorage.setItem('royaume_aid',incoming);
-        // Vide les données locales pour forcer la récup depuis le cloud
-        localStorage.removeItem('royaume_v3');
-      }
-    }
-    // Nettoie l'URL
-    window.history.replaceState({},'',window.location.pathname);
-  }
-})();
-
-const AID=getAid();
-
 async function syncProfileFromCloud(){
+  if(!profile.name) return null;
   try{
-    const r=await fetch(API_BASE+'/profile/'+AID);
+    const r=await fetch(API_BASE+'/profile/'+encodeURIComponent(profile.name.toLowerCase()));
     if(!r.ok) return null;
     const txt=await r.text();
     if(txt==='null'||!txt) return null;
     const remote=JSON.parse(txt);
+    // Si remote a plus de parties que local, on prend le remote
     if(remote.totalGames>profile.totalGames){
       profile=migrate(remote);
-      _localSave();
+      saveProfile();
       return 'restored';
     }
     return 'local_newer';
@@ -134,16 +104,12 @@ async function syncProfileFromCloud(){
 async function pushProfileToCloud(){
   if(!profile.name) return;
   try{
-    await fetch(API_BASE+'/profile/'+AID,{
+    await fetch(API_BASE+'/profile/'+encodeURIComponent(profile.name.toLowerCase()),{
       method:'PUT',
       headers:{'Content-Type':'application/json'},
       body:JSON.stringify(profile)
     });
   }catch(e){}
-}
-
-function getSyncLink(){
-  return window.location.origin+window.location.pathname+'?sync='+AID;
 }
 
 async function generateAIExercises(level,count){
@@ -157,28 +123,10 @@ async function generateAIExercises(level,count){
     if(!r.ok) throw new Error('status '+r.status);
     const data=await r.json();
     if(data.error) throw new Error(data.error.message||'API error');
-    // Persiste dans le profil pour cross-device + sessions futures
-    if(!profile.aiExercises) profile.aiExercises=[];
-    profile.aiExercises=profile.aiExercises.concat(data.exercises);
-    // Limite à 200 max pour éviter explosion de taille
-    if(profile.aiExercises.length>200) profile.aiExercises=profile.aiExercises.slice(-200);
-    saveProfile();
+    state.aiExercises=(state.aiExercises||[]).concat(data.exercises);
     state.generating=false;
     return data.exercises;
   }catch(e){state.generating=false;throw e}
-}
-
-// Auto-generation en arrière-plan (fire & forget) si pool insuffisant
-function maybeAutoGenerate(level){
-  const pool=EX.filter(e=>e.lv===level);
-  const aiPool=(profile.aiExercises||[]).filter(e=>e.lv===level);
-  // Compte les exos jamais vus
-  const allPool=[...pool,...aiPool];
-  const unseen=allPool.filter(e=>!profile.exerciseStats[e.id]||!profile.exerciseStats[e.id].att);
-  // Si moins de 15 exos jamais vus → génère 10 nouveaux en arrière-plan
-  if(unseen.length<15){
-    generateAIExercises(level,10).catch(e=>console.warn('auto-gen failed',e));
-  }
 }
 
 // Override saveProfile to push to cloud (debounced)
@@ -330,18 +278,14 @@ async function setName(){
   if(v.length<1){alert('Entre ton pr\u00e9nom');return}
   profile.name=v;
   saveProfile();
-  navigate('home');
-}
-
-// Au démarrage : tenter de récupérer le profil depuis le cloud (cas: lien sync utilisé)
-(async function initialSync(){
-  await new Promise(r=>setTimeout(r,200)); // attendre que le DOM soit prêt
+  // Sync from cloud : si elle se reconnecte sur un autre tel
+  app.innerHTML='<div class="card text-center" style="margin-top:80px"><div class="big-icon pulse">\u{2728}</div><h2 class="title" style="color:#f9b344">Synchronisation\u2026</h2><p style="color:#d4c0a8">On v\u00e9rifie ton Royaume...</p></div>';
   const result=await syncProfileFromCloud();
   if(result==='restored'){
-    alert('🎉 Royaume récupéré ! '+profile.totalGames+' parties, '+profile.cristaux+' cristaux, '+(profile.aiExercises||[]).length+' exercices IA.');
-    if(state.screen==='home') render();
+    alert('Bienvenue de retour ! Ton Royaume a \u00e9t\u00e9 r\u00e9cup\u00e9r\u00e9 ('+profile.totalGames+' parties, '+profile.cristaux+' cristaux).');
   }
-})();
+  navigate('home');
+}
 
 /* ════════ MODE SELECT ════════ */
 function renderMode(){
@@ -355,10 +299,9 @@ function renderMode(){
       <h3 class="card-title" style="color:#f9b344">${m.name}</h3>
       <p class="sub">${m.desc}</p></div></div></div>`).join('')}
   <div class="card mb-4" style="border-color:#c4b5fd;background:linear-gradient(145deg,rgba(139,92,246,.1),rgba(59,130,246,.1))">
-    <h3 class="cinzel" style="color:#c4b5fd;font-size:.85rem;text-transform:uppercase;letter-spacing:.1em;margin-bottom:8px">\u{1F52E} Forge du Dragon (IA)</h3>
-    <p style="color:#d4c0a8;font-size:.85rem;margin-bottom:6px">Le Dragon forge automatiquement de nouveaux d\u00e9fis quand tu en as besoin. Tu en as actuellement <strong style="color:#c4b5fd">${(profile.aiExercises||[]).filter(e=>e.lv===state.level).length} exercices IA</strong> disponibles pour ce niveau.</p>
-    <p style="color:#8a6538;font-size:.75rem;margin-bottom:10px;font-style:italic">\u{1F4A1} Astuce : les exos AI ont des nombres et des sc\u00e9narios diff\u00e9rents \u00e0 chaque g\u00e9n\u00e9ration.</p>
-    <button class="btn-stone btn-small" onclick="reqGen('${state.level}',10)" id="genBtn">\u{1F525} Forger 10 nouveaux d\u00e9fis maintenant</button>
+    <h3 class="cinzel" style="color:#c4b5fd;font-size:.85rem;text-transform:uppercase;letter-spacing:.1em;margin-bottom:8px">\u{1F52E} G\u00e9n\u00e9ration IA</h3>
+    <p style="color:#d4c0a8;font-size:.85rem;margin-bottom:10px">Demande au Dragon de cr\u00e9er des exercices flambant neufs (avec des nombres diff\u00e9rents \u00e0 chaque fois !).</p>
+    <button class="btn-stone btn-small" onclick="reqGen('${state.level}',10)" id="genBtn">\u{1F525} Demander 10 nouveaux d\u00e9fis</button>
     <div id="genStatus" style="margin-top:8px;font-size:.8rem;color:#93c5fd"></div>
   </div>
   <button class="btn-stone mt-4" onclick="navigate('home')">\u2190 Retour</button>`;
@@ -381,8 +324,8 @@ async function reqGen(lvId,n){
 
 /* ════════ ROTATION INTELLIGENTE ════════ */
 function pickExercises(mode,lvId){
-  // Inclure les exercices AI g\u00e9n\u00e9r\u00e9s (persist\u00e9s dans le profil)
-  const aiPool=(profile.aiExercises||[]).filter(e=>e.lv===lvId);
+  // Inclure les exercices AI g\u00e9n\u00e9r\u00e9s pour ce niveau
+  const aiPool=(state.aiExercises||[]).filter(e=>e.lv===lvId);
   const pool=EX.filter(e=>e.lv===lvId).concat(aiPool);
   if(mode==='progression'){
     return shuffle(EX.filter(e=>e.lv!=='cp')).sort((a,b)=>a.diff-b.diff).slice(0,10);
@@ -416,8 +359,6 @@ function pickExercises(mode,lvId){
 function startGame(mode){
   const exercises=pickExercises(mode,state.level);
   state.mode=mode;state.exercises=exercises;state.idx=0;state.selected=null;state.score=0;state.streak=0;state.maxStreak=0;state.results=[];state.timer=60;state.gameOver=false;state.startTime=Date.now();state.detailOpen=false;state.sessionXP=0;state.sessionCristaux=0;
-  // D\u00e9clenche g\u00e9n\u00e9ration auto en arri\u00e8re-plan si pool faible
-  if(state.level&&state.level!=='cp') maybeAutoGenerate(state.level);
   navigate('game');
 }
 
@@ -579,8 +520,6 @@ function finishGame(abandoned){
       }
     });
     d.newDragonnets=newDragonnets;
-    // G\u00e9n\u00e9ration auto pour la prochaine session (en arri\u00e8re-plan)
-    if(state.level&&state.level!=='cp'&&!abandoned) maybeAutoGenerate(state.level);
     // \u00c9volution dragon
     const newStage=getCurrentStage();
     d.evolved=newStage>oldStage;
@@ -749,32 +688,10 @@ function renderParent(){
   <div class="recap-scroll">${failedEx.map(e=>`<div class="recap-item"><span class="recap-icon">\u{1F4DD}</span><div class="flex-1"><p class="recap-q"><strong>${e.cat}</strong> \u2014 ${e.q.length>120?e.q.slice(0,120)+'\u2026':e.q}</p><p style="color:#22c55e;font-size:.75rem;margin-top:4px">R\u00e9ponse : ${e.ch[e.ans]}</p></div></div>`).join('')}</div></div>`:''}
   ${recentSessions.length>0?`<div class="card mb-4"><h3 class="cinzel" style="font-size:.85rem;color:#f7a020;margin-bottom:12px;letter-spacing:.1em;text-transform:uppercase">10 derni\u00e8res sessions</h3>
   ${recentSessions.map(s=>{const p=s.total>0?Math.round(s.score/s.total*100):0;const lv=LEVELS.find(l=>l.id===s.level);const dt=new Date(s.date);const dtStr=dt.toLocaleDateString('fr-FR',{day:'2-digit',month:'2-digit'})+' '+dt.toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'});return `<div class="session-item"><div><div style="color:#e8ddd0">${lv?lv.icon+' '+lv.sub:s.level} \u00b7 ${s.mode}</div><div style="font-size:.7rem;color:#8a6538">${dtStr} \u00b7 ${Math.round((s.duration||0)/60)}min</div></div><div style="color:${p>=60?'#22c55e':'#ef4444'};font-weight:700;font-family:'Cinzel'">${s.score}/${s.total}</div></div>`}).join('')}</div>`:''}
-  <div class="card mb-4" style="border-color:#c4b5fd"><h3 class="cinzel" style="font-size:.85rem;color:#c4b5fd;margin-bottom:8px">\u{1F517} Sync sur un autre appareil</h3>
-  <p style="color:#d4c0a8;font-size:.8rem;margin-bottom:10px">Ouvrez ce lien sur l'autre téléphone/tablette pour récupérer le Royaume de ${profile.name}. <strong>Ne le partagez avec personne d'autre</strong> (équivaut à un mot de passe).</p>
-  <button class="btn-stone btn-small" onclick="copySyncLink()">\u{1F4CB} Copier le lien</button>
-  <button class="btn-stone btn-small" onclick="shareSyncLink()" style="margin-left:8px">\u{1F4F2} Partager (WhatsApp...)</button>
-  <div id="syncMsg" style="margin-top:8px;font-size:.75rem;color:#22c55e"></div></div>
   <div class="card mb-4" style="border-color:#573c1e"><h3 class="cinzel" style="font-size:.85rem;color:#8a6538;margin-bottom:8px">Donn\u00e9es</h3>
   <button class="btn-stone btn-small" onclick="exportData()">\u{1F4E4} Exporter (JSON)</button>
   <button class="btn-stone btn-small" onclick="resetData()" style="margin-top:8px;background:linear-gradient(135deg,#7f1d1d,#991b1b)">\u{1F5D1}\uFE0F R\u00e9initialiser</button></div>
   <button class="btn-stone" onclick="navigate('home')">\u2190 Retour</button>`;
-}
-
-function copySyncLink(){
-  const link=getSyncLink();
-  navigator.clipboard.writeText(link).then(()=>{
-    const m=$('syncMsg');if(m)m.textContent='✅ Lien copié dans le presse-papiers ! Colle-le sur l\'autre appareil.';
-  }).catch(()=>{
-    prompt('Copie ce lien et ouvre-le sur l\'autre appareil :',link);
-  });
-}
-async function shareSyncLink(){
-  const link=getSyncLink();
-  if(navigator.share){
-    try{await navigator.share({title:'Mon Royaume des Nombres',text:'Ouvre ce lien pour récupérer mon Royaume',url:link});}catch(e){}
-  }else{
-    copySyncLink();
-  }
 }
 
 function exportData(){
