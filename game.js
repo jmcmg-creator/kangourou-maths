@@ -170,7 +170,132 @@ function render(){
     case 'parent': renderParent(); break;
     case 'nameAsk': renderNameAsk(); break;
     case 'collection': renderCollection(); break;
+    case 'multTips': renderMultTips(); break;
   }
+}
+
+/* ════════ PAGE MULTIPLICATIONS (tables 6 à 9) ════════ */
+function renderMultTips(){
+  app.innerHTML=`
+  <div class="text-center py-4 fade-in">
+    <div style="font-size:3.2rem;margin-bottom:8px">\u{1F9EE}\u2728</div>
+    <h2 class="title fire-text" style="font-size:clamp(1.4rem,4vw,2rem);color:#f9b344">Les tables de 6 à 9</h2>
+    <p class="sub" style="color:#d4c0a8">La meilleure méthode mondiale — passée les tables de 5 !</p>
+  </div>
+
+  <div class="card fade-in mb-4" style="border-color:#22c55e;background:linear-gradient(145deg,rgba(34,197,94,.08),rgba(34,197,94,.02))">
+    <h3 class="cinzel" style="color:#22c55e;margin-bottom:8px">\u{1F504} 1. La commutativité : tu sais déjà la moitié !</h3>
+    <p style="color:#d4c0a8;line-height:1.6;margin-bottom:10px">
+      <strong style="color:#f9b344">6 × 7 = 7 × 6</strong> — L'ordre ne change rien !
+      Si tu connais les tables de 0 à 5, tu connais déjà :
+    </p>
+    <div style="background:rgba(0,0,0,.3);padding:12px;border-radius:10px;color:#f9b344;font-family:monospace;line-height:1.9">
+      6 × 2 = 2 × 6 = 12 \u2705<br>
+      6 × 3 = 3 × 6 = 18 \u2705<br>
+      6 × 4 = 4 × 6 = 24 \u2705<br>
+      6 × 5 = 5 × 6 = 30 \u2705<br>
+      7 × 2 = 14, 7 × 3 = 21, 7 × 4 = 28, 7 × 5 = 35 \u2705<br>
+      8 × 2 = 16, 8 × 3 = 24, 8 × 4 = 32, 8 × 5 = 40 \u2705<br>
+      9 × 2 = 18, 9 × 3 = 27, 9 × 4 = 36, 9 × 5 = 45 \u2705
+    </div>
+    <p style="color:#22c55e;margin-top:10px;font-weight:700">
+      \u2728 Il ne reste que <strong>10 résultats</strong> à vraiment apprendre !
+    </p>
+  </div>
+
+  <div class="card fade-in mb-4" style="border-color:#f7a020">
+    <h3 class="cinzel" style="color:#f7a020;margin-bottom:8px">\u270B 2. L'astuce des doigts pour la table de 9</h3>
+    <p style="color:#d4c0a8;line-height:1.6;margin-bottom:10px">
+      Place tes <strong style="color:#f9b344">10 doigts</strong> devant toi.
+      Pour calculer <strong>9 × n</strong>, plie le n-ième doigt (en partant de la gauche).
+    </p>
+    <div style="background:rgba(0,0,0,.3);padding:12px;border-radius:10px;color:#d4c0a8;line-height:1.8">
+      \u{1F449} <strong style="color:#22c55e">Doigts à gauche du plié</strong> = chiffre des dizaines<br>
+      \u{1F449} <strong style="color:#22c55e">Doigts à droite du plié</strong> = chiffre des unités
+    </div>
+    <p style="color:#d4c0a8;margin-top:10px;line-height:1.7">
+      <strong style="color:#f9b344">Exemple :</strong> 9 × 4 → je plie le 4ᵉ doigt.<br>
+      À gauche : 3 doigts → <strong style="color:#22c55e">3</strong> dizaines<br>
+      À droite : 6 doigts → <strong style="color:#22c55e">6</strong> unités<br>
+      Résultat : <strong style="color:#f9b344;font-size:1.2rem">36</strong> \u2705
+    </p>
+    <p style="color:#8a6538;margin-top:8px;font-style:italic;font-size:.88rem">
+      \u{1F4A1} Astuce : la somme des chiffres de 9×n vaut toujours 9 ! (3+6=9, 2+7=9, 4+5=9...)
+    </p>
+  </div>
+
+  <div class="card fade-in mb-4" style="border-color:#c4b5fd;background:linear-gradient(145deg,rgba(139,92,246,.08),rgba(59,130,246,.02))">
+    <h3 class="cinzel" style="color:#c4b5fd;margin-bottom:8px">\u{1F9A2} 3. La méthode de l'ancre de 10 (papillon)</h3>
+    <p style="color:#d4c0a8;line-height:1.6;margin-bottom:10px">
+      Pour 2 nombres <strong style="color:#f9b344">entre 6 et 9</strong>, utilise les "compléments à 10".
+    </p>
+    <div style="background:rgba(0,0,0,.3);padding:12px;border-radius:10px;color:#d4c0a8;line-height:1.8">
+      <strong style="color:#f9b344">Exemple : 7 × 8</strong><br>
+      Compléments à 10 : 7→<strong style="color:#22c55e">3</strong>, 8→<strong style="color:#22c55e">2</strong><br>
+      <strong>Dizaines</strong> = (7 − 2) ou (8 − 3) = <strong style="color:#c4b5fd">5</strong><br>
+      <strong>Unités</strong> = 3 × 2 = <strong style="color:#c4b5fd">6</strong><br>
+      Résultat : <strong style="color:#f9b344;font-size:1.2rem">56</strong> \u2705
+    </div>
+    <p style="color:#8a6538;margin-top:10px;font-style:italic;font-size:.88rem">
+      \u{1F4A1} Ça marche pour 6×6 à 9×9 (les plus durs !).
+    </p>
+  </div>
+
+  <div class="card fade-in mb-4" style="border-color:#ef4444">
+    <h3 class="cinzel" style="color:#ef4444;margin-bottom:8px">\u{1F3AF} 4. Les doubles et les moitiés</h3>
+    <p style="color:#d4c0a8;line-height:1.6;margin-bottom:10px">
+      La table de <strong style="color:#f9b344">6</strong> = double de la table de 3.<br>
+      La table de <strong style="color:#f9b344">8</strong> = double de la table de 4.
+    </p>
+    <div style="background:rgba(0,0,0,.3);padding:12px;border-radius:10px;color:#f9b344;font-family:monospace;line-height:1.8">
+      6 × 7 = 2 × (3 × 7) = 2 × 21 = <strong>42</strong><br>
+      8 × 6 = 2 × (4 × 6) = 2 × 24 = <strong>48</strong><br>
+      8 × 7 = 2 × (4 × 7) = 2 × 28 = <strong>56</strong>
+    </div>
+  </div>
+
+  <div class="card fade-in mb-4" style="border-color:#f9b344;background:linear-gradient(145deg,rgba(247,160,32,.12),rgba(247,160,32,.02))">
+    <h3 class="cinzel" style="color:#f9b344;margin-bottom:8px">\u{1F451} 5. Les 10 faits essentiels à mémoriser</h3>
+    <p style="color:#d4c0a8;line-height:1.6;margin-bottom:10px">
+      Une fois la commutativité comprise, il ne te reste QUE ces 10 résultats :
+    </p>
+    <div class="stats-grid" style="grid-template-columns:repeat(2,1fr);gap:8px;text-align:center">
+      <div style="background:rgba(0,0,0,.3);padding:10px;border-radius:10px;color:#f9b344;font-weight:700">6 × 6 = 36</div>
+      <div style="background:rgba(0,0,0,.3);padding:10px;border-radius:10px;color:#f9b344;font-weight:700">6 × 7 = 42</div>
+      <div style="background:rgba(0,0,0,.3);padding:10px;border-radius:10px;color:#f9b344;font-weight:700">6 × 8 = 48</div>
+      <div style="background:rgba(0,0,0,.3);padding:10px;border-radius:10px;color:#f9b344;font-weight:700">6 × 9 = 54</div>
+      <div style="background:rgba(0,0,0,.3);padding:10px;border-radius:10px;color:#f9b344;font-weight:700">7 × 7 = 49</div>
+      <div style="background:rgba(0,0,0,.3);padding:10px;border-radius:10px;color:#f9b344;font-weight:700">7 × 8 = 56</div>
+      <div style="background:rgba(0,0,0,.3);padding:10px;border-radius:10px;color:#f9b344;font-weight:700">7 × 9 = 63</div>
+      <div style="background:rgba(0,0,0,.3);padding:10px;border-radius:10px;color:#f9b344;font-weight:700">8 × 8 = 64</div>
+      <div style="background:rgba(0,0,0,.3);padding:10px;border-radius:10px;color:#f9b344;font-weight:700">8 × 9 = 72</div>
+      <div style="background:rgba(0,0,0,.3);padding:10px;border-radius:10px;color:#f9b344;font-weight:700">9 × 9 = 81</div>
+    </div>
+    <p style="color:#22c55e;margin-top:12px;text-align:center;font-weight:700">
+      \u{1F525} Juste 10 résultats = tu maîtrises TOUTES les tables !
+    </p>
+  </div>
+
+  <div class="card fade-in mb-4" style="border-color:#22c55e;text-align:center;background:linear-gradient(145deg,rgba(34,197,94,.15),rgba(34,197,94,.03))">
+    <h3 class="cinzel" style="color:#22c55e;margin-bottom:10px">\u26A1 Prête à t'entraîner ?</h3>
+    <p style="color:#d4c0a8;margin-bottom:14px">Lance le mode multiplication pour appliquer les astuces !</p>
+    <button class="btn-fire" style="width:100%" onclick="startMultTraining()">\u{1F680} Je m'entraîne sur les tables 6-9</button>
+  </div>
+
+  <button class="btn-stone mt-4" onclick="navigate('home')" style="width:100%">\u2190 Retour à l'accueil</button>
+  `;
+}
+
+function startMultTraining(){
+  // Filtre les exercices de la nouvelle catégorie "Tables 6-9"
+  const multEx=EX.filter(e=>e.cat==='Tables 6-9');
+  if(multEx.length===0){alert("Aucun exercice disponible pour l'instant");return}
+  state.mode='training';
+  state.exercises=shuffle(multEx).slice(0,10);
+  state.idx=0;state.selected=null;state.score=0;state.streak=0;state.maxStreak=0;state.results=[];
+  state.timer=60;state.gameOver=false;state.startTime=Date.now();state.detailOpen=false;
+  state.sessionXP=0;state.sessionCristaux=0;
+  navigate('game');
 }
 
 /* ════════ STAGE DRAGONNET ════════ */
@@ -241,6 +366,14 @@ function renderHome(){
       <p style="color:#d4c0a8;font-size:.95rem">Choisis ton niveau et prouve ta valeur, aventuri\u00e8re !</p>
     </div>
     ${questHTML}
+    <div class="card clickable fade-in mb-4" style="border-color:#f7a020;background:linear-gradient(145deg,rgba(247,160,32,.18),rgba(247,160,32,.04));cursor:pointer" onclick="navigate('multTips')">
+      <div class="row"><div class="level-icon">\u{1F9EE}</div>
+        <div class="flex-1">
+          <h3 class="card-title" style="color:#f9b344">Méthode Multiplication ✨</h3>
+          <p class="sub">Tables de 6 à 9 — la meilleure méthode mondiale</p>
+          <p class="desc">Doigts, ancre de 10, commutativité + 10 faits clés</p>
+        </div>
+        <div class="arrow">→</div></div></div>
     ${profile.totalQuestions>0?`<div class="card mb-6">
       <div class="stats-grid">
         <div><div class="stat-val" style="color:#f7a020">${profile.totalGames}</div><div class="stat-label">Parties</div></div>
