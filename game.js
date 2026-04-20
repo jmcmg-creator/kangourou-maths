@@ -1,10 +1,56 @@
 /* ════════ NIVEAUX / MODES ════════ */
-const LEVELS=[
-{id:"cp",name:"Apprenti Dragonneau",sub:"CP fort (secret)",icon:"\u{1F95A}",desc:"Niveau secret du dragonneau \u2014 uniquement pour Joseph",color:"#93c5fd",secret:true},
-{id:"ce1-ce2",name:"Apprenti Sorcier",sub:"CE1 \u2013 CE2",icon:"\u{1F9D9}",desc:"Premiers sortil\u00e8ges math\u00e9matiques",color:"#22c55e"},
-{id:"cm1-cm2",name:"Chevalier du Savoir",sub:"CM1 \u2013 CM2",icon:"\u2694\uFE0F",desc:"D\u00e9fis dignes d'un chevalier",color:"#f7a020"},
-{id:"6e-5e",name:"Ma\u00eetre Dragon",sub:"6\u1d49 \u2013 5\u1d49",icon:"\u{1F409}",desc:"\u00c9nigmes redoutables du dragon",color:"#ef4444"}
+const SUBJECTS=[
+  {id:"maths",name:"Math\u00e9matiques",icon:"\u{1F9EE}",color:"#f7a020",desc:"Royaume des Nombres",
+    levels:[
+      {id:"cp",name:"Apprenti Dragonneau",sub:"CP fort (secret)",icon:"\u{1F95A}",color:"#93c5fd",secret:true,hasStatic:true},
+      {id:"ce1-ce2",name:"Apprenti Sorcier",sub:"CE1 \u2013 CE2",icon:"\u{1F9D9}",color:"#22c55e",hasStatic:true},
+      {id:"cm1-cm2",name:"Chevalier du Savoir",sub:"CM1 \u2013 CM2",icon:"\u2694\uFE0F",color:"#f7a020",hasStatic:true},
+      {id:"6e-5e",name:"Ma\u00eetre Dragon",sub:"6\u1d49 \u2013 5\u1d49",icon:"\u{1F409}",color:"#ef4444",hasStatic:true}
+    ]},
+  {id:"culture",name:"Culture g\u00e9n\u00e9rale",icon:"\u{1F4DA}",color:"#c4b5fd",desc:"Histoire, G\u00e9o, Fran\u00e7ais, EMC",
+    levels:[
+      {id:"histoire-ce2",name:"Histoire",sub:"CE2 \u2014 Pr\u00e9histoire/Romains",icon:"\u{1F3DB}\uFE0F",color:"#fbbf24"},
+      {id:"histoire-cm1",name:"Histoire",sub:"CM1 \u2014 Moyen \u00c2ge/Renaissance",icon:"\u{1F451}",color:"#fbbf24"},
+      {id:"histoire-cm2",name:"Histoire",sub:"CM2 \u2014 R\u00e9volution/XXe",icon:"\u{1F4DC}",color:"#fbbf24"},
+      {id:"geographie-ce2",name:"G\u00e9ographie",sub:"CE2 \u2014 La France",icon:"\u{1F1EB}\u{1F1F7}",color:"#22d3ee"},
+      {id:"geographie-cm1",name:"G\u00e9ographie",sub:"CM1 \u2014 R\u00e9gions de France",icon:"\u{1F5FA}\uFE0F",color:"#22d3ee"},
+      {id:"geographie-cm2",name:"G\u00e9ographie",sub:"CM2 \u2014 Europe & Monde",icon:"\u{1F30D}",color:"#22d3ee"},
+      {id:"francais-ce2",name:"Fran\u00e7ais",sub:"CE2 \u2014 Grammaire/Conjugaison",icon:"\u{270F}\uFE0F",color:"#f472b6"},
+      {id:"francais-cm1",name:"Fran\u00e7ais",sub:"CM1 \u2014 Conjugaisons/Accords",icon:"\u{1F4D6}",color:"#f472b6"},
+      {id:"francais-cm2",name:"Fran\u00e7ais",sub:"CM2 \u2014 Tous temps/Figures",icon:"\u{1F4DD}",color:"#f472b6"},
+      {id:"emc-ce2",name:"EMC",sub:"CE2 \u2014 Citoyennet\u00e9",icon:"\u{1F970}",color:"#a78bfa"},
+      {id:"emc-cm1",name:"EMC",sub:"CM1 \u2014 D\u00e9mocratie",icon:"\u{1F396}\uFE0F",color:"#a78bfa"},
+      {id:"emc-cm2",name:"EMC",sub:"CM2 \u2014 Institutions",icon:"\u{1F3DB}\uFE0F",color:"#a78bfa"}
+    ]},
+  {id:"poesie",name:"Po\u00e9sies La Fontaine",icon:"\u{1F4DC}",color:"#a78bfa",desc:"\u00c9coute, r\u00e9cite \u00e0 voix haute (avec micro)",isPoetry:true},
+  {id:"langues",name:"Langues",icon:"\u{1F310}",color:"#10b981",desc:"H\u00e9breu (alphabet, vocabulaire, lecture)",
+    levels:[
+      {id:"hebreu-alphabet",name:"H\u00e9breu",sub:"Alphabet (\u05D0\u05D1\u05D2)",icon:"\u{1F524}",color:"#0ea5e9"},
+      {id:"hebreu-vocabulaire",name:"H\u00e9breu",sub:"Vocabulaire de base",icon:"\u{1F4DA}",color:"#0ea5e9"},
+      {id:"hebreu-expressions",name:"H\u00e9breu",sub:"Expressions courantes",icon:"\u{1F5E3}\uFE0F",color:"#0ea5e9"},
+      {id:"hebreu-lecture",name:"H\u00e9breu",sub:"Lecture mots et phrases",icon:"\u{1F4D6}",color:"#0ea5e9"}
+    ]},
+  {id:"sciences",name:"Sciences",icon:"\u{1F52C}",color:"#22d3ee",desc:"Physique, Chimie, Biologie",
+    levels:[
+      {id:"physique-ce2",name:"Physique",sub:"CE2 \u2014 Mati\u00e8re/Lumi\u00e8re",icon:"\u{1F4A1}",color:"#3b82f6"},
+      {id:"physique-cm1",name:"Physique",sub:"CM1 \u2014 \u00c9nergie/\u00c9lectricit\u00e9",icon:"\u26A1",color:"#3b82f6"},
+      {id:"physique-cm2",name:"Physique",sub:"CM2 \u2014 Forces/Circuits",icon:"\u{1F9F2}",color:"#3b82f6"},
+      {id:"chimie-ce2",name:"Chimie",sub:"CE2 \u2014 \u00c9tats mati\u00e8re",icon:"\u{1F9EA}",color:"#10b981"},
+      {id:"chimie-cm1",name:"Chimie",sub:"CM1 \u2014 M\u00e9langes/Dissolution",icon:"\u{1F4A7}",color:"#10b981"},
+      {id:"chimie-cm2",name:"Chimie",sub:"CM2 \u2014 Transformations",icon:"\u2697\uFE0F",color:"#10b981"},
+      {id:"biologie-ce2",name:"SVT",sub:"CE2 \u2014 Corps/Animaux",icon:"\u{1F9B7}",color:"#84cc16"},
+      {id:"biologie-cm1",name:"SVT",sub:"CM1 \u2014 Nutrition/Reproduction",icon:"\u{1F33F}",color:"#84cc16"},
+      {id:"biologie-cm2",name:"SVT",sub:"CM2 \u2014 \u00c9cosyst\u00e8mes",icon:"\u{1F33B}",color:"#84cc16"}
+    ]}
 ];
+
+// Aplatir tous les niveaux pour rétrocompat
+const LEVELS=SUBJECTS.flatMap(s=>s.levels);
+
+function getSubjectForLevel(lvId){
+  for(const s of SUBJECTS) if(s.levels.find(l=>l.id===lvId)) return s;
+  return SUBJECTS[0];
+}
 const MODES=[
 {id:"training",name:"Entra\u00eenement libre",icon:"\u{1F4DC}",desc:"Sans limite de temps. Apprends \u00e0 ton rythme."},
 {id:"adaptive",name:"Mode adaptatif",icon:"\u{1F3AF}",desc:"Exercices cibl\u00e9s sur tes points faibles."},
@@ -24,24 +70,125 @@ const BADGES=[
 {id:"master",icon:"\u{1F3C6}",name:"Ma\u00eetresse",desc:"50 bonnes r\u00e9ponses au total",cond:p=>(p.totalCorrect||0)>=50}
 ];
 
-/* ════════ DRAGONNETS (gamification) ════════ */
-const STAGES=[
-{threshold:0,name:"\u0152uf",emoji:"\u{1F95A}",desc:"Un \u0153uf mystérieux repose..."},
-{threshold:100,name:"B\u00e9b\u00e9 dragonneau",emoji:"\u{1F423}",desc:"Il vient d'\u00e9clore !"},
-{threshold:300,name:"Dragonneau juv\u00e9nile",emoji:"\u{1F409}",desc:"Ses ailes s'affirment."},
-{threshold:700,name:"Dragon adulte",emoji:"\u{1F432}",desc:"Majestueux et puissant !"},
-{threshold:1500,name:"Dragon l\u00e9gendaire",emoji:"\u{1F432}\u2728",desc:"Une cr\u00e9ature mythique !"}
-];
+/* ════════ ROYAUMES — chaque domaine = un royaume avec sa mascotte ════════ */
+const ROYAUMES={
+  maths:{
+    id:"maths",name:"Royaume des Nombres",color:"#f7a020",bgGradient:"linear-gradient(135deg,#fef3c7,#fde68a,#fcd34d)",
+    stages:[
+      {threshold:0,name:"\u0152uf de feu",emoji:"\u{1F95A}",desc:"Un \u0153uf br\u00fblant repose..."},
+      {threshold:100,name:"B\u00e9b\u00e9 Dragon",emoji:"\u{1F423}",desc:"Il vient d'\u00e9clore !"},
+      {threshold:300,name:"Jeune Dragon",emoji:"\u{1F409}",desc:"Ses ailes s'affirment"},
+      {threshold:700,name:"Dragon Adulte",emoji:"\u{1F432}",desc:"Majestueux !"},
+      {threshold:1500,name:"Dragon L\u00e9gendaire",emoji:"\u{1F432}\u2728",desc:"Une cr\u00e9ature mythique"}
+    ],
+    companions:[
+      {id:"fire",name:"Flambo",emoji:"\u{1F525}",elem:"Feu",threshold:10},
+      {id:"ice",name:"Givrion",emoji:"\u2744\uFE0F",elem:"Glace",threshold:25},
+      {id:"forest",name:"Verdoyant",emoji:"\u{1F343}",elem:"For\u00eat",threshold:50},
+      {id:"storm",name:"Tonnerre",emoji:"\u26A1",elem:"Orage",threshold:100},
+      {id:"light",name:"Luminion",emoji:"\u2728",elem:"Lumi\u00e8re",threshold:200}
+    ]
+  },
+  culture:{
+    id:"culture",name:"Royaume du Savoir",color:"#c4b5fd",bgGradient:"linear-gradient(135deg,#ede9fe,#ddd6fe,#c4b5fd)",
+    stages:[
+      {threshold:0,name:"Vieux Livre",emoji:"\u{1F4D5}",desc:"Un livre poussi\u00e9reux..."},
+      {threshold:100,name:"Apprenti Sage",emoji:"\u{1F4D6}",desc:"Tu commences \u00e0 lire !"},
+      {threshold:300,name:"\u00c9rudit",emoji:"\u{1F393}",desc:"Le savoir te nourrit"},
+      {threshold:700,name:"Sage",emoji:"\u{1F9D9}",desc:"Tu guides les autres"},
+      {threshold:1500,name:"Grand Sage",emoji:"\u{1F9D9}\u2728",desc:"Ma\u00eetre du savoir"}
+    ],
+    companions:[
+      {id:"hist",name:"Antikon",emoji:"\u{1F3DB}\uFE0F",elem:"Histoire",threshold:10},
+      {id:"geo",name:"Globion",emoji:"\u{1F30D}",elem:"G\u00e9ographie",threshold:25},
+      {id:"lettre",name:"Plumelet",emoji:"\u{270F}\uFE0F",elem:"Lettres",threshold:50},
+      {id:"emc",name:"Civicor",emoji:"\u{1F396}\uFE0F",elem:"Citoyennet\u00e9",threshold:100},
+      {id:"sage",name:"Polymathe",emoji:"\u{1F451}",elem:"Sagesse",threshold:200}
+    ]
+  },
+  sciences:{
+    id:"sciences",name:"Royaume des D\u00e9couvertes",color:"#22d3ee",bgGradient:"linear-gradient(135deg,#cffafe,#a5f3fc,#67e8f9)",
+    stages:[
+      {threshold:0,name:"Tube \u00e0 essai",emoji:"\u{1F9EA}",desc:"Tout commence ici..."},
+      {threshold:100,name:"Petit Chercheur",emoji:"\u{1F50D}",desc:"Premi\u00e8re exp\u00e9rience !"},
+      {threshold:300,name:"Inventeur",emoji:"\u{1F52C}",desc:"Tu cherches, tu trouves"},
+      {threshold:700,name:"Savant",emoji:"\u{1F9D1}\u200D\u{1F52C}",desc:"Le monde s'\u00e9claire"},
+      {threshold:1500,name:"G\u00e9nie",emoji:"\u{1F9D1}\u200D\u{1F52C}\u2728",desc:"Einstein t'admire"}
+    ],
+    companions:[
+      {id:"phys",name:"\u00c9clairon",emoji:"\u{1F4A1}",elem:"Physique",threshold:10},
+      {id:"chim",name:"Bullion",emoji:"\u{1F9EA}",elem:"Chimie",threshold:25},
+      {id:"bio",name:"Pousselin",emoji:"\u{1F33F}",elem:"Biologie",threshold:50},
+      {id:"astro",name:"Stellaron",emoji:"\u{1F320}",elem:"Espace",threshold:100},
+      {id:"genie",name:"Eurekon",emoji:"\u{1F9E0}",elem:"G\u00e9nie",threshold:200}
+    ]
+  },
+  langues:{
+    id:"langues",name:"Royaume des Mots",color:"#10b981",bgGradient:"linear-gradient(135deg,#d1fae5,#a7f3d0,#6ee7b7)",
+    stages:[
+      {threshold:0,name:"Lettre solitaire",emoji:"\u{1F524}",desc:"Une lettre attend..."},
+      {threshold:100,name:"Petit Linguiste",emoji:"\u{1F5E3}\uFE0F",desc:"Premi\u00e8res paroles !"},
+      {threshold:300,name:"Voyageur",emoji:"\u{1F30E}",desc:"Tu d\u00e9couvres les langues"},
+      {threshold:700,name:"Polyglotte",emoji:"\u{1F454}",desc:"Tu parles plusieurs langues"},
+      {threshold:1500,name:"Sage des Mots",emoji:"\u{1F454}\u2728",desc:"Ma\u00eetre des langues"}
+    ],
+    companions:[
+      {id:"aleph",name:"Alephion",emoji:"\u{1F1EE}\u{1F1F1}",elem:"H\u00e9breu",threshold:10},
+      {id:"abc",name:"Abecedo",emoji:"\u{1F1EB}\u{1F1F7}",elem:"Fran\u00e7ais",threshold:25},
+      {id:"abc-en",name:"Globlette",emoji:"\u{1F1EC}\u{1F1E7}",elem:"Anglais bonus",threshold:50}
+    ]
+  },
+  poesie:{
+    id:"poesie",name:"Royaume de la Plume",color:"#a78bfa",bgGradient:"linear-gradient(135deg,#ede9fe,#c4b5fd,#a78bfa)",
+    stages:[
+      {threshold:0,name:"Plume vierge",emoji:"\u{1FAB6}",desc:"Une plume t'attend..."},
+      {threshold:100,name:"Apprenti Po\u00e8te",emoji:"\u270D\uFE0F",desc:"Premi\u00e8res rimes !"},
+      {threshold:300,name:"Conteur",emoji:"\u{1F3AD}",desc:"Tu r\u00e9cites avec brio"},
+      {threshold:700,name:"Po\u00e8te",emoji:"\u{1F3AD}\u{1F4DC}",desc:"Tes vers enchantent"},
+      {threshold:1500,name:"Ma\u00eetre Po\u00e8te",emoji:"\u{1F3AD}\u2728",desc:"\u00c9gal des plus grands"}
+    ],
+    companions:[
+      {id:"corbeau",name:"Corbinou",emoji:"\u{1F426}",elem:"Le Corbeau",threshold:10},
+      {id:"renard",name:"Goupil",emoji:"\u{1F98A}",elem:"Le Renard",threshold:25},
+      {id:"lievre",name:"Lapidou",emoji:"\u{1F407}",elem:"Le Li\u00e8vre",threshold:50},
+      {id:"lion",name:"Royal",emoji:"\u{1F981}",elem:"Le Lion",threshold:100},
+      {id:"phoenix",name:"Ph\u00e9nix",emoji:"\u{1F985}",elem:"L\u00e9gende",threshold:200}
+    ]
+  }
+};
 
-const DRAGONNETS=[
-{id:"fire",name:"Flambo",emoji:"\u{1F525}\u{1F409}",elem:"Feu",threshold:10,desc:"Souffle de feu"},
-{id:"ice",name:"Givrion",emoji:"\u2744\uFE0F\u{1F409}",elem:"Glace",threshold:25,desc:"Gel glac\u00e9"},
-{id:"forest",name:"Verdoyant",emoji:"\u{1F343}\u{1F409}",elem:"For\u00eat",threshold:50,desc:"Magie des plantes"},
-{id:"storm",name:"Tonnerre",emoji:"\u26A1\u{1F409}",elem:"Orage",threshold:100,desc:"Foudre et tonnerre"},
-{id:"light",name:"Luminion",emoji:"\u2728\u{1F409}",elem:"Lumi\u00e8re",threshold:200,desc:"Lumi\u00e8re divine"}
-];
+// Helper : trouver le royaume d'un sujet ou d'un niveau
+function getRoyaumeId(subjectOrLvId){
+  if(ROYAUMES[subjectOrLvId])return subjectOrLvId;
+  // Trouver via SUBJECTS
+  const s=SUBJECTS.find(x=>x.id===subjectOrLvId);
+  if(s)return s.id;
+  // Trouver via niveau (chercher dans quelle subject est ce niveau)
+  for(const subj of SUBJECTS){
+    if(subj.levels&&subj.levels.find(l=>l.id===subjectOrLvId))return subj.id;
+  }
+  return 'maths';
+}
 
-/* ════════ QUÊTES JOURNALIÈRES ════════ */
+function getRoyaumeData(rid){
+  if(!profile.royaumes)profile.royaumes={};
+  if(!profile.royaumes[rid])profile.royaumes[rid]={xp:0,cristaux:0,games:0,questions:0,correct:0,bestStreak:0,companions:[]};
+  return profile.royaumes[rid];
+}
+
+function getStageInRoyaume(rid){
+  const data=getRoyaumeData(rid);
+  const stages=ROYAUMES[rid].stages;
+  let idx=0;
+  for(let i=0;i<stages.length;i++) if(data.xp>=stages[i].threshold) idx=i;
+  return {idx,stage:stages[idx],next:idx<stages.length-1?stages[idx+1]:null};
+}
+
+// Ancien système gardé pour compat (totaux globaux)
+const STAGES=ROYAUMES.maths.stages;
+const DRAGONNETS=ROYAUMES.maths.companions;
+
+/* ════════ QUÊTES JOURNANIÈRES ════════ */
 const QUEST_TEMPLATES=[
 {id:"q_correct5",desc:"R\u00e9ussis 5 bonnes r\u00e9ponses aujourd'hui",target:5,type:"correct",reward:50},
 {id:"q_streak3",desc:"Fais une s\u00e9rie de 3 bonnes r\u00e9ponses",target:3,type:"streak",reward:30},
@@ -63,7 +210,7 @@ function loadProfile(){
 function newProfile(){
   return {name:"",totalGames:0,totalQuestions:0,totalCorrect:0,bestStreak:0,sessions:[],catStats:{},exerciseStats:{},playDays:[],unlockedBadges:[],
     xp:0,cristaux:0,dragonnets:[],mainDragon:"main",stage:0,
-    dailyQuest:null};
+    dailyQuest:null,aiExercises:[]};
 }
 function migrate(p){
   const base=newProfile();
@@ -80,21 +227,51 @@ const backArrow=$('backArrow');
 function shuffle(a){a=[...a];for(let i=a.length-1;i>0;i--){let j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]]}return a}
 function today(){return new Date().toISOString().slice(0,10)}
 
-/* ════════ BACKEND API (sync + AI generation) ════════ */
+/* ════════ BACKEND API (sync sécurisé via AID + AI generation) ════════ */
 const API_BASE="https://royaume-api.square-paris75.workers.dev";
 
+// AID = identifiant unique aléatoire (32 hex), généré et stocké localement.
+// Sert de "clé secrète" pour le profil. Impossible à deviner.
+function getAid(){
+  let aid=localStorage.getItem('royaume_aid');
+  if(!aid){
+    // Génère UUID v4 sans tirets = 32 chars hex
+    aid=(crypto.randomUUID?crypto.randomUUID():'xxxxxxxxxxxx4xxxyxxxxxxxxxxxxxxx'.replace(/[xy]/g,c=>{const r=Math.random()*16|0;return (c==='x'?r:(r&0x3|0x8)).toString(16)})).replace(/-/g,'');
+    localStorage.setItem('royaume_aid',aid);
+  }
+  return aid;
+}
+
+// Au chargement : si URL contient ?sync=AID, on remplace l'AID local (transfert depuis autre appareil)
+(function checkSyncLink(){
+  const params=new URLSearchParams(window.location.search);
+  const incoming=params.get('sync');
+  if(incoming&&/^[a-f0-9]{32}$/.test(incoming)){
+    const current=localStorage.getItem('royaume_aid');
+    if(current!==incoming){
+      if(confirm('Tu vas récupérer le Royaume d\'un autre appareil. Cela remplacera tes données locales. Continuer ?')){
+        localStorage.setItem('royaume_aid',incoming);
+        // Vide les données locales pour forcer la récup depuis le cloud
+        localStorage.removeItem('royaume_v3');
+      }
+    }
+    // Nettoie l'URL
+    window.history.replaceState({},'',window.location.pathname);
+  }
+})();
+
+const AID=getAid();
+
 async function syncProfileFromCloud(){
-  if(!profile.name) return null;
   try{
-    const r=await fetch(API_BASE+'/profile/'+encodeURIComponent(profile.name.toLowerCase()));
+    const r=await fetch(API_BASE+'/profile/'+AID);
     if(!r.ok) return null;
     const txt=await r.text();
     if(txt==='null'||!txt) return null;
     const remote=JSON.parse(txt);
-    // Si remote a plus de parties que local, on prend le remote
     if(remote.totalGames>profile.totalGames){
       profile=migrate(remote);
-      saveProfile();
+      _localSave();
       return 'restored';
     }
     return 'local_newer';
@@ -104,12 +281,16 @@ async function syncProfileFromCloud(){
 async function pushProfileToCloud(){
   if(!profile.name) return;
   try{
-    await fetch(API_BASE+'/profile/'+encodeURIComponent(profile.name.toLowerCase()),{
+    await fetch(API_BASE+'/profile/'+AID,{
       method:'PUT',
       headers:{'Content-Type':'application/json'},
       body:JSON.stringify(profile)
     });
   }catch(e){}
+}
+
+function getSyncLink(){
+  return window.location.origin+window.location.pathname+'?sync='+AID;
 }
 
 async function generateAIExercises(level,count){
@@ -123,10 +304,28 @@ async function generateAIExercises(level,count){
     if(!r.ok) throw new Error('status '+r.status);
     const data=await r.json();
     if(data.error) throw new Error(data.error.message||'API error');
-    state.aiExercises=(state.aiExercises||[]).concat(data.exercises);
+    // Persiste dans le profil pour cross-device + sessions futures
+    if(!profile.aiExercises) profile.aiExercises=[];
+    profile.aiExercises=profile.aiExercises.concat(data.exercises);
+    // Limité à 200 max pour éviter explosion de taille
+    if(profile.aiExercises.length>200) profile.aiExercises=profile.aiExercises.slice(-200);
+    saveProfile();
     state.generating=false;
     return data.exercises;
   }catch(e){state.generating=false;throw e}
+}
+
+// Auto-génération en arrière-plan (fire & forget) si pool insuffisant
+function maybeAutoGenerate(level){
+  const pool=EX.filter(e=>e.lv===level);
+  const aiPool=(profile.aiExercises||[]).filter(e=>e.lv===level);
+  // Compte les exos jamais vus
+  const allPool=[...pool,...aiPool];
+  const unseen=allPool.filter(e=>!profile.exerciseStats[e.id]||!profile.exerciseStats[e.id].att);
+  // Si moins de 15 exos jamais vus → génère 10 nouveaux en arrière-plan
+  if(unseen.length<15){
+    generateAIExercises(level,10).catch(e=>console.warn('auto-gen failed',e));
+  }
 }
 
 // Override saveProfile to push to cloud (debounced)
@@ -163,6 +362,7 @@ function navigate(screen,data){
 function render(){
   switch(state.screen){
     case 'home': renderHome(); break;
+    case 'subject': renderSubject(); break;
     case 'mode': renderMode(); break;
     case 'game': renderGame(); break;
     case 'results': renderResults(); break;
@@ -170,132 +370,13 @@ function render(){
     case 'parent': renderParent(); break;
     case 'nameAsk': renderNameAsk(); break;
     case 'collection': renderCollection(); break;
-    case 'multTips': renderMultTips(); break;
+    case 'fichesHome': renderFichesHome(); break;
+    case 'fichesSubject': renderFichesSubject(); break;
+    case 'fichesTopics': renderFichesTopics(); break;
+    case 'fichesView': renderFichesView(); break;
+    case 'poesieHome': renderPoesieHome(); break;
+    case 'poesieFable': renderPoesieFable(); break;
   }
-}
-
-/* ════════ PAGE MULTIPLICATIONS (tables 6 à 9) ════════ */
-function renderMultTips(){
-  app.innerHTML=`
-  <div class="text-center py-4 fade-in">
-    <div style="font-size:3.2rem;margin-bottom:8px">\u{1F9EE}\u2728</div>
-    <h2 class="title fire-text" style="font-size:clamp(1.4rem,4vw,2rem);color:#f9b344">Les tables de 6 à 9</h2>
-    <p class="sub" style="color:#d4c0a8">La meilleure méthode mondiale — passée les tables de 5 !</p>
-  </div>
-
-  <div class="card fade-in mb-4" style="border-color:#22c55e;background:linear-gradient(145deg,rgba(34,197,94,.08),rgba(34,197,94,.02))">
-    <h3 class="cinzel" style="color:#22c55e;margin-bottom:8px">\u{1F504} 1. La commutativité : tu sais déjà la moitié !</h3>
-    <p style="color:#d4c0a8;line-height:1.6;margin-bottom:10px">
-      <strong style="color:#f9b344">6 × 7 = 7 × 6</strong> — L'ordre ne change rien !
-      Si tu connais les tables de 0 à 5, tu connais déjà :
-    </p>
-    <div style="background:rgba(0,0,0,.3);padding:12px;border-radius:10px;color:#f9b344;font-family:monospace;line-height:1.9">
-      6 × 2 = 2 × 6 = 12 \u2705<br>
-      6 × 3 = 3 × 6 = 18 \u2705<br>
-      6 × 4 = 4 × 6 = 24 \u2705<br>
-      6 × 5 = 5 × 6 = 30 \u2705<br>
-      7 × 2 = 14, 7 × 3 = 21, 7 × 4 = 28, 7 × 5 = 35 \u2705<br>
-      8 × 2 = 16, 8 × 3 = 24, 8 × 4 = 32, 8 × 5 = 40 \u2705<br>
-      9 × 2 = 18, 9 × 3 = 27, 9 × 4 = 36, 9 × 5 = 45 \u2705
-    </div>
-    <p style="color:#22c55e;margin-top:10px;font-weight:700">
-      \u2728 Il ne reste que <strong>10 résultats</strong> à vraiment apprendre !
-    </p>
-  </div>
-
-  <div class="card fade-in mb-4" style="border-color:#f7a020">
-    <h3 class="cinzel" style="color:#f7a020;margin-bottom:8px">\u270B 2. L'astuce des doigts pour la table de 9</h3>
-    <p style="color:#d4c0a8;line-height:1.6;margin-bottom:10px">
-      Place tes <strong style="color:#f9b344">10 doigts</strong> devant toi.
-      Pour calculer <strong>9 × n</strong>, plie le n-ième doigt (en partant de la gauche).
-    </p>
-    <div style="background:rgba(0,0,0,.3);padding:12px;border-radius:10px;color:#d4c0a8;line-height:1.8">
-      \u{1F449} <strong style="color:#22c55e">Doigts à gauche du plié</strong> = chiffre des dizaines<br>
-      \u{1F449} <strong style="color:#22c55e">Doigts à droite du plié</strong> = chiffre des unités
-    </div>
-    <p style="color:#d4c0a8;margin-top:10px;line-height:1.7">
-      <strong style="color:#f9b344">Exemple :</strong> 9 × 4 → je plie le 4ᵉ doigt.<br>
-      À gauche : 3 doigts → <strong style="color:#22c55e">3</strong> dizaines<br>
-      À droite : 6 doigts → <strong style="color:#22c55e">6</strong> unités<br>
-      Résultat : <strong style="color:#f9b344;font-size:1.2rem">36</strong> \u2705
-    </p>
-    <p style="color:#8a6538;margin-top:8px;font-style:italic;font-size:.88rem">
-      \u{1F4A1} Astuce : la somme des chiffres de 9×n vaut toujours 9 ! (3+6=9, 2+7=9, 4+5=9...)
-    </p>
-  </div>
-
-  <div class="card fade-in mb-4" style="border-color:#c4b5fd;background:linear-gradient(145deg,rgba(139,92,246,.08),rgba(59,130,246,.02))">
-    <h3 class="cinzel" style="color:#c4b5fd;margin-bottom:8px">\u{1F9A2} 3. La méthode de l'ancre de 10 (papillon)</h3>
-    <p style="color:#d4c0a8;line-height:1.6;margin-bottom:10px">
-      Pour 2 nombres <strong style="color:#f9b344">entre 6 et 9</strong>, utilise les "compléments à 10".
-    </p>
-    <div style="background:rgba(0,0,0,.3);padding:12px;border-radius:10px;color:#d4c0a8;line-height:1.8">
-      <strong style="color:#f9b344">Exemple : 7 × 8</strong><br>
-      Compléments à 10 : 7→<strong style="color:#22c55e">3</strong>, 8→<strong style="color:#22c55e">2</strong><br>
-      <strong>Dizaines</strong> = (7 − 2) ou (8 − 3) = <strong style="color:#c4b5fd">5</strong><br>
-      <strong>Unités</strong> = 3 × 2 = <strong style="color:#c4b5fd">6</strong><br>
-      Résultat : <strong style="color:#f9b344;font-size:1.2rem">56</strong> \u2705
-    </div>
-    <p style="color:#8a6538;margin-top:10px;font-style:italic;font-size:.88rem">
-      \u{1F4A1} Ça marche pour 6×6 à 9×9 (les plus durs !).
-    </p>
-  </div>
-
-  <div class="card fade-in mb-4" style="border-color:#ef4444">
-    <h3 class="cinzel" style="color:#ef4444;margin-bottom:8px">\u{1F3AF} 4. Les doubles et les moitiés</h3>
-    <p style="color:#d4c0a8;line-height:1.6;margin-bottom:10px">
-      La table de <strong style="color:#f9b344">6</strong> = double de la table de 3.<br>
-      La table de <strong style="color:#f9b344">8</strong> = double de la table de 4.
-    </p>
-    <div style="background:rgba(0,0,0,.3);padding:12px;border-radius:10px;color:#f9b344;font-family:monospace;line-height:1.8">
-      6 × 7 = 2 × (3 × 7) = 2 × 21 = <strong>42</strong><br>
-      8 × 6 = 2 × (4 × 6) = 2 × 24 = <strong>48</strong><br>
-      8 × 7 = 2 × (4 × 7) = 2 × 28 = <strong>56</strong>
-    </div>
-  </div>
-
-  <div class="card fade-in mb-4" style="border-color:#f9b344;background:linear-gradient(145deg,rgba(247,160,32,.12),rgba(247,160,32,.02))">
-    <h3 class="cinzel" style="color:#f9b344;margin-bottom:8px">\u{1F451} 5. Les 10 faits essentiels à mémoriser</h3>
-    <p style="color:#d4c0a8;line-height:1.6;margin-bottom:10px">
-      Une fois la commutativité comprise, il ne te reste QUE ces 10 résultats :
-    </p>
-    <div class="stats-grid" style="grid-template-columns:repeat(2,1fr);gap:8px;text-align:center">
-      <div style="background:rgba(0,0,0,.3);padding:10px;border-radius:10px;color:#f9b344;font-weight:700">6 × 6 = 36</div>
-      <div style="background:rgba(0,0,0,.3);padding:10px;border-radius:10px;color:#f9b344;font-weight:700">6 × 7 = 42</div>
-      <div style="background:rgba(0,0,0,.3);padding:10px;border-radius:10px;color:#f9b344;font-weight:700">6 × 8 = 48</div>
-      <div style="background:rgba(0,0,0,.3);padding:10px;border-radius:10px;color:#f9b344;font-weight:700">6 × 9 = 54</div>
-      <div style="background:rgba(0,0,0,.3);padding:10px;border-radius:10px;color:#f9b344;font-weight:700">7 × 7 = 49</div>
-      <div style="background:rgba(0,0,0,.3);padding:10px;border-radius:10px;color:#f9b344;font-weight:700">7 × 8 = 56</div>
-      <div style="background:rgba(0,0,0,.3);padding:10px;border-radius:10px;color:#f9b344;font-weight:700">7 × 9 = 63</div>
-      <div style="background:rgba(0,0,0,.3);padding:10px;border-radius:10px;color:#f9b344;font-weight:700">8 × 8 = 64</div>
-      <div style="background:rgba(0,0,0,.3);padding:10px;border-radius:10px;color:#f9b344;font-weight:700">8 × 9 = 72</div>
-      <div style="background:rgba(0,0,0,.3);padding:10px;border-radius:10px;color:#f9b344;font-weight:700">9 × 9 = 81</div>
-    </div>
-    <p style="color:#22c55e;margin-top:12px;text-align:center;font-weight:700">
-      \u{1F525} Juste 10 résultats = tu maîtrises TOUTES les tables !
-    </p>
-  </div>
-
-  <div class="card fade-in mb-4" style="border-color:#22c55e;text-align:center;background:linear-gradient(145deg,rgba(34,197,94,.15),rgba(34,197,94,.03))">
-    <h3 class="cinzel" style="color:#22c55e;margin-bottom:10px">\u26A1 Prête à t'entraîner ?</h3>
-    <p style="color:#d4c0a8;margin-bottom:14px">Lance le mode multiplication pour appliquer les astuces !</p>
-    <button class="btn-fire" style="width:100%" onclick="startMultTraining()">\u{1F680} Je m'entraîne sur les tables 6-9</button>
-  </div>
-
-  <button class="btn-stone mt-4" onclick="navigate('home')" style="width:100%">\u2190 Retour à l'accueil</button>
-  `;
-}
-
-function startMultTraining(){
-  // Filtre les exercices de la nouvelle catégorie "Tables 6-9"
-  const multEx=EX.filter(e=>e.cat==='Tables 6-9');
-  if(multEx.length===0){alert("Aucun exercice disponible pour l'instant");return}
-  state.mode='training';
-  state.exercises=shuffle(multEx).slice(0,10);
-  state.idx=0;state.selected=null;state.score=0;state.streak=0;state.maxStreak=0;state.results=[];
-  state.timer=60;state.gameOver=false;state.startTime=Date.now();state.detailOpen=false;
-  state.sessionXP=0;state.sessionCristaux=0;
-  navigate('game');
 }
 
 /* ════════ STAGE DRAGONNET ════════ */
@@ -324,17 +405,9 @@ function checkDailyQuest(){
 function renderHome(){
   if(!profile.name){navigate('nameAsk');return}
   checkDailyQuest();
-  const pct=profile.totalQuestions>0?Math.round(profile.totalCorrect/profile.totalQuestions*100):0;
-  const stageIdx=getCurrentStage();
-  const stage=STAGES[stageIdx];
-  const next=getNextStage();
-  const xpBar=next?Math.round((profile.xp-stage.threshold)/(next.threshold-stage.threshold)*100):100;
-  const xpLabel=next?`${profile.xp} / ${next.threshold} XP`:`${profile.xp} XP (Max !)`;
-  const unlockedDragon=DRAGONNETS.filter(d=>profile.totalCorrect>=d.threshold).length;
-
-  // Niveau CP secret : seulement si nom === Joseph
-  const visibleLevels=LEVELS.filter(l=>!l.secret||profile.name.toLowerCase()==='joseph');
-
+  // Total des XP de tous les royaumes
+  const totalXp=Object.values(profile.royaumes||{}).reduce((s,r)=>s+(r.xp||0),0)+(profile.xp||0);
+  const totalCristaux=Object.values(profile.royaumes||{}).reduce((s,r)=>s+(r.cristaux||0),0)+(profile.cristaux||0);
   let questHTML='';
   if(profile.dailyQuest){
     const q=profile.dailyQuest;
@@ -347,60 +420,81 @@ function renderHome(){
       </div>
     </div>`;
   }
-
   app.innerHTML=`
-    <div class="dragon-card fade-in">
-      <div class="dragon-emoji float" id="dragonMain">${stage.emoji}</div>
-      <div class="dragon-name">${stage.name}</div>
-      <div class="dragon-stage">${stage.desc}</div>
-      <div class="xp-bar-track"><div class="xp-bar-fill" style="width:${xpBar}%"></div></div>
-      <div class="xp-label">${xpLabel}</div>
+    <div class="text-center fade-in mb-4 py-4">
+      <h2 class="title" style="font-size:clamp(1.4rem,4vw,2rem)">\u{1F44B} Salut ${profile.name} !</h2>
+      <p style="color:#7a5a3a;font-size:1rem">Bienvenue dans tes Royaumes</p>
       <div class="resources-row">
-        <div class="resource flame">\u{1F525} ${profile.totalGames} parties</div>
-        <div class="resource crystal-shine">\u{1F48E} ${profile.cristaux}</div>
-        <div class="resource xp">\u2728 ${profile.xp} XP</div>
+        <div class="resource flame">\u{1F525} ${profile.totalGames||0} parties</div>
+        <div class="resource crystal">\u{1F48E} ${totalCristaux}</div>
+        <div class="resource xp">\u2728 ${totalXp} XP total</div>
       </div>
-    </div>
-    <div class="text-center fade-in" style="margin:20px 0">
-      <h2 class="title fire-text" style="font-size:clamp(1.3rem,3.5vw,1.8rem);color:#f9b344">Bienvenue ${profile.name} !</h2>
-      <p style="color:#d4c0a8;font-size:.95rem">Choisis ton niveau et prouve ta valeur, aventuri\u00e8re !</p>
     </div>
     ${questHTML}
-    <div class="card clickable fade-in mb-4" style="border-color:#f7a020;background:linear-gradient(145deg,rgba(247,160,32,.18),rgba(247,160,32,.04));cursor:pointer" onclick="navigate('multTips')">
-      <div class="row"><div class="level-icon">\u{1F9EE}</div>
-        <div class="flex-1">
-          <h3 class="card-title" style="color:#f9b344">Méthode Multiplication ✨</h3>
-          <p class="sub">Tables de 6 à 9 — la meilleure méthode mondiale</p>
-          <p class="desc">Doigts, ancre de 10, commutativité + 10 faits clés</p>
+    ${SUBJECTS.map((s,i)=>{
+      const rid=s.id;
+      const r=ROYAUMES[rid];
+      if(!r){
+        const target=s.isPoetry?"navigate('poesieHome')":"navigate('subject',{subjectId:'"+s.id+"'})";
+        return `<div class="subject-card fade-in" style="border-color:${s.color};animation-delay:${i*.08}s" onclick="${target}"><div class="subject-emoji bounce">${s.icon}</div><div class="subject-info"><h3 class="subject-name" style="color:${s.color}">${s.name}</h3><p class="subject-desc">${s.desc}</p></div><div class="arrow">\u2192</div></div>`;
+      }
+      const data=getRoyaumeData(rid);
+      const st=getStageInRoyaume(rid);
+      const xpBar=st.next?Math.round((data.xp-st.stage.threshold)/(st.next.threshold-st.stage.threshold)*100):100;
+      const target=s.isPoetry?"navigate('poesieHome')":"navigate('subject',{subjectId:'"+s.id+"'})";
+      return `<div class="card clickable fade-in" style="animation-delay:${i*.08}s;border-color:${r.color};background:${r.bgGradient};padding:18px" onclick="${target}">
+        <div class="row" style="gap:16px">
+          <div style="font-size:3.2rem;flex-shrink:0;filter:drop-shadow(0 4px 8px rgba(0,0,0,.1))">${st.stage.emoji}</div>
+          <div class="flex-1">
+            <h3 class="card-title" style="color:#2d2018;font-size:1.15rem">${r.name}</h3>
+            <p class="sub" style="color:#5a4830;font-weight:600">${st.stage.name}</p>
+            <div class="xp-bar-track" style="margin-top:8px;background:rgba(255,255,255,.5)"><div class="xp-bar-fill" style="width:${xpBar}%"></div></div>
+            <p style="font-size:.7rem;color:#7a5a3a;margin-top:4px;font-weight:600">${data.xp} XP \u2022 \u{1F48E} ${data.cristaux} \u2022 ${data.games} parties</p>
+          </div>
+          <div class="arrow">\u2192</div>
         </div>
-        <div class="arrow">→</div></div></div>
-    ${profile.totalQuestions>0?`<div class="card mb-6">
-      <div class="stats-grid">
-        <div><div class="stat-val" style="color:#f7a020">${profile.totalGames}</div><div class="stat-label">Parties</div></div>
-        <div><div class="stat-val" style="color:#22c55e">${pct}%</div><div class="stat-label">R\u00e9ussite</div></div>
-        <div><div class="stat-val" style="color:#f9b344">${unlockedDragon}/${DRAGONNETS.length}</div><div class="stat-label">Dragonnets</div></div>
+      </div>`;
+    }).join('')}
+    <div class="subject-card fade-in" style="border-color:#fbbf24;background:linear-gradient(135deg,#fef9f3,#fff5e6)" onclick="navigate('fichesHome')">
+      <div class="subject-emoji bounce">\u{1F4D6}</div>
+      <div class="subject-info">
+        <h3 class="subject-name" style="color:#7a3f04">Fiches bilan</h3>
+        <p class="subject-desc">R\u00e9visions par th\u00e8me, g\u00e9n\u00e9r\u00e9es par IA</p>
       </div>
-      <div class="btn-row mt-4">
-        <button class="btn-stone" onclick="navigate('royaume')">\u2728 Mon Royaume</button>
-        <button class="btn-stone" onclick="navigate('collection')">\u{1F409} Dragonnets</button>
-      </div>
-    </div>`:''}
-    ${visibleLevels.map((lv,i)=>`<div class="card clickable fade-in" style="animation-delay:${i*.12}s;${lv.secret?'border-color:#93c5fd;background:linear-gradient(145deg,#1a2a3a,#0f1a2a)':''}" onclick="navigate('mode',{level:'${lv.id}'})">
-      <div class="row"><div class="level-icon">${lv.icon}</div>
-        <div class="flex-1">
-          <h3 class="card-title" style="color:${lv.color}">${lv.name}${lv.secret?' \u{1F510}':''}</h3>
-          <p class="sub">${lv.sub}</p>
-          <p class="desc">${lv.desc}</p>
-        </div>
-        <div class="arrow">\u2192</div></div></div>`).join('')}
-    <button class="parent-btn mt-4" onclick="navigate('parent')" style="width:100%">\u{1F464} Espace Parent</button>
+      <div class="arrow">\u2192</div>
+    </div>
+    <div class="btn-row mt-4">
+      <button class="btn-stone" onclick="navigate('royaume')">\u2728 Vue d'ensemble</button>
+      <button class="btn-stone" onclick="navigate('parent')">\u{1F464} Espace Parent</button>
+    </div>
   `;
+}
+
+function renderSubject(){
+  const s=SUBJECTS.find(x=>x.id===state.subjectId)||SUBJECTS[0];
+  const visibleLevels=s.levels.filter(l=>!l.secret||profile.name.toLowerCase()==='joseph');
+  app.innerHTML=`<div class="text-center py-6 fade-in">
+    <div style="font-size:3.5rem">${s.icon}</div>
+    <h2 class="title" style="color:${s.color};font-size:1.6rem">${s.name}</h2>
+    <p class="sub">${s.desc}</p>
+  </div>
+  ${visibleLevels.map((lv,i)=>`<div class="card clickable fade-in" style="animation-delay:${i*.06}s;border-color:${lv.color}" onclick="navigate('mode',{level:'${lv.id}'})">
+    <div class="row">
+      <div style="font-size:2.2rem">${lv.icon}</div>
+      <div class="flex-1">
+        <h3 class="card-title" style="color:${lv.color}">${lv.name}${lv.secret?' \u{1F510}':''}</h3>
+        <p class="sub">${lv.sub||''}</p>
+      </div>
+      <div class="arrow">\u2192</div>
+    </div>
+  </div>`).join('')}
+  <button class="btn-stone mt-4" onclick="navigate('home')">\u2190 Retour</button>`;
 }
 
 function renderNameAsk(){
   app.innerHTML=`<div class="card fade-in" style="margin-top:40px">
-    <h2 class="title" style="color:#f9b344;font-size:1.3rem">Comment t'appelles-tu, aventuri\u00e8re ?</h2>
-    <p style="color:#d4c0a8;margin-bottom:16px">Ton pr\u00e9nom sera affich\u00e9 dans ton Royaume.</p>
+    <h2 class="title" style="color:#7a3f04;font-size:1.3rem">Comment t'appelles-tu, aventuri\u00e8re ?</h2>
+    <p style="color:#2d2018;margin-bottom:16px">Ton pr\u00e9nom sera affich\u00e9 dans ton Royaume.</p>
     <input class="name-prompt" id="nameInp" placeholder="Ton pr\u00e9nom" maxlength="20" value="${profile.name||''}">
     <button class="btn-fire" onclick="setName()">Entrer dans le Royaume \u2192</button>
   </div>`;
@@ -411,14 +505,18 @@ async function setName(){
   if(v.length<1){alert('Entre ton pr\u00e9nom');return}
   profile.name=v;
   saveProfile();
-  // Sync from cloud : si elle se reconnecte sur un autre tel
-  app.innerHTML='<div class="card text-center" style="margin-top:80px"><div class="big-icon pulse">\u{2728}</div><h2 class="title" style="color:#f9b344">Synchronisation\u2026</h2><p style="color:#d4c0a8">On v\u00e9rifie ton Royaume...</p></div>';
-  const result=await syncProfileFromCloud();
-  if(result==='restored'){
-    alert('Bienvenue de retour ! Ton Royaume a \u00e9t\u00e9 r\u00e9cup\u00e9r\u00e9 ('+profile.totalGames+' parties, '+profile.cristaux+' cristaux).');
-  }
   navigate('home');
 }
+
+// Au démarrage : tenter de récupérer le profil depuis le cloud (cas: lien sync utilisé)
+(async function initialSync(){
+  await new Promise(r=>setTimeout(r,200)); // attendre que le DOM soit prêt
+  const result=await syncProfileFromCloud();
+  if(result==='restored'){
+    alert('🎉 Royaume récupéré ! '+profile.totalGames+' parties, '+profile.cristaux+' cristaux, '+(profile.aiExercises||[]).length+' exercices IA.');
+    if(state.screen==='home') render();
+  }
+})();
 
 /* ════════ MODE SELECT ════════ */
 function renderMode(){
@@ -429,12 +527,13 @@ function renderMode(){
     <p class="sub">${lv.sub} \u2014 Choisis ton mode</p>
   </div>${MODES.map((m,i)=>`<div class="card clickable fade-in" style="animation-delay:${i*.1}s" onclick="startGame('${m.id}')">
     <div class="row"><div class="mode-icon">${m.icon}</div><div class="flex-1">
-      <h3 class="card-title" style="color:#f9b344">${m.name}</h3>
+      <h3 class="card-title" style="color:#7a3f04">${m.name}</h3>
       <p class="sub">${m.desc}</p></div></div></div>`).join('')}
   <div class="card mb-4" style="border-color:#c4b5fd;background:linear-gradient(145deg,rgba(139,92,246,.1),rgba(59,130,246,.1))">
-    <h3 class="cinzel" style="color:#c4b5fd;font-size:.85rem;text-transform:uppercase;letter-spacing:.1em;margin-bottom:8px">\u{1F52E} G\u00e9n\u00e9ration IA</h3>
-    <p style="color:#d4c0a8;font-size:.85rem;margin-bottom:10px">Demande au Dragon de cr\u00e9er des exercices flambant neufs (avec des nombres diff\u00e9rents \u00e0 chaque fois !).</p>
-    <button class="btn-stone btn-small" onclick="reqGen('${state.level}',10)" id="genBtn">\u{1F525} Demander 10 nouveaux d\u00e9fis</button>
+    <h3 class="fredoka" style="color:#c4b5fd;font-size:.85rem;text-transform:uppercase;letter-spacing:.1em;margin-bottom:8px">\u{1F52E} Forge du Dragon (IA)</h3>
+    <p style="color:#2d2018;font-size:.85rem;margin-bottom:6px">Le Dragon forge automatiquement de nouveaux d\u00e9fis quand tu en as besoin. Tu en as actuellement <strong style="color:#c4b5fd">${(profile.aiExercises||[]).filter(e=>e.lv===state.level).length} exercices IA</strong> disponibles pour ce niveau.</p>
+    <p style="color:#9c6f3a;font-size:.75rem;margin-bottom:10px;font-style:italic">\u{1F4A1} Astuce : les exos AI ont des nombres et des sc\u00e9narios diff\u00e9rents \u00e0 chaque g\u00e9n\u00e9ration.</p>
+    <button class="btn-stone btn-small" onclick="reqGen('${state.level}',10)" id="genBtn">\u{1F525} Forger 10 nouveaux d\u00e9fis maintenant</button>
     <div id="genStatus" style="margin-top:8px;font-size:.8rem;color:#93c5fd"></div>
   </div>
   <button class="btn-stone mt-4" onclick="navigate('home')">\u2190 Retour</button>`;
@@ -450,16 +549,19 @@ async function reqGen(lvId,n){
     if(st){st.innerHTML='\u2705 <strong>'+exos.length+' nouveaux exercices</strong> ajout\u00e9s ! Lance n\'importe quel mode pour les d\u00e9couvrir.'}
     if(btn){btn.textContent='\u{1F525} G\u00e9n\u00e9rer 10 de plus';btn.disabled=false}
   }catch(e){
-    if(st){st.innerHTML='\u274C Erreur : '+e.message}
+    if(st){st.innerHTMP='\u274C Erreur : '+e.message}
     if(btn){btn.textContent='\u{1F525} R\u00e9essayer';btn.disabled=false}
   }
 }
 
 /* ════════ ROTATION INTELLIGENTE ════════ */
 function pickExercises(mode,lvId){
-  // Inclure les exercices AI g\u00e9n\u00e9r\u00e9s pour ce niveau
-  const aiPool=(state.aiExercises||[]).filter(e=>e.lv===lvId);
-  const pool=EX.filter(e=>e.lv===lvId).concat(aiPool);
+  const lv=LEVELS.find(l=>l.id===lvId);
+  const hasStatic=lv&&lv.hasStatic;
+  // Inclure les exercices AI générés (persistés dans le profil)
+  const aiPool=(profile.aiExercises||[]).filter(e=>e.lv===lvId);
+  const staticPool=hasStatic?EX.filter(e=>e.lv===lvId):[];
+  const pool=staticPool.concat(aiPool);
   if(mode==='progression'){
     return shuffle(EX.filter(e=>e.lv!=='cp')).sort((a,b)=>a.diff-b.diff).slice(0,10);
   }
@@ -489,9 +591,24 @@ function pickExercises(mode,lvId){
   return candidates.slice(0,10);
 }
 
-function startGame(mode){
-  const exercises=pickExercises(mode,state.level);
+async function startGame(mode){
+  let exercises=pickExercises(mode,state.level);
+  // Si pas d'exercices (sujet non-maths sans pool g\u00e9n\u00e9r\u00e9), g\u00e9n\u00e9rer maintenant
+  if(exercises.length===0){
+    const lv=LEVELS.find(l=>l.id===state.level);
+    if(!lv||!lv.hasStatic){
+      app.innerHTML='<div class="card text-center" style="margin-top:60px"><div class="dragon-emoji float">\u{1F52E}</div><h2 class="title">Le Dragon prépare tes défis...</h2><p class="sub">Première g\u00e9n\u00e9ration : 5 \u00e0 15 secondes</p></div>';
+      try{
+        await generateAIExercises(state.level,10);
+        exercises=pickExercises(mode,state.level);
+      }catch(e){
+        alert('\u00c9chec g\u00e9n\u00e9ration : '+e.message);
+        return;
+      }
+    }
+  }
   state.mode=mode;state.exercises=exercises;state.idx=0;state.selected=null;state.score=0;state.streak=0;state.maxStreak=0;state.results=[];state.timer=60;state.gameOver=false;state.startTime=Date.now();state.detailOpen=false;state.sessionXP=0;state.sessionCristaux=0;
+  if(state.level&&state.level!=='cp') maybeAutoGenerate(state.level);
   navigate('game');
 }
 
@@ -506,11 +623,11 @@ function renderGame(){
   if(state.mode==='challenge'&&state.selected===null&&!state.gameOver){
     const tc=state.timer>30?'#22c55e':state.timer>10?'#f7a020':'#ef4444';
     const tp=(state.timer/60)*100;
-    timerHTML=`<div class="mb-4"><div class="row-between" style="font-size:.85rem;margin-bottom:4px"><span class="cinzel" style="color:#b89a74">Temps restant</span><span class="cinzel" style="font-weight:700;color:${tc}">${state.timer}s</span></div><div class="timer-track"><div class="timer-fill" style="width:${tp}%;background:${tc}"></div></div></div>`;
+    timerHTML=`<div class="mb-4"><div class="row-between" style="font-size:.85rem;margin-bottom:4px"><span class="fredoka" style="color:#7a5a3a">Temps restant</span><span class="fredoka" style="font-weight:700;color:${tc}">${state.timer}s</span></div><div class="timer-track"><div class="timer-fill" style="width:${tp}%;background:${tc}"></div></div></div>`;
   }
   const streakHTML=state.streak>=2?`<span style="color:#f7a020">\u{1F525} ${state.streak}</span>`:'';
   const levelBadge=state.mode==='progression'?`<span class="badge" style="background:${lv.color}22;color:${lv.color};border-color:${lv.color}44;margin-left:6px">${lv.sub}</span>`:'';
-  app.innerHTML=`<div style="margin:8px 0"><div class="row-between cinzel" style="font-size:.75rem;color:#8a6538;margin-bottom:4px">
+  app.innerHTML=`<div style="margin:8px 0"><div class="row-between cinzel" style="font-size:.75rem;color:#9c6f3a;margin-bottom:4px">
     <span>Question ${state.idx+1}/${total}</span>
     <span>Score : ${state.score}/${state.idx+(state.selected!==null?1:0)}</span>
     ${streakHTML}</div>
@@ -522,7 +639,7 @@ function renderGame(){
       <span class="stars">${'\u2605'.repeat(ex.diff)}${'\u2606'.repeat(5-ex.diff)}</span>
       ${levelBadge}
     </div>
-    <p style="font-size:clamp(1rem,2.5vw,1.2rem);color:#e8ddd0;line-height:1.7;margin-bottom:24px">${ex.q}</p>
+    <p style="font-size:clamp(1rem,2.5vw,1.2rem);color:#2d2018;line-height:1.7;margin-bottom:24px">${ex.q}</p>
     <div class="choices-grid">
       ${ex.ch.map((c,i)=>{let cls='choice-btn';if(state.selected!==null){if(i===ex.ans)cls+=' correct';else if(i===state.selected&&i!==ex.ans)cls+=' wrong'}return `<button class="${cls}" ${state.selected!==null?'disabled':''} onclick="selectAnswer(${i})"><span class="choice-letter">${String.fromCharCode(65+i)}.</span>${c}</button>`}).join('')}
     </div>
@@ -578,10 +695,10 @@ function showExplanation(ex,correct){
   const gainHTML=correct?`<span class="xp-gain">+${Math.round(ex.diff*10*(state.streak>=10?3:state.streak>=5?2:state.streak>=3?1.5:1))} XP</span> <span class="crystal-gain">\u{1F48E} +${ex.diff*2}</span>`:'';
   el.innerHTML=`<div class="card fade-in mt-6">
     <div class="row gap-2 mb-2"><span style="font-size:1.5rem">${correct?'\u2705':'\u274C'}</span>
-    <h4 class="cinzel" style="font-size:1.1rem;font-weight:700;color:${correct?'#22c55e':'#ef4444'};margin:0">${correct?'Excellent, sorci\u00e8re !':'Pas cette fois\u2026'}</h4>
+    <h4 class="fredoka" style="font-size:1.1rem;font-weight:700;color:${correct?'#22c55e':'#ef4444'};margin:0">${correct?'Excellent, sorci\u00e8re !':'Pas cette fois\u2026'}</h4>
     ${gainHTML}</div>
-    <p style="color:#e8ddd0;margin-bottom:12px;line-height:1.6;font-weight:600">${ex.se}</p>
-    ${!correct?`<div class="error-box"><p style="font-size:.9rem;margin:0"><span class="error-label">\u{1F914} L'erreur probable : </span><span style="color:#d4c0a8">${ex.pourquoi}</span></p></div>`:''}
+    <p style="color:#2d2018;margin-bottom:12px;line-height:1.6;font-weight:600">${ex.se}</p>
+    ${!correct?`<div class="error-box"><p style="font-size:.9rem;margin:0"><span class="error-label">\u{1F914} L'erreur probable : </span><span style="color:#2d2018">${ex.pourquoi}</span></p></div>`:''}
     <a class="detail-link mt-3" style="display:inline-block;margin-top:10px" onclick="toggleDetail()">${state.detailOpen?'Masquer':'Voir'} la m\u00e9thode pas \u00e0 pas \u2192</a>
     <div id="detailPanel" class="${state.detailOpen?'':'hidden'}">
       <div class="pedago-box">
@@ -591,8 +708,8 @@ function showExplanation(ex,correct){
       <div class="tip-box">
         <p style="font-size:.9rem;margin:0"><span class="tip-label">\u{1F4A1} \u00c0 retenir : </span><span class="tip-text">${ex.regle}</span></p>
       </div>
-      ${ex.exemple?`<div class="pedago-box" style="background:rgba(59,130,246,.08);border-color:rgba(59,130,246,.2)"><div class="pedago-title" style="color:#93c5fd">\u{1F4DA} Exemple similaire</div><p style="color:#d4c0a8;font-size:.9rem">${ex.exemple}</p></div>`:''}
-      <p style="font-size:.75rem;color:#8a6538;margin-top:8px">Comp\u00e9tence : ${ex.sk}</p>
+      ${ex.exemple?`<div class="pedago-box" style="background:rgba(59,130,246,.08);border-color:rgba(59,130,246,.2)"><div class="pedago-title" style="color:#93c5fd">\u{1F4DA} Exemple similaire</div><p style="color:#2d2018;font-size:.9rem">${ex.exemple}</p></div>`:''}
+      <p style="font-size:.75rem;color:#9c6f3a;margin-top:8px">Comp\u00e9tence : ${ex.sk}</p>
     </div>
     <button class="btn-fire mt-6" onclick="nextQuestion()">Question suivante \u2192</button>
   </div>`;
@@ -614,12 +731,43 @@ function finishGame(abandoned){
   state.gameData=d;
   if(total>0){
     const oldStage=getCurrentStage();
+    // Per-royaume stats
+    const rid=getRoyaumeId(state.level);
+    const rdata=getRoyaumeData(rid);
+    const oldRStage=getStageInRoyaume(rid).idx;
+    rdata.xp+=state.sessionXP;
+    rdata.cristaux+=state.sessionCristaux;
+    rdata.games++;
+    rdata.questions+=total;
+    rdata.correct+=state.score;
+    if(state.maxStreak>(rdata.bestStreak||0))rdata.bestStreak=state.maxStreak;
+    // Stats globales (rétrocompat)
     profile.totalGames++;
     profile.totalQuestions+=total;
     profile.totalCorrect+=state.score;
     if(state.maxStreak>profile.bestStreak)profile.bestStreak=state.maxStreak;
     profile.xp+=state.sessionXP;
     profile.cristaux+=state.sessionCristaux;
+    // Compagnons débloqués pour ce royaume
+    const royaume=ROYAUMES[rid];
+    if(royaume){
+      if(!rdata.companions)rdata.companions=[];
+      const newComps=[];
+      royaume.companions.forEach(c=>{
+        if(rdata.correct>=c.threshold&&!rdata.companions.includes(c.id)){
+          rdata.companions.push(c.id);
+          newComps.push({...c,royaume:royaume.name});
+        }
+      });
+      d.newRoyaumeCompanions=newComps;
+      // Évolution dragon de ce royaume
+      const newRStage=getStageInRoyaume(rid).idx;
+      if(newRStage>oldRStage){
+        d.royaumeEvolved=true;
+        d.newRoyaumeStage=royaume.stages[newRStage];
+        d.royaumeName=royaume.name;
+      }
+    }
     profile.sessions.push({date:d.date,level:state.level,mode:state.mode,score:state.score,total,duration,maxStreak:state.maxStreak,xp:state.sessionXP,cristaux:state.sessionCristaux});
     if(profile.sessions.length>100)profile.sessions=profile.sessions.slice(-100);
     const td=today();
@@ -653,6 +801,8 @@ function finishGame(abandoned){
       }
     });
     d.newDragonnets=newDragonnets;
+    // G\u00e9n\u00e9ration auto pour la prochaine session (en arri\u00e8re-plan)
+    if(state.level&&state.level!=='cp'&&!abandoned) maybeAutoGenerate(state.level);
     // \u00c9volution dragon
     const newStage=getCurrentStage();
     d.evolved=newStage>oldStage;
@@ -686,41 +836,55 @@ function renderResults(){
 
   // \u00c9volution
   let evolveHTML='';
-  if(d.evolved&&d.newStage){
-    evolveHTML=`<div class="card fade-in" style="background:linear-gradient(145deg,#5c2f03,#7a3f04);border-color:#f9b344"><div class="text-center">
-      <div style="font-size:4rem" class="evolve-anim">${d.newStage.emoji}</div>
-      <h3 class="cinzel" style="color:#f9b344;font-size:1.2rem;margin-top:8px">\u2728 \u00c9VOLUTION ! \u2728</h3>
-      <p style="color:#fde0b0;margin-top:4px">Ton dragonnet est devenu <strong>${d.newStage.name}</strong> !</p>
-      <p style="color:#d4c0a8;font-size:.85rem;margin-top:4px">${d.newStage.desc}</p>
-    </div></div>`;
+  if(d.royaumeEvolved&&d.newRoyaumeStage){
+    evolveHTML=`<div class="card fade-in" style="background:linear-gradient(135deg,#fef3c7,#fde68a);border-color:#fbbf24;text-align:center">
+      <div style="font-size:5rem" class="bounce">${d.newRoyaumeStage.emoji}</div>
+      <h3 class="fredoka" style="color:#7a3f04;font-size:1.3rem;margin-top:8px">\u2728 \u00c9VOLUTION dans ${d.royaumeName} ! \u2728</h3>
+      <p style="color:#451a03;margin-top:4px;font-weight:600">Ta mascotte est devenue <strong>${d.newRoyaumeStage.name}</strong> !</p>
+      <p style="color:#7a3f04;font-size:.9rem;margin-top:4px">${d.newRoyaumeStage.desc}</p>
+    </div>`;
+  } else if(d.evolved&&d.newStage){
+    evolveHTML=`<div class="card fade-in" style="background:linear-gradient(135deg,#fef3c7,#fde68a);border-color:#fbbf24;text-align:center">
+      <div style="font-size:4rem" class="bounce">${d.newStage.emoji}</div>
+      <h3 class="fredoka" style="color:#7a3f04;font-size:1.2rem;margin-top:8px">\u2728 \u00c9volution g\u00e9n\u00e9rale ! \u2728</h3>
+      <p style="color:#451a03;margin-top:4px">Ton dragonnet maths est devenu <strong>${d.newStage.name}</strong> !</p>
+    </div>`;
+  }
+  let royaumeCompHTML='';
+  if(d.newRoyaumeCompanions&&d.newRoyaumeCompanions.length>0){
+    royaumeCompHTML=`<div class="card fade-in" style="background:linear-gradient(135deg,#dbeafe,#bfdbfe);border-color:#3b82f6">
+      <h3 class="fredoka" style="color:#1e40af;font-size:.95rem;text-transform:uppercase;letter-spacing:.08em">\u{1F389} Nouveau compagnon dans ${d.newRoyaumeCompanions[0].royaume} !</h3>
+      <div class="dragonnet-grid">${d.newRoyaumeCompanions.map(c=>`<div class="dragonnet-card unlocked pulse"><div class="dragonnet-emoji">${c.emoji}</div><div class="dragonnet-name">${c.name}</div><div class="dragonnet-elem">${c.elem}</div></div>`).join('')}</div>
+    </div>`;
   }
   let dragonnetsHTML='';
   if(d.newDragonnets&&d.newDragonnets.length>0){
     dragonnetsHTML=`<div class="card fade-in" style="background:linear-gradient(145deg,#1e3a5f,#2e4a6f);border-color:#93c5fd">
-      <h3 class="cinzel" style="color:#93c5fd;font-size:.9rem;text-transform:uppercase;letter-spacing:.1em">\u{1F409} Nouveau dragonnet d\u00e9bloqu\u00e9 !</h3>
+      <h3 class="fredoka" style="color:#93c5fd;font-size:.9rem;text-transform:uppercase;letter-spacing:.1em">\u{1F409} Nouveau dragonnet d\u00e9bloqu\u00e9 !</h3>
       <div class="dragonnet-grid">${d.newDragonnets.map(dg=>`<div class="dragonnet-card unlocked pulse"><div class="dragonnet-emoji">${dg.emoji}</div><div class="dragonnet-name">${dg.name}</div><div class="dragonnet-elem">${dg.elem}</div></div>`).join('')}</div>
     </div>`;
   }
-  const badgesHTML=(d.newBadges&&d.newBadges.length>0)?`<div class="card fade-in" style="background:linear-gradient(145deg,#5c2f03,#7a3f04);border-color:#f9b344">
-    <h3 class="cinzel" style="color:#f9b344;font-size:.9rem;text-transform:uppercase;letter-spacing:.1em">\u2728 Nouveaux badges !</h3>
+  const badgesHTML=(d.newBadges&&d.newBadges.length>0)?`<div class="card fade-in" style="background:linear-gradient(145deg,#5c2f03,#7a3f04);border-color:#7a3f04">
+    <h3 class="fredoka" style="color:#7a3f04;font-size:.9rem;text-transform:uppercase;letter-spacing:.1em">\u2728 Nouveaux badges !</h3>
     <div class="badge-grid">${d.newBadges.map(b=>`<div class="badge-card unlocked pulse"><div class="badge-ic">${b.icon}</div><div class="badge-name">${b.name}</div><div class="badge-desc">${b.desc}</div></div>`).join('')}</div></div>`:'';
-  const questHTML=d.questDone?`<div class="card fade-in" style="background:rgba(139,92,246,.15);border-color:#c4b5fd"><div class="text-center"><div style="font-size:2.5rem">\u{1F3AF}</div><h3 class="cinzel" style="color:#c4b5fd;margin-top:6px">Qu\u00eate journali\u00e8re r\u00e9ussie !</h3><p style="color:#e8ddd0;margin-top:4px">Tu gagnes \u{1F48E} +${d.questReward} cristaux !</p></div></div>`:'';
+  const questHTML=d.questDone?`<div class="card fade-in" style="background:rgba(139,92,246,.15);border-color:#c4b5fd"><div class="text-center"><div style="font-size:2.5rem">\u{1F3AF}</div><h3 class="fredoka" style="color:#c4b5fd;margin-top:6px">Qu\u00eate journali\u00e8re r\u00e9ussie !</h3><p style="color:#2d2018;margin-top:4px">Tu gagnes \u{1F48E} +${d.questReward} cristaux !</p></div></div>`:'';
 
   app.innerHTML=`<div class="text-center py-8 fade-in"><div class="huge-icon">${emoji}</div>
-    <h2 class="title" style="font-size:clamp(1.3rem,3.5vw,2rem);color:#f9b344">${title}</h2><p style="color:#b89a74">${sub}</p></div>
+    <h2 class="title" style="font-size:clamp(1.3rem,3.5vw,2rem);color:#7a3f04">${title}</h2><p style="color:#7a5a3a">${sub}</p></div>
   <div class="card mb-4"><div class="stats-grid">
     <div class="stat-card"><div class="stat-val" style="color:#f7a020">${d.score}/${d.total}</div><div class="stat-label">Bonnes r\u00e9ponses</div></div>
     <div class="stat-card"><div class="stat-val" style="color:${pct>=60?'#22c55e':'#ef4444'}">${pct}%</div><div class="stat-label">R\u00e9ussite</div></div>
     <div class="stat-card"><div class="stat-val" style="color:#fb923c">${d.maxStreak}</div><div class="stat-label">S\u00e9rie max \u{1F525}</div></div></div>
     <div class="resources-row mt-4">
       <div class="resource xp">\u2728 +${d.xp} XP</div>
-      <div class="resource crystal-shine">\u{1F48E} +${d.cristaux} cristaux</div>
+      <div class="resource crystal">\u{1F48E} +${d.cristaux} cristaux</div>
     </div></div>
   ${evolveHTML}
   ${questHTML}
+  ${royaumeCompHTML}
   ${dragonnetsHTML}
   ${badgesHTML}
-  <div class="card mb-6"><h3 class="cinzel" style="font-size:.85rem;color:#f7a020;margin-bottom:12px;letter-spacing:.1em;text-transform:uppercase">R\u00e9capitulatif</h3>
+  <div class="card mb-6"><h3 class="fredoka" style="font-size:.85rem;color:#f7a020;margin-bottom:12px;letter-spacing:.1em;text-transform:uppercase">R\u00e9capitulatif</h3>
     <div class="recap-scroll">${d.results.map(r=>`<div class="recap-item">
       <span class="recap-icon">${r.correct?'\u2705':'\u274C'}</span>
       <div class="flex-1"><p class="recap-q">${r.ex.q.length>110?r.ex.q.slice(0,110)+'\u2026':r.ex.q}</p>
@@ -742,7 +906,7 @@ function renderRoyaume(){
   const stage=STAGES[stageIdx];
   app.innerHTML=`<div class="text-center py-6 fade-in">
     <div style="font-size:3rem">\u2728</div>
-    <h2 class="title fire-text" style="color:#f9b344;font-size:1.8rem">Mon Royaume</h2>
+    <h2 class="title sparkle-anim" style="color:#7a3f04;font-size:1.8rem">Mon Royaume</h2>
     <p class="sub">${profile.name}, voici ta progression</p></div>
   <div class="dragon-card">
     <div class="dragon-emoji float">${stage.emoji}</div>
@@ -752,7 +916,7 @@ function renderRoyaume(){
   <div class="card mb-4"><div class="stats-grid">
     <div class="stat-card"><div class="stat-val" style="color:#f7a020">${profile.totalGames}</div><div class="stat-label">Parties</div></div>
     <div class="stat-card"><div class="stat-val" style="color:#22c55e">${profile.totalCorrect}</div><div class="stat-label">Bonnes r\u00e9ponses</div></div>
-    <div class="stat-card"><div class="stat-val" style="color:#f9b344">${pct}%</div><div class="stat-label">R\u00e9ussite</div></div>
+    <div class="stat-card"><div class="stat-val" style="color:#7a3f04">${pct}%</div><div class="stat-label">R\u00e9ussite</div></div>
   </div>
   <div class="stats-grid mt-3">
     <div class="stat-card"><div class="stat-val" style="color:#fb923c">${profile.bestStreak}</div><div class="stat-label">S\u00e9rie record \u{1F525}</div></div>
@@ -760,12 +924,12 @@ function renderRoyaume(){
     <div class="stat-card"><div class="stat-val" style="color:#60a5fa">${totalMinutes}m</div><div class="stat-label">Temps total</div></div>
   </div>
   <div class="resources-row mt-4">
-    <div class="resource crystal-shine">\u{1F48E} ${profile.cristaux}</div>
+    <div class="resource crystal">\u{1F48E} ${profile.cristaux}</div>
     <div class="resource xp">\u2728 ${profile.xp} XP</div>
   </div></div>
-  ${cats.length>0?`<div class="card mb-4"><h3 class="cinzel" style="font-size:.85rem;color:#f7a020;margin-bottom:12px;letter-spacing:.1em;text-transform:uppercase">Performance par cat\u00e9gorie</h3>
+  ${cats.length>0?`<div class="card mb-4"><h3 class="fredoka" style="font-size:.85rem;color:#f7a020;margin-bottom:12px;letter-spacing:.1em;text-transform:uppercase">Performance par cat\u00e9gorie</h3>
   <div class="bar-chart">${cats.map(([c,s])=>{const p=s.att>0?Math.round(s.cor/s.att*100):0;const col=p>=75?'#22c55e':p>=50?'#f7a020':'#ef4444';return `<div class="bar-row"><div class="bar-label">${c}</div><div class="bar-track"><div class="bar-fill" style="width:${p}%;background:${col}"></div></div><div class="bar-val">${p}%</div></div>`}).join('')}</div></div>`:''}
-  <div class="card mb-4"><h3 class="cinzel" style="font-size:.85rem;color:#f7a020;margin-bottom:12px;letter-spacing:.1em;text-transform:uppercase">Badges</h3>
+  <div class="card mb-4"><h3 class="fredoka" style="font-size:.85rem;color:#f7a020;margin-bottom:12px;letter-spacing:.1em;text-transform:uppercase">Badges</h3>
   <div class="badge-grid">${BADGES.map(b=>{const u=b.cond(profile);return `<div class="badge-card ${u?'unlocked':''}"><div class="badge-ic">${b.icon}</div><div class="badge-name">${b.name}</div><div class="badge-desc">${b.desc}</div></div>`}).join('')}</div></div>
   <div class="btn-row">
     <button class="btn-stone" onclick="navigate('collection')">\u{1F409} Mes Dragonnets</button>
@@ -777,7 +941,7 @@ function renderRoyaume(){
 function renderCollection(){
   app.innerHTML=`<div class="text-center py-6 fade-in">
     <div style="font-size:3rem">\u{1F409}</div>
-    <h2 class="title fire-text" style="color:#f9b344;font-size:1.6rem">Collection de Dragonnets</h2>
+    <h2 class="title sparkle-anim" style="color:#7a3f04;font-size:1.6rem">Collection de Dragonnets</h2>
     <p class="sub">Gagne des bonnes r\u00e9ponses pour tous les d\u00e9bloquer !</p></div>
   <div class="card">
     <div class="dragonnet-grid">${DRAGONNETS.map(dg=>{
@@ -810,21 +974,43 @@ function renderParent(){
   <div class="card mb-4" style="border-color:#c4b5fd"><div class="stats-grid">
     <div class="stat-card"><div class="stat-val" style="color:#c4b5fd">${profile.totalGames}</div><div class="stat-label">Parties</div></div>
     <div class="stat-card"><div class="stat-val" style="color:${pct>=60?'#22c55e':'#ef4444'}">${pct}%</div><div class="stat-label">R\u00e9ussite</div></div>
-    <div class="stat-card"><div class="stat-val" style="color:#f9b344">${totalMinutes}m</div><div class="stat-label">Temps total</div></div>
+    <div class="stat-card"><div class="stat-val" style="color:#7a3f04">${totalMinutes}m</div><div class="stat-label">Temps total</div></div>
   </div></div>
-  ${weak.length>0?`<div class="card mb-4"><h3 class="cinzel" style="font-size:.85rem;color:#ef4444;margin-bottom:12px;letter-spacing:.1em;text-transform:uppercase">\u26A0\uFE0F Domaines \u00e0 travailler</h3>
-  ${weak.map(([c,s])=>{const p=Math.round(s.cor/s.att*100);return `<div class="weak-cat"><div><div style="color:#fca5a5;font-weight:700">${c}</div><div style="font-size:.75rem;color:#8a6538">${s.cor}/${s.att} bonnes r\u00e9ponses</div></div><div style="color:#ef4444;font-weight:700;font-family:'Cinzel'">${p}%</div></div>`}).join('')}
-  <p style="font-size:.8rem;color:#8a6538;margin-top:8px;font-style:italic">Conseil : lancez le \u00ab Mode adaptatif \u00bb pour travailler ces domaines.</p></div>`:''}
-  ${strong.length>0?`<div class="card mb-4"><h3 class="cinzel" style="font-size:.85rem;color:#22c55e;margin-bottom:12px;letter-spacing:.1em;text-transform:uppercase">\u2B50 Points forts</h3>
-  ${strong.map(([c,s])=>{const p=Math.round(s.cor/s.att*100);return `<div class="strong-cat"><div><div style="color:#bbf7d0;font-weight:700">${c}</div><div style="font-size:.75rem;color:#8a6538">${s.cor}/${s.att} bonnes r\u00e9ponses</div></div><div style="color:#22c55e;font-weight:700;font-family:'Cinzel'">${p}%</div></div>`}).join('')}</div>`:''}
-  ${failedEx.length>0?`<div class="card mb-4"><h3 class="cinzel" style="font-size:.85rem;color:#f7a020;margin-bottom:12px;letter-spacing:.1em;text-transform:uppercase">Exercices \u00e0 refaire ensemble</h3>
+  ${weak.length>0?`<div class="card mb-4"><h3 class="fredoka" style="font-size:.85rem;color:#ef4444;margin-bottom:12px;letter-spacing:.1em;text-transform:uppercase">\u26A0\uFE0F Domaines \u00e0 travailler</h3>
+  ${weak.map(([c,s])=>{const p=Math.round(s.cor/s.att*100);return `<div class="weak-cat"><div><div style="color:#fca5a5;font-weight:700">${c}</div><div style="font-size:.75rem;color:#9c6f3a">${s.cor}/${s.att} bonnes r\u00e9ponses</div></div><div style="color:#ef4444;font-weight:700;font-family:'Cinzel'">${p}%</div></div>`}).join('')}
+  <p style="font-size:.8rem;color:#9c6f3a;margin-top:8px;font-style:italic">Conseil : lancez le \u00ab Mode adaptatif \u00bb pour travailler ces domaines.</p></div>`:''}
+  ${strong.length>0?`<div class="card mb-4"><h3 class="fredoka" style="font-size:.85rem;color:#22c55e;margin-bottom:12px;letter-spacing:.1em;text-transform:uppercase">\u2B50 Points forts</h3>
+  ${strong.map(([c,s])=>{const p=Math.round(s.cor/s.att*100);return `<div class="strong-cat"><div><div style="color:#bbf7d0;font-weight:700">${c}</div><div style="font-size:.75rem;color:#9c6f3a">${s.cor}/${s.att} bonnes r\u00e9ponses</div></div><div style="color:#22c55e;font-weight:700;font-family:'Cinzel'">${p}%</div></div>`}).join('')}</div>`:''}
+  ${failedEx.length>0?`<div class="card mb-4"><h3 class="fredoka" style="font-size:.85rem;color:#f7a020;margin-bottom:12px;letter-spacing:.1em;text-transform:uppercase">Exercices \u00e0 refaire ensemble</h3>
   <div class="recap-scroll">${failedEx.map(e=>`<div class="recap-item"><span class="recap-icon">\u{1F4DD}</span><div class="flex-1"><p class="recap-q"><strong>${e.cat}</strong> \u2014 ${e.q.length>120?e.q.slice(0,120)+'\u2026':e.q}</p><p style="color:#22c55e;font-size:.75rem;margin-top:4px">R\u00e9ponse : ${e.ch[e.ans]}</p></div></div>`).join('')}</div></div>`:''}
-  ${recentSessions.length>0?`<div class="card mb-4"><h3 class="cinzel" style="font-size:.85rem;color:#f7a020;margin-bottom:12px;letter-spacing:.1em;text-transform:uppercase">10 derni\u00e8res sessions</h3>
-  ${recentSessions.map(s=>{const p=s.total>0?Math.round(s.score/s.total*100):0;const lv=LEVELS.find(l=>l.id===s.level);const dt=new Date(s.date);const dtStr=dt.toLocaleDateString('fr-FR',{day:'2-digit',month:'2-digit'})+' '+dt.toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'});return `<div class="session-item"><div><div style="color:#e8ddd0">${lv?lv.icon+' '+lv.sub:s.level} \u00b7 ${s.mode}</div><div style="font-size:.7rem;color:#8a6538">${dtStr} \u00b7 ${Math.round((s.duration||0)/60)}min</div></div><div style="color:${p>=60?'#22c55e':'#ef4444'};font-weight:700;font-family:'Cinzel'">${s.score}/${s.total}</div></div>`}).join('')}</div>`:''}
-  <div class="card mb-4" style="border-color:#573c1e"><h3 class="cinzel" style="font-size:.85rem;color:#8a6538;margin-bottom:8px">Donn\u00e9es</h3>
+  ${recentSessions.length>0?`<div class="card mb-4"><h3 class="fredoka" style="font-size:.85rem;color:#f7a020;margin-bottom:12px;letter-spacing:.1em;text-transform:uppercase">10 derni\u00e8res sessions</h3>
+  ${recentSessions.map(s=>{const p=s.total>0?Math.round(s.score/s.total*100):0;const lv=LEVELS.find(l=>l.id===s.level);const dt=new Date(s.date);const dtStr=dt.toLocaleDateString('fr-FR',{day:'2-digit',month:'2-digit'})+' '+dt.toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'});return `<div class="session-item"><div><div style="color:#2d2018">${lv?lv.icon+' '+lv.sub:s.level} \u00b7 ${s.mode}</div><div style="font-size:.7rem;color:#9c6f3a">${dtStr} \u00b7 ${Math.round((s.duration||0)/60)}min</div></div><div style="color:${p>=60?'#22c55e':'#ef4444'};font-weight:700;font-family:'Cinzel'">${s.score}/${s.total}</div></div>`}).join('')}</div>`:''}
+  <div class="card mb-4" style="border-color:#c4b5fd"><h3 class="fredoka" style="font-size:.85rem;color:#c4b5fd;margin-bottom:8px">\u{1F517} Sync sur un autre appareil</h3>
+  <p style="color:#2d2018;font-size:.8rem;margin-bottom:10px">Ouvrez ce lien sur l'autre téléphone/tablette pour récupérer le Royaume de ${profile.name}. <strong>Ne le partagez avec personne d'autre</strong> (équivaut à un mot de passe).</p>
+  <button class="btn-stone btn-small" onclick="copySyncLink()">\u{1F4CB} Copier le lien</button>
+  <button class="btn-stone btn-small" onclick="shareSyncLink()" style="margin-left:8px">\u{1F4F2} Partager (WhatsApp...)</button>
+  <div id="syncMsg" style="margin-top:8px;font-size:.75rem;color:#22c55e"></div></div>
+  <div class="card mb-4" style="border-color:#573c1e"><h3 class="fredoka" style="font-size:.85rem;color:#9c6f3a;margin-bottom:8px">Donn\u00e9es</h3>
   <button class="btn-stone btn-small" onclick="exportData()">\u{1F4E4} Exporter (JSON)</button>
   <button class="btn-stone btn-small" onclick="resetData()" style="margin-top:8px;background:linear-gradient(135deg,#7f1d1d,#991b1b)">\u{1F5D1}\uFE0F R\u00e9initialiser</button></div>
   <button class="btn-stone" onclick="navigate('home')">\u2190 Retour</button>`;
+}
+
+function copySyncLink(){
+  const link=getSyncLink();
+  navigator.clipboard.writeText(link).then(()=>{
+    const m=$('syncMsg');if(m)m.textContent='✅ Lien copié dans le presse-papiers ! Colle-le sur l\'autre appareil.';
+  }).catch(()=>{
+    prompt('Copie ce lien et ouvre-le sur l\'autre appareil :',link);
+  });
+}
+async function shareSyncLink(){
+  const link=getSyncLink();
+  if(navigator.share){
+    try{await navigator.share({title:'Mon Royaume des Nombres',text:'Ouvre ce lien pour récupérer mon Royaume',url:link});}catch(e){}
+  }else{
+    copySyncLink();
+  }
 }
 
 function exportData(){
@@ -841,6 +1027,309 @@ function resetData(){
     profile=loadProfile();
     navigate('nameAsk');
   }
+}
+
+/* ════════ POÉSIES LA FONTAINE ════════ */
+const FABLES=[
+  {id:"corbeau-renard",title:"Le Corbeau et le Renard",icon:"\u{1F98A}",dur:75,
+    text:"Maître Corbeau, sur un arbre perché, tenait en son bec un fromage. Maître Renard, par l'odeur alléché, lui tint à peu près ce langage : \"Hé ! bonjour, Monsieur du Corbeau. Que vous êtes joli ! que vous me semblez beau ! Sans mentir, si votre ramage se rapporte à votre plumage, vous êtes le Phénix des hôtes de ces bois.\" À ces mots le Corbeau ne se sent pas de joie ; et pour montrer sa belle voix, il ouvre un large bec, laisse tomber sa proie. Le Renard s'en saisit, et dit : \"Mon bon Monsieur, apprenez que tout flatteur vit aux dépens de celui qui l'écoute.\"",
+    morale:"Tout flatteur vit aux dépens de celui qui l'écoute."},
+  {id:"lievre-tortue",title:"Le Lièvre et la Tortue",icon:"\u{1F422}",dur:60,
+    text:"Rien ne sert de courir ; il faut partir à point. Le Lièvre et la Tortue en sont un témoignage. Gageons, dit celle-ci, que vous n'atteindrez point sitôt que moi ce but. Sitôt ? Êtes-vous sage ? répartit l'animal léger. La Tortue partit. Elle s'évertue, elle se hâte avec lenteur. Le Lièvre cependant méprise une telle victoire, tient la gageure à peu de gloire. Quand il voit que l'autre touche presque au bout de la carrière, il partit comme un trait ; mais les élans qu'il fit furent vains : la Tortue arriva la première.",
+    morale:"Rien ne sert de courir ; il faut partir à point."},
+  {id:"cigale-fourmi",title:"La Cigale et la Fourmi",icon:"\u{1F41C}",dur:55,
+    text:"La Cigale, ayant chanté tout l'été, se trouva fort dépourvue quand la bise fut venue : pas un seul petit morceau de mouche ou de vermisseau. Elle alla crier famine chez la Fourmi sa voisine, la priant de lui prêter quelque grain pour subsister jusqu'à la saison nouvelle. La Fourmi n'est pas prêteuse : c'est là son moindre défaut. \"Que faisiez-vous au temps chaud ? dit-elle à cette emprunteuse. Nuit et jour à tout venant je chantais, ne vous déplaise. Vous chantiez ? j'en suis fort aise. Eh bien ! dansez maintenant.\"",
+    morale:"Il faut prévoir le futur, pas seulement profiter du présent."},
+  {id:"loup-agneau",title:"Le Loup et l'Agneau",icon:"\u{1F40F}",dur:60,
+    text:"La raison du plus fort est toujours la meilleure. Un Agneau se désaltérait dans le courant d'une onde pure. Un Loup survient à jeun qui cherchait aventure, et que la faim en ces lieux attirait. \"Qui te rend si hardi de troubler mon breuvage ? dit cet animal plein de rage. Tu seras châtié de ta témérité.\" \"Sire, répond l'Agneau, que Votre Majesté ne se mette pas en colère ; mais plutôt qu'elle considère que je me vas désaltérant dans le courant, plus de vingt pas au-dessous d'Elle.\" Là-dessus, au fond des forêts le Loup l'emporte, et puis le mange, sans autre forme de procès.",
+    morale:"La raison du plus fort est toujours la meilleure."},
+  {id:"grenouille-boeuf",title:"La Grenouille qui se veut faire aussi grosse que le Bœuf",icon:"\u{1F438}",dur:50,
+    text:"Une Grenouille vit un Bœuf qui lui sembla de belle taille. Elle, qui n'était pas grosse en tout comme un œuf, envieuse, s'étend, et s'enfle, et se travaille pour égaler l'animal en grosseur, disant : \"Regardez bien, ma sœur ; est-ce assez ? dites-moi ; n'y suis-je point encore ? Nenni. M'y voici donc ? Point du tout. M'y voilà ? Vous n'en approchez point.\" La chétive pécore s'enfla si bien qu'elle creva.",
+    morale:"Le monde est plein de gens qui ne sont pas plus sages : tout petit prince a des ambassadeurs."},
+  {id:"renard-raisins",title:"Le Renard et les Raisins",icon:"\u{1F347}",dur:35,
+    text:"Certain Renard Gascon, d'autres disent Normand, mourant presque de faim, vit au haut d'une treille des Raisins mûrs apparemment, et couverts d'une peau vermeille. Le galand en eût fait volontiers un repas ; mais comme il n'y pouvait atteindre : \"Ils sont trop verts, dit-il, et bons pour des goujats.\" Fit-il pas mieux que de se plaindre ?",
+    morale:"On méprise ce qu'on ne peut obtenir."},
+  {id:"chene-roseau",title:"Le Chêne et le Roseau",icon:"\u{1F33F}",dur:65,
+    text:"Le Chêne un jour dit au Roseau : \"Vous avez bien sujet d'accuser la nature ; un roitelet pour vous est un pesant fardeau ; le moindre vent qui d'aventure fait rider la face de l'eau, vous oblige à baisser la tête.\" Le vent redouble ses efforts, et fait si bien qu'il déracine celui de qui la tête au ciel était voisine, et dont les pieds touchaient à l'empire des morts.",
+    morale:"Plier sait mieux résister que rester rigide."},
+  {id:"lion-rat",title:"Le Lion et le Rat",icon:"\u{1F981}",dur:55,
+    text:"Il faut, autant qu'on peut, obliger tout le monde : on a souvent besoin d'un plus petit que soi. De cette vérité deux fables feront foi. Entre les pattes d'un Lion un Rat sortit assez à l'étourdie. Le Roi des animaux, en cette occasion, montra ce qu'il était, et lui donna la vie. Quelque temps après, ce Lion fut pris dans des rets, dont ses rugissements ne le purent défaire. Sire Rat accourut, et fit tant par ses dents qu'une maille rongée emporta tout l'ouvrage.",
+    morale:"Patience et longueur de temps font plus que force ni que rage."}
+];
+
+function speakText(text){
+  if(!('speechSynthesis' in window)){alert('Synthèse vocale non disponible sur ce navigateur');return}
+  speechSynthesis.cancel();
+  const u=new SpeechSynthesisUtterance(text);
+  u.lang='fr-FR';u.rate=0.85;u.pitch=1;
+  speechSynthesis.speak(u);
+}
+function stopSpeaking(){if('speechSynthesis' in window)speechSynthesis.cancel()}
+
+let _recognition=null;
+function startRecording(onResult,onEnd){
+  const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
+  if(!SR){alert('Reconnaissance vocale non supportée. Utilise Safari sur iPhone ou Chrome.');return null}
+  if(_recognition){_recognition.stop();_recognition=null}
+  _recognition=new SR();
+  _recognition.lang='fr-FR';
+  _recognition.continuous=true;
+  _recognition.interimResults=true;
+  let finalTxt='';
+  _recognition.onresult=(e)=>{
+    let interim='';
+    for(let i=e.resultIndex;i<e.results.length;i++){
+      if(e.results[i].isFinal) finalTxt+=e.results[i][0].transcript+' ';
+      else interim+=e.results[i][0].transcript;
+    }
+    onResult(finalTxt+interim);
+  };
+  _recognition.onend=()=>{onEnd&&onEnd(finalTxt)};
+  _recognition.onerror=(e)=>{onEnd&&onEnd(finalTxt+' [erreur: '+e.error+']')};
+  _recognition.start();
+  return _recognition;
+}
+function stopRecording(){if(_recognition){_recognition.stop();_recognition=null}}
+
+function compareTexts(orig,spoken){
+  const norm=s=>s.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^\w\s]/g,' ').replace(/\s+/g,' ').trim();
+  const o=norm(orig).split(' ');
+  const s=norm(spoken).split(' ');
+  const sSet=new Set(s);
+  let matched=0;
+  const result=o.map(w=>{const ok=sSet.has(w);if(ok)matched++;return {w,ok}});
+  return {matched,total:o.length,score:Math.round(matched/o.length*100),result};
+}
+
+function renderPoesieHome(){
+  app.innerHTML=`<div class="text-center py-6 fade-in">
+    <div style="font-size:3.5rem">\u{1F4DC}</div>
+    <h2 class="title" style="color:#a78bfa;font-size:1.6rem">Poésies La Fontaine</h2>
+    <p class="sub">Écoute, lis, récite à voix haute</p>
+  </div>
+  ${FABLES.map((f,i)=>{
+    const stats=(profile.poesieStats||{})[f.id]||{};
+    const best=stats.best||0;
+    const star=best>=80?'\u2B50\u2B50\u2B50':best>=60?'\u2B50\u2B50':best>=40?'\u2B50':'';
+    return `<div class="card clickable fade-in" style="animation-delay:${i*.05}s;border-color:#c4b5fd" onclick="navigate('poesieFable',{fableId:'${f.id}'})">
+      <div class="row">
+        <div style="font-size:2.2rem">${f.icon}</div>
+        <div class="flex-1">
+          <h3 class="card-title" style="color:#5b21b6">${f.title}</h3>
+          <p class="sub">${f.dur}s à lire ${star?' \u2014 '+star:''}</p>
+        </div>
+        <div class="arrow">\u2192</div>
+      </div>
+    </div>`;
+  }).join('')}
+  <button class="btn-stone mt-4" onclick="navigate('home')">\u2190 Retour</button>`;
+}
+
+function renderPoesieFable(){
+  const f=FABLES.find(x=>x.id===state.fableId);
+  if(!f){navigate('poesieHome');return}
+  const stats=(profile.poesieStats||{})[f.id]||{plays:0,best:0};
+  app.innerHTML=`<div class="text-center py-4 fade-in">
+    <div style="font-size:3rem">${f.icon}</div>
+    <h2 class="title" style="color:#5b21b6">${f.title}</h2>
+    <p class="sub">de Jean de La Fontaine</p>
+  </div>
+  <div class="card mb-4" style="border-color:#c4b5fd">
+    <div style="font-style:italic;color:#2d2018;line-height:1.7;font-size:1.05rem;font-weight:500" id="fableText">${f.text}</div>
+    <div class="divider"></div>
+    <div style="background:#fef3c7;padding:10px 14px;border-radius:10px;border-left:3px solid #fbbf24;color:#7a3f04;font-weight:600">\u{1F4A1} Morale : <em>${f.morale}</em></div>
+  </div>
+  <div class="card mb-4" style="border-color:#a78bfa">
+    <h3 class="card-title" style="color:#5b21b6;margin-bottom:12px">\u{1F3A7} Écoute la fable</h3>
+    <p class="sub mb-2">Le Sage va te lire la fable lentement.</p>
+    <div class="btn-row">
+      <button class="btn-fire" onclick="speakText(document.getElementById('fableText').innerText)">\u25B6\uFE0F Écouter</button>
+      <button class="btn-stone" onclick="stopSpeaking()">\u23F9\uFE0F Stop</button>
+    </div>
+  </div>
+  <div class="card mb-4" style="border-color:#22c55e">
+    <h3 class="card-title" style="color:#15803d;margin-bottom:12px">\u{1F3A4} À toi de réciter !</h3>
+    <p class="sub mb-2">Clique sur le micro et récite la fable. L'app va comparer ce que tu dis au texte.</p>
+    <button class="btn-fire" id="recBtn" onclick="togglePoesieRec()">\u{1F534} Démarrer le micro</button>
+    <div id="recLive" style="margin-top:14px;padding:12px;background:#f0fdf4;border-radius:10px;border:1px solid #86efac;min-height:60px;color:#14532d;font-style:italic;display:none"></div>
+    <div id="recResult"></div>
+  </div>
+  <div class="card mb-4">
+    <h3 class="card-title" style="margin-bottom:8px">\u{1F4CA} Tes scores</h3>
+    <div class="row gap-2"><div class="resource">\u{1F39E}\uFE0F ${stats.plays||0} essais</div><div class="resource flame">\u{1F31F} Meilleur : ${stats.best||0}%</div></div>
+  </div>
+  <button class="btn-stone" onclick="navigate('poesieHome')">\u2190 Autres fables</button>`;
+}
+
+window._poesieRecording=false;
+function togglePoesieRec(){
+  const btn=$('recBtn');const live=$('recLive');const res=$('recResult');
+  if(window._poesieRecording){
+    stopRecording();
+    window._poesieRecording=false;
+    btn.textContent='\u{1F534} Démarrer le micro';
+    btn.classList.remove('pulse');
+    return;
+  }
+  const f=FABLES.find(x=>x.id===state.fableId);
+  if(!f)return;
+  res.innerHTML='';
+  live.style.display='block';
+  live.textContent='\u{1F3A4} J\'écoute...';
+  btn.textContent='\u23F9\uFE0F Arrêter';
+  btn.classList.add('pulse');
+  window._poesieRecording=true;
+  startRecording(
+    (txt)=>{live.textContent=txt||'\u{1F3A4} Parle...'},
+    (finalTxt)=>{
+      window._poesieRecording=false;
+      btn.textContent='\u{1F504} Recommencer';
+      btn.classList.remove('pulse');
+      if(!finalTxt||finalTxt.trim().length<5){res.innerHTML='<p style="color:#7a3f04;margin-top:10px">Pas de voix détectée. Réessaie !</p>';return}
+      const cmp=compareTexts(f.text,finalTxt);
+      // Save score
+      if(!profile.poesieStats)profile.poesieStats={};
+      const s=profile.poesieStats[f.id]||{plays:0,best:0};
+      s.plays++;if(cmp.score>s.best)s.best=cmp.score;
+      profile.poesieStats[f.id]=s;
+      // XP reward
+      const xpGain=Math.round(cmp.score/2);
+      profile.xp+=xpGain;
+      saveProfile();
+      const wordsHTML=cmp.result.map(x=>`<span style="color:${x.ok?'#15803d':'#9c6f3a'};${x.ok?'':'text-decoration:underline wavy #ef4444'};margin:0 2px">${x.w}</span>`).join('');
+      res.innerHTML=`<div class="divider"></div>
+        <div class="card" style="background:${cmp.score>=70?'#dcfce7':cmp.score>=40?'#fef3c7':'#fee2e2'};border-color:${cmp.score>=70?'#22c55e':cmp.score>=40?'#fbbf24':'#ef4444'}">
+          <h3 class="card-title">${cmp.score>=80?'\u{1F389} Excellent !':cmp.score>=60?'\u{1F44D} Bien joué !':cmp.score>=40?'\u{1F4AA} Continue !':'\u{1F4DA} Réécoute et retente'}</h3>
+          <p style="font-size:1.4rem;font-weight:700;color:#7a3f04;margin:8px 0">${cmp.score}% \u2014 ${cmp.matched}/${cmp.total} mots</p>
+          <p class="sub">+${xpGain} XP gagnés \u2728</p>
+          <div class="divider"></div>
+          <p class="sub mb-2">Mots reconnus (en vert) :</p>
+          <div style="font-size:.95rem;line-height:1.7">${wordsHTML}</div>
+        </div>`;
+    }
+  );
+}
+
+/* ════════ FICHES BILAN ════════ */
+function renderFichesHome(){
+  app.innerHTML=`<div class="text-center py-6 fade-in">
+    <div style="font-size:3.5rem">\u{1F4D6}</div>
+    <h2 class="title" style="color:#7a3f04;font-size:1.6rem">Fiches Bilan</h2>
+    <p class="sub">Choisis un domaine pour r\u00e9viser</p>
+  </div>
+  ${SUBJECTS.map((s,i)=>`<div class="subject-card fade-in" style="border-color:${s.color};animation-delay:${i*.1}s" onclick="navigate('fichesSubject',{subjectId:'${s.id}'})">
+    <div class="subject-emoji">${s.icon}</div>
+    <div class="subject-info">
+      <h3 class="subject-name" style="color:${s.color}">${s.name}</h3>
+      <p class="subject-desc">${s.desc}</p>
+    </div>
+    <div class="arrow">\u2192</div>
+  </div>`).join('')}
+  <button class="btn-stone mt-4" onclick="navigate('home')">\u2190 Retour</button>`;
+}
+function renderFichesSubject(){
+  const s=SUBJECTS.find(x=>x.id===state.subjectId)||SUBJECTS[0];
+  const visibleLevels=s.levels.filter(l=>!l.secret||profile.name.toLowerCase()==='joseph');
+  app.innerHTML=`<div class="text-center py-6 fade-in">
+    <div style="font-size:3rem">${s.icon}</div>
+    <h2 class="title" style="color:${s.color};font-size:1.5rem">${s.name}</h2>
+    <p class="sub">Choisis un niveau / discipline</p>
+  </div>
+  ${visibleLevels.map((lv,i)=>`<div class="card clickable fade-in" style="animation-delay:${i*.05}s;border-color:${lv.color}" onclick="loadTopics('${lv.id}')">
+    <div class="row">
+      <div style="font-size:2rem">${lv.icon}</div>
+      <div class="flex-1">
+        <h3 class="card-title" style="color:${lv.color}">${lv.name}</h3>
+        <p class="sub">${lv.sub||''}</p>
+      </div>
+      <div class="arrow">\u2192</div>
+    </div>
+  </div>`).join('')}
+  <button class="btn-stone mt-4" onclick="navigate('fichesHome')">\u2190 Retour</button>`;
+}
+
+async function loadTopics(lvId){
+  state.ficheLv=lvId;
+  state.topics=null;
+  navigate('fichesTopics');
+  const cached=(profile.topicsCache||{})[lvId];
+  if(cached){state.topics=cached;render();return}
+  try{
+    const subj=lvId.includes('-')?lvId:'maths-'+lvId;
+    const r=await fetch(API_BASE+'/topics',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({subject:subj})});
+    const data=await r.json();
+    if(data.error)throw new Error(data.error.message||'err');
+    state.topics=data.topics;
+    if(!profile.topicsCache)profile.topicsCache={};
+    profile.topicsCache[lvId]=data.topics;
+    saveProfile();
+    render();
+  }catch(e){state.topics=[];alert('Erreur chargement th\u00e8mes : '+e.message);render()}
+}
+
+function renderFichesTopics(){
+  const lv=LEVELS.find(l=>l.id===state.ficheLv);
+  if(!state.topics){
+    app.innerHTML='<div class="card text-center" style="margin-top:60px"><div class="dragon-emoji float">\u{1F4DA}</div><h2 class="title">Le Sage charge les th\u00e8mes...</h2></div>';
+    return;
+  }
+  app.innerHTML=`<div class="text-center py-6 fade-in">
+    <div style="font-size:2.5rem">${lv.icon}</div>
+    <h2 class="title" style="color:${lv.color}">${lv.name}</h2>
+    <p class="sub">${lv.sub||''} \u2014 Choisis un th\u00e8me</p>
+  </div>
+  ${state.topics.map((t,i)=>`<div class="card clickable fade-in" style="animation-delay:${i*.05}s" onclick="loadFiche('${(t.id||'').replace(/[^a-z0-9-]/gi,'')}','${(t.title||'').replace(/'/g,'').replace(/\"/g,'')}')">
+    <div class="row">
+      <div style="font-size:2rem">${t.emoji||'\u{1F4D6}'}</div>
+      <div class="flex-1">
+        <h3 class="card-title">${t.title}</h3>
+        <p class="sub">${t.desc||''}</p>
+      </div>
+      <div class="arrow">\u2192</div>
+    </div>
+  </div>`).join('')}
+  <button class="btn-stone mt-4" onclick="navigate('fichesSubject',{subjectId:state.subjectId})">\u2190 Retour</button>`;
+}
+
+async function loadFiche(topicId,topicTitle){
+  state.fiche=null;state.ficheTopic={id:topicId,title:topicTitle};
+  navigate('fichesView');
+  try{
+    const subj=state.ficheLv.includes('-')?state.ficheLv:'maths-'+state.ficheLv;
+    const r=await fetch(API_BASE+'/fiche',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({subject:subj,topic:topicTitle})});
+    const data=await r.json();
+    if(data.error)throw new Error(data.error.message||'err');
+    state.fiche=data;
+    render();
+  }catch(e){alert('Erreur g\u00e9n\u00e9ration fiche : '+e.message);navigate('fichesTopics')}
+}
+
+function renderFichesView(){
+  if(!state.fiche){
+    app.innerHTML='<div class="card text-center" style="margin-top:60px"><div class="dragon-emoji float">\u{1F58B}\uFE0F</div><h2 class="title">Le Sage \u00e9crit ta fiche...</h2><p class="sub">5 \u00e0 15 secondes</p></div>';
+    return;
+  }
+  const f=state.fiche;
+  const lv=LEVELS.find(l=>l.id===state.ficheLv);
+  app.innerHTML=`<div class="text-center py-4 fade-in">
+    <div style="font-size:2rem">${lv?lv.icon:'\u{1F4D6}'}</div>
+    <p class="sub">${lv?lv.sub||lv.name:''}</p>
+  </div>
+  <div class="fiche-card fade-in">
+    <h1 class="fiche-h1">${f.titre||state.ficheTopic.title}</h1>
+    ${f.intro?`<p class="fiche-intro">${f.intro}</p>`:''}
+    ${(f.essentiel&&f.essentiel.length>0)?`<div class="fiche-section"><h3>\u2728 L'essentiel</h3><ul class="fiche-list">${f.essentiel.map(p=>`<li>${p}</li>`).join('')}</ul></div>`:''}
+    ${(f.dates&&f.dates.length>0)?`<div class="fiche-section"><h3>\u{1F4C5} Dates cl\u00e9s</h3>${f.dates.map(d=>`<div class="fiche-mini"><b>${d.date}</b> \u2014 ${d.evenement}</div>`).join('')}</div>`:''}
+    ${(f.personnalites&&f.personnalites.length>0)?`<div class="fiche-section"><h3>\u{1F464} Personnalit\u00e9s</h3>${f.personnalites.map(p=>`<div class="fiche-mini"><b>${p.nom}</b> \u2014 ${p.role}</div>`).join('')}</div>`:''}
+    ${(f.vocabulaire&&f.vocabulaire.length>0)?`<div class="fiche-section"><h3>\u{1F4DA} Vocabulaire</h3>${f.vocabulaire.map(v=>`<div class="fiche-mini"><b>${v.mot}</b> : ${v.definition}</div>`).join('')}</div>`:''}
+    ${f.anecdote?`<div class="fiche-anecdote">\u{1F4A1} <b>Le savais-tu ?</b> ${f.anecdote}</div>`:''}
+    ${f.retiens_bien?`<div class="fiche-retiens">\u{1F31F} ${f.retiens_bien}</div>`:''}
+    ${(f.quiz_rapide&&f.quiz_rapide.length>0)?`<div class="fiche-section"><h3>\u{1F3AF} Quiz \u00e9clair</h3>${f.quiz_rapide.map((q,i)=>`<div class="fiche-mini" onclick="this.querySelector('span').classList.toggle('hidden')" style="cursor:pointer"><b>Q${i+1} :</b> ${q.q}<br><span class="hidden" style="color:#15803d;font-weight:600">\u279c ${q.r}</span><br><small style="color:#9c6f3a">(clique pour voir la r\u00e9ponse)</small></div>`).join('')}</div>`:''}
+  </div>
+  <div class="btn-row">
+    <button class="btn-stone" onclick="loadFiche(state.ficheTopic.id,state.ficheTopic.title)">\u{1F504} R\u00e9g\u00e9n\u00e9rer</button>
+    <button class="btn-stone" onclick="navigate('fichesTopics')">\u2190 Autres th\u00e8mes</button>
+  </div>`;
 }
 
 render();
