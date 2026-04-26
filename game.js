@@ -225,6 +225,11 @@ function migrateLegacyProfile(){
     if(!legacy) return;
     const p=JSON.parse(legacy);
     if(!p||!p.name) return;
+    // Si l'ancien profil n'a pas d'AID, on lui donne celui du device (s'il existe) ou un nouveau
+    if(!p.aid){
+      const oldAid=localStorage.getItem('royaume_aid');
+      p.aid=(oldAid&&/^[a-f0-9]{32}$/.test(oldAid))?oldAid:generateAID();
+    }
     dict[p.name]=p;
     saveProfilesDict(dict);
     setActiveName(p.name);
@@ -280,61 +285,57 @@ function escAttr(s){return esc(s).replace(/\\/g,'\\\\')}
 function shuffle(a){a=[...a];for(let i=a.length-1;i>0;i--){let j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]]}return a}
 function today(){return new Date().toISOString().slice(0,10)}
 
-/* ════════ BACKEND API (sync sécurisé via AID + AI generation) ════════ */
+/* ════════ BACKEND API (sync per-profil + AI generation) ════════ */
 const API_BASE="https://royaume-api.square-paris75.workers.dev";
 
-// AID = identifiant unique aléatoire (32 hex), généré et stocké localement.
-// Sert de "clé secrète" pour le profil. Impossible à deviner.
-function getAid(){
-  let aid=localStorage.getItem('royaume_aid');
-  if(!aid){
-    // Génère UUID v4 sans tirets = 32 chars hex
-    aid=(crypto.randomUUID?crypto.randomUUID():'xxxxxxxxxxxx4xxxyxxxxxxxxxxxxxxx'.replace(/[xy]/g,c=>{const r=Math.random()*16|0;return (c==='x'?r:(r&0x3|0x8)).toString(16)})).replace(/-/g,'');
-    localStorage.setItem('royaume_aid',aid);
-  }
-  return aid;
+// AID déterministe depuis le prénom (SHA-256 normalisé → 32 hex chars).
+// Conséquence : taper "Joseph" sur n\u0027importe quel appareil donne le MÊME AID,
+// donc retrouve le MÊME profil dans le cloud. Pas besoin de lien, pas
+// d\u0027import, pas de QR : la base de données est partagée par le nom.
+async function aidFromName(name){
+  const norm=String(name||'').toLowerCase().trim().replace(/\s+/g,'');
+  if(!norm) return '';
+  const data=new TextEncoder().encode('royaume:'+norm);
+  const buf=await crypto.subtle.digest('SHA-256',data);
+  return Array.from(new Uint8Array(buf)).map(b=>b.toString(16).padStart(2,'0')).join('').slice(0,32);
+}
+// Fallback synchrone (legacy migration uniquement).
+function generateAID(){
+  return (crypto.randomUUID?crypto.randomUUID():'xxxxxxxxxxxx4xxxyxxxxxxxxxxxxxxx'.replace(/[xy]/g,c=>{const r=Math.random()*16|0;return (c==='x'?r:(r&0x3|0x8)).toString(16)})).replace(/-/g,'');
 }
 
-// Au chargement : si URL contient ?sync=AID, on remplace l'AID local (transfert depuis autre appareil)
-(function checkSyncLink(){
-  const params=new URLSearchParams(window.location.search);
-  const incoming=params.get('sync');
-  if(incoming&&/^[a-f0-9]{32}$/.test(incoming)){
-    const current=localStorage.getItem('royaume_aid');
-    if(current!==incoming){
-      if(confirm('Tu vas récupérer le Royaume d\'un autre appareil. Cela remplacera tes données locales. Continuer ?')){
-        localStorage.setItem('royaume_aid',incoming);
-        // Vide les données locales pour forcer la récup depuis le cloud
-        localStorage.removeItem('royaume_v3');
-      }
-    }
-    // Nettoie l'URL
-    window.history.replaceState({},'',window.location.pathname);
-  }
-})();
-
-const AID=getAid();
-
-async function syncProfileFromCloud(){
+// Récupère un profil distant par AID. Ne touche pas au profil local.
+async function fetchProfileByAid(aid){
+  if(!aid||!/^[a-f0-9]{32}$/.test(aid)) return null;
   try{
-    const r=await fetch(API_BASE+'/profile/'+AID);
+    const r=await fetch(API_BASE+'/profile/'+aid);
     if(!r.ok) return null;
     const txt=await r.text();
     if(txt==='null'||!txt) return null;
-    const remote=JSON.parse(txt);
-    if(remote.totalGames>profile.totalGames){
-      profile=migrate(remote);
-      _localSave();
-      return 'restored';
-    }
-    return 'local_newer';
+    return JSON.parse(txt);
   }catch(e){return null}
 }
 
+// Sync (pull) du profil ACTIF depuis le cloud. Si la version cloud a plus de
+// parties jouées, on remplace localement.
+async function syncProfileFromCloud(){
+  if(!profile.aid) return null;
+  const remote=await fetchProfileByAid(profile.aid);
+  if(!remote) return null;
+  if((remote.totalGames||0)>(profile.totalGames||0)){
+    profile=migrate(remote);
+    profile.aid=remote.aid||profile.aid; // sécurité
+    _localSave();
+    return 'restored';
+  }
+  return 'local_newer';
+}
+
+// Push du profil ACTIF vers le cloud (utilise profile.aid).
 async function pushProfileToCloud(){
-  if(!profile.name) return;
+  if(!profile.name||!profile.aid) return;
   try{
-    await fetch(API_BASE+'/profile/'+AID,{
+    await fetch(API_BASE+'/profile/'+profile.aid,{
       method:'PUT',
       headers:{'Content-Type':'application/json'},
       body:JSON.stringify(profile)
@@ -342,9 +343,42 @@ async function pushProfileToCloud(){
   }catch(e){}
 }
 
+// Lien de sync pour partager le profil ACTIF sur un autre appareil.
 function getSyncLink(){
-  return window.location.origin+window.location.pathname+'?sync='+AID;
+  if(!profile.aid) return '';
+  return window.location.origin+window.location.pathname+'?sync='+profile.aid;
 }
+
+// Détecte ?sync=AID dans l'URL et IMPORTE le profil dans le dict local
+// (sans rien écraser). Différé pour s'exécuter quand toutes les fonctions
+// sont prêtes.
+function processIncomingSyncLink(){
+  const params=new URLSearchParams(window.location.search);
+  const incoming=params.get('sync');
+  if(!incoming||!/^[a-f0-9]{32}$/.test(incoming)) return;
+  window.history.replaceState({},'',window.location.pathname);
+  setTimeout(async()=>{
+    const remote=await fetchProfileByAid(incoming);
+    if(!remote||!remote.name){
+      alert('Aucun profil trouvé pour ce lien.');
+      return;
+    }
+    const dict=loadProfilesDict();
+    const exists=!!dict[remote.name];
+    const msg=exists
+      ? 'Mettre à jour le profil "'+remote.name+'" depuis l\u0027autre appareil ?'
+      : 'Importer le profil "'+remote.name+'" depuis l\u0027autre appareil ?';
+    if(!confirm(msg)) return;
+    remote.aid=incoming;
+    dict[remote.name]=remote;
+    saveProfilesDict(dict);
+    setActiveName(remote.name);
+    profile=migrate(remote);
+    alert('\u2705 Profil "'+remote.name+'" '+(exists?'mis à jour':'importé')+' !');
+    if(typeof navigate==='function') navigate('home');
+  },100);
+}
+processIncomingSyncLink();
 
 async function generateAIExercises(level,count){
   state.generating=true;
@@ -545,6 +579,7 @@ function renderHome(){
       <button class="btn-stone" onclick="navigate('parent')">\u{1F464} Espace Parent</button>
     </div>
     <button class="btn-stone mt-3" style="width:100%;font-size:.85rem" onclick="navigate('profilePicker')">\u{1F504} Changer d'utilisateur</button>
+    <button class="btn-stone mt-2" style="width:100%;font-size:.85rem" onclick="shareSyncLink()">\u{1F517} Synchroniser sur un autre appareil</button>
   `;
 }
 
@@ -583,18 +618,34 @@ function renderNameAsk(){
   setTimeout(()=>$('nameInp').focus(),100);
 }
 async function setName(){
-  // Strip HTML/control chars to keep the profile name display-safe everywhere.
+  // Sanitise le nom (retire HTML/quotes pour XSS).
   const v=$('nameInp').value.replace(/[<>"'`\\\/]/g,'').replace(/[ -]/g,'').trim().slice(0,20);
   if(v.length<1){alert('Entre ton pr\u00e9nom');return}
-  // Si ce nom existe d\u00e9j\u00e0 dans le dict, on charge ce profil (pas d\u0027\u00e9crasement).
+  // AID dérivé du nom : "Joseph" sur iPhone = "Joseph" sur iPad = même AID.
+  const aid=await aidFromName(v);
+  // Affiche un loader pendant le pull cloud
+  app.innerHTML='<div class="card text-center" style="margin-top:60px"><div class="dragon-emoji float">\u{1F50D}</div><h2 class="title">Recherche de ton Royaume...</h2></div>';
+  const remote=await fetchProfileByAid(aid);
   const dict=loadProfilesDict();
-  if(dict[v]){
+  if(remote&&remote.name){
+    // Le profil existe dans le cloud (cet appareil ou un autre l\u0027a déjà créé)
+    remote.aid=aid;
+    profile=migrate(remote);
+    dict[remote.name]=profile;
+    saveProfilesDict(dict);
+    setActiveName(profile.name);
+  }else if(dict[v]){
+    // Existe localement mais pas dans le cloud (premier sync) → on l\u0027envoie au cloud
     profile=migrate(dict[v]);
+    profile.aid=aid;
+    saveProfile(); // push cloud (debounced)
   }else{
+    // Profil tout neuf
     profile=newProfile();
     profile.name=v;
+    profile.aid=aid;
+    saveProfile();
   }
-  saveProfile();
   navigate('home');
 }
 
@@ -624,10 +675,23 @@ function renderProfilePicker(){
   app.innerHTML='<div class="text-center py-6 fade-in"><div style="font-size:3.5rem">\u{1F44B}</div><h2 class="title" style="color:#7a3f04;font-size:1.5rem">Qui joue aujourd\u0027hui ?</h2><p class="sub">Choisis ton profil ou cr\u00e9es-en un nouveau</p></div>'+cards+'<div class="card clickable fade-in" style="border-color:#22c55e;background:linear-gradient(135deg,#dcfce7,#bbf7d0)" onclick="addNewProfile()"><div class="row"><div style="font-size:2.5rem;flex-shrink:0">\u2795</div><div class="flex-1"><h3 class="card-title" style="color:#15803d">Nouvel utilisateur</h3><p class="sub" style="color:#166534">Cr\u00e9er un nouveau profil</p></div></div></div>'+(names.length>0?'<details style="margin-top:24px"><summary style="color:#7a5a3a;font-size:.85rem;cursor:pointer;text-align:center">Supprimer un profil</summary><div style="margin-top:12px;text-align:center">'+deleteBtns+'</div></details>':'');
 }
 
-function switchProfile(name){
+async function switchProfile(name){
   profile=loadProfileByName(name);
+  // Si le profil local n\u0027a pas encore d\u0027AID (ancien profil migré),
+  // on le derive du nom pour qu\u0027il soit synchronisé sur tous les appareils.
+  if(!profile.aid) profile.aid=await aidFromName(profile.name||name);
   setActiveName(name);
   navigate('home');
+  // Pull cloud en arrière-plan : si la version distante a plus de parties,
+  // on remplace localement et on rerend l\u0027écran.
+  setTimeout(async()=>{
+    if(!profile.aid) return;
+    const result=await syncProfileFromCloud();
+    if(result==='restored'){
+      _localSave();
+      if(state.screen==='home') render();
+    }
+  },50);
 }
 
 function addNewProfile(){
