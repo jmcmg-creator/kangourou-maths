@@ -28,7 +28,9 @@ const SUBJECTS=[
       {id:"hebreu-alphabet",name:"H\u00e9breu",sub:"Alphabet (\u05D0\u05D1\u05D2)",icon:"\u{1F524}",color:"#0ea5e9",hasStatic:true},
       {id:"hebreu-vocabulaire",name:"H\u00e9breu",sub:"Vocabulaire de base",icon:"\u{1F4DA}",color:"#0ea5e9",hasStatic:true},
       {id:"hebreu-expressions",name:"H\u00e9breu",sub:"Expressions courantes",icon:"\u{1F5E3}\uFE0F",color:"#0ea5e9",hasStatic:true},
-      {id:"hebreu-lecture",name:"H\u00e9breu",sub:"Lecture mots et phrases",icon:"\u{1F4D6}",color:"#0ea5e9",hasStatic:true}
+      {id:"hebreu-lecture",name:"H\u00e9breu",sub:"Lecture mots et phrases",icon:"\u{1F4D6}",color:"#0ea5e9",hasStatic:true},
+      {id:"english-words",name:"Anglais oral",sub:"Mots simples (micro)",icon:"\u{1F1EC}\u{1F1E7}",color:"#3b82f6",hasStatic:true},
+      {id:"english-phrases",name:"Anglais oral",sub:"Phrases courantes (micro)",icon:"\u{1F3A4}",color:"#3b82f6",hasStatic:true}
     ]},
   {id:"sciences",name:"Royaume des D\u00e9couvertes",icon:"\u{1F52C}",color:"#0ea5e9",desc:"Sciences : Physique, Chimie, SVT (biologie)",
     levels:[
@@ -827,9 +829,9 @@ function renderGame(){
       ${levelBadge}
     </div>
     <p style="font-size:clamp(1rem,2.5vw,1.2rem);color:#1e293b;line-height:1.7;margin-bottom:24px">${esc(ex.q)}</p>
-    <div class="choices-grid">
+    ${ex.oral?renderOralUI(ex):`<div class="choices-grid">
       ${ex.ch.map((c,i)=>{let cls='choice-btn';if(state.selected!==null){if(i===ex.ans)cls+=' correct';else if(i===state.selected&&i!==ex.ans)cls+=' wrong'}return `<button class="${cls}" ${state.selected!==null?'disabled':''} onclick="selectAnswer(${i})"><span class="choice-letter">${String.fromCharCode(65+i)}.</span>${esc(c)}</button>`}).join('')}
-    </div>
+    </div>`}
     <div id="explanation"></div>
   </div>
   ${state.selected===null?`<button class="btn-stone mt-3" onclick="finishGame(true)">Abandonner la qu\u00eate</button>`:''}`;
@@ -870,6 +872,59 @@ function selectAnswer(i){
   }else{
     state.streak=0;
     if(state.mode==='progression')state.gameOver=true;
+  }
+  renderGame();
+  showExplanation(ex,correct);
+}
+
+
+/* ════════ EXERCICES ORAUX (anglais, etc.) ════════ */
+function renderOralUI(ex){
+  if(state.selected!==null){
+    return '<div class="text-center" style="padding:14px"><div style="padding:14px;background:#f0f9ff;border-radius:12px;border:1px solid #bae6fd"><p class="sub" style="margin-bottom:6px">Tu as dit :</p><p style="font-style:italic;color:#1e293b;font-size:1.05rem">"'+esc(state.lastSpoken||'(rien entendu)')+'"</p><p class="sub" style="margin-top:12px;margin-bottom:6px">Réponse attendue :</p><p style="font-weight:700;color:#0c4a6e;font-size:1.1rem">'+esc(ex.expected||'')+'</p></div></div>';
+  }
+  return '<div class="text-center" style="padding:14px"><button class="btn-fire" id="micBtn" onclick="startOralAnswer()">\u{1F3A4} Dis ta réponse</button><div id="oralLive" style="margin-top:14px;padding:12px;background:#f0fdf4;border-radius:10px;border:1px solid #86efac;min-height:60px;color:#14532d;font-style:italic;display:none"></div><p class="sub" style="margin-top:10px;font-size:.78rem">\u{1F4A1} Parle clairement, l\u0027app entend ta r\u00e9ponse via le micro.</p></div>';
+}
+function normalizeForCompare(s){
+  return String(s||'').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'').replace(/[^a-z0-9 ]/g,' ').replace(/\s+/g,' ').trim();
+}
+function startOralAnswer(){
+  const ex=state.exercises[state.idx];
+  if(!ex||!ex.oral||state.selected!==null) return;
+  const live=document.getElementById('oralLive');
+  const btn=document.getElementById('micBtn');
+  if(live){live.style.display='block';live.textContent='\u{1F3A4} Parle maintenant…'}
+  if(btn){btn.disabled=true;btn.textContent='⏳ J\u0027écoute...'}
+  startRecording(
+    function(txt){if(live)live.textContent=txt||'\u{1F3A4} Parle...'},
+    function(finalTxt){
+      if(live&&finalTxt) live.textContent=finalTxt;
+      setTimeout(function(){gradeOralAnswer(finalTxt)},300);
+    },
+    ex.lang||'en-US'
+  );
+}
+function gradeOralAnswer(spokenText){
+  const ex=state.exercises[state.idx];
+  if(!ex||state.selected!==null) return;
+  state.lastSpoken=spokenText||'';
+  const expected=normalizeForCompare(ex.expected);
+  const alts=(ex.alternatives||[]).map(normalizeForCompare);
+  const spoken=normalizeForCompare(spokenText);
+  const candidates=[expected].concat(alts).filter(Boolean);
+  const correct=candidates.some(function(c){return c&&(c===spoken||spoken.split(' ').includes(c)||spoken.includes(c))});
+  state.selected=correct?0:1;
+  state.results.push({ex:ex,choice:state.selected,correct:correct});
+  if(correct){
+    state.score++;
+    state.streak++;
+    if(state.streak>state.maxStreak)state.maxStreak=state.streak;
+    const mult=state.streak>=10?3:state.streak>=5?2:state.streak>=3?1.5:1;
+    state.sessionXP+=Math.round(ex.diff*10*mult);
+    state.sessionCristaux+=ex.diff*2+(state.streak===3||state.streak===5||state.streak===10?10:0);
+  }else{
+    state.streak=0;
+    if(state.mode==='progression') state.gameOver=true;
   }
   renderGame();
   showExplanation(ex,correct);
@@ -1253,7 +1308,16 @@ const FABLES=[
     morale:"L'arrivée d'un enfant illumine et unit toute la famille.",moraleLabel:"Th\u00e8me"},
   {id:"hugo-bonhomme-hiver",title:"Le Bonhomme Hiver",icon:"\u26C4",dur:35,author:"Victor Hugo",recueil:"L'Art d'\u00eatre grand-p\u00e8re, 1877",
     text:"Le bonhomme hiver, vieux roi blanc, est venu. Le sapin a maigri. Le bouleau s'est noirci. Le vent souffle, l'eau gèle, et le moineau transi cherche un grain dans la neige. Janvier soufflait, faisant grelotter les hameaux. Au feu, vite, à l'âtre ! Et que les enfants chantent en battant des mains, et que rie le grand-père, car le bonhomme hiver, en passant, sème aussi des étoiles d'argent sur les toits endormis.",
-    morale:"L'hiver, malgré son froid, apporte la magie du foyer et de la neige.",moraleLabel:"Th\u00e8me"}
+    morale:"L'hiver, malgré son froid, apporte la magie du foyer et de la neige.",moraleLabel:"Th\u00e8me"},
+  {id:"hugo-a-ma-fille",title:"À ma fille",icon:"\u{1F49B}",dur:50,author:"Victor Hugo",recueil:"Les Voix intérieures, 1837",
+    text:"Ô mon enfant, tu vois, je me soumets. Fais comme moi : vis du monde éloigné. Heureux qui peut aimer, et qui dans la nuit noire, tout en cherchant la foi, peut rencontrer l'amour ! Il a du moins la lampe et peut attendre le jour. Heureux ce cœur ! Aimer, c'est la moitié de croire. Marche à travers les bois avec la fleur des champs. Marche à travers les pleurs avec un chant joyeux.",
+    morale:"Père tendre, Hugo conseille à sa fille la simplicité et l'amour.",moraleLabel:"Thème"},
+  {id:"hugo-l-enfance",title:"L'enfance",icon:"\u{1F33C}",dur:40,author:"Victor Hugo",recueil:"Les Contemplations, 1856",
+    text:"L'enfant chantait ; la mère au lit, exsangue, agonisait, beau front dans l'ombre enseveli ; la mort au-dessus d'elle errait dans le nuage ; et j'écoutais ce râle, et j'entendais ce chant. L'enfant avait cinq ans, et, près de la fenêtre, ses rires et ses jeux faisaient un charmant bruit ; et la mère, à côté de cet ange en plein jour, faisait une autre chose : elle mourait d'amour.",
+    morale:"L'enfant joue, ignorant la peine ; la mère l'aime jusqu'à la fin.",moraleLabel:"Thème"},
+  {id:"hugo-sentiers",title:"Sentiers où l'herbe se balance",icon:"\u{1F343}",dur:40,author:"Victor Hugo",recueil:"Les Contemplations, 1856",
+    text:"Sentiers où l'herbe se balance, vallons, coteaux, bois chevelus, pourquoi ce deuil et ce silence ? \u2014 Celui qui venait ne vient plus. Pourquoi personne à ta fenêtre, et pourquoi ton jardin sans fleurs, ô maison ? où donc est ton maître ? \u2014 Je ne sais pas, il est ailleurs.",
+    morale:"L'absence de l'être aimé (Léopoldine) vide la nature de ses couleurs.",moraleLabel:"Thème"}
 ];
 
 /* ════════ TTS NATUREL ════════
@@ -1339,12 +1403,12 @@ function setSelectedVoice(name){
 try{const v=localStorage.getItem('royaume_tts_voice');if(v)_selectedVoiceName=v}catch(e){}
 
 let _recognition=null;
-function startRecording(onResult,onEnd){
+function startRecording(onResult,onEnd,lang){
   const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
   if(!SR){alert('Reconnaissance vocale non supportée. Utilise Safari sur iPhone ou Chrome.');return null}
   if(_recognition){_recognition.stop();_recognition=null}
   _recognition=new SR();
-  _recognition.lang='fr-FR';
+  _recognition.lang=lang||'fr-FR';
   _recognition.continuous=true;
   _recognition.interimResults=true;
   let finalTxt='';
