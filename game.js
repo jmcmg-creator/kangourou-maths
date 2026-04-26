@@ -534,7 +534,7 @@ function renderHome(){
   app.innerHTML=`
     <div class="text-center fade-in mb-4 py-4">
       <h2 class="title" style="font-size:clamp(1.4rem,4vw,2rem)">\u{1F44B} Salut ${esc(profile.name)} !</h2>
-      <p style="color:#7a5a3a;font-size:1rem">Bienvenue dans tes Royaumes</p>
+      <p style="color:#64748b;font-size:1rem">Bienvenue dans tes Royaumes</p>
       <div class="resources-row">
         <div class="resource flame">\u{1F525} ${profile.totalGames||0} parties</div>
         <div class="resource crystal">\u{1F48E} ${totalCristaux}</div>
@@ -557,19 +557,19 @@ function renderHome(){
         <div class="row" style="gap:16px">
           <div style="font-size:3.2rem;flex-shrink:0;filter:drop-shadow(0 4px 8px rgba(0,0,0,.1))">${st.stage.emoji}</div>
           <div class="flex-1">
-            <h3 class="card-title" style="color:#2d2018;font-size:1.15rem">${r.name}</h3>
+            <h3 class="card-title" style="color:#1e293b;font-size:1.15rem">${r.name}</h3>
             <p class="sub" style="color:#5a4830;font-weight:600">${st.stage.name}</p>
             <div class="xp-bar-track" style="margin-top:8px;background:rgba(255,255,255,.5)"><div class="xp-bar-fill" style="width:${xpBar}%"></div></div>
-            <p style="font-size:.7rem;color:#7a5a3a;margin-top:4px;font-weight:600">${data.xp} XP \u2022 \u{1F48E} ${data.cristaux} \u2022 ${data.games} parties</p>
+            <p style="font-size:.7rem;color:#64748b;margin-top:4px;font-weight:600">${data.xp} XP \u2022 \u{1F48E} ${data.cristaux} \u2022 ${data.games} parties</p>
           </div>
           <div class="arrow">\u2192</div>
         </div>
       </div>`;
     }).join('')}
-    <div class="subject-card fade-in" style="border-color:#fbbf24;background:linear-gradient(135deg,#fef9f3,#fff5e6)" onclick="navigate('fichesHome')">
+    <div class="subject-card fade-in" style="border-color:#0ea5e9;background:linear-gradient(135deg,#f0f9ff,#e0f2fe)" onclick="navigate('fichesHome')">
       <div class="subject-emoji bounce">\u{1F4D6}</div>
       <div class="subject-info">
-        <h3 class="subject-name" style="color:#7a3f04">Fiches bilan</h3>
+        <h3 class="subject-name" style="color:#0c4a6e">Fiches bilan</h3>
         <p class="subject-desc">R\u00e9visions par th\u00e8me, g\u00e9n\u00e9r\u00e9es par IA</p>
       </div>
       <div class="arrow">\u2192</div>
@@ -609,8 +609,8 @@ function renderNameAsk(){
   const dict=loadProfilesDict();
   const hasOthers=Object.keys(dict).length>0;
   app.innerHTML=`<div class="card fade-in" style="margin-top:40px">
-    <h2 class="title" style="color:#7a3f04;font-size:1.3rem">${hasOthers?'Nouvel utilisateur':'Comment t\'appelles-tu ?'}</h2>
-    <p style="color:#2d2018;margin-bottom:16px">Ton pr\u00e9nom sera affich\u00e9 dans ton Royaume.</p>
+    <h2 class="title" style="color:#0c4a6e;font-size:1.3rem">${hasOthers?'Nouvel utilisateur':'Comment t\'appelles-tu ?'}</h2>
+    <p style="color:#1e293b;margin-bottom:16px">Ton pr\u00e9nom sera affich\u00e9 dans ton Royaume.</p>
     <input class="name-prompt" id="nameInp" placeholder="Ton pr\u00e9nom" maxlength="20" value="${esc(profile.name||'')}">
     <button class="btn-fire" onclick="setName()">Entrer dans le Royaume \u2192</button>
     ${hasOthers?`<button class="btn-stone mt-3" style="width:100%" onclick="navigate(\u0027profilePicker\u0027)">\u2190 Choisir un profil existant</button>`:''}
@@ -666,13 +666,13 @@ function renderProfilePicker(){
     const cris=(p.cristaux||0)+Object.values(p.royaumes||{}).reduce((s,r)=>s+(r.cristaux||0),0);
     const games=p.totalGames||0;
     const safeName=esc(n).replace(/'/g,'&#x27;');
-    return '<div class="card clickable fade-in" style="animation-delay:'+(i*.06)+'s;border-color:#f7a020" onclick="switchProfile(\u0027'+safeName+'\u0027)"><div class="row"><div style="font-size:2.5rem;flex-shrink:0">\u{1F409}</div><div class="flex-1" style="min-width:0"><h3 class="card-title" style="color:#7a3f04">'+esc(n)+'</h3><p class="sub">\u2728 '+xp+' XP \u2022 \u{1F48E} '+cris+' \u2022 '+games+' parties</p></div><div class="arrow">\u2192</div></div></div>';
+    return '<div class="card clickable fade-in" style="animation-delay:'+(i*.06)+'s;border-color:#f7a020" onclick="switchProfile(\u0027'+safeName+'\u0027)"><div class="row"><div style="font-size:2.5rem;flex-shrink:0">\u{1F409}</div><div class="flex-1" style="min-width:0"><h3 class="card-title" style="color:#0c4a6e">'+esc(n)+'</h3><p class="sub">\u2728 '+xp+' XP \u2022 \u{1F48E} '+cris+' \u2022 '+games+' parties</p></div><div class="arrow">\u2192</div></div></div>';
   }).join('');
   const deleteBtns=names.map(n=>{
     const safeName=esc(n).replace(/'/g,'&#x27;');
     return '<button class="btn-stone btn-small" style="margin:4px;font-size:.7rem" onclick="deleteProfile(\u0027'+safeName+'\u0027)">\u{1F5D1}\uFE0F '+esc(n)+'</button>';
   }).join('');
-  app.innerHTML='<div class="text-center py-6 fade-in"><div style="font-size:3.5rem">\u{1F44B}</div><h2 class="title" style="color:#7a3f04;font-size:1.5rem">Qui joue aujourd\u0027hui ?</h2><p class="sub">Choisis ton profil ou cr\u00e9es-en un nouveau</p></div>'+cards+'<div class="card clickable fade-in" style="border-color:#22c55e;background:linear-gradient(135deg,#dcfce7,#bbf7d0)" onclick="addNewProfile()"><div class="row"><div style="font-size:2.5rem;flex-shrink:0">\u2795</div><div class="flex-1"><h3 class="card-title" style="color:#15803d">Nouvel utilisateur</h3><p class="sub" style="color:#166534">Cr\u00e9er un nouveau profil</p></div></div></div>'+(names.length>0?'<details style="margin-top:24px"><summary style="color:#7a5a3a;font-size:.85rem;cursor:pointer;text-align:center">Supprimer un profil</summary><div style="margin-top:12px;text-align:center">'+deleteBtns+'</div></details>':'');
+  app.innerHTML='<div class="text-center py-6 fade-in"><div style="font-size:3.5rem">\u{1F44B}</div><h2 class="title" style="color:#0c4a6e;font-size:1.5rem">Qui joue aujourd\u0027hui ?</h2><p class="sub">Choisis ton profil ou cr\u00e9es-en un nouveau</p></div>'+cards+'<div class="card clickable fade-in" style="border-color:#22c55e;background:linear-gradient(135deg,#dcfce7,#bbf7d0)" onclick="addNewProfile()"><div class="row"><div style="font-size:2.5rem;flex-shrink:0">\u2795</div><div class="flex-1"><h3 class="card-title" style="color:#15803d">Nouvel utilisateur</h3><p class="sub" style="color:#166534">Cr\u00e9er un nouveau profil</p></div></div></div>'+(names.length>0?'<details style="margin-top:24px"><summary style="color:#64748b;font-size:.85rem;cursor:pointer;text-align:center">Supprimer un profil</summary><div style="margin-top:12px;text-align:center">'+deleteBtns+'</div></details>':'');
 }
 
 async function switchProfile(name){
@@ -724,12 +724,12 @@ function renderMode(){
     <p class="sub">${lv.sub} \u2014 Choisis ton mode</p>
   </div>${MODES.map((m,i)=>`<div class="card clickable fade-in" style="animation-delay:${i*.1}s" onclick="startGame('${m.id}')">
     <div class="row"><div class="mode-icon">${m.icon}</div><div class="flex-1">
-      <h3 class="card-title" style="color:#7a3f04">${m.name}</h3>
+      <h3 class="card-title" style="color:#0c4a6e">${m.name}</h3>
       <p class="sub">${m.desc}</p></div></div></div>`).join('')}
   <div class="card mb-4" style="border-color:#c4b5fd;background:linear-gradient(145deg,rgba(139,92,246,.1),rgba(59,130,246,.1))">
     <h3 class="fredoka" style="color:#c4b5fd;font-size:.85rem;text-transform:uppercase;letter-spacing:.1em;margin-bottom:8px">\u{1F52E} Forge du Dragon (IA)</h3>
-    <p style="color:#2d2018;font-size:.85rem;margin-bottom:6px">Le Dragon forge automatiquement de nouveaux d\u00e9fis quand tu en as besoin. Tu en as actuellement <strong style="color:#c4b5fd">${(profile.aiExercises||[]).filter(e=>e.lv===state.level).length} exercices IA</strong> disponibles pour ce niveau.</p>
-    <p style="color:#9c6f3a;font-size:.75rem;margin-bottom:10px;font-style:italic">\u{1F4A1} Astuce : les exos AI ont des nombres et des sc\u00e9narios diff\u00e9rents \u00e0 chaque g\u00e9n\u00e9ration.</p>
+    <p style="color:#1e293b;font-size:.85rem;margin-bottom:6px">Le Dragon forge automatiquement de nouveaux d\u00e9fis quand tu en as besoin. Tu en as actuellement <strong style="color:#c4b5fd">${(profile.aiExercises||[]).filter(e=>e.lv===state.level).length} exercices IA</strong> disponibles pour ce niveau.</p>
+    <p style="color:#475569;font-size:.75rem;margin-bottom:10px;font-style:italic">\u{1F4A1} Astuce : les exos AI ont des nombres et des sc\u00e9narios diff\u00e9rents \u00e0 chaque g\u00e9n\u00e9ration.</p>
     <button class="btn-stone btn-small" onclick="reqGen('${state.level}',10)" id="genBtn">\u{1F525} Forger 10 nouveaux d\u00e9fis maintenant</button>
     <div id="genStatus" style="margin-top:8px;font-size:.8rem;color:#93c5fd"></div>
   </div>
@@ -810,11 +810,11 @@ function renderGame(){
   if(state.mode==='challenge'&&state.selected===null&&!state.gameOver){
     const tc=state.timer>30?'#22c55e':state.timer>10?'#f7a020':'#ef4444';
     const tp=(state.timer/60)*100;
-    timerHTML=`<div class="mb-4"><div class="row-between" style="font-size:.85rem;margin-bottom:4px"><span class="fredoka" style="color:#7a5a3a">Temps restant</span><span class="fredoka" style="font-weight:700;color:${tc}">${state.timer}s</span></div><div class="timer-track"><div class="timer-fill" style="width:${tp}%;background:${tc}"></div></div></div>`;
+    timerHTML=`<div class="mb-4"><div class="row-between" style="font-size:.85rem;margin-bottom:4px"><span class="fredoka" style="color:#64748b">Temps restant</span><span class="fredoka" style="font-weight:700;color:${tc}">${state.timer}s</span></div><div class="timer-track"><div class="timer-fill" style="width:${tp}%;background:${tc}"></div></div></div>`;
   }
   const streakHTML=state.streak>=2?`<span style="color:#f7a020">\u{1F525} ${state.streak}</span>`:'';
   const levelBadge=state.mode==='progression'?`<span class="badge" style="background:${lv.color}22;color:${lv.color};border-color:${lv.color}44;margin-left:6px">${esc(lv.sub)}</span>`:'';
-  app.innerHTML=`<div style="margin:8px 0"><div class="row-between cinzel" style="font-size:.75rem;color:#9c6f3a;margin-bottom:4px">
+  app.innerHTML=`<div style="margin:8px 0"><div class="row-between cinzel" style="font-size:.75rem;color:#475569;margin-bottom:4px">
     <span>Question ${state.idx+1}/${total}</span>
     <span>Score : ${state.score}/${state.idx+(state.selected!==null?1:0)}</span>
     ${streakHTML}</div>
@@ -826,7 +826,7 @@ function renderGame(){
       <span class="stars">${'\u2605'.repeat(ex.diff)}${'\u2606'.repeat(5-ex.diff)}</span>
       ${levelBadge}
     </div>
-    <p style="font-size:clamp(1rem,2.5vw,1.2rem);color:#2d2018;line-height:1.7;margin-bottom:24px">${esc(ex.q)}</p>
+    <p style="font-size:clamp(1rem,2.5vw,1.2rem);color:#1e293b;line-height:1.7;margin-bottom:24px">${esc(ex.q)}</p>
     <div class="choices-grid">
       ${ex.ch.map((c,i)=>{let cls='choice-btn';if(state.selected!==null){if(i===ex.ans)cls+=' correct';else if(i===state.selected&&i!==ex.ans)cls+=' wrong'}return `<button class="${cls}" ${state.selected!==null?'disabled':''} onclick="selectAnswer(${i})"><span class="choice-letter">${String.fromCharCode(65+i)}.</span>${esc(c)}</button>`}).join('')}
     </div>
@@ -884,8 +884,8 @@ function showExplanation(ex,correct){
     <div class="row gap-2 mb-2"><span style="font-size:1.5rem">${correct?'\u2705':'\u274C'}</span>
     <h4 class="fredoka" style="font-size:1.1rem;font-weight:700;color:${correct?'#15803d':'#b91c1c'};margin:0">${correct?'Excellent, sorci\u00e8re !':'Pas cette fois\u2026'}</h4>
     ${gainHTML}</div>
-    <p style="color:#2d2018;margin-bottom:12px;line-height:1.6;font-weight:600">${esc(ex.se)}</p>
-    ${!correct?`<div class="error-box"><p style="font-size:.9rem;margin:0;line-height:1.5"><span class="error-label">\u{1F914} L'erreur probable : </span><span style="color:#2d2018">${esc(ex.pourquoi)}</span></p></div>`:''}
+    <p style="color:#1e293b;margin-bottom:12px;line-height:1.6;font-weight:600">${esc(ex.se)}</p>
+    ${!correct?`<div class="error-box"><p style="font-size:.9rem;margin:0;line-height:1.5"><span class="error-label">\u{1F914} L'erreur probable : </span><span style="color:#1e293b">${esc(ex.pourquoi)}</span></p></div>`:''}
     <a class="detail-link mt-3" style="display:inline-block;margin-top:10px" onclick="toggleDetail()">${state.detailOpen?'Masquer':'Voir'} la m\u00e9thode pas \u00e0 pas \u2192</a>
     <div id="detailPanel" class="${state.detailOpen?'':'hidden'}">
       <div class="pedago-box">
@@ -896,7 +896,7 @@ function showExplanation(ex,correct){
         <p style="font-size:.9rem;margin:0;line-height:1.55"><span class="tip-label">\u{1F4A1} \u00c0 retenir : </span><span class="tip-text">${esc(ex.regle)}</span></p>
       </div>
       ${ex.exemple?`<div class="pedago-box" style="background:linear-gradient(135deg,#dbeafe,#bfdbfe);border-color:rgba(59,130,246,.35)"><div class="pedago-title" style="color:#1e40af">\u{1F4DA} Exemple similaire</div><p style="color:#1e3a8a;font-size:.9rem;line-height:1.55;margin:0">${esc(ex.exemple)}</p></div>`:''}
-      <p style="font-size:.75rem;color:#7a3f04;margin-top:10px;font-weight:600">Comp\u00e9tence : ${esc(ex.sk)}</p>
+      <p style="font-size:.75rem;color:#0c4a6e;margin-top:10px;font-weight:600">Comp\u00e9tence : ${esc(ex.sk)}</p>
     </div>
     <button class="btn-fire mt-6" onclick="nextQuestion()">Question suivante \u2192</button>
   </div>`;
@@ -1024,16 +1024,16 @@ function renderResults(){
   // \u00c9volution
   let evolveHTML='';
   if(d.royaumeEvolved&&d.newRoyaumeStage){
-    evolveHTML=`<div class="card fade-in" style="background:linear-gradient(135deg,#fef3c7,#fde68a);border-color:#fbbf24;text-align:center">
+    evolveHTML=`<div class="card fade-in" style="background:linear-gradient(135deg,#fef3c7,#fde68a);border-color:#0ea5e9;text-align:center">
       <div style="font-size:5rem" class="bounce">${d.newRoyaumeStage.emoji}</div>
-      <h3 class="fredoka" style="color:#7a3f04;font-size:1.3rem;margin-top:8px">\u2728 \u00c9VOLUTION dans ${d.royaumeName} ! \u2728</h3>
+      <h3 class="fredoka" style="color:#0c4a6e;font-size:1.3rem;margin-top:8px">\u2728 \u00c9VOLUTION dans ${d.royaumeName} ! \u2728</h3>
       <p style="color:#451a03;margin-top:4px;font-weight:600">Ta mascotte est devenue <strong>${d.newRoyaumeStage.name}</strong> !</p>
-      <p style="color:#7a3f04;font-size:.9rem;margin-top:4px">${d.newRoyaumeStage.desc}</p>
+      <p style="color:#0c4a6e;font-size:.9rem;margin-top:4px">${d.newRoyaumeStage.desc}</p>
     </div>`;
   } else if(d.evolved&&d.newStage){
-    evolveHTML=`<div class="card fade-in" style="background:linear-gradient(135deg,#fef3c7,#fde68a);border-color:#fbbf24;text-align:center">
+    evolveHTML=`<div class="card fade-in" style="background:linear-gradient(135deg,#fef3c7,#fde68a);border-color:#0ea5e9;text-align:center">
       <div style="font-size:4rem" class="bounce">${d.newStage.emoji}</div>
-      <h3 class="fredoka" style="color:#7a3f04;font-size:1.2rem;margin-top:8px">\u2728 \u00c9volution g\u00e9n\u00e9rale ! \u2728</h3>
+      <h3 class="fredoka" style="color:#0c4a6e;font-size:1.2rem;margin-top:8px">\u2728 \u00c9volution g\u00e9n\u00e9rale ! \u2728</h3>
       <p style="color:#451a03;margin-top:4px">Ton dragonnet maths est devenu <strong>${d.newStage.name}</strong> !</p>
     </div>`;
   }
@@ -1052,12 +1052,12 @@ function renderResults(){
     </div>`;
   }
   const badgesHTML=(d.newBadges&&d.newBadges.length>0)?`<div class="card fade-in" style="background:linear-gradient(145deg,#fff5e1,#ffeacc);border-color:#f7a020">
-    <h3 class="fredoka" style="color:#7a3f04;font-size:.9rem;text-transform:uppercase;letter-spacing:.1em">\u2728 Nouveaux badges !</h3>
+    <h3 class="fredoka" style="color:#0c4a6e;font-size:.9rem;text-transform:uppercase;letter-spacing:.1em">\u2728 Nouveaux badges !</h3>
     <div class="badge-grid">${d.newBadges.map(b=>`<div class="badge-card unlocked pulse"><div class="badge-ic">${esc(b.icon)}</div><div class="badge-name">${esc(b.name)}</div><div class="badge-desc">${esc(b.desc)}</div></div>`).join('')}</div></div>`:'';
-  const questHTML=d.questDone?`<div class="card fade-in" style="background:linear-gradient(135deg,#ede9fe,#ddd6fe);border-color:#a78bfa"><div class="text-center"><div style="font-size:2.5rem">\u{1F3AF}</div><h3 class="fredoka" style="color:#5b21b6;margin-top:6px">Qu\u00eate journali\u00e8re r\u00e9ussie !</h3><p style="color:#2d2018;margin-top:4px">Tu gagnes \u{1F48E} +${d.questReward} cristaux !</p></div></div>`:'';
+  const questHTML=d.questDone?`<div class="card fade-in" style="background:linear-gradient(135deg,#ede9fe,#ddd6fe);border-color:#a78bfa"><div class="text-center"><div style="font-size:2.5rem">\u{1F3AF}</div><h3 class="fredoka" style="color:#5b21b6;margin-top:6px">Qu\u00eate journali\u00e8re r\u00e9ussie !</h3><p style="color:#1e293b;margin-top:4px">Tu gagnes \u{1F48E} +${d.questReward} cristaux !</p></div></div>`:'';
 
   app.innerHTML=`<div class="text-center py-8 fade-in"><div class="huge-icon">${emoji}</div>
-    <h2 class="title" style="font-size:clamp(1.3rem,3.5vw,2rem);color:#7a3f04">${title}</h2><p style="color:#7a5a3a">${sub}</p></div>
+    <h2 class="title" style="font-size:clamp(1.3rem,3.5vw,2rem);color:#0c4a6e">${title}</h2><p style="color:#64748b">${sub}</p></div>
   <div class="card mb-4"><div class="stats-grid">
     <div class="stat-card"><div class="stat-val" style="color:#f7a020">${d.score}/${d.total}</div><div class="stat-label">Bonnes r\u00e9ponses</div></div>
     <div class="stat-card"><div class="stat-val" style="color:${pct>=60?'#22c55e':'#ef4444'}">${pct}%</div><div class="stat-label">R\u00e9ussite</div></div>
@@ -1093,7 +1093,7 @@ function renderRoyaume(){
   const stage=STAGES[stageIdx];
   app.innerHTML=`<div class="text-center py-6 fade-in">
     <div style="font-size:3rem">\u2728</div>
-    <h2 class="title sparkle-anim" style="color:#7a3f04;font-size:1.8rem">Mon Royaume</h2>
+    <h2 class="title sparkle-anim" style="color:#0c4a6e;font-size:1.8rem">Mon Royaume</h2>
     <p class="sub">${esc(profile.name)}, voici ta progression</p></div>
   <div class="dragon-card">
     <div class="dragon-emoji float">${stage.emoji}</div>
@@ -1103,7 +1103,7 @@ function renderRoyaume(){
   <div class="card mb-4"><div class="stats-grid">
     <div class="stat-card"><div class="stat-val" style="color:#f7a020">${profile.totalGames}</div><div class="stat-label">Parties</div></div>
     <div class="stat-card"><div class="stat-val" style="color:#22c55e">${profile.totalCorrect}</div><div class="stat-label">Bonnes r\u00e9ponses</div></div>
-    <div class="stat-card"><div class="stat-val" style="color:#7a3f04">${pct}%</div><div class="stat-label">R\u00e9ussite</div></div>
+    <div class="stat-card"><div class="stat-val" style="color:#0c4a6e">${pct}%</div><div class="stat-label">R\u00e9ussite</div></div>
   </div>
   <div class="stats-grid mt-3">
     <div class="stat-card"><div class="stat-val" style="color:#fb923c">${profile.bestStreak}</div><div class="stat-label">S\u00e9rie record \u{1F525}</div></div>
@@ -1128,7 +1128,7 @@ function renderRoyaume(){
 function renderCollection(){
   app.innerHTML=`<div class="text-center py-6 fade-in">
     <div style="font-size:3rem">\u{1F409}</div>
-    <h2 class="title sparkle-anim" style="color:#7a3f04;font-size:1.6rem">Collection de Dragonnets</h2>
+    <h2 class="title sparkle-anim" style="color:#0c4a6e;font-size:1.6rem">Collection de Dragonnets</h2>
     <p class="sub">Gagne des bonnes r\u00e9ponses pour tous les d\u00e9bloquer !</p></div>
   <div class="card">
     <div class="dragonnet-grid">${DRAGONNETS.map(dg=>{
@@ -1161,23 +1161,23 @@ function renderParent(){
   <div class="card mb-4" style="border-color:#c4b5fd"><div class="stats-grid">
     <div class="stat-card"><div class="stat-val" style="color:#c4b5fd">${profile.totalGames}</div><div class="stat-label">Parties</div></div>
     <div class="stat-card"><div class="stat-val" style="color:${pct>=60?'#22c55e':'#ef4444'}">${pct}%</div><div class="stat-label">R\u00e9ussite</div></div>
-    <div class="stat-card"><div class="stat-val" style="color:#7a3f04">${totalMinutes}m</div><div class="stat-label">Temps total</div></div>
+    <div class="stat-card"><div class="stat-val" style="color:#0c4a6e">${totalMinutes}m</div><div class="stat-label">Temps total</div></div>
   </div></div>
   ${weak.length>0?`<div class="card mb-4"><h3 class="fredoka" style="font-size:.85rem;color:#ef4444;margin-bottom:12px;letter-spacing:.1em;text-transform:uppercase">\u26A0\uFE0F Domaines \u00e0 travailler</h3>
   ${weak.map(([c,s])=>{const p=Math.round(s.cor/s.att*100);return `<div class="weak-cat"><div><div style="font-weight:700">${esc(c)}</div><div style="font-size:.75rem">${s.cor}/${s.att} bonnes r\u00e9ponses</div></div><div style="color:#b91c1c;font-weight:700;font-family:'Cinzel',Georgia,serif;flex-shrink:0">${p}%</div></div>`}).join('')}
-  <p style="font-size:.8rem;color:#9c6f3a;margin-top:8px;font-style:italic">Conseil : lancez le \u00ab Mode adaptatif \u00bb pour travailler ces domaines.</p></div>`:''}
+  <p style="font-size:.8rem;color:#475569;margin-top:8px;font-style:italic">Conseil : lancez le \u00ab Mode adaptatif \u00bb pour travailler ces domaines.</p></div>`:''}
   ${strong.length>0?`<div class="card mb-4"><h3 class="fredoka" style="font-size:.85rem;color:#22c55e;margin-bottom:12px;letter-spacing:.1em;text-transform:uppercase">\u2B50 Points forts</h3>
   ${strong.map(([c,s])=>{const p=Math.round(s.cor/s.att*100);return `<div class="strong-cat"><div><div style="font-weight:700">${esc(c)}</div><div style="font-size:.75rem">${s.cor}/${s.att} bonnes r\u00e9ponses</div></div><div style="color:#15803d;font-weight:700;font-family:'Cinzel',Georgia,serif;flex-shrink:0">${p}%</div></div>`}).join('')}</div>`:''}
   ${failedEx.length>0?`<div class="card mb-4"><h3 class="fredoka" style="font-size:.85rem;color:#f7a020;margin-bottom:12px;letter-spacing:.1em;text-transform:uppercase">Exercices \u00e0 refaire ensemble</h3>
   <div class="recap-scroll">${failedEx.map(e=>`<div class="recap-item"><span class="recap-icon">\u{1F4DD}</span><div class="flex-1" style="min-width:0"><p class="recap-q"><strong>${esc(e.cat)}</strong> \u2014 ${esc(e.q.length>120?e.q.slice(0,120)+'\u2026':e.q)}</p><p class="recap-answer">R\u00e9ponse : ${esc(e.ch[e.ans])}</p></div></div>`).join('')}</div></div>`:''}
   ${recentSessions.length>0?`<div class="card mb-4"><h3 class="fredoka" style="font-size:.85rem;color:#f7a020;margin-bottom:12px;letter-spacing:.1em;text-transform:uppercase">10 derni\u00e8res sessions</h3>
-  ${recentSessions.map(s=>{const p=s.total>0?Math.round(s.score/s.total*100):0;const lv=LEVELS.find(l=>l.id===s.level);const dt=new Date(s.date);const dtStr=dt.toLocaleDateString('fr-FR',{day:'2-digit',month:'2-digit'})+' '+dt.toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'});return `<div class="session-item"><div><div style="color:#2d2018;font-weight:600">${lv?esc(lv.icon)+' '+esc(lv.sub):esc(s.level)} \u00b7 ${esc(s.mode)}</div><div style="font-size:.7rem;color:#7a5a3a">${dtStr} \u00b7 ${Math.round((s.duration||0)/60)}min</div></div><div style="color:${p>=60?'#15803d':'#b91c1c'};font-weight:700;font-family:'Cinzel',Georgia,serif;flex-shrink:0">${s.score}/${s.total}</div></div>`}).join('')}</div>`:''}
+  ${recentSessions.map(s=>{const p=s.total>0?Math.round(s.score/s.total*100):0;const lv=LEVELS.find(l=>l.id===s.level);const dt=new Date(s.date);const dtStr=dt.toLocaleDateString('fr-FR',{day:'2-digit',month:'2-digit'})+' '+dt.toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'});return `<div class="session-item"><div><div style="color:#1e293b;font-weight:600">${lv?esc(lv.icon)+' '+esc(lv.sub):esc(s.level)} \u00b7 ${esc(s.mode)}</div><div style="font-size:.7rem;color:#64748b">${dtStr} \u00b7 ${Math.round((s.duration||0)/60)}min</div></div><div style="color:${p>=60?'#15803d':'#b91c1c'};font-weight:700;font-family:'Cinzel',Georgia,serif;flex-shrink:0">${s.score}/${s.total}</div></div>`}).join('')}</div>`:''}
   <div class="card mb-4" style="border-color:#c4b5fd"><h3 class="fredoka" style="font-size:.85rem;color:#c4b5fd;margin-bottom:8px">\u{1F517} Sync sur un autre appareil</h3>
-  <p style="color:#2d2018;font-size:.85rem;margin-bottom:12px;line-height:1.5">Ouvrez ce lien sur l'autre téléphone/tablette pour récupérer le Royaume de ${esc(profile.name)}. <strong>Ne le partagez avec personne d'autre</strong> (équivaut à un mot de passe).</p>
+  <p style="color:#1e293b;font-size:.85rem;margin-bottom:12px;line-height:1.5">Ouvrez ce lien sur l'autre téléphone/tablette pour récupérer le Royaume de ${esc(profile.name)}. <strong>Ne le partagez avec personne d'autre</strong> (équivaut à un mot de passe).</p>
   <button class="btn-stone btn-small" onclick="copySyncLink()">\u{1F4CB} Copier le lien</button>
   <button class="btn-stone btn-small" onclick="shareSyncLink()" style="margin-left:8px">\u{1F4F2} Partager (WhatsApp...)</button>
   <div id="syncMsg" style="margin-top:8px;font-size:.75rem;color:#22c55e"></div></div>
-  <div class="card mb-4" style="border-color:#573c1e"><h3 class="fredoka" style="font-size:.85rem;color:#9c6f3a;margin-bottom:8px">Donn\u00e9es</h3>
+  <div class="card mb-4" style="border-color:#573c1e"><h3 class="fredoka" style="font-size:.85rem;color:#475569;margin-bottom:8px">Donn\u00e9es</h3>
   <button class="btn-stone btn-small" onclick="exportData()">\u{1F4E4} Exporter (JSON)</button>
   <button class="btn-stone btn-small" onclick="resetData()" style="margin-top:8px;background:linear-gradient(135deg,#7f1d1d,#991b1b)">\u{1F5D1}\uFE0F R\u00e9initialiser</button></div>
   <button class="btn-stone" onclick="navigate('home')">\u2190 Retour</button>`;
@@ -1220,28 +1220,40 @@ function resetData(){
 const FABLES=[
   {id:"corbeau-renard",title:"Le Corbeau et le Renard",icon:"\u{1F98A}",dur:75,
     text:"Maître Corbeau, sur un arbre perché, tenait en son bec un fromage. Maître Renard, par l'odeur alléché, lui tint à peu près ce langage : \"Hé ! bonjour, Monsieur du Corbeau. Que vous êtes joli ! que vous me semblez beau ! Sans mentir, si votre ramage se rapporte à votre plumage, vous êtes le Phénix des hôtes de ces bois.\" À ces mots le Corbeau ne se sent pas de joie ; et pour montrer sa belle voix, il ouvre un large bec, laisse tomber sa proie. Le Renard s'en saisit, et dit : \"Mon bon Monsieur, apprenez que tout flatteur vit aux dépens de celui qui l'écoute.\"",
-    morale:"Tout flatteur vit aux dépens de celui qui l'écoute."},
+    morale:"Tout flatteur vit aux dépens de celui qui l'écoute.",author:"Jean de La Fontaine",recueil:"Fables, 1668"},
   {id:"lievre-tortue",title:"Le Lièvre et la Tortue",icon:"\u{1F422}",dur:60,
     text:"Rien ne sert de courir ; il faut partir à point. Le Lièvre et la Tortue en sont un témoignage. Gageons, dit celle-ci, que vous n'atteindrez point sitôt que moi ce but. Sitôt ? Êtes-vous sage ? répartit l'animal léger. La Tortue partit. Elle s'évertue, elle se hâte avec lenteur. Le Lièvre cependant méprise une telle victoire, tient la gageure à peu de gloire. Quand il voit que l'autre touche presque au bout de la carrière, il partit comme un trait ; mais les élans qu'il fit furent vains : la Tortue arriva la première.",
-    morale:"Rien ne sert de courir ; il faut partir à point."},
+    morale:"Rien ne sert de courir ; il faut partir à point.",author:"Jean de La Fontaine",recueil:"Fables, 1668"},
   {id:"cigale-fourmi",title:"La Cigale et la Fourmi",icon:"\u{1F41C}",dur:55,
     text:"La Cigale, ayant chanté tout l'été, se trouva fort dépourvue quand la bise fut venue : pas un seul petit morceau de mouche ou de vermisseau. Elle alla crier famine chez la Fourmi sa voisine, la priant de lui prêter quelque grain pour subsister jusqu'à la saison nouvelle. La Fourmi n'est pas prêteuse : c'est là son moindre défaut. \"Que faisiez-vous au temps chaud ? dit-elle à cette emprunteuse. Nuit et jour à tout venant je chantais, ne vous déplaise. Vous chantiez ? j'en suis fort aise. Eh bien ! dansez maintenant.\"",
-    morale:"Il faut prévoir le futur, pas seulement profiter du présent."},
+    morale:"Il faut prévoir le futur, pas seulement profiter du présent.",author:"Jean de La Fontaine",recueil:"Fables, 1668"},
   {id:"loup-agneau",title:"Le Loup et l'Agneau",icon:"\u{1F40F}",dur:60,
     text:"La raison du plus fort est toujours la meilleure. Un Agneau se désaltérait dans le courant d'une onde pure. Un Loup survient à jeun qui cherchait aventure, et que la faim en ces lieux attirait. \"Qui te rend si hardi de troubler mon breuvage ? dit cet animal plein de rage. Tu seras châtié de ta témérité.\" \"Sire, répond l'Agneau, que Votre Majesté ne se mette pas en colère ; mais plutôt qu'elle considère que je me vas désaltérant dans le courant, plus de vingt pas au-dessous d'Elle.\" Là-dessus, au fond des forêts le Loup l'emporte, et puis le mange, sans autre forme de procès.",
-    morale:"La raison du plus fort est toujours la meilleure."},
+    morale:"La raison du plus fort est toujours la meilleure.",author:"Jean de La Fontaine",recueil:"Fables, 1668"},
   {id:"grenouille-boeuf",title:"La Grenouille qui se veut faire aussi grosse que le Bœuf",icon:"\u{1F438}",dur:50,
     text:"Une Grenouille vit un Bœuf qui lui sembla de belle taille. Elle, qui n'était pas grosse en tout comme un œuf, envieuse, s'étend, et s'enfle, et se travaille pour égaler l'animal en grosseur, disant : \"Regardez bien, ma sœur ; est-ce assez ? dites-moi ; n'y suis-je point encore ? Nenni. M'y voici donc ? Point du tout. M'y voilà ? Vous n'en approchez point.\" La chétive pécore s'enfla si bien qu'elle creva.",
-    morale:"Le monde est plein de gens qui ne sont pas plus sages : tout petit prince a des ambassadeurs."},
+    morale:"Le monde est plein de gens qui ne sont pas plus sages : tout petit prince a des ambassadeurs.",author:"Jean de La Fontaine",recueil:"Fables, 1668"},
   {id:"renard-raisins",title:"Le Renard et les Raisins",icon:"\u{1F347}",dur:35,
     text:"Certain Renard Gascon, d'autres disent Normand, mourant presque de faim, vit au haut d'une treille des Raisins mûrs apparemment, et couverts d'une peau vermeille. Le galand en eût fait volontiers un repas ; mais comme il n'y pouvait atteindre : \"Ils sont trop verts, dit-il, et bons pour des goujats.\" Fit-il pas mieux que de se plaindre ?",
-    morale:"On méprise ce qu'on ne peut obtenir."},
+    morale:"On méprise ce qu'on ne peut obtenir.",author:"Jean de La Fontaine",recueil:"Fables, 1668"},
   {id:"chene-roseau",title:"Le Chêne et le Roseau",icon:"\u{1F33F}",dur:65,
     text:"Le Chêne un jour dit au Roseau : \"Vous avez bien sujet d'accuser la nature ; un roitelet pour vous est un pesant fardeau ; le moindre vent qui d'aventure fait rider la face de l'eau, vous oblige à baisser la tête.\" Le vent redouble ses efforts, et fait si bien qu'il déracine celui de qui la tête au ciel était voisine, et dont les pieds touchaient à l'empire des morts.",
-    morale:"Plier sait mieux résister que rester rigide."},
+    morale:"Plier sait mieux résister que rester rigide.",author:"Jean de La Fontaine",recueil:"Fables, 1668"},
   {id:"lion-rat",title:"Le Lion et le Rat",icon:"\u{1F981}",dur:55,
     text:"Il faut, autant qu'on peut, obliger tout le monde : on a souvent besoin d'un plus petit que soi. De cette vérité deux fables feront foi. Entre les pattes d'un Lion un Rat sortit assez à l'étourdie. Le Roi des animaux, en cette occasion, montra ce qu'il était, et lui donna la vie. Quelque temps après, ce Lion fut pris dans des rets, dont ses rugissements ne le purent défaire. Sire Rat accourut, et fit tant par ses dents qu'une maille rongée emporta tout l'ouvrage.",
-    morale:"Patience et longueur de temps font plus que force ni que rage."}
+    morale:"Patience et longueur de temps font plus que force ni que rage.",author:"Jean de La Fontaine",recueil:"Fables, 1668"},
+  {id:"hugo-demain-aube",title:"Demain, dès l'aube",icon:"\u{1F305}",dur:60,author:"Victor Hugo",recueil:"Les Contemplations, 1856",
+    text:"Demain, dès l'aube, à l'heure où blanchit la campagne, je partirai. Vois-tu, je sais que tu m'attends. J'irai par la forêt, j'irai par la montagne. Je ne puis demeurer loin de toi plus longtemps. Je marcherai les yeux fixés sur mes pensées, sans rien voir au-dehors, sans entendre aucun bruit, seul, inconnu, le dos courbé, les mains croisées, triste, et le jour pour moi sera comme la nuit. Je ne regarderai ni l'or du soir qui tombe, ni les voiles au loin descendant vers Harfleur, et quand j'arriverai, je mettrai sur ta tombe un bouquet de houx vert et de bruyère en fleur.",
+    morale:"Hommage de Victor Hugo à sa fille Léopoldine, noyée à 19 ans.",moraleLabel:"Th\u00e8me"},
+  {id:"hugo-mes-deux-filles",title:"Mes deux filles",icon:"\u{1F33C}",dur:45,author:"Victor Hugo",recueil:"Les Contemplations, 1856",
+    text:"Dans le frais clair-obscur du soir charmant qui tombe, l'une pareille au cygne et l'autre à la colombe, belles, et toutes deux joyeuses, ô douceur ! voyez, la grande sœur et la petite sœur sont assises au seuil du jardin, et sur elles un bouquet d'œillets blancs aux longues tiges frêles, dans une urne de marbre agité par le vent, se penche, et les regarde, immobile et vivant, et frissonne dans l'ombre, et semble, au bord du vase, un vol de papillons arrêté dans l'extase.",
+    morale:"Tendresse paternelle pour ses deux filles, Léopoldine et Adèle.",moraleLabel:"Th\u00e8me"},
+  {id:"hugo-lorsque-enfant",title:"Lorsque l'enfant paraît",icon:"\u{1F476}",dur:50,author:"Victor Hugo",recueil:"Les Feuilles d'Automne, 1831",
+    text:"Lorsque l'enfant paraît, le cercle de famille applaudit à grands cris ; son doux regard qui brille fait briller tous les yeux, et les plus tristes fronts, les plus souillés peut-être, se dérident soudain à voir l'enfant paraître, innocent et joyeux. Soit que juin ait verdi mon seuil, ou que novembre fasse autour d'un grand feu vacillant dans la chambre se rapprocher les bancs, l'enfant vient, on rit, on crie, on l'appelle, et la mère tremble en le voyant marcher.",
+    morale:"L'arrivée d'un enfant illumine et unit toute la famille.",moraleLabel:"Th\u00e8me"},
+  {id:"hugo-bonhomme-hiver",title:"Le Bonhomme Hiver",icon:"\u26C4",dur:35,author:"Victor Hugo",recueil:"L'Art d'\u00eatre grand-p\u00e8re, 1877",
+    text:"Le bonhomme hiver, vieux roi blanc, est venu. Le sapin a maigri. Le bouleau s'est noirci. Le vent souffle, l'eau gèle, et le moineau transi cherche un grain dans la neige. Janvier soufflait, faisant grelotter les hameaux. Au feu, vite, à l'âtre ! Et que les enfants chantent en battant des mains, et que rie le grand-père, car le bonhomme hiver, en passant, sème aussi des étoiles d'argent sur les toits endormis.",
+    morale:"L'hiver, malgré son froid, apporte la magie du foyer et de la neige.",moraleLabel:"Th\u00e8me"}
 ];
 
 /* ════════ TTS NATUREL ════════
@@ -1392,12 +1404,12 @@ function renderPoesieFable(){
   app.innerHTML=`<div class="text-center py-4 fade-in">
     <div style="font-size:3rem">${f.icon}</div>
     <h2 class="title" style="color:#5b21b6">${f.title}</h2>
-    <p class="sub">de Jean de La Fontaine</p>
+    <p class="sub">de ${esc(f.author||'Jean de La Fontaine')}${f.recueil?' \u2014 '+esc(f.recueil):''}</p>
   </div>
   <div class="card mb-4" style="border-color:#c4b5fd">
-    <div style="font-style:italic;color:#2d2018;line-height:1.7;font-size:1.05rem;font-weight:500" id="fableText">${f.text}</div>
+    <div style="font-style:italic;color:#1e293b;line-height:1.7;font-size:1.05rem;font-weight:500" id="fableText">${f.text}</div>
     <div class="divider"></div>
-    <div style="background:#fef3c7;padding:10px 14px;border-radius:10px;border-left:3px solid #fbbf24;color:#7a3f04;font-weight:600">\u{1F4A1} Morale : <em>${f.morale}</em></div>
+    ${f.morale?`<div style="background:#fef3c7;padding:10px 14px;border-radius:10px;border-left:3px solid #0ea5e9;color:#0c4a6e;font-weight:600">\u{1F4A1} ${esc(f.moraleLabel||'Morale')} : <em>${esc(f.morale)}</em></div>`:''}
   </div>
   <div class="card mb-4" style="border-color:#a78bfa">
     <h3 class="card-title" style="color:#5b21b6;margin-bottom:12px">\u{1F3A7} Écoute la fable</h3>
@@ -1427,7 +1439,7 @@ function populateVoicePicker(){
   ensureVoicesLoaded(()=>{
     const voices=listFrenchVoices();
     if(voices.length===0){
-      wrap.innerHTML='<p class="sub" style="color:#9c6f3a;font-size:.8rem">Aucune voix française trouvée sur cet appareil.</p>';
+      wrap.innerHTML='<p class="sub" style="color:#475569;font-size:.8rem">Aucune voix française trouvée sur cet appareil.</p>';
       return;
     }
     const auto=pickBestFrenchVoice();
@@ -1437,7 +1449,7 @@ function populateVoicePicker(){
       const local=v.localService?'':' \u2601\uFE0F';
       return '<option value="'+esc(v.name)+'"'+(v.name===sel?' selected':'')+'>'+esc(v.name)+tier+local+' ('+esc(v.lang)+')</option>';
     }).join('');
-    wrap.innerHTML='<label style="font-size:.8rem;color:#7a5a3a;display:block;margin-bottom:4px">Voix :</label><select onchange="setSelectedVoice(this.value)" style="width:100%;padding:8px;border-radius:8px;border:1px solid #c4b5fd;background:#fef9f3;color:#2d2018;font-family:inherit;font-size:.9rem">'+opts+'</select><p class="sub" style="font-size:.7rem;margin-top:4px;color:#9c6f3a">\u{1F3C5} = Siri \u00b7 \u2728 = Premium/Enhanced \u00b7 \u2601\uFE0F = cloud</p>';
+    wrap.innerHTML='<label style="font-size:.8rem;color:#64748b;display:block;margin-bottom:4px">Voix :</label><select onchange="setSelectedVoice(this.value)" style="width:100%;padding:8px;border-radius:8px;border:1px solid #c4b5fd;background:#f0f9ff;color:#1e293b;font-family:inherit;font-size:.9rem">'+opts+'</select><p class="sub" style="font-size:.7rem;margin-top:4px;color:#475569">\u{1F3C5} = Siri \u00b7 \u2728 = Premium/Enhanced \u00b7 \u2601\uFE0F = cloud</p>';
   });
 }
 // Auto-populate when poesieFable screen renders
@@ -1468,7 +1480,7 @@ function togglePoesieRec(){
       window._poesieRecording=false;
       btn.textContent='\u{1F504} Recommencer';
       btn.classList.remove('pulse');
-      if(!finalTxt||finalTxt.trim().length<5){res.innerHTML='<p style="color:#7a3f04;margin-top:10px">Pas de voix détectée. Réessaie !</p>';return}
+      if(!finalTxt||finalTxt.trim().length<5){res.innerHTML='<p style="color:#0c4a6e;margin-top:10px">Pas de voix détectée. Réessaie !</p>';return}
       const cmp=compareTexts(f.text,finalTxt);
       // Save score
       if(!profile.poesieStats)profile.poesieStats={};
@@ -1483,7 +1495,7 @@ function togglePoesieRec(){
       res.innerHTML=`<div class="divider"></div>
         <div class="card" style="background:${cmp.score>=70?'#dcfce7':cmp.score>=40?'#fef3c7':'#fee2e2'};border-color:${cmp.score>=70?'#22c55e':cmp.score>=40?'#fbbf24':'#ef4444'}">
           <h3 class="card-title">${cmp.score>=80?'\u{1F389} Excellent !':cmp.score>=60?'\u{1F44D} Bien joué !':cmp.score>=40?'\u{1F4AA} Continue !':'\u{1F4DA} Réécoute et retente'}</h3>
-          <p style="font-size:1.4rem;font-weight:700;color:#7a3f04;margin:8px 0">${cmp.score}% \u2014 ${cmp.matched}/${cmp.total} mots</p>
+          <p style="font-size:1.4rem;font-weight:700;color:#0c4a6e;margin:8px 0">${cmp.score}% \u2014 ${cmp.matched}/${cmp.total} mots</p>
           <p class="sub">+${xpGain} XP gagnés \u2728</p>
           <div class="divider"></div>
           <p class="sub mb-2">Mots reconnus (en vert) :</p>
@@ -1497,7 +1509,7 @@ function togglePoesieRec(){
 function renderFichesHome(){
   app.innerHTML=`<div class="text-center py-6 fade-in">
     <div style="font-size:3.5rem">\u{1F4D6}</div>
-    <h2 class="title" style="color:#7a3f04;font-size:1.6rem">Fiches Bilan</h2>
+    <h2 class="title" style="color:#0c4a6e;font-size:1.6rem">Fiches Bilan</h2>
     <p class="sub">Choisis un domaine pour r\u00e9viser</p>
   </div>
   ${SUBJECTS.filter(s=>!s.isPoetry&&Array.isArray(s.levels)&&s.levels.length>0).map((s,i)=>`<div class="subject-card fade-in" style="border-color:${s.color};animation-delay:${i*.1}s" onclick="navigate('fichesSubject',{subjectId:'${s.id}'})">
@@ -1618,7 +1630,7 @@ function renderFichesView(){
     ${(f.vocabulaire&&f.vocabulaire.length>0)?`<div class="fiche-section"><h3>\u{1F4DA} Vocabulaire</h3>${f.vocabulaire.map(v=>`<div class="fiche-mini"><b>${esc(v.mot)}</b> : ${esc(v.definition)}</div>`).join('')}</div>`:''}
     ${f.anecdote?`<div class="fiche-anecdote">\u{1F4A1} <b>Le savais-tu ?</b> ${esc(f.anecdote)}</div>`:''}
     ${f.retiens_bien?`<div class="fiche-retiens">\u{1F31F} ${esc(f.retiens_bien)}</div>`:''}
-    ${(f.quiz_rapide&&f.quiz_rapide.length>0)?`<div class="fiche-section"><h3>\u{1F3AF} Quiz \u00e9clair</h3>${f.quiz_rapide.map((q,i)=>`<div class="fiche-mini" onclick="this.querySelector('span').classList.toggle('hidden')" style="cursor:pointer"><b>Q${i+1} :</b> ${esc(q.q)}<br><span class="hidden" style="color:#15803d;font-weight:600">\u279c ${esc(q.r)}</span><br><small style="color:#7a3f04">(clique pour voir la r\u00e9ponse)</small></div>`).join('')}</div>`:''}
+    ${(f.quiz_rapide&&f.quiz_rapide.length>0)?`<div class="fiche-section"><h3>\u{1F3AF} Quiz \u00e9clair</h3>${f.quiz_rapide.map((q,i)=>`<div class="fiche-mini" onclick="this.querySelector('span').classList.toggle('hidden')" style="cursor:pointer"><b>Q${i+1} :</b> ${esc(q.q)}<br><span class="hidden" style="color:#15803d;font-weight:600">\u279c ${esc(q.r)}</span><br><small style="color:#0c4a6e">(clique pour voir la r\u00e9ponse)</small></div>`).join('')}</div>`:''}
   </div>
   <div class="btn-row">
     <button class="btn-stone" onclick="loadFiche(state.ficheTopic.id,state.ficheTopic.title)">\u{1F504} R\u00e9g\u00e9n\u00e9rer</button>
