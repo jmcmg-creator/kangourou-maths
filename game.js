@@ -2,10 +2,10 @@
 const SUBJECTS=[
   {id:"maths",name:"Math\u00e9matiques",icon:"\u{1F9EE}",color:"#f7a020",desc:"Royaume des Nombres",
     levels:[
-      {id:"cp",name:"Apprenti Dragonneau",sub:"CP fort (secret)",icon:"\u{1F95A}",color:"#93c5fd",secret:true,hasStatic:true},
-      {id:"ce1-ce2",name:"Apprenti Sorcier",sub:"CE1 \u2013 CE2",icon:"\u{1F9D9}",color:"#22c55e",hasStatic:true},
-      {id:"cm1-cm2",name:"Chevalier du Savoir",sub:"CM1 \u2013 CM2",icon:"\u2694\uFE0F",color:"#f7a020",hasStatic:true},
-      {id:"6e-5e",name:"Ma\u00eetre Dragon",sub:"6\u1d49 \u2013 5\u1d49",icon:"\u{1F409}",color:"#ef4444",hasStatic:true}
+      {id:"cp",name:"Apprenti Dragonneau",sub:"CP fort (secret)",icon:"\u{1F95A}",color:"#93c5fd",secret:true},
+      {id:"ce1-ce2",name:"Apprenti Sorcier",sub:"CE1 \u2013 CE2",icon:"\u{1F9D9}",color:"#22c55e"},
+      {id:"cm1-cm2",name:"Chevalier du Savoir",sub:"CM1 \u2013 CM2",icon:"\u2694\uFE0F",color:"#f7a020"},
+      {id:"6e-5e",name:"Ma\u00eetre Dragon",sub:"6\u1d49 \u2013 5\u1d49",icon:"\u{1F409}",color:"#ef4444"}
     ]},
   {id:"culture",name:"Culture g\u00e9n\u00e9rale",icon:"\u{1F4DA}",color:"#c4b5fd",desc:"Histoire, G\u00e9o, Fran\u00e7ais, EMC",
     levels:[
@@ -25,16 +25,16 @@ const SUBJECTS=[
   {id:"poesie",name:"Po\u00e9sies La Fontaine",icon:"\u{1F4DC}",color:"#a78bfa",desc:"\u00c9coute, r\u00e9cite \u00e0 voix haute (avec micro)",isPoetry:true},
   {id:"langues",name:"Langues",icon:"\u{1F310}",color:"#10b981",desc:"H\u00e9breu (alphabet, vocabulaire, lecture)",
     levels:[
-      {id:"hebreu-alphabet",name:"H\u00e9breu",sub:"Alphabet (\u05D0\u05D1\u05D2)",icon:"\u{1F524}",color:"#0ea5e9"},
-      {id:"hebreu-vocabulaire",name:"H\u00e9breu",sub:"Vocabulaire de base",icon:"\u{1F4DA}",color:"#0ea5e9"},
-      {id:"hebreu-expressions",name:"H\u00e9breu",sub:"Expressions courantes",icon:"\u{1F5E3}\uFE0F",color:"#0ea5e9"},
-      {id:"hebreu-lecture",name:"H\u00e9breu",sub:"Lecture mots et phrases",icon:"\u{1F4D6}",color:"#0ea5e9"}
+      {id:"hebreu-alphabet",name:"H\u00e9breu",sub:"Alphabet (\u05D0\u05D1\u05D2)",icon:"\u{1F524}",color:"#0ea5e9",hasStatic:true},
+      {id:"hebreu-vocabulaire",name:"H\u00e9breu",sub:"Vocabulaire de base",icon:"\u{1F4DA}",color:"#0ea5e9",hasStatic:true},
+      {id:"hebreu-expressions",name:"H\u00e9breu",sub:"Expressions courantes",icon:"\u{1F5E3}\uFE0F",color:"#0ea5e9",hasStatic:true},
+      {id:"hebreu-lecture",name:"H\u00e9breu",sub:"Lecture mots et phrases",icon:"\u{1F4D6}",color:"#0ea5e9",hasStatic:true}
     ]},
   {id:"sciences",name:"Sciences",icon:"\u{1F52C}",color:"#22d3ee",desc:"Physique, Chimie, Biologie",
     levels:[
-      {id:"physique-ce2",name:"Physique",sub:"CE2 \u2014 Mati\u00e8re/Lumi\u00e8re",icon:"\u{1F4A1}",color:"#3b82f6"},
-      {id:"physique-cm1",name:"Physique",sub:"CM1 \u2014 \u00c9nergie/\u00c9lectricit\u00e9",icon:"\u26A1",color:"#3b82f6"},
-      {id:"physique-cm2",name:"Physique",sub:"CM2 \u2014 Forces/Circuits",icon:"\u{1F9F2}",color:"#3b82f6"},
+      {id:"physique-ce2",name:"Physique",sub:"CE2 \u2014 Mati\u00e8re/Lumi\u00e8re",icon:"\u{1F4A1}",color:"#3b82f6",hasStatic:true},
+      {id:"physique-cm1",name:"Physique",sub:"CM1 \u2014 \u00c9nergie/\u00c9lectricit\u00e9",icon:"\u26A1",color:"#3b82f6",hasStatic:true},
+      {id:"physique-cm2",name:"Physique",sub:"CM2 \u2014 Forces/Circuits",icon:"\u{1F9F2}",color:"#3b82f6",hasStatic:true},
       {id:"chimie-ce2",name:"Chimie",sub:"CE2 \u2014 \u00c9tats mati\u00e8re",icon:"\u{1F9EA}",color:"#10b981"},
       {id:"chimie-cm1",name:"Chimie",sub:"CM1 \u2014 M\u00e9langes/Dissolution",icon:"\u{1F4A7}",color:"#10b981"},
       {id:"chimie-cm2",name:"Chimie",sub:"CM2 \u2014 Transformations",icon:"\u2697\uFE0F",color:"#10b981"},
@@ -350,7 +350,7 @@ function maybeAutoGenerate(level){
   const allPool=[...pool,...aiPool];
   const unseen=allPool.filter(e=>!profile.exerciseStats[e.id]||!profile.exerciseStats[e.id].att);
   // Si moins de 15 exos jamais vus → génère 10 nouveaux en arrière-plan
-  if(unseen.length<15){
+  if(unseen.length<5){
     generateAIExercises(level,10).catch(e=>console.warn('auto-gen failed',e));
   }
 }
