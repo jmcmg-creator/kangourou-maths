@@ -202,15 +202,35 @@ const QUEST_TEMPLATES=[
 {id:"q_correct10",desc:"R\u00e9ussis 10 bonnes r\u00e9ponses aujourd'hui",target:10,type:"correct",reward:100}
 ];
 
-/* ════════ STATE + PERSISTENCE ════════ */
-const STORAGE_KEY="royaume_v3";
-function loadProfile(){
-  try{
-    const d=localStorage.getItem(STORAGE_KEY);
-    if(d) return migrate(JSON.parse(d));
-  }catch(e){}
-  return newProfile();
+/* ════════ STATE + PERSISTENCE — MULTI-PROFIL ════════ */
+const STORAGE_KEY="royaume_v3";          // legacy single-profile slot (read-only fallback)
+const STORAGE_PROFILES="royaume_profiles_v1";  // dict { [name]: profileData }
+const STORAGE_ACTIVE="royaume_active_v1";      // last-active profile name
+
+function loadProfilesDict(){
+  try{const d=localStorage.getItem(STORAGE_PROFILES); if(d) return JSON.parse(d)}catch(e){}
+  return {};
 }
+function saveProfilesDict(d){localStorage.setItem(STORAGE_PROFILES,JSON.stringify(d))}
+function getActiveName(){return localStorage.getItem(STORAGE_ACTIVE)||''}
+function setActiveName(n){localStorage.setItem(STORAGE_ACTIVE,n||'')}
+
+// One-time migration : si l'ancien profil unique existe et que le dict est vide,
+// on l'enregistre dans le dict sous son propre nom (et il devient actif).
+function migrateLegacyProfile(){
+  const dict=loadProfilesDict();
+  if(Object.keys(dict).length>0) return;
+  try{
+    const legacy=localStorage.getItem(STORAGE_KEY);
+    if(!legacy) return;
+    const p=JSON.parse(legacy);
+    if(!p||!p.name) return;
+    dict[p.name]=p;
+    saveProfilesDict(dict);
+    setActiveName(p.name);
+  }catch(e){}
+}
+
 function newProfile(){
   return {name:"",totalGames:0,totalQuestions:0,totalCorrect:0,bestStreak:0,sessions:[],catStats:{},exerciseStats:{},playDays:[],unlockedBadges:[],
     xp:0,cristaux:0,dragonnets:[],mainDragon:"main",stage:0,
@@ -220,8 +240,31 @@ function migrate(p){
   const base=newProfile();
   return Object.assign(base,p);
 }
-function saveProfile(){localStorage.setItem(STORAGE_KEY,JSON.stringify(profile))}
-let profile=loadProfile();
+
+// Charge le profil actif (s'il existe) ou retourne un profil vide.
+// Utilisé quand l'utilisateur clique sur un profil dans le picker.
+function loadProfileByName(name){
+  const dict=loadProfilesDict();
+  if(name&&dict[name]) return migrate(dict[name]);
+  return newProfile();
+}
+
+// Sauvegarde le profil courant dans le dict (clé = profile.name) ET dans
+// le STORAGE_KEY legacy pour compatibilité ascendante.
+function saveProfile(){
+  if(!profile.name) return;
+  const dict=loadProfilesDict();
+  dict[profile.name]=profile;
+  saveProfilesDict(dict);
+  setActiveName(profile.name);
+  try{localStorage.setItem(STORAGE_KEY,JSON.stringify(profile))}catch(e){}
+}
+
+migrateLegacyProfile();
+// Au boot on n'auto-charge AUCUN profil : l'utilisateur doit toujours choisir
+// dans le picker (à chaque ouverture). Ça évite d'écraser un profil
+// par accident quand plusieurs personnes utilisent l'app sur le même appareil.
+let profile=newProfile();
 let state={screen:'home',level:null,mode:null,exercises:[],idx:0,selected:null,score:0,streak:0,maxStreak:0,results:[],timer:60,timerID:null,gameOver:false,startTime:null,gameData:null,detailOpen:false,sessionXP:0,sessionCristaux:0,aiExercises:[],generating:false,syncing:false};
 
 const $=id=>document.getElementById(id);
@@ -396,6 +439,7 @@ function render(){
     case 'royaume': renderRoyaume(); break;
     case 'parent': renderParent(); break;
     case 'nameAsk': renderNameAsk(); break;
+    case 'profilePicker': renderProfilePicker(); break;
     case 'collection': renderCollection(); break;
     case 'fichesHome': renderFichesHome(); break;
     case 'fichesSubject': renderFichesSubject(); break;
@@ -430,7 +474,13 @@ function checkDailyQuest(){
 
 /* ════════ HOME ════════ */
 function renderHome(){
-  if(!profile.name){navigate('nameAsk');return}
+  if(!profile.name){
+    // Pas de profil actif : si au moins un profil existe localement,
+    // on affiche le picker. Sinon on demande le prénom directement.
+    const dict=loadProfilesDict();
+    navigate(Object.keys(dict).length>0?'profilePicker':'nameAsk');
+    return;
+  }
   checkDailyQuest();
   // Total des XP de tous les royaumes
   const totalXp=Object.values(profile.royaumes||{}).reduce((s,r)=>s+(r.xp||0),0)+(profile.xp||0);
@@ -494,6 +544,7 @@ function renderHome(){
       <button class="btn-stone" onclick="navigate('royaume')">\u2728 Vue d'ensemble</button>
       <button class="btn-stone" onclick="navigate('parent')">\u{1F464} Espace Parent</button>
     </div>
+    <button class="btn-stone mt-3" style="width:100%;font-size:.85rem" onclick="navigate('profilePicker')">\u{1F504} Changer d'utilisateur</button>
   `;
 }
 
@@ -520,32 +571,85 @@ function renderSubject(){
 }
 
 function renderNameAsk(){
+  const dict=loadProfilesDict();
+  const hasOthers=Object.keys(dict).length>0;
   app.innerHTML=`<div class="card fade-in" style="margin-top:40px">
-    <h2 class="title" style="color:#7a3f04;font-size:1.3rem">Comment t'appelles-tu, aventuri\u00e8re ?</h2>
+    <h2 class="title" style="color:#7a3f04;font-size:1.3rem">${hasOthers?'Nouvel utilisateur':'Comment t\'appelles-tu ?'}</h2>
     <p style="color:#2d2018;margin-bottom:16px">Ton pr\u00e9nom sera affich\u00e9 dans ton Royaume.</p>
     <input class="name-prompt" id="nameInp" placeholder="Ton pr\u00e9nom" maxlength="20" value="${esc(profile.name||'')}">
     <button class="btn-fire" onclick="setName()">Entrer dans le Royaume \u2192</button>
+    ${hasOthers?`<button class="btn-stone mt-3" style="width:100%" onclick="navigate(\u0027profilePicker\u0027)">\u2190 Choisir un profil existant</button>`:''}
   </div>`;
   setTimeout(()=>$('nameInp').focus(),100);
 }
 async function setName(){
   // Strip HTML/control chars to keep the profile name display-safe everywhere.
-  const v=$('nameInp').value.replace(/[<>"'`\\\/]/g,'').replace(/[ -]/g,'').trim().slice(0,20);
+  const v=$('nameInp').value.replace(/[<>"'`\\\/]/g,'').replace(/[ -]/g,'').trim().slice(0,20);
   if(v.length<1){alert('Entre ton pr\u00e9nom');return}
-  profile.name=v;
+  // Si ce nom existe d\u00e9j\u00e0 dans le dict, on charge ce profil (pas d\u0027\u00e9crasement).
+  const dict=loadProfilesDict();
+  if(dict[v]){
+    profile=migrate(dict[v]);
+  }else{
+    profile=newProfile();
+    profile.name=v;
+  }
   saveProfile();
   navigate('home');
 }
 
-// Au démarrage : tenter de récupérer le profil depuis le cloud (cas: lien sync utilisé)
-(async function initialSync(){
-  await new Promise(r=>setTimeout(r,200)); // attendre que le DOM soit prêt
-  const result=await syncProfileFromCloud();
-  if(result==='restored'){
-    alert('🎉 Royaume récupéré ! '+profile.totalGames+' parties, '+profile.cristaux+' cristaux, '+(profile.aiExercises||[]).length+' exercices IA.');
-    if(state.screen==='home') render();
-  }
-})();
+/* ════════ PROFILE PICKER ════════ */
+function renderProfilePicker(){
+  const dict=loadProfilesDict();
+  const names=Object.keys(dict).sort((a,b)=>{
+    const active=getActiveName();
+    if(a===active) return -1;
+    if(b===active) return 1;
+    const xa=(dict[a].xp||0)+Object.values(dict[a].royaumes||{}).reduce((s,r)=>s+(r.xp||0),0);
+    const xb=(dict[b].xp||0)+Object.values(dict[b].royaumes||{}).reduce((s,r)=>s+(r.xp||0),0);
+    return xb-xa;
+  });
+  const cards=names.map((n,i)=>{
+    const p=dict[n];
+    const xp=(p.xp||0)+Object.values(p.royaumes||{}).reduce((s,r)=>s+(r.xp||0),0);
+    const cris=(p.cristaux||0)+Object.values(p.royaumes||{}).reduce((s,r)=>s+(r.cristaux||0),0);
+    const games=p.totalGames||0;
+    const safeName=esc(n).replace(/'/g,'&#x27;');
+    return '<div class="card clickable fade-in" style="animation-delay:'+(i*.06)+'s;border-color:#f7a020" onclick="switchProfile(\u0027'+safeName+'\u0027)"><div class="row"><div style="font-size:2.5rem;flex-shrink:0">\u{1F409}</div><div class="flex-1" style="min-width:0"><h3 class="card-title" style="color:#7a3f04">'+esc(n)+'</h3><p class="sub">\u2728 '+xp+' XP \u2022 \u{1F48E} '+cris+' \u2022 '+games+' parties</p></div><div class="arrow">\u2192</div></div></div>';
+  }).join('');
+  const deleteBtns=names.map(n=>{
+    const safeName=esc(n).replace(/'/g,'&#x27;');
+    return '<button class="btn-stone btn-small" style="margin:4px;font-size:.7rem" onclick="deleteProfile(\u0027'+safeName+'\u0027)">\u{1F5D1}\uFE0F '+esc(n)+'</button>';
+  }).join('');
+  app.innerHTML='<div class="text-center py-6 fade-in"><div style="font-size:3.5rem">\u{1F44B}</div><h2 class="title" style="color:#7a3f04;font-size:1.5rem">Qui joue aujourd\u0027hui ?</h2><p class="sub">Choisis ton profil ou cr\u00e9es-en un nouveau</p></div>'+cards+'<div class="card clickable fade-in" style="border-color:#22c55e;background:linear-gradient(135deg,#dcfce7,#bbf7d0)" onclick="addNewProfile()"><div class="row"><div style="font-size:2.5rem;flex-shrink:0">\u2795</div><div class="flex-1"><h3 class="card-title" style="color:#15803d">Nouvel utilisateur</h3><p class="sub" style="color:#166534">Cr\u00e9er un nouveau profil</p></div></div></div>'+(names.length>0?'<details style="margin-top:24px"><summary style="color:#7a5a3a;font-size:.85rem;cursor:pointer;text-align:center">Supprimer un profil</summary><div style="margin-top:12px;text-align:center">'+deleteBtns+'</div></details>':'');
+}
+
+function switchProfile(name){
+  profile=loadProfileByName(name);
+  setActiveName(name);
+  navigate('home');
+}
+
+function addNewProfile(){
+  profile=newProfile();
+  navigate('nameAsk');
+}
+
+function deleteProfile(name){
+  if(!confirm('Supprimer le profil "'+name+'" ? Cette action est d\u00e9finitive.')) return;
+  const dict=loadProfilesDict();
+  delete dict[name];
+  saveProfilesDict(dict);
+  if(getActiveName()===name) setActiveName('');
+  if(profile.name===name) profile=newProfile();
+  const remaining=Object.keys(dict);
+  navigate(remaining.length>0?'profilePicker':'nameAsk');
+}
+
+// Le sync cloud automatique au boot est désactivé en multi-profil :
+// avec un AID unique par appareil et plusieurs profils locaux, le sync
+// auto fusionnerait les profils. Le sync reste accessible manuellement
+// via l'URL ?sync=AID. À refaire proprement avec un AID par profil.
 
 /* ════════ MODE SELECT ════════ */
 function renderMode(){
