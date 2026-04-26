@@ -44,8 +44,12 @@ const SUBJECTS=[
     ]}
 ];
 
-// Aplatir tous les niveaux pour rétrocompat
-const LEVELS=SUBJECTS.flatMap(s=>s.levels);
+// Aplatir tous les niveaux pour rétrocompat. `|| []` est crucial : poesie
+// n'a pas de `levels` (isPoetry:true), donc sans ça flatMap insère un
+// undefined dans LEVELS, et tout LEVELS.find(...) plante au passage de
+// ce trou — rendant les niveaux qui suivent poesie (langues, sciences)
+// non-fonctionnels.
+const LEVELS=SUBJECTS.flatMap(s=>s.levels||[]);
 
 function getSubjectForLevel(lvId){
   for(const s of SUBJECTS) if(s.levels.find(l=>l.id===lvId)) return s;
@@ -495,7 +499,8 @@ function renderHome(){
 
 function renderSubject(){
   const s=SUBJECTS.find(x=>x.id===state.subjectId)||SUBJECTS[0];
-  const visibleLevels=s.levels.filter(l=>!l.secret||profile.name.toLowerCase()==='joseph');
+  if(s.isPoetry){navigate('poesieHome');return}
+  const visibleLevels=(s.levels||[]).filter(l=>!l.secret||profile.name.toLowerCase()==='joseph');
   app.innerHTML=`<div class="text-center py-6 fade-in">
     <div style="font-size:3.5rem">${s.icon}</div>
     <h2 class="title" style="color:${s.color};font-size:1.6rem">${s.name}</h2>
@@ -573,7 +578,7 @@ async function reqGen(lvId,n){
     if(st){st.innerHTML='\u2705 <strong>'+exos.length+' nouveaux exercices</strong> ajout\u00e9s ! Lance n\'importe quel mode pour les d\u00e9couvrir.'}
     if(btn){btn.textContent='\u{1F525} G\u00e9n\u00e9rer 10 de plus';btn.disabled=false}
   }catch(e){
-    if(st){st.innerHTMP='\u274C Erreur : '+e.message}
+    if(st){st.innerHTML='\u274C Erreur : '+esc(e.message)}
     if(btn){btn.textContent='\u{1F525} R\u00e9essayer';btn.disabled=false}
   }
 }
@@ -1242,7 +1247,7 @@ function renderFichesHome(){
     <h2 class="title" style="color:#7a3f04;font-size:1.6rem">Fiches Bilan</h2>
     <p class="sub">Choisis un domaine pour r\u00e9viser</p>
   </div>
-  ${SUBJECTS.map((s,i)=>`<div class="subject-card fade-in" style="border-color:${s.color};animation-delay:${i*.1}s" onclick="navigate('fichesSubject',{subjectId:'${s.id}'})">
+  ${SUBJECTS.filter(s=>!s.isPoetry&&Array.isArray(s.levels)&&s.levels.length>0).map((s,i)=>`<div class="subject-card fade-in" style="border-color:${s.color};animation-delay:${i*.1}s" onclick="navigate('fichesSubject',{subjectId:'${s.id}'})">
     <div class="subject-emoji">${s.icon}</div>
     <div class="subject-info">
       <h3 class="subject-name" style="color:${s.color}">${s.name}</h3>
@@ -1254,6 +1259,7 @@ function renderFichesHome(){
 }
 function renderFichesSubject(){
   const s=SUBJECTS.find(x=>x.id===state.subjectId)||SUBJECTS[0];
+  if(s.isPoetry||!Array.isArray(s.levels)){navigate('fichesHome');return}
   const visibleLevels=s.levels.filter(l=>!l.secret||profile.name.toLowerCase()==='joseph');
   app.innerHTML=`<div class="text-center py-6 fade-in">
     <div style="font-size:3rem">${s.icon}</div>
