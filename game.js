@@ -35,12 +35,12 @@ const SUBJECTS=[
       {id:"physique-ce2",name:"Physique",sub:"CE2 \u2014 Mati\u00e8re/Lumi\u00e8re",icon:"\u{1F4A1}",color:"#3b82f6",hasStatic:true},
       {id:"physique-cm1",name:"Physique",sub:"CM1 \u2014 \u00c9nergie/\u00c9lectricit\u00e9",icon:"\u26A1",color:"#3b82f6",hasStatic:true},
       {id:"physique-cm2",name:"Physique",sub:"CM2 \u2014 Forces/Circuits",icon:"\u{1F9F2}",color:"#3b82f6",hasStatic:true},
-      {id:"chimie-ce2",name:"Chimie",sub:"CE2 \u2014 \u00c9tats mati\u00e8re",icon:"\u{1F9EA}",color:"#10b981"},
-      {id:"chimie-cm1",name:"Chimie",sub:"CM1 \u2014 M\u00e9langes/Dissolution",icon:"\u{1F4A7}",color:"#10b981"},
-      {id:"chimie-cm2",name:"Chimie",sub:"CM2 \u2014 Transformations",icon:"\u2697\uFE0F",color:"#10b981"},
-      {id:"biologie-ce2",name:"SVT",sub:"CE2 \u2014 Corps/Animaux",icon:"\u{1F9B7}",color:"#84cc16"},
-      {id:"biologie-cm1",name:"SVT",sub:"CM1 \u2014 Nutrition/Reproduction",icon:"\u{1F33F}",color:"#84cc16"},
-      {id:"biologie-cm2",name:"SVT",sub:"CM2 \u2014 \u00c9cosyst\u00e8mes",icon:"\u{1F33B}",color:"#84cc16"}
+      {id:"chimie-ce2",name:"Chimie",sub:"CE2 \u2014 \u00c9tats mati\u00e8re",icon:"\u{1F9EA}",color:"#10b981",hasStatic:true},
+      {id:"chimie-cm1",name:"Chimie",sub:"CM1 \u2014 M\u00e9langes/Dissolution",icon:"\u{1F4A7}",color:"#10b981",hasStatic:true},
+      {id:"chimie-cm2",name:"Chimie",sub:"CM2 \u2014 Transformations",icon:"\u2697\uFE0F",color:"#10b981",hasStatic:true},
+      {id:"biologie-ce2",name:"SVT",sub:"CE2 \u2014 Corps/Animaux",icon:"\u{1F9B7}",color:"#84cc16",hasStatic:true},
+      {id:"biologie-cm1",name:"SVT",sub:"CM1 \u2014 Nutrition/Reproduction",icon:"\u{1F33F}",color:"#84cc16",hasStatic:true},
+      {id:"biologie-cm2",name:"SVT",sub:"CM2 \u2014 \u00c9cosyst\u00e8mes",icon:"\u{1F33B}",color:"#84cc16",hasStatic:true}
     ]}
 ];
 
@@ -622,26 +622,10 @@ function pickExercises(mode,lvId){
 
 async function startGame(mode){
   let exercises=pickExercises(mode,state.level);
-  if(exercises.length===0){
-    // Aucun exercice disponible pour ce niveau (ni statique, ni g\u00e9n\u00e9r\u00e9).
-    // Pas de loader, pas d'appel Worker : on affiche directement un message clair.
-    const lv=LEVELS.find(l=>l.id===state.level);
-    const lvName=lv?(lv.name+' '+(lv.sub||'')):state.level;
-    app.innerHTML='<div class="card text-center" style="margin-top:60px"><div style="font-size:3rem">\u{1F6E0}\uFE0F</div><h2 class="title" style="color:#7a3f04">Bient\u00f4t disponible</h2><p class="sub" style="margin:12px 0">Les exercices pour <strong>'+esc(lvName)+'</strong> arrivent tr\u00e8s vite.</p><p class="sub" style="margin:8px 0;font-size:.85rem">En attendant, choisis un autre royaume : Maths, Histoire, G\u00e9o, Fran\u00e7ais, EMC, Physique, H\u00e9breu sont pr\u00eats !</p><div class="row gap-2 mt-3" style="justify-content:center;flex-wrap:wrap"><button class="btn-fire" onclick="navigate(\u0027home\u0027)">\u2190 Retour \u00e0 l\u0027accueil</button></div></div>';
-    return;
-    // ANCIEN CHEMIN (loader + Worker) supprim\u00e9 sur demande utilisateur
-    if(!lv||!lv.hasStatic){
-      app.innerHTML='<div class="card text-center" style="margin-top:60px"><div class="dragon-emoji float">\u{1F52E}</div><h2 class="title">Le Dragon prépare tes défis...</h2><p class="sub">Première g\u00e9n\u00e9ration : 5 \u00e0 25 secondes</p><p class="sub" style="margin-top:8px;font-size:.75rem;opacity:.7">Niveau : '+esc(state.level)+'</p></div>';
-      try{
-        await generateAIExercises(state.level,10);
-        exercises=pickExercises(mode,state.level);
-        if(exercises.length===0) throw new Error('Le Worker a r\u00e9pondu mais aucun exercice n\u0027est utilisable pour ce niveau');
-      }catch(e){
-        app.innerHTML='<div class="card text-center" style="margin-top:60px"><div style="font-size:3rem">\u26A0\uFE0F</div><h2 class="title" style="color:#b91c1c">\u00c9chec de la g\u00e9n\u00e9ration</h2><p class="sub" style="margin:12px 0">Le Dragon n\u0027a pas pu forger les d\u00e9fis pour <strong>'+esc(state.level)+'</strong>.</p><p style="background:#fef2f2;border:1px solid #fecaca;border-radius:8px;padding:10px;color:#991b1b;font-family:monospace;font-size:.8rem;word-break:break-word;text-align:left">'+esc(e.message)+'</p><div class="row gap-2 mt-3" style="justify-content:center;flex-wrap:wrap"><button class="btn-fire" onclick="startGame(\u0027'+mode+'\u0027)">\u{1F504} R\u00e9essayer</button><button class="btn-stone" onclick="navigate(\u0027mode\u0027,{level:state.level})">\u2190 Retour</button></div></div>';
-        return;
-      }
-    }
-  }
+  // FALLBACK ULTIME : si pour une raison quelconque (niveau non couvert,
+  // bug futur, etc.) il n'y a aucun exo, on tire 10 exos au hasard de
+  // tout EX. L'utilisateur ne reste JAMAIS sans rien à jouer.
+  if(exercises.length===0) exercises=shuffle(EX).slice(0,10);
   state.mode=mode;state.exercises=exercises;state.idx=0;state.selected=null;state.score=0;state.streak=0;state.maxStreak=0;state.results=[];state.timer=60;state.gameOver=false;state.startTime=Date.now();state.detailOpen=false;state.sessionXP=0;state.sessionCristaux=0;
   if(state.level&&state.level!=='cp') maybeAutoGenerate(state.level);
   navigate('game');
