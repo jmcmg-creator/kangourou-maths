@@ -301,15 +301,27 @@ function getSyncLink(){
 
 async function generateAIExercises(level,count){
   state.generating=true;
+  const ctrl=new AbortController();
+  const timeoutMs=25000;
+  const tid=setTimeout(()=>ctrl.abort(),timeoutMs);
   try{
     const r=await fetch(API_BASE+'/generate',{
       method:'POST',
       headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({level,count})
+      body:JSON.stringify({level,count}),
+      signal:ctrl.signal
     });
-    if(!r.ok) throw new Error('status '+r.status);
+    clearTimeout(tid);
+    if(!r.ok){
+      let body='';
+      try{body=(await r.text()).slice(0,300)}catch(_){}
+      throw new Error('HTTP '+r.status+(body?' — '+body:''));
+    }
     const data=await r.json();
     if(data.error) throw new Error(data.error.message||'API error');
+    if(!Array.isArray(data.exercises)||data.exercises.length===0){
+      throw new Error('Réponse vide (exercises absent ou []) — niveau "'+level+'" non supporté par le Worker ?');
+    }
     // Persiste dans le profil pour cross-device + sessions futures
     if(!profile.aiExercises) profile.aiExercises=[];
     profile.aiExercises=profile.aiExercises.concat(data.exercises);
@@ -318,7 +330,12 @@ async function generateAIExercises(level,count){
     saveProfile();
     state.generating=false;
     return data.exercises;
-  }catch(e){state.generating=false;throw e}
+  }catch(e){
+    clearTimeout(tid);
+    state.generating=false;
+    if(e.name==='AbortError') throw new Error('Timeout après '+(timeoutMs/1000)+'s — le Worker IA n\'a pas répondu');
+    throw e;
+  }
 }
 
 // Auto-génération en arrière-plan (fire & forget) si pool insuffisant
@@ -604,12 +621,13 @@ async function startGame(mode){
   if(exercises.length===0){
     const lv=LEVELS.find(l=>l.id===state.level);
     if(!lv||!lv.hasStatic){
-      app.innerHTML='<div class="card text-center" style="margin-top:60px"><div class="dragon-emoji float">\u{1F52E}</div><h2 class="title">Le Dragon prépare tes défis...</h2><p class="sub">Première g\u00e9n\u00e9ration : 5 \u00e0 15 secondes</p></div>';
+      app.innerHTML='<div class="card text-center" style="margin-top:60px"><div class="dragon-emoji float">\u{1F52E}</div><h2 class="title">Le Dragon prépare tes défis...</h2><p class="sub">Première g\u00e9n\u00e9ration : 5 \u00e0 25 secondes</p><p class="sub" style="margin-top:8px;font-size:.75rem;opacity:.7">Niveau : '+esc(state.level)+'</p></div>';
       try{
         await generateAIExercises(state.level,10);
         exercises=pickExercises(mode,state.level);
+        if(exercises.length===0) throw new Error('Le Worker a r\u00e9pondu mais aucun exercice n\u0027est utilisable pour ce niveau');
       }catch(e){
-        alert('\u00c9chec g\u00e9n\u00e9ration : '+e.message);
+        app.innerHTML='<div class="card text-center" style="margin-top:60px"><div style="font-size:3rem">\u26A0\uFE0F</div><h2 class="title" style="color:#b91c1c">\u00c9chec de la g\u00e9n\u00e9ration</h2><p class="sub" style="margin:12px 0">Le Dragon n\u0027a pas pu forger les d\u00e9fis pour <strong>'+esc(state.level)+'</strong>.</p><p style="background:#fef2f2;border:1px solid #fecaca;border-radius:8px;padding:10px;color:#991b1b;font-family:monospace;font-size:.8rem;word-break:break-word;text-align:left">'+esc(e.message)+'</p><div class="row gap-2 mt-3" style="justify-content:center;flex-wrap:wrap"><button class="btn-fire" onclick="startGame(\u0027'+mode+'\u0027)">\u{1F504} R\u00e9essayer</button><button class="btn-stone" onclick="navigate(\u0027mode\u0027,{level:state.level})">\u2190 Retour</button></div></div>';
         return;
       }
     }
