@@ -224,6 +224,12 @@ const $=id=>document.getElementById(id);
 const app=$('app');
 const backArrow=$('backArrow');
 
+/* ════════ HTML escaping (XSS protection) ════════ */
+const _ESC_MAP={'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#x27;','`':'&#x60;'};
+function esc(s){return s==null?'':String(s).replace(/[&<>"'`]/g,c=>_ESC_MAP[c])}
+// Light sanitizer for values used inside attribute single-quoted JS calls (rare)
+function escAttr(s){return esc(s).replace(/\\/g,'\\\\')}
+
 function shuffle(a){a=[...a];for(let i=a.length-1;i>0;i--){let j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]]}return a}
 function today(){return new Date().toISOString().slice(0,10)}
 
@@ -422,7 +428,7 @@ function renderHome(){
   }
   app.innerHTML=`
     <div class="text-center fade-in mb-4 py-4">
-      <h2 class="title" style="font-size:clamp(1.4rem,4vw,2rem)">\u{1F44B} Salut ${profile.name} !</h2>
+      <h2 class="title" style="font-size:clamp(1.4rem,4vw,2rem)">\u{1F44B} Salut ${esc(profile.name)} !</h2>
       <p style="color:#7a5a3a;font-size:1rem">Bienvenue dans tes Royaumes</p>
       <div class="resources-row">
         <div class="resource flame">\u{1F525} ${profile.totalGames||0} parties</div>
@@ -495,13 +501,14 @@ function renderNameAsk(){
   app.innerHTML=`<div class="card fade-in" style="margin-top:40px">
     <h2 class="title" style="color:#7a3f04;font-size:1.3rem">Comment t'appelles-tu, aventuri\u00e8re ?</h2>
     <p style="color:#2d2018;margin-bottom:16px">Ton pr\u00e9nom sera affich\u00e9 dans ton Royaume.</p>
-    <input class="name-prompt" id="nameInp" placeholder="Ton pr\u00e9nom" maxlength="20" value="${profile.name||''}">
+    <input class="name-prompt" id="nameInp" placeholder="Ton pr\u00e9nom" maxlength="20" value="${esc(profile.name||'')}">
     <button class="btn-fire" onclick="setName()">Entrer dans le Royaume \u2192</button>
   </div>`;
   setTimeout(()=>$('nameInp').focus(),100);
 }
 async function setName(){
-  const v=$('nameInp').value.trim();
+  // Strip HTML/control chars to keep the profile name display-safe everywhere.
+  const v=$('nameInp').value.replace(/[<>"'`\\\/]/g,'').replace(/[ -]/g,'').trim().slice(0,20);
   if(v.length<1){alert('Entre ton pr\u00e9nom');return}
   profile.name=v;
   saveProfile();
@@ -626,7 +633,7 @@ function renderGame(){
     timerHTML=`<div class="mb-4"><div class="row-between" style="font-size:.85rem;margin-bottom:4px"><span class="fredoka" style="color:#7a5a3a">Temps restant</span><span class="fredoka" style="font-weight:700;color:${tc}">${state.timer}s</span></div><div class="timer-track"><div class="timer-fill" style="width:${tp}%;background:${tc}"></div></div></div>`;
   }
   const streakHTML=state.streak>=2?`<span style="color:#f7a020">\u{1F525} ${state.streak}</span>`:'';
-  const levelBadge=state.mode==='progression'?`<span class="badge" style="background:${lv.color}22;color:${lv.color};border-color:${lv.color}44;margin-left:6px">${lv.sub}</span>`:'';
+  const levelBadge=state.mode==='progression'?`<span class="badge" style="background:${lv.color}22;color:${lv.color};border-color:${lv.color}44;margin-left:6px">${esc(lv.sub)}</span>`:'';
   app.innerHTML=`<div style="margin:8px 0"><div class="row-between cinzel" style="font-size:.75rem;color:#9c6f3a;margin-bottom:4px">
     <span>Question ${state.idx+1}/${total}</span>
     <span>Score : ${state.score}/${state.idx+(state.selected!==null?1:0)}</span>
@@ -635,13 +642,13 @@ function renderGame(){
   ${timerHTML}
   <div class="card fade-in mt-3">
     <div class="row gap-2 mb-4" style="flex-wrap:wrap">
-      <span class="badge">${ex.cat}</span>
+      <span class="badge">${esc(ex.cat)}</span>
       <span class="stars">${'\u2605'.repeat(ex.diff)}${'\u2606'.repeat(5-ex.diff)}</span>
       ${levelBadge}
     </div>
-    <p style="font-size:clamp(1rem,2.5vw,1.2rem);color:#2d2018;line-height:1.7;margin-bottom:24px">${ex.q}</p>
+    <p style="font-size:clamp(1rem,2.5vw,1.2rem);color:#2d2018;line-height:1.7;margin-bottom:24px">${esc(ex.q)}</p>
     <div class="choices-grid">
-      ${ex.ch.map((c,i)=>{let cls='choice-btn';if(state.selected!==null){if(i===ex.ans)cls+=' correct';else if(i===state.selected&&i!==ex.ans)cls+=' wrong'}return `<button class="${cls}" ${state.selected!==null?'disabled':''} onclick="selectAnswer(${i})"><span class="choice-letter">${String.fromCharCode(65+i)}.</span>${c}</button>`}).join('')}
+      ${ex.ch.map((c,i)=>{let cls='choice-btn';if(state.selected!==null){if(i===ex.ans)cls+=' correct';else if(i===state.selected&&i!==ex.ans)cls+=' wrong'}return `<button class="${cls}" ${state.selected!==null?'disabled':''} onclick="selectAnswer(${i})"><span class="choice-letter">${String.fromCharCode(65+i)}.</span>${esc(c)}</button>`}).join('')}
     </div>
     <div id="explanation"></div>
   </div>
@@ -691,14 +698,14 @@ function selectAnswer(i){
 function showExplanation(ex,correct){
   const el=$('explanation');
   if(!el) return;
-  const methodeHTML=ex.methode.map(m=>`<div class="pedago-step">${m}</div>`).join('');
+  const methodeHTML=(ex.methode||[]).map(m=>`<div class="pedago-step">${esc(m)}</div>`).join('');
   const gainHTML=correct?`<span class="xp-gain">+${Math.round(ex.diff*10*(state.streak>=10?3:state.streak>=5?2:state.streak>=3?1.5:1))} XP</span> <span class="crystal-gain">\u{1F48E} +${ex.diff*2}</span>`:'';
   el.innerHTML=`<div class="card fade-in mt-6">
     <div class="row gap-2 mb-2"><span style="font-size:1.5rem">${correct?'\u2705':'\u274C'}</span>
-    <h4 class="fredoka" style="font-size:1.1rem;font-weight:700;color:${correct?'#22c55e':'#ef4444'};margin:0">${correct?'Excellent, sorci\u00e8re !':'Pas cette fois\u2026'}</h4>
+    <h4 class="fredoka" style="font-size:1.1rem;font-weight:700;color:${correct?'#15803d':'#b91c1c'};margin:0">${correct?'Excellent, sorci\u00e8re !':'Pas cette fois\u2026'}</h4>
     ${gainHTML}</div>
-    <p style="color:#2d2018;margin-bottom:12px;line-height:1.6;font-weight:600">${ex.se}</p>
-    ${!correct?`<div class="error-box"><p style="font-size:.9rem;margin:0"><span class="error-label">\u{1F914} L'erreur probable : </span><span style="color:#2d2018">${ex.pourquoi}</span></p></div>`:''}
+    <p style="color:#2d2018;margin-bottom:12px;line-height:1.6;font-weight:600">${esc(ex.se)}</p>
+    ${!correct?`<div class="error-box"><p style="font-size:.9rem;margin:0;line-height:1.5"><span class="error-label">\u{1F914} L'erreur probable : </span><span style="color:#2d2018">${esc(ex.pourquoi)}</span></p></div>`:''}
     <a class="detail-link mt-3" style="display:inline-block;margin-top:10px" onclick="toggleDetail()">${state.detailOpen?'Masquer':'Voir'} la m\u00e9thode pas \u00e0 pas \u2192</a>
     <div id="detailPanel" class="${state.detailOpen?'':'hidden'}">
       <div class="pedago-box">
@@ -706,10 +713,10 @@ function showExplanation(ex,correct){
         ${methodeHTML}
       </div>
       <div class="tip-box">
-        <p style="font-size:.9rem;margin:0"><span class="tip-label">\u{1F4A1} \u00c0 retenir : </span><span class="tip-text">${ex.regle}</span></p>
+        <p style="font-size:.9rem;margin:0;line-height:1.55"><span class="tip-label">\u{1F4A1} \u00c0 retenir : </span><span class="tip-text">${esc(ex.regle)}</span></p>
       </div>
-      ${ex.exemple?`<div class="pedago-box" style="background:rgba(59,130,246,.08);border-color:rgba(59,130,246,.2)"><div class="pedago-title" style="color:#93c5fd">\u{1F4DA} Exemple similaire</div><p style="color:#2d2018;font-size:.9rem">${ex.exemple}</p></div>`:''}
-      <p style="font-size:.75rem;color:#9c6f3a;margin-top:8px">Comp\u00e9tence : ${ex.sk}</p>
+      ${ex.exemple?`<div class="pedago-box" style="background:linear-gradient(135deg,#dbeafe,#bfdbfe);border-color:rgba(59,130,246,.35)"><div class="pedago-title" style="color:#1e40af">\u{1F4DA} Exemple similaire</div><p style="color:#1e3a8a;font-size:.9rem;line-height:1.55;margin:0">${esc(ex.exemple)}</p></div>`:''}
+      <p style="font-size:.75rem;color:#7a3f04;margin-top:10px;font-weight:600">Comp\u00e9tence : ${esc(ex.sk)}</p>
     </div>
     <button class="btn-fire mt-6" onclick="nextQuestion()">Question suivante \u2192</button>
   </div>`;
@@ -864,10 +871,10 @@ function renderResults(){
       <div class="dragonnet-grid">${d.newDragonnets.map(dg=>`<div class="dragonnet-card unlocked pulse"><div class="dragonnet-emoji">${dg.emoji}</div><div class="dragonnet-name">${dg.name}</div><div class="dragonnet-elem">${dg.elem}</div></div>`).join('')}</div>
     </div>`;
   }
-  const badgesHTML=(d.newBadges&&d.newBadges.length>0)?`<div class="card fade-in" style="background:linear-gradient(145deg,#5c2f03,#7a3f04);border-color:#7a3f04">
+  const badgesHTML=(d.newBadges&&d.newBadges.length>0)?`<div class="card fade-in" style="background:linear-gradient(145deg,#fff5e1,#ffeacc);border-color:#f7a020">
     <h3 class="fredoka" style="color:#7a3f04;font-size:.9rem;text-transform:uppercase;letter-spacing:.1em">\u2728 Nouveaux badges !</h3>
-    <div class="badge-grid">${d.newBadges.map(b=>`<div class="badge-card unlocked pulse"><div class="badge-ic">${b.icon}</div><div class="badge-name">${b.name}</div><div class="badge-desc">${b.desc}</div></div>`).join('')}</div></div>`:'';
-  const questHTML=d.questDone?`<div class="card fade-in" style="background:rgba(139,92,246,.15);border-color:#c4b5fd"><div class="text-center"><div style="font-size:2.5rem">\u{1F3AF}</div><h3 class="fredoka" style="color:#c4b5fd;margin-top:6px">Qu\u00eate journali\u00e8re r\u00e9ussie !</h3><p style="color:#2d2018;margin-top:4px">Tu gagnes \u{1F48E} +${d.questReward} cristaux !</p></div></div>`:'';
+    <div class="badge-grid">${d.newBadges.map(b=>`<div class="badge-card unlocked pulse"><div class="badge-ic">${esc(b.icon)}</div><div class="badge-name">${esc(b.name)}</div><div class="badge-desc">${esc(b.desc)}</div></div>`).join('')}</div></div>`:'';
+  const questHTML=d.questDone?`<div class="card fade-in" style="background:linear-gradient(135deg,#ede9fe,#ddd6fe);border-color:#a78bfa"><div class="text-center"><div style="font-size:2.5rem">\u{1F3AF}</div><h3 class="fredoka" style="color:#5b21b6;margin-top:6px">Qu\u00eate journali\u00e8re r\u00e9ussie !</h3><p style="color:#2d2018;margin-top:4px">Tu gagnes \u{1F48E} +${d.questReward} cristaux !</p></div></div>`:'';
 
   app.innerHTML=`<div class="text-center py-8 fade-in"><div class="huge-icon">${emoji}</div>
     <h2 class="title" style="font-size:clamp(1.3rem,3.5vw,2rem);color:#7a3f04">${title}</h2><p style="color:#7a5a3a">${sub}</p></div>
@@ -887,8 +894,8 @@ function renderResults(){
   <div class="card mb-6"><h3 class="fredoka" style="font-size:.85rem;color:#f7a020;margin-bottom:12px;letter-spacing:.1em;text-transform:uppercase">R\u00e9capitulatif</h3>
     <div class="recap-scroll">${d.results.map(r=>`<div class="recap-item">
       <span class="recap-icon">${r.correct?'\u2705':'\u274C'}</span>
-      <div class="flex-1"><p class="recap-q">${r.ex.q.length>110?r.ex.q.slice(0,110)+'\u2026':r.ex.q}</p>
-      ${!r.correct?`<p class="recap-answer">R\u00e9ponse : ${r.ex.ch[r.ex.ans]}</p>`:''}</div></div>`).join('')}</div></div>
+      <div class="flex-1" style="min-width:0"><p class="recap-q">${esc(r.ex.q.length>110?r.ex.q.slice(0,110)+'\u2026':r.ex.q)}</p>
+      ${!r.correct?`<p class="recap-answer">R\u00e9ponse : ${esc(r.ex.ch[r.ex.ans])}</p>`:''}</div></div>`).join('')}</div></div>
   <div class="btn-row">
     <button class="btn-fire" onclick="startGame('${d.mode}')">Rejouer</button>
     <button class="btn-stone" onclick="navigate('royaume')">Mon Royaume</button>
@@ -907,7 +914,7 @@ function renderRoyaume(){
   app.innerHTML=`<div class="text-center py-6 fade-in">
     <div style="font-size:3rem">\u2728</div>
     <h2 class="title sparkle-anim" style="color:#7a3f04;font-size:1.8rem">Mon Royaume</h2>
-    <p class="sub">${profile.name}, voici ta progression</p></div>
+    <p class="sub">${esc(profile.name)}, voici ta progression</p></div>
   <div class="dragon-card">
     <div class="dragon-emoji float">${stage.emoji}</div>
     <div class="dragon-name">${stage.name}</div>
@@ -928,7 +935,7 @@ function renderRoyaume(){
     <div class="resource xp">\u2728 ${profile.xp} XP</div>
   </div></div>
   ${cats.length>0?`<div class="card mb-4"><h3 class="fredoka" style="font-size:.85rem;color:#f7a020;margin-bottom:12px;letter-spacing:.1em;text-transform:uppercase">Performance par cat\u00e9gorie</h3>
-  <div class="bar-chart">${cats.map(([c,s])=>{const p=s.att>0?Math.round(s.cor/s.att*100):0;const col=p>=75?'#22c55e':p>=50?'#f7a020':'#ef4444';return `<div class="bar-row"><div class="bar-label">${c}</div><div class="bar-track"><div class="bar-fill" style="width:${p}%;background:${col}"></div></div><div class="bar-val">${p}%</div></div>`}).join('')}</div></div>`:''}
+  <div class="bar-chart">${cats.map(([c,s])=>{const p=s.att>0?Math.round(s.cor/s.att*100):0;const col=p>=75?'#22c55e':p>=50?'#f7a020':'#ef4444';return `<div class="bar-row"><div class="bar-label">${esc(c)}</div><div class="bar-track"><div class="bar-fill" style="width:${p}%;background:${col}"></div></div><div class="bar-val">${p}%</div></div>`}).join('')}</div></div>`:''}
   <div class="card mb-4"><h3 class="fredoka" style="font-size:.85rem;color:#f7a020;margin-bottom:12px;letter-spacing:.1em;text-transform:uppercase">Badges</h3>
   <div class="badge-grid">${BADGES.map(b=>{const u=b.cond(profile);return `<div class="badge-card ${u?'unlocked':''}"><div class="badge-ic">${b.icon}</div><div class="badge-name">${b.name}</div><div class="badge-desc">${b.desc}</div></div>`}).join('')}</div></div>
   <div class="btn-row">
@@ -970,23 +977,23 @@ function renderParent(){
   app.innerHTML=`<div class="text-center py-6 fade-in">
     <div style="font-size:3rem">\u{1F464}</div>
     <h2 class="title" style="color:#c4b5fd;font-size:1.6rem">Espace Parent</h2>
-    <p class="sub">Suivi de ${profile.name}</p></div>
+    <p class="sub">Suivi de ${esc(profile.name)}</p></div>
   <div class="card mb-4" style="border-color:#c4b5fd"><div class="stats-grid">
     <div class="stat-card"><div class="stat-val" style="color:#c4b5fd">${profile.totalGames}</div><div class="stat-label">Parties</div></div>
     <div class="stat-card"><div class="stat-val" style="color:${pct>=60?'#22c55e':'#ef4444'}">${pct}%</div><div class="stat-label">R\u00e9ussite</div></div>
     <div class="stat-card"><div class="stat-val" style="color:#7a3f04">${totalMinutes}m</div><div class="stat-label">Temps total</div></div>
   </div></div>
   ${weak.length>0?`<div class="card mb-4"><h3 class="fredoka" style="font-size:.85rem;color:#ef4444;margin-bottom:12px;letter-spacing:.1em;text-transform:uppercase">\u26A0\uFE0F Domaines \u00e0 travailler</h3>
-  ${weak.map(([c,s])=>{const p=Math.round(s.cor/s.att*100);return `<div class="weak-cat"><div><div style="color:#fca5a5;font-weight:700">${c}</div><div style="font-size:.75rem;color:#9c6f3a">${s.cor}/${s.att} bonnes r\u00e9ponses</div></div><div style="color:#ef4444;font-weight:700;font-family:'Cinzel'">${p}%</div></div>`}).join('')}
+  ${weak.map(([c,s])=>{const p=Math.round(s.cor/s.att*100);return `<div class="weak-cat"><div><div style="font-weight:700">${esc(c)}</div><div style="font-size:.75rem">${s.cor}/${s.att} bonnes r\u00e9ponses</div></div><div style="color:#b91c1c;font-weight:700;font-family:'Cinzel',Georgia,serif;flex-shrink:0">${p}%</div></div>`}).join('')}
   <p style="font-size:.8rem;color:#9c6f3a;margin-top:8px;font-style:italic">Conseil : lancez le \u00ab Mode adaptatif \u00bb pour travailler ces domaines.</p></div>`:''}
   ${strong.length>0?`<div class="card mb-4"><h3 class="fredoka" style="font-size:.85rem;color:#22c55e;margin-bottom:12px;letter-spacing:.1em;text-transform:uppercase">\u2B50 Points forts</h3>
-  ${strong.map(([c,s])=>{const p=Math.round(s.cor/s.att*100);return `<div class="strong-cat"><div><div style="color:#bbf7d0;font-weight:700">${c}</div><div style="font-size:.75rem;color:#9c6f3a">${s.cor}/${s.att} bonnes r\u00e9ponses</div></div><div style="color:#22c55e;font-weight:700;font-family:'Cinzel'">${p}%</div></div>`}).join('')}</div>`:''}
+  ${strong.map(([c,s])=>{const p=Math.round(s.cor/s.att*100);return `<div class="strong-cat"><div><div style="font-weight:700">${esc(c)}</div><div style="font-size:.75rem">${s.cor}/${s.att} bonnes r\u00e9ponses</div></div><div style="color:#15803d;font-weight:700;font-family:'Cinzel',Georgia,serif;flex-shrink:0">${p}%</div></div>`}).join('')}</div>`:''}
   ${failedEx.length>0?`<div class="card mb-4"><h3 class="fredoka" style="font-size:.85rem;color:#f7a020;margin-bottom:12px;letter-spacing:.1em;text-transform:uppercase">Exercices \u00e0 refaire ensemble</h3>
-  <div class="recap-scroll">${failedEx.map(e=>`<div class="recap-item"><span class="recap-icon">\u{1F4DD}</span><div class="flex-1"><p class="recap-q"><strong>${e.cat}</strong> \u2014 ${e.q.length>120?e.q.slice(0,120)+'\u2026':e.q}</p><p style="color:#22c55e;font-size:.75rem;margin-top:4px">R\u00e9ponse : ${e.ch[e.ans]}</p></div></div>`).join('')}</div></div>`:''}
+  <div class="recap-scroll">${failedEx.map(e=>`<div class="recap-item"><span class="recap-icon">\u{1F4DD}</span><div class="flex-1" style="min-width:0"><p class="recap-q"><strong>${esc(e.cat)}</strong> \u2014 ${esc(e.q.length>120?e.q.slice(0,120)+'\u2026':e.q)}</p><p class="recap-answer">R\u00e9ponse : ${esc(e.ch[e.ans])}</p></div></div>`).join('')}</div></div>`:''}
   ${recentSessions.length>0?`<div class="card mb-4"><h3 class="fredoka" style="font-size:.85rem;color:#f7a020;margin-bottom:12px;letter-spacing:.1em;text-transform:uppercase">10 derni\u00e8res sessions</h3>
-  ${recentSessions.map(s=>{const p=s.total>0?Math.round(s.score/s.total*100):0;const lv=LEVELS.find(l=>l.id===s.level);const dt=new Date(s.date);const dtStr=dt.toLocaleDateString('fr-FR',{day:'2-digit',month:'2-digit'})+' '+dt.toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'});return `<div class="session-item"><div><div style="color:#2d2018">${lv?lv.icon+' '+lv.sub:s.level} \u00b7 ${s.mode}</div><div style="font-size:.7rem;color:#9c6f3a">${dtStr} \u00b7 ${Math.round((s.duration||0)/60)}min</div></div><div style="color:${p>=60?'#22c55e':'#ef4444'};font-weight:700;font-family:'Cinzel'">${s.score}/${s.total}</div></div>`}).join('')}</div>`:''}
+  ${recentSessions.map(s=>{const p=s.total>0?Math.round(s.score/s.total*100):0;const lv=LEVELS.find(l=>l.id===s.level);const dt=new Date(s.date);const dtStr=dt.toLocaleDateString('fr-FR',{day:'2-digit',month:'2-digit'})+' '+dt.toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'});return `<div class="session-item"><div><div style="color:#2d2018;font-weight:600">${lv?esc(lv.icon)+' '+esc(lv.sub):esc(s.level)} \u00b7 ${esc(s.mode)}</div><div style="font-size:.7rem;color:#7a5a3a">${dtStr} \u00b7 ${Math.round((s.duration||0)/60)}min</div></div><div style="color:${p>=60?'#15803d':'#b91c1c'};font-weight:700;font-family:'Cinzel',Georgia,serif;flex-shrink:0">${s.score}/${s.total}</div></div>`}).join('')}</div>`:''}
   <div class="card mb-4" style="border-color:#c4b5fd"><h3 class="fredoka" style="font-size:.85rem;color:#c4b5fd;margin-bottom:8px">\u{1F517} Sync sur un autre appareil</h3>
-  <p style="color:#2d2018;font-size:.8rem;margin-bottom:10px">Ouvrez ce lien sur l'autre téléphone/tablette pour récupérer le Royaume de ${profile.name}. <strong>Ne le partagez avec personne d'autre</strong> (équivaut à un mot de passe).</p>
+  <p style="color:#2d2018;font-size:.85rem;margin-bottom:12px;line-height:1.5">Ouvrez ce lien sur l'autre téléphone/tablette pour récupérer le Royaume de ${esc(profile.name)}. <strong>Ne le partagez avec personne d'autre</strong> (équivaut à un mot de passe).</p>
   <button class="btn-stone btn-small" onclick="copySyncLink()">\u{1F4CB} Copier le lien</button>
   <button class="btn-stone btn-small" onclick="shareSyncLink()" style="margin-left:8px">\u{1F4F2} Partager (WhatsApp...)</button>
   <div id="syncMsg" style="margin-top:8px;font-size:.75rem;color:#22c55e"></div></div>
@@ -1017,7 +1024,7 @@ function exportData(){
   const blob=new Blob([JSON.stringify(profile,null,2)],{type:'application/json'});
   const url=URL.createObjectURL(blob);
   const a=document.createElement('a');
-  a.href=url;a.download='royaume-'+profile.name+'-'+today()+'.json';
+  a.href=url;a.download='royaume-'+(profile.name||'invite').replace(/[^\p{L}\p{N}_-]/gu,'_')+'-'+today()+'.json';
   a.click();
   URL.revokeObjectURL(url);
 }
@@ -1278,19 +1285,29 @@ function renderFichesTopics(){
     <h2 class="title" style="color:${lv.color}">${lv.name}</h2>
     <p class="sub">${lv.sub||''} \u2014 Choisis un th\u00e8me</p>
   </div>
-  ${state.topics.map((t,i)=>`<div class="card clickable fade-in" style="animation-delay:${i*.05}s" onclick="loadFiche('${(t.id||'').replace(/[^a-z0-9-]/gi,'')}','${(t.title||'').replace(/'/g,'').replace(/\"/g,'')}')">
-    <div class="row">
-      <div style="font-size:2rem">${t.emoji||'\u{1F4D6}'}</div>
-      <div class="flex-1">
-        <h3 class="card-title">${t.title}</h3>
-        <p class="sub">${t.desc||''}</p>
+  ${state.topics.map((t,i)=>{
+    // Stash full topic in window for safe lookup; only use index in onclick.
+    window._topicCache=window._topicCache||[];
+    window._topicCache[i]=t;
+    return `<div class="card clickable fade-in" style="animation-delay:${i*.05}s" onclick="loadTopicByIndex(${i})">
+      <div class="row">
+        <div style="font-size:2rem;flex-shrink:0">${esc(t.emoji||'\u{1F4D6}')}</div>
+        <div class="flex-1" style="min-width:0">
+          <h3 class="card-title">${esc(t.title||'Th\u00e8me')}</h3>
+          <p class="sub">${esc(t.desc||'')}</p>
+        </div>
+        <div class="arrow">\u2192</div>
       </div>
-      <div class="arrow">\u2192</div>
-    </div>
-  </div>`).join('')}
+    </div>`;
+  }).join('')}
   <button class="btn-stone mt-4" onclick="navigate('fichesSubject',{subjectId:state.subjectId})">\u2190 Retour</button>`;
 }
 
+function loadTopicByIndex(i){
+  const t=(window._topicCache||[])[i];
+  if(!t)return;
+  loadFiche(String(t.id||'').slice(0,80),String(t.title||'').slice(0,200));
+}
 async function loadFiche(topicId,topicTitle){
   state.fiche=null;state.ficheTopic={id:topicId,title:topicTitle};
   navigate('fichesView');
@@ -1312,19 +1329,19 @@ function renderFichesView(){
   const f=state.fiche;
   const lv=LEVELS.find(l=>l.id===state.ficheLv);
   app.innerHTML=`<div class="text-center py-4 fade-in">
-    <div style="font-size:2rem">${lv?lv.icon:'\u{1F4D6}'}</div>
-    <p class="sub">${lv?lv.sub||lv.name:''}</p>
+    <div style="font-size:2rem">${lv?esc(lv.icon):'\u{1F4D6}'}</div>
+    <p class="sub">${lv?esc(lv.sub||lv.name):''}</p>
   </div>
   <div class="fiche-card fade-in">
-    <h1 class="fiche-h1">${f.titre||state.ficheTopic.title}</h1>
-    ${f.intro?`<p class="fiche-intro">${f.intro}</p>`:''}
-    ${(f.essentiel&&f.essentiel.length>0)?`<div class="fiche-section"><h3>\u2728 L'essentiel</h3><ul class="fiche-list">${f.essentiel.map(p=>`<li>${p}</li>`).join('')}</ul></div>`:''}
-    ${(f.dates&&f.dates.length>0)?`<div class="fiche-section"><h3>\u{1F4C5} Dates cl\u00e9s</h3>${f.dates.map(d=>`<div class="fiche-mini"><b>${d.date}</b> \u2014 ${d.evenement}</div>`).join('')}</div>`:''}
-    ${(f.personnalites&&f.personnalites.length>0)?`<div class="fiche-section"><h3>\u{1F464} Personnalit\u00e9s</h3>${f.personnalites.map(p=>`<div class="fiche-mini"><b>${p.nom}</b> \u2014 ${p.role}</div>`).join('')}</div>`:''}
-    ${(f.vocabulaire&&f.vocabulaire.length>0)?`<div class="fiche-section"><h3>\u{1F4DA} Vocabulaire</h3>${f.vocabulaire.map(v=>`<div class="fiche-mini"><b>${v.mot}</b> : ${v.definition}</div>`).join('')}</div>`:''}
-    ${f.anecdote?`<div class="fiche-anecdote">\u{1F4A1} <b>Le savais-tu ?</b> ${f.anecdote}</div>`:''}
-    ${f.retiens_bien?`<div class="fiche-retiens">\u{1F31F} ${f.retiens_bien}</div>`:''}
-    ${(f.quiz_rapide&&f.quiz_rapide.length>0)?`<div class="fiche-section"><h3>\u{1F3AF} Quiz \u00e9clair</h3>${f.quiz_rapide.map((q,i)=>`<div class="fiche-mini" onclick="this.querySelector('span').classList.toggle('hidden')" style="cursor:pointer"><b>Q${i+1} :</b> ${q.q}<br><span class="hidden" style="color:#15803d;font-weight:600">\u279c ${q.r}</span><br><small style="color:#9c6f3a">(clique pour voir la r\u00e9ponse)</small></div>`).join('')}</div>`:''}
+    <h1 class="fiche-h1">${esc(f.titre||state.ficheTopic.title)}</h1>
+    ${f.intro?`<p class="fiche-intro">${esc(f.intro)}</p>`:''}
+    ${(f.essentiel&&f.essentiel.length>0)?`<div class="fiche-section"><h3>\u2728 L'essentiel</h3><ul class="fiche-list">${f.essentiel.map(p=>`<li>${esc(p)}</li>`).join('')}</ul></div>`:''}
+    ${(f.dates&&f.dates.length>0)?`<div class="fiche-section"><h3>\u{1F4C5} Dates cl\u00e9s</h3>${f.dates.map(d=>`<div class="fiche-mini"><b>${esc(d.date)}</b> \u2014 ${esc(d.evenement)}</div>`).join('')}</div>`:''}
+    ${(f.personnalites&&f.personnalites.length>0)?`<div class="fiche-section"><h3>\u{1F464} Personnalit\u00e9s</h3>${f.personnalites.map(p=>`<div class="fiche-mini"><b>${esc(p.nom)}</b> \u2014 ${esc(p.role)}</div>`).join('')}</div>`:''}
+    ${(f.vocabulaire&&f.vocabulaire.length>0)?`<div class="fiche-section"><h3>\u{1F4DA} Vocabulaire</h3>${f.vocabulaire.map(v=>`<div class="fiche-mini"><b>${esc(v.mot)}</b> : ${esc(v.definition)}</div>`).join('')}</div>`:''}
+    ${f.anecdote?`<div class="fiche-anecdote">\u{1F4A1} <b>Le savais-tu ?</b> ${esc(f.anecdote)}</div>`:''}
+    ${f.retiens_bien?`<div class="fiche-retiens">\u{1F31F} ${esc(f.retiens_bien)}</div>`:''}
+    ${(f.quiz_rapide&&f.quiz_rapide.length>0)?`<div class="fiche-section"><h3>\u{1F3AF} Quiz \u00e9clair</h3>${f.quiz_rapide.map((q,i)=>`<div class="fiche-mini" onclick="this.querySelector('span').classList.toggle('hidden')" style="cursor:pointer"><b>Q${i+1} :</b> ${esc(q.q)}<br><span class="hidden" style="color:#15803d;font-weight:600">\u279c ${esc(q.r)}</span><br><small style="color:#7a3f04">(clique pour voir la r\u00e9ponse)</small></div>`).join('')}</div>`:''}
   </div>
   <div class="btn-row">
     <button class="btn-stone" onclick="loadFiche(state.ficheTopic.id,state.ficheTopic.title)">\u{1F504} R\u00e9g\u00e9n\u00e9rer</button>
