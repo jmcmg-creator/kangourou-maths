@@ -9,9 +9,9 @@ const SUBJECTS=[
     ]},
   {id:"culture",name:"Culture g\u00e9n\u00e9rale",icon:"\u{1F4DA}",color:"#c4b5fd",desc:"Histoire, G\u00e9o, Fran\u00e7ais, EMC",
     levels:[
-      {id:"histoire-ce2",name:"Histoire",sub:"CE2 \u2014 Pr\u00e9histoire/Romains",icon:"\u{1F3DB}\uFE0F",color:"#fbbf24"},
-      {id:"histoire-cm1",name:"Histoire",sub:"CM1 \u2014 Moyen \u00c2ge/Renaissance",icon:"\u{1F451}",color:"#fbbf24"},
-      {id:"histoire-cm2",name:"Histoire",sub:"CM2 \u2014 R\u00e9volution/XXe",icon:"\u{1F4DC}",color:"#fbbf24"},
+      {id:"histoire-ce2",name:"Histoire",sub:"CE2 \u2014 Pr\u00e9histoire/Romains",icon:"\u{1F3DB}\uFE0F",color:"#fbbf24",hasStatic:true},
+      {id:"histoire-cm1",name:"Histoire",sub:"CM1 \u2014 Moyen \u00c2ge/Renaissance",icon:"\u{1F451}",color:"#fbbf24",hasStatic:true},
+      {id:"histoire-cm2",name:"Histoire",sub:"CM2 \u2014 R\u00e9volution/XXe",icon:"\u{1F4DC}",color:"#fbbf24",hasStatic:true},
       {id:"geographie-ce2",name:"G\u00e9ographie",sub:"CE2 \u2014 La France",icon:"\u{1F1EB}\u{1F1F7}",color:"#22d3ee"},
       {id:"geographie-cm1",name:"G\u00e9ographie",sub:"CM1 \u2014 R\u00e9gions de France",icon:"\u{1F5FA}\uFE0F",color:"#22d3ee"},
       {id:"geographie-cm2",name:"G\u00e9ographie",sub:"CM2 \u2014 Europe & Monde",icon:"\u{1F30D}",color:"#22d3ee"},
