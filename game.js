@@ -52,7 +52,7 @@ const SUBJECTS=[
 const LEVELS=SUBJECTS.flatMap(s=>s.levels||[]);
 
 function getSubjectForLevel(lvId){
-  for(const s of SUBJECTS) if(s.levels.find(l=>l.id===lvId)) return s;
+  for(const s of SUBJECTS) if(s.levels&&s.levels.find(l=>l.id===lvId)) return s;
   return SUBJECTS[0];
 }
 const MODES=[
