@@ -1,13 +1,13 @@
 /* ════════ NIVEAUX / MODES ════════ */
 const SUBJECTS=[
-  {id:"maths",name:"Royaume des Nombres",icon:"\u{1F9EE}",color:"#f7a020",desc:"Maths : calcul, probl\u00e8mes, g\u00e9om\u00e9trie",
+  {id:"maths",name:"Royaume des Nombres",icon:"\u{1F9EE}",color:"#f59e0b",desc:"Maths : calcul, probl\u00e8mes, g\u00e9om\u00e9trie",
     levels:[
       {id:"cp",name:"Apprenti Dragonneau",sub:"CP fort (secret)",icon:"\u{1F95A}",color:"#93c5fd",secret:true,hasStatic:true},
       {id:"ce1-ce2",name:"Apprenti Sorcier",sub:"CE1 \u2013 CE2",icon:"\u{1F9D9}",color:"#22c55e",hasStatic:true},
       {id:"cm1-cm2",name:"Chevalier du Savoir",sub:"CM1 \u2013 CM2",icon:"\u2694\uFE0F",color:"#f7a020",hasStatic:true},
       {id:"6e-5e",name:"Ma\u00eetre Dragon",sub:"6\u1d49 \u2013 5\u1d49",icon:"\u{1F409}",color:"#ef4444",hasStatic:true}
     ]},
-  {id:"culture",name:"Royaume du Savoir",icon:"\u{1F4DA}",color:"#c4b5fd",desc:"Histoire, G\u00e9ographie, Fran\u00e7ais, EMC",
+  {id:"culture",name:"Royaume du Savoir",icon:"\u{1F4DA}",color:"#dc2626",desc:"Histoire, G\u00e9ographie, Fran\u00e7ais, EMC",
     levels:[
       {id:"histoire-ce2",name:"Histoire",sub:"CE2 \u2014 Pr\u00e9histoire/Romains",icon:"\u{1F3DB}\uFE0F",color:"#fbbf24",hasStatic:true},
       {id:"histoire-cm1",name:"Histoire",sub:"CM1 \u2014 Moyen \u00c2ge/Renaissance",icon:"\u{1F451}",color:"#fbbf24",hasStatic:true},
@@ -22,7 +22,7 @@ const SUBJECTS=[
       {id:"emc-cm1",name:"EMC",sub:"CM1 \u2014 D\u00e9mocratie",icon:"\u{1F396}\uFE0F",color:"#a78bfa",hasStatic:true},
       {id:"emc-cm2",name:"EMC",sub:"CM2 \u2014 Institutions",icon:"\u{1F3DB}\uFE0F",color:"#a78bfa",hasStatic:true}
     ]},
-  {id:"poesie",name:"Royaume de la Plume",icon:"\u{1F4DC}",color:"#a78bfa",desc:"Po\u00e9sies (La Fontaine, Victor Hugo) \u00e0 \u00e9couter et r\u00e9citer",isPoetry:true},
+  {id:"poesie",name:"Royaume de la Plume",icon:"\u{1F4DC}",color:"#a855f7",desc:"Po\u00e9sies (La Fontaine, Victor Hugo) \u00e0 \u00e9couter et r\u00e9citer",isPoetry:true},
   {id:"langues",name:"Royaume des Mots",icon:"\u{1F310}",color:"#10b981",desc:"H\u00e9breu : alphabet, vocabulaire, expressions, lecture",
     levels:[
       {id:"hebreu-alphabet",name:"H\u00e9breu",sub:"Alphabet (\u05D0\u05D1\u05D2)",icon:"\u{1F524}",color:"#0ea5e9",hasStatic:true},
@@ -30,7 +30,7 @@ const SUBJECTS=[
       {id:"hebreu-expressions",name:"H\u00e9breu",sub:"Expressions courantes",icon:"\u{1F5E3}\uFE0F",color:"#0ea5e9",hasStatic:true},
       {id:"hebreu-lecture",name:"H\u00e9breu",sub:"Lecture mots et phrases",icon:"\u{1F4D6}",color:"#0ea5e9",hasStatic:true}
     ]},
-  {id:"sciences",name:"Royaume des D\u00e9couvertes",icon:"\u{1F52C}",color:"#22d3ee",desc:"Sciences : Physique, Chimie, SVT (biologie)",
+  {id:"sciences",name:"Royaume des D\u00e9couvertes",icon:"\u{1F52C}",color:"#0ea5e9",desc:"Sciences : Physique, Chimie, SVT (biologie)",
     levels:[
       {id:"physique-ce2",name:"Physique",sub:"CE2 \u2014 Mati\u00e8re/Lumi\u00e8re",icon:"\u{1F4A1}",color:"#3b82f6",hasStatic:true},
       {id:"physique-cm1",name:"Physique",sub:"CM1 \u2014 \u00c9nergie/\u00c9lectricit\u00e9",icon:"\u26A1",color:"#3b82f6",hasStatic:true},
@@ -77,7 +77,7 @@ const BADGES=[
 /* ════════ ROYAUMES — chaque domaine = un royaume avec sa mascotte ════════ */
 const ROYAUMES={
   maths:{
-    id:"maths",name:"Royaume des Nombres",color:"#f7a020",bgGradient:"linear-gradient(135deg,#fef3c7,#fde68a,#fcd34d)",
+    id:"maths",name:"Royaume des Nombres",color:"#f59e0b",bgGradient:"linear-gradient(135deg,#fef3c7,#fde68a,#fcd34d)",
     stages:[
       {threshold:0,name:"\u0152uf de feu",emoji:"\u{1F95A}",desc:"Un \u0153uf br\u00fblant repose..."},
       {threshold:100,name:"B\u00e9b\u00e9 Dragon",emoji:"\u{1F423}",desc:"Il vient d'\u00e9clore !"},
@@ -94,7 +94,7 @@ const ROYAUMES={
     ]
   },
   culture:{
-    id:"culture",name:"Royaume du Savoir",color:"#c4b5fd",bgGradient:"linear-gradient(135deg,#ede9fe,#ddd6fe,#c4b5fd)",
+    id:"culture",name:"Royaume du Savoir",color:"#dc2626",bgGradient:"linear-gradient(135deg,#fee2e2,#fecaca,#fca5a5)",
     stages:[
       {threshold:0,name:"Vieux Livre",emoji:"\u{1F4D5}",desc:"Un livre poussi\u00e9reux..."},
       {threshold:100,name:"Apprenti Sage",emoji:"\u{1F4D6}",desc:"Tu commences \u00e0 lire !"},
@@ -111,7 +111,7 @@ const ROYAUMES={
     ]
   },
   sciences:{
-    id:"sciences",name:"Royaume des D\u00e9couvertes",color:"#22d3ee",bgGradient:"linear-gradient(135deg,#cffafe,#a5f3fc,#67e8f9)",
+    id:"sciences",name:"Royaume des D\u00e9couvertes",color:"#0ea5e9",bgGradient:"linear-gradient(135deg,#e0f2fe,#bae6fd,#7dd3fc)",
     stages:[
       {threshold:0,name:"Tube \u00e0 essai",emoji:"\u{1F9EA}",desc:"Tout commence ici..."},
       {threshold:100,name:"Petit Chercheur",emoji:"\u{1F50D}",desc:"Premi\u00e8re exp\u00e9rience !"},
@@ -143,7 +143,7 @@ const ROYAUMES={
     ]
   },
   poesie:{
-    id:"poesie",name:"Royaume de la Plume",color:"#a78bfa",bgGradient:"linear-gradient(135deg,#ede9fe,#c4b5fd,#a78bfa)",
+    id:"poesie",name:"Royaume de la Plume",color:"#a855f7",bgGradient:"linear-gradient(135deg,#f3e8ff,#e9d5ff,#d8b4fe)",
     stages:[
       {threshold:0,name:"Plume vierge",emoji:"\u{1FAB6}",desc:"Une plume t'attend..."},
       {threshold:100,name:"Apprenti Po\u00e8te",emoji:"\u270D\uFE0F",desc:"Premi\u00e8res rimes !"},
