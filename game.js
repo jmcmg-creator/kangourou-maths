@@ -1244,14 +1244,87 @@ const FABLES=[
     morale:"Patience et longueur de temps font plus que force ni que rage."}
 ];
 
+/* ════════ TTS NATUREL ════════
+   Stratégie pour avoir une voix proche de l'humain sur iOS Safari :
+   1. Attendre que les voix soient chargées (getVoices() est asynchrone).
+   2. Prioriser : Siri (iOS 16+, ultra naturelle) > Premium > Enhanced
+      > localService:false (cloud) > toute voix fr-FR.
+   3. Découper le texte en phrases pour des pauses naturelles
+      (la synthèse fait des respirations entre chaque utterance).
+   4. rate=0.92 (légèrement lent pour la déclamation), pitch=1.
+*/
+let _voicesCache=null;
+let _selectedVoiceName=null;
+function listFrenchVoices(){
+  if(!('speechSynthesis' in window)) return [];
+  const all=speechSynthesis.getVoices()||[];
+  return all.filter(v=>(v.lang||'').toLowerCase().startsWith('fr'));
+}
+function pickBestFrenchVoice(){
+  if(!('speechSynthesis' in window)) return null;
+  const voices=listFrenchVoices();
+  if(voices.length===0) return null;
+  // 1. Voix sélectionnée manuellement ?
+  if(_selectedVoiceName){
+    const v=voices.find(x=>x.name===_selectedVoiceName);
+    if(v) return v;
+  }
+  // 2. Hiérarchie de qualité (regex sur le nom)
+  const tiers=[
+    /siri/i,                               // iOS 16+ Siri voices
+    /\bpremium\b/i,                       // "Aurélie (Premium)" etc.
+    /\benhanced\b|\baméliorée?\b/i,      // "Enhanced"
+    /\b(audrey|aur[eé]lie|thomas|marie|c[eé]lia|am[eé]lie)\b/i, // voix iOS connues
+  ];
+  for(const re of tiers){
+    const v=voices.find(x=>re.test(x.name));
+    if(v) return v;
+  }
+  // 3. Voix cloud (souvent meilleures) : localService=false
+  const cloud=voices.find(x=>x.localService===false);
+  if(cloud) return cloud;
+  // 4. fr-FR par défaut
+  return voices.find(x=>(x.lang||'').toLowerCase()==='fr-fr')||voices[0];
+}
+function ensureVoicesLoaded(cb){
+  if(!('speechSynthesis' in window)){cb();return}
+  const voices=speechSynthesis.getVoices();
+  if(voices&&voices.length>0){cb();return}
+  // Sur certains navigateurs, getVoices() est vide jusqu'à l'événement voiceschanged
+  const handler=()=>{speechSynthesis.removeEventListener('voiceschanged',handler);cb()};
+  speechSynthesis.addEventListener('voiceschanged',handler);
+  // Sécurité : timeout au cas où l'événement ne se déclencherait pas
+  setTimeout(()=>{speechSynthesis.removeEventListener('voiceschanged',handler);cb()},800);
+}
+function splitForProsody(text){
+  // Découpe en phrases pour respirations naturelles entre chaque.
+  // Garde la ponctuation pour que la synthèse fasse l'intonation.
+  return String(text).split(/(?<=[.!?…])\s+/).filter(s=>s.trim().length>0);
+}
 function speakText(text){
-  if(!('speechSynthesis' in window)){alert('Synthèse vocale non disponible sur ce navigateur');return}
+  if(!('speechSynthesis' in window)){alert('Synth\u00e8se vocale non disponible sur ce navigateur');return}
   speechSynthesis.cancel();
-  const u=new SpeechSynthesisUtterance(text);
-  u.lang='fr-FR';u.rate=0.85;u.pitch=1;
-  speechSynthesis.speak(u);
+  ensureVoicesLoaded(()=>{
+    const voice=pickBestFrenchVoice();
+    const chunks=splitForProsody(text);
+    chunks.forEach((chunk,i)=>{
+      const u=new SpeechSynthesisUtterance(chunk);
+      u.lang='fr-FR';
+      u.rate=0.92;
+      u.pitch=1.0;
+      u.volume=1.0;
+      if(voice) u.voice=voice;
+      speechSynthesis.speak(u);
+    });
+  });
 }
 function stopSpeaking(){if('speechSynthesis' in window)speechSynthesis.cancel()}
+function setSelectedVoice(name){
+  _selectedVoiceName=name||null;
+  try{localStorage.setItem('royaume_tts_voice',name||'')}catch(e){}
+}
+// Restore voix sélectionnée
+try{const v=localStorage.getItem('royaume_tts_voice');if(v)_selectedVoiceName=v}catch(e){}
 
 let _recognition=null;
 function startRecording(onResult,onEnd){
@@ -1328,7 +1401,8 @@ function renderPoesieFable(){
   </div>
   <div class="card mb-4" style="border-color:#a78bfa">
     <h3 class="card-title" style="color:#5b21b6;margin-bottom:12px">\u{1F3A7} Écoute la fable</h3>
-    <p class="sub mb-2">Le Sage va te lire la fable lentement.</p>
+    <p class="sub mb-2">Le Sage va te lire la fable. Choisis la voix qui sonne le mieux.</p>
+    <div id="voicePickerWrap" style="margin-bottom:10px"></div>
     <div class="btn-row">
       <button class="btn-fire" onclick="speakText(document.getElementById('fableText').innerText)">\u25B6\uFE0F Écouter</button>
       <button class="btn-stone" onclick="stopSpeaking()">\u23F9\uFE0F Stop</button>
@@ -1347,6 +1421,28 @@ function renderPoesieFable(){
   </div>
   <button class="btn-stone" onclick="navigate('poesieHome')">\u2190 Autres fables</button>`;
 }
+function populateVoicePicker(){
+  const wrap=document.getElementById('voicePickerWrap');
+  if(!wrap) return;
+  ensureVoicesLoaded(()=>{
+    const voices=listFrenchVoices();
+    if(voices.length===0){
+      wrap.innerHTML='<p class="sub" style="color:#9c6f3a;font-size:.8rem">Aucune voix française trouvée sur cet appareil.</p>';
+      return;
+    }
+    const auto=pickBestFrenchVoice();
+    const sel=_selectedVoiceName||(auto&&auto.name)||'';
+    const opts=voices.map(v=>{
+      const tier=/siri/i.test(v.name)?' \u{1F3C5}':/premium|enhanced|am\u00e9lior/i.test(v.name)?' \u2728':'';
+      const local=v.localService?'':' \u2601\uFE0F';
+      return '<option value="'+esc(v.name)+'"'+(v.name===sel?' selected':'')+'>'+esc(v.name)+tier+local+' ('+esc(v.lang)+')</option>';
+    }).join('');
+    wrap.innerHTML='<label style="font-size:.8rem;color:#7a5a3a;display:block;margin-bottom:4px">Voix :</label><select onchange="setSelectedVoice(this.value)" style="width:100%;padding:8px;border-radius:8px;border:1px solid #c4b5fd;background:#fef9f3;color:#2d2018;font-family:inherit;font-size:.9rem">'+opts+'</select><p class="sub" style="font-size:.7rem;margin-top:4px;color:#9c6f3a">\u{1F3C5} = Siri \u00b7 \u2728 = Premium/Enhanced \u00b7 \u2601\uFE0F = cloud</p>';
+  });
+}
+// Auto-populate when poesieFable screen renders
+const _origRender=render;
+render=function(){_origRender();if(state.screen==='poesieFable') setTimeout(populateVoicePicker,50)};
 
 window._poesieRecording=false;
 function togglePoesieRec(){
