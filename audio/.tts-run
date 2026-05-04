@@ -1,0 +1,4 @@
+# Fichier marqueur — tout commit qui le modifie déclenche le workflow
+# Generate poetry audio (OpenAI TTS) sur main.
+# Pour relancer la génération manuellement : `date >> audio/.tts-run && git commit -am "tts: rerun" && git push`
+trigger=20260504-001
