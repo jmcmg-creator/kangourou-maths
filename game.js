@@ -1623,7 +1623,8 @@ function renderPoesieHome(){
 // → fallback : f.audioUrl (hardcodé dans FABLES s'il y est).
 function getFableAudioUrl(fableId){
   const url=(profile.audioUrls&&profile.audioUrls[fableId])||(FABLES.find(function(f){return f.id===fableId})||{}).audioUrl||'';
-  return url&&/^https?:\/\//.test(url)?url:'';
+  // Accepte URLs absolues http(s) ET chemins relatifs sûrs (ex: audio/xxx.mp3 généré par le workflow OpenAI TTS).
+  return url&&(/^https?:\/\//.test(url)||/^audio\/[a-zA-Z0-9_\-]+\.mp3$/.test(url))?url:'';
 }
 
 function renderPoesieFable(){
