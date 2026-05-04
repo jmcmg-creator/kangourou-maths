@@ -407,6 +407,8 @@ function mergeProfiles(local,remote){
   const seenAi=new Set();
   out.aiExercises=allAi.filter(function(e){if(!e||!e.id)return false;if(seenAi.has(e.id))return false;seenAi.add(e.id);return true}).slice(-200);
   // dailyQuest : prend celui dont la progress est la plus haute (même jour)
+  // audioUrls : merge dict avec priorité au remote (sync cross-device)
+  out.audioUrls=Object.assign({},local.audioUrls||{},remote.audioUrls||{});
   if(remote.dailyQuest&&local.dailyQuest&&remote.dailyQuest.id===local.dailyQuest.id){
     out.dailyQuest=Object.assign({},local.dailyQuest,{progress:Math.max(local.dailyQuest.progress||0,remote.dailyQuest.progress||0),done:!!(local.dailyQuest.done||remote.dailyQuest.done)});
   }else if(!local.dailyQuest&&remote.dailyQuest){
@@ -1349,7 +1351,41 @@ function renderParent(){
   <div class="card mb-4" style="border-color:#573c1e"><h3 class="fredoka" style="font-size:.85rem;color:#475569;margin-bottom:8px">Donn\u00e9es</h3>
   <button class="btn-stone btn-small" onclick="exportData()">\u{1F4E4} Exporter (JSON)</button>
   <button class="btn-stone btn-small" onclick="resetData()" style="margin-top:8px;background:linear-gradient(135deg,#7f1d1d,#991b1b)">\u{1F5D1}\uFE0F R\u00e9initialiser</button></div>
-  <button class="btn-stone" onclick="navigate('home')">\u2190 Retour</button>`;
+  <div class="card mb-4" style="border-color:#a78bfa"><h3 class="fredoka" style="font-size:.85rem;color:#5b21b6;margin-bottom:8px">\u{1F3A7} Audios des poésies (URLs MP3)</h3>
+  <p style="color:#1e293b;font-size:.82rem;margin-bottom:10px;line-height:1.5">Pour chaque poème, colle l\u0027URL d\u0027un MP3 (LibriVox / archive.org / autre source publique). L\u0027URL sera lue dans l\u0027écran de la fable et synchronisée sur tous tes appareils.</p>
+  <p style="color:#475569;font-size:.75rem;margin-bottom:12px"><a href="https://librivox.org/search?q=la+fontaine&search_form=advanced" target="_blank" rel="noopener" style="color:#0369a1;text-decoration:underline">\u{1F517} Chercher sur LibriVox \u2192</a> (puis clique-droit sur 64kb / 128kb pour copier le lien).</p>
+  <div id="audioUrlList" style="display:flex;flex-direction:column;gap:6px"></div>
+  <p id="audioUrlSaveMsg" style="margin-top:10px;font-size:.78rem;color:#15803d;font-weight:600;display:none">\u2705 Sauvegardé.</p></div>
+  <button class="btn-stone" onclick="navigate(\u0027home\u0027)">\u2190 Retour</button>`;
+  // Hydrate the audio URL editor (DOM is fresh)
+  setTimeout(populateAudioUrlEditor,30);
+}
+
+function populateAudioUrlEditor(){
+  const wrap=document.getElementById('audioUrlList');
+  if(!wrap||typeof FABLES==='undefined') return;
+  if(!profile.audioUrls) profile.audioUrls={};
+  wrap.innerHTML=FABLES.map(function(f){
+    const cur=profile.audioUrls[f.id]||'';
+    const safeId=esc(f.id);
+    return '<div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;border-bottom:1px solid #e0f2fe;padding:6px 0">'
+      +'<span style="font-size:1.3rem">'+f.icon+'</span>'
+      +'<span style="flex:1;min-width:120px;color:#0c4a6e;font-size:.82rem;font-weight:600">'+esc(f.title)+'</span>'
+      +'<input type="url" data-fableid="'+safeId+'" placeholder="https://archive.org/download/.../track.mp3" value="'+esc(cur).replace(/"/g,'&quot;')+'" style="flex:2;min-width:180px;padding:6px 8px;border-radius:6px;border:1px solid #bae6fd;background:#ffffff;color:#1e293b;font-size:.78rem;font-family:monospace" onchange="saveAudioUrl(this)" />'
+      +(cur?'<button class="btn-stone btn-small" style="font-size:.7rem" onclick="document.querySelector(\u0027[data-fableid=&quot;'+safeId+'&quot;]\u0027).value=\u0027\u0027;saveAudioUrl(document.querySelector(\u0027[data-fableid=&quot;'+safeId+'&quot;]\u0027))">\u{1F5D1}\uFE0F</button>':'')
+      +'</div>';
+  }).join('');
+}
+
+function saveAudioUrl(input){
+  const id=input.getAttribute('data-fableid');
+  const v=(input.value||'').trim();
+  if(!profile.audioUrls) profile.audioUrls={};
+  if(v) profile.audioUrls[id]=v;
+  else delete profile.audioUrls[id];
+  saveProfile();
+  const msg=document.getElementById('audioUrlSaveMsg');
+  if(msg){msg.style.display='block'; setTimeout(function(){msg.style.display='none'},1500)}
 }
 
 function copySyncLink(){
@@ -1581,6 +1617,15 @@ function renderPoesieHome(){
   <button class="btn-stone mt-4" onclick="navigate('home')">\u2190 Retour</button>`;
 }
 
+
+// Récupère l'URL audio (MP3) configurée pour une fable.
+// Source : profile.audioUrls (édité dans Espace Parent, synchronisé via le cloud)
+// → fallback : f.audioUrl (hardcodé dans FABLES s'il y est).
+function getFableAudioUrl(fableId){
+  const url=(profile.audioUrls&&profile.audioUrls[fableId])||(FABLES.find(function(f){return f.id===fableId})||{}).audioUrl||'';
+  return url&&/^https?:\/\//.test(url)?url:'';
+}
+
 function renderPoesieFable(){
   const f=FABLES.find(x=>x.id===state.fableId);
   if(!f){navigate('poesieHome');return}
@@ -1601,9 +1646,10 @@ function renderPoesieFable(){
       <button class="btn-stone btn-small" onclick="toggleFableText()" style="font-size:.78rem">${state.fableTextHidden?'\u{1F441}\uFE0F Voir le texte':'\u{1F648} Cacher le texte (mode récitation)'}</button>
     </div>
   </div>
+  ${(()=>{const u=getFableAudioUrl(f.id); return u?`<div class="card mb-4" style="border-color:#a78bfa"><h3 class="card-title" style="color:#5b21b6;margin-bottom:12px">\u{1F3A7} Écoute la fable (lecture humaine)</h3><p class="sub mb-2">Lecture publique (LibriVox / archive.org) — qualité humaine.</p><audio controls preload="metadata" style="width:100%;margin-top:6px" src="${esc(u)}">Ton navigateur ne supporte pas l'\u00e9l\u00e9ment audio.</audio></div>`:''})()}
   <div class="card mb-4" style="border-color:#a78bfa">
-    <h3 class="card-title" style="color:#5b21b6;margin-bottom:12px">\u{1F3A7} Écoute la fable</h3>
-    <p class="sub mb-2">Le Sage va te lire la fable. Choisis la voix qui sonne le mieux.</p>
+    <h3 class="card-title" style="color:#5b21b6;margin-bottom:12px">\u{1F3A7} Écoute (voix de synthèse)</h3>
+    <p class="sub mb-2">Synthèse vocale du Sage. Choisis la voix qui sonne le mieux.</p>
     <div id="voicePickerWrap" style="margin-bottom:10px"></div>
     <div class="btn-row">
       <button class="btn-fire" onclick="speakText(document.getElementById('fableText').innerText)">\u25B6\uFE0F Écouter</button>
