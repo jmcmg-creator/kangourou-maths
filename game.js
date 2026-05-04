@@ -1317,7 +1317,13 @@ const FABLES=[
     morale:"L'enfant joue, ignorant la peine ; la mère l'aime jusqu'à la fin.",moraleLabel:"Thème"},
   {id:"hugo-sentiers",title:"Sentiers où l'herbe se balance",icon:"\u{1F343}",dur:40,author:"Victor Hugo",recueil:"Les Contemplations, 1856",
     text:"Sentiers où l'herbe se balance, vallons, coteaux, bois chevelus, pourquoi ce deuil et ce silence ? \u2014 Celui qui venait ne vient plus. Pourquoi personne à ta fenêtre, et pourquoi ton jardin sans fleurs, ô maison ? où donc est ton maître ? \u2014 Je ne sais pas, il est ailleurs.",
-    morale:"L'absence de l'être aimé (Léopoldine) vide la nature de ses couleurs.",moraleLabel:"Thème"}
+    morale:"L'absence de l'être aimé (Léopoldine) vide la nature de ses couleurs.",moraleLabel:"Thème"},
+  {id:"hugo-printemps",title:"Printemps",icon:"\u{1F33C}",dur:55,author:"Victor Hugo",recueil:"Toute la lyre, posthume",
+    text:"Voici donc les longs jours, lumière, amour, délire ! Voici le printemps ! mars, avril au doux sourire, mai fleuri, juin brûlant, tous les beaux mois amis ! Les peupliers, au bord des fleuves endormis, se courbent mollement comme de grandes palmes ; l'oiseau palpite au fond des bois tièdes et calmes ; il semble que tout rit, et que les arbres verts sont joyeux d'être ensemble et se disent des vers.",
+    morale:"Hugo célèbre l'arrivée joyeuse du printemps et le réveil de la nature.",moraleLabel:"Thème"},
+  {id:"hugo-les-mots",title:"Les Mots",icon:"\u{1F4DD}",dur:55,author:"Victor Hugo",recueil:"Les Contemplations, 1856",
+    text:"Guerre à la rhétorique et paix à la syntaxe ! Et tout quatre-vingt-treize éclata. Les mots, sortant des bois sauvages où ils dormaient, soudain, terribles, jaillirent ; la foule entrait dans Babel ! J'ai dit à l'ombre : Sois ! Et l'ombre fut. J'ai mis un bonnet rouge au vieux dictionnaire. Plus de mot sénateur ! plus de mot roturier ! Je fis une tempête au fond de l'encrier, et je mêlai, parmi les ombres débordées, au peuple noir des mots l'essaim blanc des idées.",
+    morale:"Hugo défend la liberté des mots : aucun mot n'est trop noble ou trop populaire pour la poésie.",moraleLabel:"Thème"}
 ];
 
 /* ════════ TTS NATUREL ════════
