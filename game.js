@@ -1582,7 +1582,7 @@ function renderPoesieFable(){
   <div class="card mb-4" style="border-color:#22c55e">
     <h3 class="card-title" style="color:#15803d;margin-bottom:12px">\u{1F3A4} À toi de réciter !</h3>
     <p class="sub mb-2">Clique sur le micro et récite la fable. L'app va comparer ce que tu dis au texte.</p>
-    <button class="btn-fire" id="recBtn" onclick="togglePoesieRec()">\u{1F534} Démarrer le micro</button>
+    <button class="btn-fire" id="recBtn" onclick="togglePoesieRec()">\u{1F534} Démarrer (rapide)</button><button class="btn-stone mt-2" id="recBtnWhisper" onclick="togglePoesieRecWhisper()" style="background:linear-gradient(135deg,#a855f7,#c084fc);color:#fff;border-color:#a855f7"><span>\u{1F916}</span> Whisper IA (précis, lent)</button>
     <div id="recLive" style="margin-top:14px;padding:12px;background:#f0fdf4;border-radius:10px;border:1px solid #86efac;min-height:60px;color:#14532d;font-style:italic;display:none"></div>
     <div id="recResult"></div>
   </div>
@@ -1660,6 +1660,131 @@ function togglePoesieRec(){
           <p class="sub mb-2">Mots reconnus (en vert) :</p>
           <div style="font-size:.95rem;line-height:1.7">${wordsHTML}</div>
         </div>`;
+    }
+  );
+}
+
+/* ════════ WHISPER (transformers.js) — STT haute qualité pour la récitation ════════
+   Charge Xenova/whisper-tiny (~40 Mo) en lazy. Tourne 100% côté navigateur via WebAssembly :
+   pas de backend, pas d'API key, pas d'audio envoyé à un serveur. Premier lancement long
+   (téléchargement + warmup), puis cache navigateur sur les prochaines sessions. */
+let _whisperPipe=null;
+let _whisperLoading=false;
+let _whisperLoadProgress=null; // callback fn(percent, msg)
+
+async function loadWhisper(onProgress){
+  if(_whisperPipe) return _whisperPipe;
+  if(_whisperLoading){
+    while(_whisperLoading) await new Promise(function(r){setTimeout(r,300)});
+    return _whisperPipe;
+  }
+  _whisperLoading=true;
+  _whisperLoadProgress=onProgress||null;
+  try{
+    if(_whisperLoadProgress) _whisperLoadProgress(0,'Téléchargement de Whisper (\u224840 Mo, première fois seulement)...');
+    const mod=await import('https://cdn.jsdelivr.net/npm/@xenova/transformers@2.17.2/+esm');
+    if(_whisperLoadProgress) _whisperLoadProgress(15,'Chargement du modèle...');
+    _whisperPipe=await mod.pipeline('automatic-speech-recognition','Xenova/whisper-tiny',{
+      progress_callback:function(p){
+        if(_whisperLoadProgress&&p&&typeof p.progress==='number'){
+          _whisperLoadProgress(15+Math.round(p.progress*80),p.file||'modèle');
+        }
+      }
+    });
+    if(_whisperLoadProgress) _whisperLoadProgress(100,'Whisper prêt !');
+    return _whisperPipe;
+  }catch(e){
+    console.error('Whisper load failed:',e);
+    throw e;
+  }finally{
+    _whisperLoading=false;
+  }
+}
+
+let _whisperRecorder=null;
+let _whisperStream=null;
+async function startWhisperRecording(onLive,onComplete,lang){
+  lang=lang||'french';
+  if(!navigator.mediaDevices||!window.MediaRecorder){
+    onComplete('','MediaRecorder non disponible sur ce navigateur');
+    return null;
+  }
+  try{
+    _whisperStream=await navigator.mediaDevices.getUserMedia({audio:true});
+  }catch(e){
+    onComplete('','Permission micro refusée : '+e.message);
+    return null;
+  }
+  const chunks=[];
+  _whisperRecorder=new MediaRecorder(_whisperStream);
+  _whisperRecorder.ondataavailable=function(e){if(e.data&&e.data.size>0)chunks.push(e.data)};
+  _whisperRecorder.onstop=async function(){
+    try{
+      _whisperStream.getTracks().forEach(function(t){t.stop()});
+      _whisperStream=null;
+      onLive&&onLive('Transcription Whisper en cours...');
+      const blob=new Blob(chunks,{type:_whisperRecorder.mimeType||'audio/webm'});
+      const arrayBuf=await blob.arrayBuffer();
+      const Ctx=window.AudioContext||window.webkitAudioContext;
+      const audioCtx=new Ctx({sampleRate:16000});
+      const audioBuf=await audioCtx.decodeAudioData(arrayBuf);
+      const audio=audioBuf.getChannelData(0);
+      audioCtx.close();
+      const pipe=await loadWhisper(function(pct,msg){onLive&&onLive('\u{1F916} '+msg+' ('+pct+'%)')});
+      onLive&&onLive('\u{1F916} Whisper transcrit ta voix...');
+      const out=await pipe(audio,{language:lang,task:'transcribe',chunk_length_s:30});
+      onComplete((out&&out.text||'').trim(),null);
+    }catch(e){
+      console.error('Whisper transcription failed:',e);
+      onComplete('','Erreur Whisper : '+e.message);
+    }
+  };
+  _whisperRecorder.start();
+  return _whisperRecorder;
+}
+function stopWhisperRecording(){
+  if(_whisperRecorder&&_whisperRecorder.state==='recording'){
+    _whisperRecorder.stop();
+  }
+}
+
+/* Wrapper qui utilise togglePoesieRec mais avec Whisper au lieu de SpeechRecognition.
+   Affiche un loader si le modèle n'est pas encore chargé. */
+function togglePoesieRecWhisper(){
+  const btn=document.getElementById('recBtnWhisper');
+  const live=document.getElementById('recLive');
+  const res=document.getElementById('recResult');
+  if(window._poesieRecordingWhisper){
+    stopWhisperRecording();
+    return; // onstop callback ci-dessous gère le reste
+  }
+  const f=FABLES.find(function(x){return x.id===state.fableId});
+  if(!f) return;
+  res.innerHTML='';
+  live.style.display='block';
+  live.textContent='\u{1F916} Initialisation Whisper...';
+  btn.textContent='\u23F9\uFE0F Arrêter';
+  btn.classList.add('pulse');
+  window._poesieRecordingWhisper=true;
+  startWhisperRecording(
+    function(msg){live.textContent=msg||'\u{1F3A4} Parle...'},
+    function(finalTxt,err){
+      window._poesieRecordingWhisper=false;
+      btn.textContent='\u{1F916} Whisper IA (recommencer)';
+      btn.classList.remove('pulse');
+      if(err){res.innerHTML='<p style="color:#b91c1c;margin-top:10px">'+esc(err)+'</p>';return}
+      if(!finalTxt||finalTxt.trim().length<5){res.innerHTML='<p style="color:#0c4a6e;margin-top:10px">Pas de voix détectée. Réessaie !</p>';return}
+      const cmp=compareTexts(f.text,finalTxt);
+      if(!profile.poesieStats) profile.poesieStats={};
+      const s=profile.poesieStats[f.id]||{plays:0,best:0};
+      s.plays++;
+      if(cmp.score>s.best) s.best=cmp.score;
+      profile.poesieStats[f.id]=s;
+      const xpGain=Math.round(cmp.score/2);
+      profile.xp+=xpGain;
+      saveProfile();
+      const wordsHTML=cmp.result.map(function(x){return '<span style="color:'+(x.ok?'#15803d':'#9c6f3a')+';'+(x.ok?'':'text-decoration:underline wavy #ef4444')+';margin:0 2px">'+esc(x.w)+'</span>'}).join('');
+      res.innerHTML='<div class="divider"></div><div class="card" style="background:'+(cmp.score>=70?'#dcfce7':cmp.score>=40?'#fef3c7':'#fee2e2')+';border-color:'+(cmp.score>=70?'#22c55e':cmp.score>=40?'#fbbf24':'#ef4444')+'"><h3 class="card-title">'+(cmp.score>=80?'\u{1F389} Excellent (Whisper)':cmp.score>=60?'\u{1F44D} Bien joué':cmp.score>=40?'\u{1F4AA} Continue':'\u{1F4DA} Réécoute')+'</h3><p style="font-size:1.4rem;font-weight:700;color:#0c4a6e;margin:8px 0">'+cmp.score+'% \u2014 '+cmp.matched+'/'+cmp.total+' mots</p><p class="sub">+'+xpGain+' XP gagnés \u2728 \u00b7 Whisper IA</p><div class="divider"></div><p class="sub mb-2">Whisper a transcrit :</p><p style="font-style:italic;color:#1e293b;font-size:.95rem;line-height:1.55;margin-bottom:10px">"'+esc(finalTxt)+'"</p><p class="sub mb-2">Mots reconnus (en vert) :</p><div style="font-size:.95rem;line-height:1.7">'+wordsHTML+'</div></div>';
     }
   );
 }
