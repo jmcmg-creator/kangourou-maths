@@ -14,6 +14,14 @@ on:
         required: false
         default: 'nova'
         type: string
+  # Auto-trigger : tout push qui modifie le script, le workflow,
+  # ou le fichier marqueur audio/.tts-run déclenche la génération.
+  push:
+    branches: [main]
+    paths:
+      - 'audio/.tts-run'
+      - 'scripts/generate-audio.mjs'
+      - '.github/workflows/generate-audio.yml'
 
 jobs:
   generate:
