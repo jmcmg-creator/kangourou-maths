@@ -43,6 +43,14 @@ const SUBJECTS=[
       {id:"biologie-ce2",name:"SVT",sub:"CE2 \u2014 Corps/Animaux",icon:"\u{1F9B7}",color:"#84cc16",hasStatic:true},
       {id:"biologie-cm1",name:"SVT",sub:"CM1 \u2014 Nutrition/Reproduction",icon:"\u{1F33F}",color:"#84cc16",hasStatic:true},
       {id:"biologie-cm2",name:"SVT",sub:"CM2 \u2014 \u00c9cosyst\u00e8mes",icon:"\u{1F33B}",color:"#84cc16",hasStatic:true}
+    ]},
+  {id:"culture-adulte",name:"Royaume des Sages",icon:"\u{1F9E0}",color:"#9333ea",desc:"Culture g\u00e9n\u00e9rale (niveau adulte) par th\u00e8mes",isAdult:true,
+    levels:[
+      {id:"adult-histoire",name:"Histoire",sub:"Antiquit\u00e9, Moyen \u00c2ge, \u00e9poques modernes",icon:"\u{1F3DB}\ufe0f",color:"#dc2626",hasStatic:true},
+      {id:"adult-geographie",name:"G\u00e9ographie",sub:"Pays, capitales, drapeaux, fleuves",icon:"\u{1F30D}",color:"#0ea5e9",hasStatic:true},
+      {id:"adult-arts",name:"Arts & Litt\u00e9rature",sub:"Peinture, sculpture, romans, po\u00e9sie",icon:"\u{1F3A8}",color:"#a855f7",hasStatic:true},
+      {id:"adult-sciences",name:"Sciences",sub:"Physique, biologie, espace",icon:"\u{1F52D}",color:"#10b981",hasStatic:true},
+      {id:"adult-cinema-musique",name:"Cin\u00e9ma & Musique",sub:"Films, compositeurs, groupes",icon:"\u{1F3AC}",color:"#f59e0b",hasStatic:true}
     ]}
 ];
 
@@ -159,6 +167,23 @@ const ROYAUMES={
       {id:"lievre",name:"Lapidou",emoji:"\u{1F407}",elem:"Le Li\u00e8vre",threshold:50},
       {id:"lion",name:"Royal",emoji:"\u{1F981}",elem:"Le Lion",threshold:100},
       {id:"phoenix",name:"Ph\u00e9nix",emoji:"\u{1F985}",elem:"L\u00e9gende",threshold:200}
+    ]
+  },
+  "culture-adulte":{
+    id:"culture-adulte",name:"Royaume des Sages",color:"#9333ea",bgGradient:"linear-gradient(135deg,#f3e8ff,#ddd6fe,#c4b5fd)",
+    stages:[
+      {threshold:0,name:"Curieux",emoji:"\u{1F914}",desc:"La connaissance attend..."},
+      {threshold:100,name:"Lettr\u00e9",emoji:"\u{1F4DA}",desc:"Tu commences \u00e0 savoir !"},
+      {threshold:300,name:"\u00c9rudit",emoji:"\u{1F393}",desc:"Le savoir t'\u00e9claire"},
+      {threshold:700,name:"Sage",emoji:"\u{1F9D9}",desc:"Tu ma\u00eetrises de nombreux th\u00e8mes"},
+      {threshold:1500,name:"Encyclop\u00e9diste",emoji:"\u{1F4D6}\u2728",desc:"Ma\u00eetre de la culture g\u00e9n\u00e9rale"}
+    ],
+    companions:[
+      {id:"clio",name:"Clio",emoji:"\u{1F3DB}\ufe0f",elem:"Histoire",threshold:10},
+      {id:"atlas",name:"Atlas",emoji:"\u{1F30D}",elem:"G\u00e9ographie",threshold:25},
+      {id:"orphee",name:"Orph\u00e9e",emoji:"\u{1F3A8}",elem:"Arts & Lettres",threshold:50},
+      {id:"galilee",name:"Galil\u00e9e",emoji:"\u{1F52D}",elem:"Sciences",threshold:100},
+      {id:"melies",name:"M\u00e9li\u00e8s",emoji:"\u{1F3AC}",elem:"Cin\u00e9ma & Musique",threshold:200}
     ]
   }
 };
@@ -1566,9 +1591,15 @@ function renderPoesieFable(){
     <p class="sub">de ${esc(f.author||'Jean de La Fontaine')}${f.recueil?' \u2014 '+esc(f.recueil):''}</p>
   </div>
   <div class="card mb-4" style="border-color:#c4b5fd">
-    <div style="font-style:italic;color:#1e293b;line-height:1.7;font-size:1.05rem;font-weight:500" id="fableText">${f.text}</div>
+    <div id="fableTextWrap" style="position:relative">
+      <div id="fableText" data-poem="${encodeURIComponent(f.text)}" style="font-style:italic;color:#1e293b;line-height:1.7;font-size:1.05rem;font-weight:500;${state.fableTextHidden?'filter:blur(8px);user-select:none;pointer-events:none':''}">${f.text}</div>
+      ${state.fableTextHidden?`<div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(255,255,255,.85);border-radius:10px;flex-direction:column;text-align:center;padding:20px"><div style="font-size:2rem">\u{1F648}</div><p style="font-weight:700;color:#5b21b6;margin:8px 0">Texte masqué — pas de triche !</p><p class="sub" style="margin-bottom:10px">Écoute la fable d'abord, puis récite de mémoire.</p><button class="btn-stone btn-small" onclick="toggleFableText()">\u{1F441}\uFE0F Voir le texte</button></div>`:''}
+    </div>
     <div class="divider"></div>
     ${f.morale?`<div style="background:#fef3c7;padding:10px 14px;border-radius:10px;border-left:3px solid #0ea5e9;color:#0c4a6e;font-weight:600">\u{1F4A1} ${esc(f.moraleLabel||'Morale')} : <em>${esc(f.morale)}</em></div>`:''}
+    <div style="margin-top:12px;text-align:center">
+      <button class="btn-stone btn-small" onclick="toggleFableText()" style="font-size:.78rem">${state.fableTextHidden?'\u{1F441}\uFE0F Voir le texte':'\u{1F648} Cacher le texte (mode récitation)'}</button>
+    </div>
   </div>
   <div class="card mb-4" style="border-color:#a78bfa">
     <h3 class="card-title" style="color:#5b21b6;margin-bottom:12px">\u{1F3A7} Écoute la fable</h3>
@@ -1616,6 +1647,12 @@ const _origRender=render;
 render=function(){_origRender();if(state.screen==='poesieFable') setTimeout(populateVoicePicker,50)};
 
 window._poesieRecording=false;
+
+function toggleFableText(){
+  state.fableTextHidden=!state.fableTextHidden;
+  if(state.screen==='poesieFable') render();
+}
+
 function togglePoesieRec(){
   const btn=$('recBtn');const live=$('recLive');const res=$('recResult');
   if(window._poesieRecording){
@@ -1633,6 +1670,8 @@ function togglePoesieRec(){
   btn.textContent='\u23F9\uFE0F Arrêter';
   btn.classList.add('pulse');
   window._poesieRecording=true;
+  // Mode anti-triche : on masque le texte de la fable au moment de réciter.
+  if(!state.fableTextHidden){state.fableTextHidden=true; const t=document.getElementById('fableTextWrap'); if(t)t.style.opacity='.3'}
   startRecording(
     (txt)=>{live.textContent=txt||'\u{1F3A4} Parle...'},
     (finalTxt)=>{
@@ -1766,6 +1805,8 @@ function togglePoesieRecWhisper(){
   btn.textContent='\u23F9\uFE0F Arrêter';
   btn.classList.add('pulse');
   window._poesieRecordingWhisper=true;
+  // Mode anti-triche : on masque le texte de la fable au moment de réciter.
+  if(!state.fableTextHidden){state.fableTextHidden=true; const t=document.getElementById('fableTextWrap'); if(t)t.style.opacity='.3'}
   startWhisperRecording(
     function(msg){live.textContent=msg||'\u{1F3A4} Parle...'},
     function(finalTxt,err){
