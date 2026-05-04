@@ -318,25 +318,99 @@ async function fetchProfileByAid(aid){
   }catch(e){return null}
 }
 
-// Sync (pull) du profil ACTIF depuis le cloud. Si la version cloud a plus de
-// parties jouées, on remplace localement.
+// Fusionne deux profils (local + remote) sans rien perdre.
+// Stratégie : MAX pour les compteurs cumulatifs, UNION pour les listes,
+// merge profond pour royaumes / exerciseStats / catStats.
+// Permet à plusieurs appareils de jouer en parallèle sans s'écraser.
+function mergeProfiles(local,remote){
+  if(!remote||typeof remote!=='object') return local;
+  if(!local||!local.name) return migrate(remote);
+  const out=Object.assign({},local);
+  // Compteurs cumulatifs : max
+  ['totalGames','totalQuestions','totalCorrect','bestStreak','xp','cristaux','stage'].forEach(function(k){
+    out[k]=Math.max(local[k]||0,remote[k]||0);
+  });
+  // mainDragon : garde la valeur locale si définie, sinon remote
+  out.mainDragon=local.mainDragon||remote.mainDragon||'main';
+  // Listes : union dédup
+  function unionArr(a,b){const s=new Set();const r=[];[].concat(a||[],b||[]).forEach(function(v){const k=typeof v==='object'?JSON.stringify(v):v;if(!s.has(k)){s.add(k);r.push(v)}});return r}
+  out.unlockedBadges=unionArr(local.unlockedBadges,remote.unlockedBadges);
+  out.dragonnets=unionArr(local.dragonnets,remote.dragonnets);
+  out.playDays=unionArr(local.playDays,remote.playDays);
+  // Sessions : concatène, dédup par signature, trie par date desc, garde 50 derniers
+  const allSess=[].concat(local.sessions||[],remote.sessions||[]);
+  const seenS=new Set();
+  out.sessions=allSess.filter(function(s){const k=(s.date||'')+'|'+(s.level||'')+'|'+(s.score||0)+'|'+(s.total||0);if(seenS.has(k))return false;seenS.add(k);return true}).sort(function(a,b){return (b.date||'').localeCompare(a.date||'')}).slice(0,50);
+  // Royaumes : merge profond, max sur chaque compteur, union sur companions
+  out.royaumes=Object.assign({},local.royaumes||{});
+  Object.keys(remote.royaumes||{}).forEach(function(rid){
+    const rl=out.royaumes[rid]||{};
+    const rr=remote.royaumes[rid]||{};
+    out.royaumes[rid]={
+      xp:Math.max(rl.xp||0,rr.xp||0),
+      cristaux:Math.max(rl.cristaux||0,rr.cristaux||0),
+      games:Math.max(rl.games||0,rr.games||0),
+      questions:Math.max(rl.questions||0,rr.questions||0),
+      correct:Math.max(rl.correct||0,rr.correct||0),
+      bestStreak:Math.max(rl.bestStreak||0,rr.bestStreak||0),
+      companions:unionArr(rl.companions,rr.companions)
+    };
+  });
+  // exerciseStats : max attempt/correct, dernière date la plus récente
+  out.exerciseStats=Object.assign({},local.exerciseStats||{});
+  Object.keys(remote.exerciseStats||{}).forEach(function(id){
+    const el=out.exerciseStats[id]||{att:0,cor:0};
+    const er=remote.exerciseStats[id]||{att:0,cor:0};
+    out.exerciseStats[id]={
+      att:Math.max(el.att||0,er.att||0),
+      cor:Math.max(el.cor||0,er.cor||0),
+      lastSeen:((el.lastSeen||'')>(er.lastSeen||''))?el.lastSeen:er.lastSeen
+    };
+  });
+  // catStats : max
+  out.catStats=Object.assign({},local.catStats||{});
+  Object.keys(remote.catStats||{}).forEach(function(c){
+    const cl=out.catStats[c]||{att:0,cor:0};
+    const cr=remote.catStats[c]||{att:0,cor:0};
+    out.catStats[c]={
+      att:Math.max(cl.att||0,cr.att||0),
+      cor:Math.max(cl.cor||0,cr.cor||0)
+    };
+  });
+  // aiExercises : union par id, garde 200 derniers
+  const allAi=[].concat(local.aiExercises||[],remote.aiExercises||[]);
+  const seenAi=new Set();
+  out.aiExercises=allAi.filter(function(e){if(!e||!e.id)return false;if(seenAi.has(e.id))return false;seenAi.add(e.id);return true}).slice(-200);
+  // dailyQuest : prend celui dont la progress est la plus haute (même jour)
+  if(remote.dailyQuest&&local.dailyQuest&&remote.dailyQuest.id===local.dailyQuest.id){
+    out.dailyQuest=Object.assign({},local.dailyQuest,{progress:Math.max(local.dailyQuest.progress||0,remote.dailyQuest.progress||0),done:!!(local.dailyQuest.done||remote.dailyQuest.done)});
+  }else if(!local.dailyQuest&&remote.dailyQuest){
+    out.dailyQuest=remote.dailyQuest;
+  }
+  return out;
+}
+
+// Pull cloud + merge dans le profil local (ne perd jamais de données).
 async function syncProfileFromCloud(){
   if(!profile.aid) return null;
   const remote=await fetchProfileByAid(profile.aid);
   if(!remote) return null;
-  if((remote.totalGames||0)>(profile.totalGames||0)){
-    profile=migrate(remote);
-    profile.aid=remote.aid||profile.aid; // sécurité
-    _localSave();
-    return 'restored';
-  }
-  return 'local_newer';
+  const before=JSON.stringify({xp:profile.xp,games:profile.totalGames,cris:profile.cristaux});
+  profile=mergeProfiles(profile,remote);
+  if(!profile.aid) profile.aid=remote.aid;
+  _localSave();
+  const after=JSON.stringify({xp:profile.xp,games:profile.totalGames,cris:profile.cristaux});
+  return before!==after?'restored':'local_newer';
 }
 
-// Push du profil ACTIF vers le cloud (utilise profile.aid).
+// Push : on tente d'abord un pull-merge pour ne pas écraser une mise à jour
+// concurrente venue d'un autre appareil, puis on push le profil fusionné.
 async function pushProfileToCloud(){
   if(!profile.name||!profile.aid) return;
   try{
+    const remote=await fetchProfileByAid(profile.aid);
+    if(remote) profile=mergeProfiles(profile,remote);
+    _localSave();
     await fetch(API_BASE+'/profile/'+profile.aid,{
       method:'PUT',
       headers:{'Content-Type':'application/json'},
@@ -442,6 +516,19 @@ saveProfile=function(){
   if(_syncTimer) clearTimeout(_syncTimer);
   _syncTimer=setTimeout(()=>pushProfileToCloud(),1000);
 };
+
+/* ════════ AUTO-SYNC sur retour à l'app ════════
+   Quand l'utilisateur rebascule sur l'onglet/PWA (visibilitychange = visible),
+   on tire un pull-merge depuis le cloud pour récupérer les éventuels gains
+   d'XP faits sur un autre appareil pendant l'absence. Si quelque chose
+   change, on rerend l'écran courant. */
+document.addEventListener('visibilitychange',function(){
+  if(document.visibilityState==='visible'&&profile&&profile.aid){
+    syncProfileFromCloud().then(function(result){
+      if(result==='restored'&&typeof render==='function') render();
+    });
+  }
+});
 
 /* ════════ EMBERS ════════ */
 setInterval(()=>{
@@ -1059,6 +1146,8 @@ function finishGame(abandoned){
       if(q.progress>=q.target){q.done=true;profile.cristaux+=q.reward;d.questDone=true;d.questReward=q.reward}
     }
     saveProfile();
+    // Push immédiat (en plus du debounce 1s) pour que le score arrive sur les autres appareils tout de suite.
+    pushProfileToCloud();
   }
   navigate('results');
 }
