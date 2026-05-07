@@ -22,7 +22,7 @@ const SUBJECTS=[
       {id:"emc-cm1",name:"EMC",sub:"CM1 \u2014 D\u00e9mocratie",icon:"\u{1F396}\uFE0F",color:"#a78bfa",hasStatic:true},
       {id:"emc-cm2",name:"EMC",sub:"CM2 \u2014 Institutions",icon:"\u{1F3DB}\uFE0F",color:"#a78bfa",hasStatic:true}
     ]},
-  {id:"poesie",name:"Royaume de la Plume",icon:"\u{1F4DC}",color:"#a855f7",desc:"Po\u00e9sies (La Fontaine, Victor Hugo) \u00e0 \u00e9couter et r\u00e9citer",isPoetry:true},
+  {id:"poesie",name:"Royaume de la Plume",icon:"\u{1F4DC}",color:"#a855f7",desc:"Fables, po\u00e8mes Hugo et chansons (Brel & Aznavour) \u2014 lecteur Spotify int\u00e9gr\u00e9",isPoetry:true},
   {id:"langues",name:"Royaume des Mots",icon:"\u{1F310}",color:"#10b981",desc:"H\u00e9breu : alphabet, vocabulaire, expressions, lecture",
     levels:[
       {id:"hebreu-alphabet",name:"H\u00e9breu",sub:"Alphabet (\u05D0\u05D1\u05D2)",icon:"\u{1F524}",color:"#0ea5e9",hasStatic:true},
@@ -1271,136 +1271,79 @@ function resetData(){
   }
 }
 
-/* ════════ POÉSIES LA FONTAINE ════════ */
+/* ════════ POÉSIES, FABLES & CHANSONS (Spotify) ════════
+   `spotify` = ID de track Spotify ('' = bouton « Chercher sur Spotify »).
+   `category` = "fable" | "poeme" | "chanson".
+*/
 const FABLES=[
-  {id:"corbeau-renard",title:"Le Corbeau et le Renard",icon:"\u{1F98A}",dur:75,
+  {id:"corbeau-renard",title:"Le Corbeau et le Renard",icon:"\u{1F98A}",dur:75,category:"fable",spotify:"06OjiRkp4kGW6dn0spb7RP",
     text:"Maître Corbeau, sur un arbre perché, tenait en son bec un fromage. Maître Renard, par l'odeur alléché, lui tint à peu près ce langage : \"Hé ! bonjour, Monsieur du Corbeau. Que vous êtes joli ! que vous me semblez beau ! Sans mentir, si votre ramage se rapporte à votre plumage, vous êtes le Phénix des hôtes de ces bois.\" À ces mots le Corbeau ne se sent pas de joie ; et pour montrer sa belle voix, il ouvre un large bec, laisse tomber sa proie. Le Renard s'en saisit, et dit : \"Mon bon Monsieur, apprenez que tout flatteur vit aux dépens de celui qui l'écoute.\"",
     morale:"Tout flatteur vit aux dépens de celui qui l'écoute.",author:"Jean de La Fontaine",recueil:"Fables, 1668"},
-  {id:"lievre-tortue",title:"Le Lièvre et la Tortue",icon:"\u{1F422}",dur:60,
+  {id:"lievre-tortue",title:"Le Lièvre et la Tortue",icon:"\u{1F422}",dur:60,category:"fable",spotify:"7EPrrnVrCo0CwFDdQaG22S",
     text:"Rien ne sert de courir ; il faut partir à point. Le Lièvre et la Tortue en sont un témoignage. Gageons, dit celle-ci, que vous n'atteindrez point sitôt que moi ce but. Sitôt ? Êtes-vous sage ? répartit l'animal léger. La Tortue partit. Elle s'évertue, elle se hâte avec lenteur. Le Lièvre cependant méprise une telle victoire, tient la gageure à peu de gloire. Quand il voit que l'autre touche presque au bout de la carrière, il partit comme un trait ; mais les élans qu'il fit furent vains : la Tortue arriva la première.",
     morale:"Rien ne sert de courir ; il faut partir à point.",author:"Jean de La Fontaine",recueil:"Fables, 1668"},
-  {id:"cigale-fourmi",title:"La Cigale et la Fourmi",icon:"\u{1F41C}",dur:55,
+  {id:"cigale-fourmi",title:"La Cigale et la Fourmi",icon:"\u{1F41C}",dur:55,category:"fable",spotify:"5LbtDMF8imQv3y9aYnhjTt",
     text:"La Cigale, ayant chanté tout l'été, se trouva fort dépourvue quand la bise fut venue : pas un seul petit morceau de mouche ou de vermisseau. Elle alla crier famine chez la Fourmi sa voisine, la priant de lui prêter quelque grain pour subsister jusqu'à la saison nouvelle. La Fourmi n'est pas prêteuse : c'est là son moindre défaut. \"Que faisiez-vous au temps chaud ? dit-elle à cette emprunteuse. Nuit et jour à tout venant je chantais, ne vous déplaise. Vous chantiez ? j'en suis fort aise. Eh bien ! dansez maintenant.\"",
     morale:"Il faut prévoir le futur, pas seulement profiter du présent.",author:"Jean de La Fontaine",recueil:"Fables, 1668"},
-  {id:"loup-agneau",title:"Le Loup et l'Agneau",icon:"\u{1F40F}",dur:60,
+  {id:"loup-agneau",title:"Le Loup et l'Agneau",icon:"\u{1F40F}",dur:60,category:"fable",spotify:"4O767CWMIVPIsaQyPTpC6k",
     text:"La raison du plus fort est toujours la meilleure. Un Agneau se désaltérait dans le courant d'une onde pure. Un Loup survient à jeun qui cherchait aventure, et que la faim en ces lieux attirait. \"Qui te rend si hardi de troubler mon breuvage ? dit cet animal plein de rage. Tu seras châtié de ta témérité.\" \"Sire, répond l'Agneau, que Votre Majesté ne se mette pas en colère ; mais plutôt qu'elle considère que je me vas désaltérant dans le courant, plus de vingt pas au-dessous d'Elle.\" Là-dessus, au fond des forêts le Loup l'emporte, et puis le mange, sans autre forme de procès.",
     morale:"La raison du plus fort est toujours la meilleure.",author:"Jean de La Fontaine",recueil:"Fables, 1668"},
-  {id:"grenouille-boeuf",title:"La Grenouille qui se veut faire aussi grosse que le Bœuf",icon:"\u{1F438}",dur:50,
+  {id:"grenouille-boeuf",title:"La Grenouille qui se veut faire aussi grosse que le Bœuf",icon:"\u{1F438}",dur:50,category:"fable",spotify:"3JNOjEfCTw8HS7SzLWqJrx",
     text:"Une Grenouille vit un Bœuf qui lui sembla de belle taille. Elle, qui n'était pas grosse en tout comme un œuf, envieuse, s'étend, et s'enfle, et se travaille pour égaler l'animal en grosseur, disant : \"Regardez bien, ma sœur ; est-ce assez ? dites-moi ; n'y suis-je point encore ? Nenni. M'y voici donc ? Point du tout. M'y voilà ? Vous n'en approchez point.\" La chétive pécore s'enfla si bien qu'elle creva.",
     morale:"Le monde est plein de gens qui ne sont pas plus sages : tout petit prince a des ambassadeurs.",author:"Jean de La Fontaine",recueil:"Fables, 1668"},
-  {id:"renard-raisins",title:"Le Renard et les Raisins",icon:"\u{1F347}",dur:35,
+  {id:"renard-raisins",title:"Le Renard et les Raisins",icon:"\u{1F347}",dur:35,category:"fable",spotify:"0551n6OA8nWGAVZBmqfsRV",
     text:"Certain Renard Gascon, d'autres disent Normand, mourant presque de faim, vit au haut d'une treille des Raisins mûrs apparemment, et couverts d'une peau vermeille. Le galand en eût fait volontiers un repas ; mais comme il n'y pouvait atteindre : \"Ils sont trop verts, dit-il, et bons pour des goujats.\" Fit-il pas mieux que de se plaindre ?",
     morale:"On méprise ce qu'on ne peut obtenir.",author:"Jean de La Fontaine",recueil:"Fables, 1668"},
-  {id:"chene-roseau",title:"Le Chêne et le Roseau",icon:"\u{1F33F}",dur:65,
+  {id:"chene-roseau",title:"Le Chêne et le Roseau",icon:"\u{1F33F}",dur:65,category:"fable",spotify:"5n50gceSoZLMq6hMRubaXV",
     text:"Le Chêne un jour dit au Roseau : \"Vous avez bien sujet d'accuser la nature ; un roitelet pour vous est un pesant fardeau ; le moindre vent qui d'aventure fait rider la face de l'eau, vous oblige à baisser la tête.\" Le vent redouble ses efforts, et fait si bien qu'il déracine celui de qui la tête au ciel était voisine, et dont les pieds touchaient à l'empire des morts.",
     morale:"Plier sait mieux résister que rester rigide.",author:"Jean de La Fontaine",recueil:"Fables, 1668"},
-  {id:"lion-rat",title:"Le Lion et le Rat",icon:"\u{1F981}",dur:55,
+  {id:"lion-rat",title:"Le Lion et le Rat",icon:"\u{1F981}",dur:55,category:"fable",spotify:"0s1MtmJD1sokrl6ZHFXGSR",
     text:"Il faut, autant qu'on peut, obliger tout le monde : on a souvent besoin d'un plus petit que soi. De cette vérité deux fables feront foi. Entre les pattes d'un Lion un Rat sortit assez à l'étourdie. Le Roi des animaux, en cette occasion, montra ce qu'il était, et lui donna la vie. Quelque temps après, ce Lion fut pris dans des rets, dont ses rugissements ne le purent défaire. Sire Rat accourut, et fit tant par ses dents qu'une maille rongée emporta tout l'ouvrage.",
     morale:"Patience et longueur de temps font plus que force ni que rage.",author:"Jean de La Fontaine",recueil:"Fables, 1668"},
-  {id:"hugo-demain-aube",title:"Demain, dès l'aube",icon:"\u{1F305}",dur:60,author:"Victor Hugo",recueil:"Les Contemplations, 1856",
+  {id:"hugo-demain-aube",title:"Demain, dès l'aube",icon:"\u{1F305}",dur:60,category:"poeme",spotify:"0BxcAC2xJEquokyMgOrX9c",author:"Victor Hugo",recueil:"Les Contemplations, 1856",
     text:"Demain, dès l'aube, à l'heure où blanchit la campagne, je partirai. Vois-tu, je sais que tu m'attends. J'irai par la forêt, j'irai par la montagne. Je ne puis demeurer loin de toi plus longtemps. Je marcherai les yeux fixés sur mes pensées, sans rien voir au-dehors, sans entendre aucun bruit, seul, inconnu, le dos courbé, les mains croisées, triste, et le jour pour moi sera comme la nuit. Je ne regarderai ni l'or du soir qui tombe, ni les voiles au loin descendant vers Harfleur, et quand j'arriverai, je mettrai sur ta tombe un bouquet de houx vert et de bruyère en fleur.",
     morale:"Hommage de Victor Hugo à sa fille Léopoldine, noyée à 19 ans.",moraleLabel:"Th\u00e8me"},
-  {id:"hugo-mes-deux-filles",title:"Mes deux filles",icon:"\u{1F33C}",dur:45,author:"Victor Hugo",recueil:"Les Contemplations, 1856",
+  {id:"hugo-mes-deux-filles",title:"Mes deux filles",icon:"\u{1F33C}",dur:45,category:"poeme",spotify:"",author:"Victor Hugo",recueil:"Les Contemplations, 1856",
     text:"Dans le frais clair-obscur du soir charmant qui tombe, l'une pareille au cygne et l'autre à la colombe, belles, et toutes deux joyeuses, ô douceur ! voyez, la grande sœur et la petite sœur sont assises au seuil du jardin, et sur elles un bouquet d'œillets blancs aux longues tiges frêles, dans une urne de marbre agité par le vent, se penche, et les regarde, immobile et vivant, et frissonne dans l'ombre, et semble, au bord du vase, un vol de papillons arrêté dans l'extase.",
     morale:"Tendresse paternelle pour ses deux filles, Léopoldine et Adèle.",moraleLabel:"Th\u00e8me"},
-  {id:"hugo-lorsque-enfant",title:"Lorsque l'enfant paraît",icon:"\u{1F476}",dur:50,author:"Victor Hugo",recueil:"Les Feuilles d'Automne, 1831",
+  {id:"hugo-lorsque-enfant",title:"Lorsque l'enfant paraît",icon:"\u{1F476}",dur:50,category:"poeme",spotify:"0KuuSKBKnhzGITb208XM7x",author:"Victor Hugo",recueil:"Les Feuilles d'Automne, 1831",
     text:"Lorsque l'enfant paraît, le cercle de famille applaudit à grands cris ; son doux regard qui brille fait briller tous les yeux, et les plus tristes fronts, les plus souillés peut-être, se dérident soudain à voir l'enfant paraître, innocent et joyeux. Soit que juin ait verdi mon seuil, ou que novembre fasse autour d'un grand feu vacillant dans la chambre se rapprocher les bancs, l'enfant vient, on rit, on crie, on l'appelle, et la mère tremble en le voyant marcher.",
     morale:"L'arrivée d'un enfant illumine et unit toute la famille.",moraleLabel:"Th\u00e8me"},
-  {id:"hugo-bonhomme-hiver",title:"Le Bonhomme Hiver",icon:"\u26C4",dur:35,author:"Victor Hugo",recueil:"L'Art d'\u00eatre grand-p\u00e8re, 1877",
+  {id:"hugo-bonhomme-hiver",title:"Le Bonhomme Hiver",icon:"\u26C4",dur:35,category:"poeme",spotify:"",author:"Victor Hugo",recueil:"L'Art d'\u00eatre grand-p\u00e8re, 1877",
     text:"Le bonhomme hiver, vieux roi blanc, est venu. Le sapin a maigri. Le bouleau s'est noirci. Le vent souffle, l'eau gèle, et le moineau transi cherche un grain dans la neige. Janvier soufflait, faisant grelotter les hameaux. Au feu, vite, à l'âtre ! Et que les enfants chantent en battant des mains, et que rie le grand-père, car le bonhomme hiver, en passant, sème aussi des étoiles d'argent sur les toits endormis.",
     morale:"L'hiver, malgré son froid, apporte la magie du foyer et de la neige.",moraleLabel:"Th\u00e8me"},
-  {id:"hugo-a-ma-fille",title:"À ma fille",icon:"\u{1F49B}",dur:50,author:"Victor Hugo",recueil:"Les Voix intérieures, 1837",
+  {id:"hugo-a-ma-fille",title:"À ma fille",icon:"\u{1F49B}",dur:50,category:"poeme",spotify:"",author:"Victor Hugo",recueil:"Les Voix intérieures, 1837",
     text:"Ô mon enfant, tu vois, je me soumets. Fais comme moi : vis du monde éloigné. Heureux qui peut aimer, et qui dans la nuit noire, tout en cherchant la foi, peut rencontrer l'amour ! Il a du moins la lampe et peut attendre le jour. Heureux ce cœur ! Aimer, c'est la moitié de croire. Marche à travers les bois avec la fleur des champs. Marche à travers les pleurs avec un chant joyeux.",
     morale:"Père tendre, Hugo conseille à sa fille la simplicité et l'amour.",moraleLabel:"Thème"},
-  {id:"hugo-l-enfance",title:"L'enfance",icon:"\u{1F33C}",dur:40,author:"Victor Hugo",recueil:"Les Contemplations, 1856",
+  {id:"hugo-l-enfance",title:"L'enfance",icon:"\u{1F33C}",dur:40,category:"poeme",spotify:"",author:"Victor Hugo",recueil:"Les Contemplations, 1856",
     text:"L'enfant chantait ; la mère au lit, exsangue, agonisait, beau front dans l'ombre enseveli ; la mort au-dessus d'elle errait dans le nuage ; et j'écoutais ce râle, et j'entendais ce chant. L'enfant avait cinq ans, et, près de la fenêtre, ses rires et ses jeux faisaient un charmant bruit ; et la mère, à côté de cet ange en plein jour, faisait une autre chose : elle mourait d'amour.",
     morale:"L'enfant joue, ignorant la peine ; la mère l'aime jusqu'à la fin.",moraleLabel:"Thème"},
-  {id:"hugo-sentiers",title:"Sentiers où l'herbe se balance",icon:"\u{1F343}",dur:40,author:"Victor Hugo",recueil:"Les Contemplations, 1856",
+  {id:"hugo-sentiers",title:"Sentiers où l'herbe se balance",icon:"\u{1F343}",dur:40,category:"poeme",spotify:"",author:"Victor Hugo",recueil:"Les Contemplations, 1856",
     text:"Sentiers où l'herbe se balance, vallons, coteaux, bois chevelus, pourquoi ce deuil et ce silence ? \u2014 Celui qui venait ne vient plus. Pourquoi personne à ta fenêtre, et pourquoi ton jardin sans fleurs, ô maison ? où donc est ton maître ? \u2014 Je ne sais pas, il est ailleurs.",
-    morale:"L'absence de l'être aimé (Léopoldine) vide la nature de ses couleurs.",moraleLabel:"Thème"}
+    morale:"L'absence de l'être aimé (Léopoldine) vide la nature de ses couleurs.",moraleLabel:"Thème"},
+  /* ─── Chansons françaises (Brel & Aznavour) ─── */
+  {id:"aznavour-la-boheme",title:"La Bohème",icon:"\u{1F3A8}",dur:255,category:"chanson",spotify:"2o0hVSbnkdvDDKKVNaUxnB",author:"Charles Aznavour",recueil:"La Bohème, 1966"},
+  {id:"aznavour-emmenez-moi",title:"Emmenez-moi",icon:"\u{1F30A}",dur:200,category:"chanson",spotify:"6kjDLNGtvnbYIXAMsc6iiu",author:"Charles Aznavour",recueil:"Single, 1967"},
+  {id:"brel-amsterdam",title:"Amsterdam (Olympia 64)",icon:"\u{1F6A2}",dur:200,category:"chanson",spotify:"30UbdNojykbHppPCdjDl6v",author:"Jacques Brel",recueil:"Live Olympia, 1964"},
+  {id:"brel-vesoul",title:"Vesoul",icon:"\u{1F3B5}",dur:170,category:"chanson",spotify:"2F94KDtJjCdzZYCQWBliRC",author:"Jacques Brel",recueil:"J'arrive, 1968"},
+  {id:"brel-ces-gens-la",title:"Ces gens-là",icon:"\u{1F3AD}",dur:265,category:"chanson",spotify:"5jCUaNgNdelU7Rozd9j1cU",author:"Jacques Brel",recueil:"Ces gens-là, 1966"}
 ];
 
-/* ════════ TTS NATUREL ════════
-   Stratégie pour avoir une voix proche de l'humain sur iOS Safari :
-   1. Attendre que les voix soient chargées (getVoices() est asynchrone).
-   2. Prioriser : Siri (iOS 16+, ultra naturelle) > Premium > Enhanced
-      > localService:false (cloud) > toute voix fr-FR.
-   3. Découper le texte en phrases pour des pauses naturelles
-      (la synthèse fait des respirations entre chaque utterance).
-   4. rate=0.92 (légèrement lent pour la déclamation), pitch=1.
+/* ════════ LECTEUR SPOTIFY ════════
+   On utilise l'iframe d'embed officielle de Spotify : lecture intégrée
+   (preview 30 s pour les visiteurs anonymes, lecture complète si l'utilisateur
+   est connecté à Spotify dans son navigateur). Si `spotifyId` est vide,
+   on génère un lien vers la recherche Spotify.
 */
-let _voicesCache=null;
-let _selectedVoiceName=null;
-function listFrenchVoices(){
-  if(!('speechSynthesis' in window)) return [];
-  const all=speechSynthesis.getVoices()||[];
-  return all.filter(v=>(v.lang||'').toLowerCase().startsWith('fr'));
+function spotifyEmbedHTML(trackId){
+  if(!trackId) return '';
+  const src='https://open.spotify.com/embed/track/'+encodeURIComponent(trackId)+'?utm_source=generator';
+  return '<iframe style="border-radius:12px;width:100%;height:152px;border:0" src="'+src+'" allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture" loading="lazy"></iframe>';
 }
-function pickBestFrenchVoice(){
-  if(!('speechSynthesis' in window)) return null;
-  const voices=listFrenchVoices();
-  if(voices.length===0) return null;
-  // 1. Voix sélectionnée manuellement ?
-  if(_selectedVoiceName){
-    const v=voices.find(x=>x.name===_selectedVoiceName);
-    if(v) return v;
-  }
-  // 2. Hiérarchie de qualité (regex sur le nom)
-  const tiers=[
-    /siri/i,                               // iOS 16+ Siri voices
-    /\bpremium\b/i,                       // "Aurélie (Premium)" etc.
-    /\benhanced\b|\baméliorée?\b/i,      // "Enhanced"
-    /\b(audrey|aur[eé]lie|thomas|marie|c[eé]lia|am[eé]lie)\b/i, // voix iOS connues
-  ];
-  for(const re of tiers){
-    const v=voices.find(x=>re.test(x.name));
-    if(v) return v;
-  }
-  // 3. Voix cloud (souvent meilleures) : localService=false
-  const cloud=voices.find(x=>x.localService===false);
-  if(cloud) return cloud;
-  // 4. fr-FR par défaut
-  return voices.find(x=>(x.lang||'').toLowerCase()==='fr-fr')||voices[0];
+function spotifySearchURL(title,author){
+  const q=[title||'',author||''].filter(Boolean).join(' ');
+  return 'https://open.spotify.com/search/'+encodeURIComponent(q);
 }
-function ensureVoicesLoaded(cb){
-  if(!('speechSynthesis' in window)){cb();return}
-  const voices=speechSynthesis.getVoices();
-  if(voices&&voices.length>0){cb();return}
-  // Sur certains navigateurs, getVoices() est vide jusqu'à l'événement voiceschanged
-  const handler=()=>{speechSynthesis.removeEventListener('voiceschanged',handler);cb()};
-  speechSynthesis.addEventListener('voiceschanged',handler);
-  // Sécurité : timeout au cas où l'événement ne se déclencherait pas
-  setTimeout(()=>{speechSynthesis.removeEventListener('voiceschanged',handler);cb()},800);
-}
-function splitForProsody(text){
-  // Découpe en phrases pour respirations naturelles entre chaque.
-  // Garde la ponctuation pour que la synthèse fasse l'intonation.
-  return String(text).split(/(?<=[.!?…])\s+/).filter(s=>s.trim().length>0);
-}
-function speakText(text){
-  if(!('speechSynthesis' in window)){alert('Synth\u00e8se vocale non disponible sur ce navigateur');return}
-  speechSynthesis.cancel();
-  ensureVoicesLoaded(()=>{
-    const voice=pickBestFrenchVoice();
-    const chunks=splitForProsody(text);
-    chunks.forEach((chunk,i)=>{
-      const u=new SpeechSynthesisUtterance(chunk);
-      u.lang='fr-FR';
-      u.rate=0.92;
-      u.pitch=1.0;
-      u.volume=1.0;
-      if(voice) u.voice=voice;
-      speechSynthesis.speak(u);
-    });
-  });
-}
-function stopSpeaking(){if('speechSynthesis' in window)speechSynthesis.cancel()}
-function setSelectedVoice(name){
-  _selectedVoiceName=name||null;
-  try{localStorage.setItem('royaume_tts_voice',name||'')}catch(e){}
-}
-// Restore voix sélectionnée
-try{const v=localStorage.getItem('royaume_tts_voice');if(v)_selectedVoiceName=v}catch(e){}
 
 let _recognition=null;
 function startRecording(onResult,onEnd,lang){
@@ -1438,87 +1381,88 @@ function compareTexts(orig,spoken){
 }
 
 function renderPoesieHome(){
-  app.innerHTML=`<div class="text-center py-6 fade-in">
-    <div style="font-size:3.5rem">\u{1F4DC}</div>
-    <h2 class="title" style="color:#a78bfa;font-size:1.6rem">Poésies La Fontaine</h2>
-    <p class="sub">Écoute, lis, récite à voix haute</p>
-  </div>
-  ${FABLES.map((f,i)=>{
+  const groups=[
+    {key:'fable',label:'Fables de La Fontaine',color:'#a78bfa',icon:'\u{1F98A}'},
+    {key:'poeme',label:'Poèmes de Victor Hugo',color:'#a78bfa',icon:'\u{1F4DC}'},
+    {key:'chanson',label:'Chansons (Brel & Aznavour)',color:'#f59e0b',icon:'\u{1F3B6}'},
+  ];
+  const cardFor=(f,i)=>{
     const stats=(profile.poesieStats||{})[f.id]||{};
     const best=stats.best||0;
-    const star=best>=80?'\u2B50\u2B50\u2B50':best>=60?'\u2B50\u2B50':best>=40?'\u2B50':'';
+    const star=best>=80?'⭐⭐⭐':best>=60?'⭐⭐':best>=40?'⭐':'';
+    const sub=f.category==='chanson'?(f.author||''):(f.dur+'s à lire'+(star?' — '+star:''));
     return `<div class="card clickable fade-in" style="animation-delay:${i*.05}s;border-color:#c4b5fd" onclick="navigate('poesieFable',{fableId:'${f.id}'})">
       <div class="row">
         <div style="font-size:2.2rem">${f.icon}</div>
         <div class="flex-1">
           <h3 class="card-title" style="color:#5b21b6">${f.title}</h3>
-          <p class="sub">${f.dur}s à lire ${star?' \u2014 '+star:''}</p>
+          <p class="sub">${sub}</p>
         </div>
-        <div class="arrow">\u2192</div>
+        <div class="arrow">→</div>
       </div>
     </div>`;
-  }).join('')}
-  <button class="btn-stone mt-4" onclick="navigate('home')">\u2190 Retour</button>`;
+  };
+  const sections=groups.map(g=>{
+    const items=FABLES.filter(f=>(f.category||'fable')===g.key);
+    if(items.length===0) return '';
+    return `<div class="dragon-divider"></div>
+      <h3 class="card-title" style="color:${g.color};margin:8px 4px 12px">${g.icon} ${g.label}</h3>
+      ${items.map((f,i)=>cardFor(f,i)).join('')}`;
+  }).join('');
+  app.innerHTML=`<div class="text-center py-6 fade-in">
+    <div style="font-size:3.5rem">\u{1F4DC}</div>
+    <h2 class="title" style="color:#a78bfa;font-size:1.6rem">Royaume de la Plume</h2>
+    <p class="sub">Écoute les enregistrements et récite à voix haute</p>
+  </div>
+  ${sections}
+  <button class="btn-stone mt-4" onclick="navigate('home')">← Retour</button>`;
 }
 
 function renderPoesieFable(){
   const f=FABLES.find(x=>x.id===state.fableId);
   if(!f){navigate('poesieHome');return}
   const stats=(profile.poesieStats||{})[f.id]||{plays:0,best:0};
-  app.innerHTML=`<div class="text-center py-4 fade-in">
-    <div style="font-size:3rem">${f.icon}</div>
-    <h2 class="title" style="color:#5b21b6">${f.title}</h2>
-    <p class="sub">de ${esc(f.author||'Jean de La Fontaine')}${f.recueil?' \u2014 '+esc(f.recueil):''}</p>
-  </div>
-  <div class="card mb-4" style="border-color:#c4b5fd">
-    <div style="font-style:italic;color:#1e293b;line-height:1.7;font-size:1.05rem;font-weight:500" id="fableText">${f.text}</div>
-    <div class="divider"></div>
-    ${f.morale?`<div style="background:#fef3c7;padding:10px 14px;border-radius:10px;border-left:3px solid #0ea5e9;color:#0c4a6e;font-weight:600">\u{1F4A1} ${esc(f.moraleLabel||'Morale')} : <em>${esc(f.morale)}</em></div>`:''}
-  </div>
-  <div class="card mb-4" style="border-color:#a78bfa">
-    <h3 class="card-title" style="color:#5b21b6;margin-bottom:12px">\u{1F3A7} Écoute la fable</h3>
-    <p class="sub mb-2">Le Sage va te lire la fable. Choisis la voix qui sonne le mieux.</p>
-    <div id="voicePickerWrap" style="margin-bottom:10px"></div>
-    <div class="btn-row">
-      <button class="btn-fire" onclick="speakText(document.getElementById('fableText').innerText)">\u25B6\uFE0F Écouter</button>
-      <button class="btn-stone" onclick="stopSpeaking()">\u23F9\uFE0F Stop</button>
-    </div>
-  </div>
-  <div class="card mb-4" style="border-color:#22c55e">
+  const isChanson=f.category==='chanson';
+  const audioCard=f.spotify
+    ? `<div class="card mb-4" style="border-color:#1db954">
+         <h3 class="card-title" style="color:#0f5132;margin-bottom:12px">\u{1F3A7} Écoute sur Spotify</h3>
+         <p class="sub mb-2">Lecture intégrée. Connecte-toi à Spotify pour écouter le titre en entier.</p>
+         ${spotifyEmbedHTML(f.spotify)}
+       </div>`
+    : `<div class="card mb-4" style="border-color:#a78bfa">
+         <h3 class="card-title" style="color:#5b21b6;margin-bottom:12px">\u{1F50E} Trouver sur Spotify</h3>
+         <p class="sub mb-2">Aucun enregistrement préselectionné. Cherche-le sur Spotify :</p>
+         <a class="btn-fire" style="text-decoration:none;text-align:center" target="_blank" rel="noopener" href="${esc(spotifySearchURL(f.title,f.author))}">\u{1F3B5} Ouvrir la recherche Spotify</a>
+       </div>`;
+  const textCard=f.text
+    ? `<div class="card mb-4" style="border-color:#c4b5fd">
+         <div style="font-style:italic;color:#1e293b;line-height:1.7;font-size:1.05rem;font-weight:500" id="fableText">${f.text}</div>
+         <div class="divider"></div>
+         ${f.morale?`<div style="background:#fef3c7;padding:10px 14px;border-radius:10px;border-left:3px solid #0ea5e9;color:#0c4a6e;font-weight:600">\u{1F4A1} ${esc(f.moraleLabel||'Morale')} : <em>${esc(f.morale)}</em></div>`:''}
+       </div>`
+    : '';
+  const reciteCard=isChanson?'':`<div class="card mb-4" style="border-color:#22c55e">
     <h3 class="card-title" style="color:#15803d;margin-bottom:12px">\u{1F3A4} À toi de réciter !</h3>
-    <p class="sub mb-2">Clique sur le micro et récite la fable. L'app va comparer ce que tu dis au texte.</p>
+    <p class="sub mb-2">Clique sur le micro et récite le texte. L'app va comparer ce que tu dis au texte.</p>
     <button class="btn-fire" id="recBtn" onclick="togglePoesieRec()">\u{1F534} Démarrer le micro</button>
     <div id="recLive" style="margin-top:14px;padding:12px;background:#f0fdf4;border-radius:10px;border:1px solid #86efac;min-height:60px;color:#14532d;font-style:italic;display:none"></div>
     <div id="recResult"></div>
-  </div>
-  <div class="card mb-4">
+  </div>`;
+  const scoresCard=isChanson?'':`<div class="card mb-4">
     <h3 class="card-title" style="margin-bottom:8px">\u{1F4CA} Tes scores</h3>
-    <div class="row gap-2"><div class="resource">\u{1F39E}\uFE0F ${stats.plays||0} essais</div><div class="resource flame">\u{1F31F} Meilleur : ${stats.best||0}%</div></div>
+    <div class="row gap-2"><div class="resource">\u{1F39E}️ ${stats.plays||0} essais</div><div class="resource flame">\u{1F31F} Meilleur : ${stats.best||0}%</div></div>
+  </div>`;
+  app.innerHTML=`<div class="text-center py-4 fade-in">
+    <div style="font-size:3rem">${f.icon}</div>
+    <h2 class="title" style="color:#5b21b6">${f.title}</h2>
+    <p class="sub">de ${esc(f.author||'Jean de La Fontaine')}${f.recueil?' — '+esc(f.recueil):''}</p>
   </div>
-  <button class="btn-stone" onclick="navigate('poesieHome')">\u2190 Autres fables</button>`;
+  ${textCard}
+  ${audioCard}
+  ${reciteCard}
+  ${scoresCard}
+  <button class="btn-stone" onclick="navigate('poesieHome')">← Retour à la liste</button>`;
 }
-function populateVoicePicker(){
-  const wrap=document.getElementById('voicePickerWrap');
-  if(!wrap) return;
-  ensureVoicesLoaded(()=>{
-    const voices=listFrenchVoices();
-    if(voices.length===0){
-      wrap.innerHTML='<p class="sub" style="color:#475569;font-size:.8rem">Aucune voix française trouvée sur cet appareil.</p>';
-      return;
-    }
-    const auto=pickBestFrenchVoice();
-    const sel=_selectedVoiceName||(auto&&auto.name)||'';
-    const opts=voices.map(v=>{
-      const tier=/siri/i.test(v.name)?' \u{1F3C5}':/premium|enhanced|am\u00e9lior/i.test(v.name)?' \u2728':'';
-      const local=v.localService?'':' \u2601\uFE0F';
-      return '<option value="'+esc(v.name)+'"'+(v.name===sel?' selected':'')+'>'+esc(v.name)+tier+local+' ('+esc(v.lang)+')</option>';
-    }).join('');
-    wrap.innerHTML='<label style="font-size:.8rem;color:#64748b;display:block;margin-bottom:4px">Voix :</label><select onchange="setSelectedVoice(this.value)" style="width:100%;padding:8px;border-radius:8px;border:1px solid #c4b5fd;background:#f0f9ff;color:#1e293b;font-family:inherit;font-size:.9rem">'+opts+'</select><p class="sub" style="font-size:.7rem;margin-top:4px;color:#475569">\u{1F3C5} = Siri \u00b7 \u2728 = Premium/Enhanced \u00b7 \u2601\uFE0F = cloud</p>';
-  });
-}
-// Auto-populate when poesieFable screen renders
-const _origRender=render;
-render=function(){_origRender();if(state.screen==='poesieFable') setTimeout(populateVoicePicker,50)};
 
 window._poesieRecording=false;
 function togglePoesieRec(){
