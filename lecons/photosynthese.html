@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>🌿 La Photosynthèse</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:#081808;color:#d0f0d0;font-family:'Trebuchet MS',sans-serif;min-height:100vh}
+.back-btn{position:fixed;top:16px;left:16px;z-index:100;background:rgba(60,200,80,.12);border:2px solid #3cc850;color:#90e8a0;border-radius:30px;padding:8px 18px;font-size:14px;font-weight:700;cursor:pointer;text-decoration:none}
+.header{text-align:center;padding:28px 20px 14px}
+.header h1{font-family:Georgia,serif;font-size:clamp(24px,5vw,34px);color:#90e8a0;margin:0}
+.header p{color:#4a8a5a;font-size:15px;margin-top:6px}
+.main{max-width:900px;margin:0 auto;padding:0 20px 40px}
+.card{background:rgba(10,30,15,.9);border:1px solid rgba(255,255,255,.08);border-left:4px solid #3cc850;border-radius:14px;padding:18px 22px;margin-bottom:14px;line-height:1.7;font-size:15px}
+.card h2{font-family:Georgia,serif;font-size:22px;margin:0 0 10px;color:#90e8a0}
+.formula-box{background:rgba(0,0,0,.4);border:2px solid rgba(60,200,80,.3);border-radius:16px;padding:24px;text-align:center;margin:20px 0}
+.formula-box .eq{font-size:20px;font-family:Georgia,serif;line-height:2}
+.formula-box .arrow{font-size:28px;color:#ffe040;margin:0 8px}
+.sim-box{background:rgba(10,25,15,.8);border:1px solid rgba(255,255,255,.08);border-radius:18px;padding:20px;margin-bottom:20px}
+.sim-box h3{font-family:Georgia,serif;margin:0 0 14px;font-size:18px;color:#d0f0d0}
+.slider-wrap{margin-bottom:16px}
+.slider-wrap label{display:flex;justify-content:space-between;font-weight:700;margin-bottom:6px;font-size:14px}
+input[type=range]{width:100%;cursor:pointer;accent-color:#3cc850}
+input[type=range].sun{accent-color:#ffe040}
+input[type=range].water{accent-color:#3ca0ff}
+.output-gauges{display:flex;gap:14px;flex-wrap:wrap;justify-content:center;margin-top:16px}
+.gauge{background:rgba(0,0,0,.3);border-radius:12px;padding:14px 20px;text-align:center;min-width:140px;border:1px solid rgba(255,255,255,.06)}
+.gauge .val{font-size:28px;font-weight:800;font-family:Georgia,serif}
+.gauge .lbl{font-size:12px;color:#4a8a5a;margin-top:4px}
+.leaf-vis{position:relative;height:280px;border-radius:16px;overflow:hidden;background:linear-gradient(180deg,#90d0ff 0%,#70b8e8 40%,#306030 60%,#204020 100%);margin:16px 0}
+.leaf-vis svg{width:100%;height:100%}
+.step-cards{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:16px 0}
+@media(max-width:600px){.step-cards{grid-template-columns:1fr}}
+.step-card{background:rgba(255,255,255,.04);border-radius:14px;padding:16px;border-left:3px solid var(--sc)}
+.step-card h3{font-size:15px;margin:0 0 6px;color:var(--sc);font-family:Georgia,serif}
+.step-card p{font-size:13px;color:#7aaa8a;margin:0;line-height:1.6}
+</style>
+</head>
+<body>
+<a class="back-btn" href="../index.html" onclick="if(window.opener||document.referrer){event.preventDefault();history.back()}">← Retour</a>
+<div class="header"><h1>🌿 La Photosynthèse</h1><p>Comment les plantes fabriquent leur nourriture avec la lumière</p></div>
+<div class="main">
+
+<div class="card">
+  <h2>🌱 La magie des plantes</h2>
+  <p>Les plantes font quelque chose d'extraordinaire : elles <b>fabriquent leur propre nourriture</b> à partir de lumière, d'eau et d'air. C'est la <b style="color:#3cc850">photosynthèse</b> (du grec « photo » = lumière, « synthèse » = fabrication).</p>
+  <p>Sans la photosynthèse, il n'y aurait ni oxygène à respirer, ni nourriture à manger. Toute la vie sur Terre en dépend !</p>
+</div>
+
+<div class="formula-box">
+  <div class="eq">
+    <span style="color:#3ca0ff">6 H₂O</span> + <span style="color:#8a96c4">6 CO₂</span>
+    <span class="arrow">→</span>
+    <span style="color:#3cc850">C₆H₁₂O₆</span> + <span style="color:#70c0e0">6 O₂</span>
+  </div>
+  <div style="margin-top:12px;font-size:14px;color:#4a8a5a">
+    <span style="color:#3ca0ff">Eau</span> + <span style="color:#8a96c4">Gaz carbonique</span> + <span style="color:#ffe040">☀️ Lumière</span>
+    → <span style="color:#3cc850">Sucre (glucose)</span> + <span style="color:#70c0e0">Oxygène</span>
+  </div>
+</div>
+
+<div class="sim-box">
+  <h3>🔬 Simulateur de photosynthèse</h3>
+  <div class="slider-wrap">
+    <label><span>☀️ Lumière du Soleil</span><span id="sun-val" style="color:#ffe040">70%</span></label>
+    <input type="range" class="sun" min="0" max="100" value="70" oninput="sunLight=+this.value;updateSim()">
+  </div>
+  <div class="slider-wrap">
+    <label><span>💧 Eau disponible</span><span id="water-val" style="color:#3ca0ff">60%</span></label>
+    <input type="range" class="water" min="0" max="100" value="60" oninput="water=+this.value;updateSim()">
+  </div>
+  <div class="slider-wrap">
+    <label><span>💨 CO₂ dans l'air</span><span id="co2-val" style="color:#8a96c4">50%</span></label>
+    <input type="range" min="0" max="100" value="50" style="accent-color:#8a96c4" oninput="co2=+this.value;updateSim()">
+  </div>
+  <div class="output-gauges">
+    <div class="gauge" style="border-color:rgba(60,200,80,.3)"><div class="val" style="color:#3cc850" id="glucose-out">0</div><div class="lbl">🍬 Glucose produit</div></div>
+    <div class="gauge" style="border-color:rgba(112,192,224,.3)"><div class="val" style="color:#70c0e0" id="o2-out">0</div><div class="lbl">💨 O₂ libéré</div></div>
+    <div class="gauge" style="border-color:rgba(60,200,80,.3)"><div class="val" style="color:#90e8a0" id="growth-out">0</div><div class="lbl">🌱 Croissance</div></div>
+  </div>
+  <p id="sim-msg" style="text-align:center;margin-top:12px;font-size:14px;color:#4a8a5a"></p>
+</div>
+
+<h3 style="font-family:Georgia,serif;text-align:center;margin:20px 0 12px;color:#90e8a0">📋 Les 4 étapes</h3>
+<div class="step-cards">
+  <div class="step-card" style="--sc:#ffe040"><h3>1. Capture de la lumière</h3><p>La <b>chlorophylle</b> (le pigment vert des feuilles) absorbe la lumière du soleil. C'est elle qui donne aux plantes leur couleur verte — elle absorbe le rouge et le bleu mais renvoie le vert !</p></div>
+  <div class="step-card" style="--sc:#3ca0ff"><h3>2. Absorption de l'eau</h3><p>Les racines aspirent l'eau du sol. Elle monte dans la tige par de minuscules tubes (les vaisseaux) jusqu'aux feuilles. C'est un voyage qui peut faire 100 mètres dans un séquoia !</p></div>
+  <div class="step-card" style="--sc:#8a96c4"><h3>3. Capture du CO₂</h3><p>Les feuilles ont de minuscules trous appelés <b>stomates</b>. Le CO₂ de l'air entre par ces trous. Une feuille peut avoir 100 000 stomates par cm² !</p></div>
+  <div class="step-card" style="--sc:#3cc850"><h3>4. Fabrication du sucre</h3><p>Dans les <b>chloroplastes</b> (les usines vertes de chaque cellule), l'énergie lumineuse casse les molécules d'eau, puis réassemble les atomes avec le CO₂ pour créer du glucose et libérer de l'oxygène.</p></div>
+</div>
+
+<div class="card" style="border-left-color:#ffe040">
+  <h2 style="color:#ffe040">🌳 Le savais-tu ?</h2>
+  <p>• Un grand arbre produit assez d'oxygène pour <b>4 personnes</b> pendant un an.</p>
+  <p>• Les plantes ne font la photosynthèse que <b>le jour</b>. La nuit, elles respirent comme nous (elles consomment de l'O₂ et rejettent du CO₂).</p>
+  <p>• Les forêts tropicales produisent <b>20%</b> de l'oxygène de la planète. Le reste vient surtout du phytoplancton dans les océans !</p>
+  <p>• Sans photosynthèse, l'atmosphère terrestre ne contiendrait <b>presque pas d'oxygène</b>. Il y a 3 milliards d'années, les premières cyanobactéries ont commencé à fabriquer l'O₂ qui a rendu la vie animale possible.</p>
+</div>
+</div>
+
+<script>
+let sunLight=70,water=60,co2=50;
+function updateSim(){
+  document.getElementById('sun-val').textContent=sunLight+'%';
+  document.getElementById('water-val').textContent=water+'%';
+  document.getElementById('co2-val').textContent=co2+'%';
+  const limiting=Math.min(sunLight,water,co2);
+  const glucose=Math.round(limiting*.8);
+  const o2=Math.round(limiting*.9);
+  const growth=Math.round(limiting*.6);
+  document.getElementById('glucose-out').textContent=glucose;
+  document.getElementById('o2-out').textContent=o2;
+  document.getElementById('growth-out').textContent=growth;
+  let msg='';
+  if(sunLight===0)msg="🌑 Pas de lumière : la photosynthèse s'arrête.";
+  else if(water===0)msg="🏜️ Pas d'eau : la plante ne peut rien fabriquer.";
+  else if(co2===0)msg="💨 Pas de CO₂ : impossible de construire le glucose.";
+  else if(limiting<20)msg="⚠️ Un ingrédient manque, la production est très faible.";
+  else if(limiting<50)msg="🌱 La plante produit un peu, mais elle pourrait faire mieux.";
+  else if(limiting<80)msg="🌿 Bonne production ! La plante grandit bien.";
+  else msg="🌳 Production maximale ! La plante est en pleine forme.";
+  document.getElementById('sim-msg').textContent=msg;
+}
+updateSim();
+</script>
+</body>
+</html>

@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>💧 La Chimie de l'Eau</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:#060d20;color:#e0f0ff;font-family:'Trebuchet MS',sans-serif;min-height:100vh}
+.back-btn{position:fixed;top:16px;left:16px;z-index:100;background:rgba(60,180,255,.12);border:2px solid #3cb4ff;color:#9ad8ff;border-radius:30px;padding:8px 18px;font-size:14px;font-weight:700;cursor:pointer;text-decoration:none}
+.header{text-align:center;padding:28px 20px 14px}
+.header h1{font-family:Georgia,serif;font-size:clamp(26px,5vw,36px);color:#9ad8ff;margin:0}
+.header p{color:#5a7aaa;font-size:15px;margin-top:6px}
+.main{max-width:900px;margin:0 auto;padding:0 20px 40px}
+.molecule-view{background:rgba(10,20,50,.8);border:1px solid rgba(255,255,255,.08);border-radius:20px;padding:20px;margin-bottom:20px;text-align:center}
+.molecule-view svg{max-width:400px;width:100%}
+.state-tabs{display:flex;gap:10px;justify-content:center;margin:20px 0;flex-wrap:wrap}
+.state-tab{background:transparent;border:2px solid rgba(255,255,255,.15);color:#e0f0ff;border-radius:28px;padding:12px 22px;font-size:15px;font-weight:700;cursor:pointer;font-family:inherit;transition:all .2s}
+.state-tab.active{border-color:var(--c);background:var(--c);color:#060d20}
+.card{background:rgba(15,25,60,.9);border:1px solid rgba(255,255,255,.08);border-left:4px solid #3cb4ff;border-radius:14px;padding:18px 22px;margin-bottom:14px;line-height:1.7;font-size:15px}
+.card h2{font-family:Georgia,serif;font-size:22px;margin:0 0 10px;color:#9ad8ff}
+.card h3{font-family:Georgia,serif;font-size:18px;margin:16px 0 8px;color:#70c0ff}
+.formula{background:rgba(0,0,0,.3);border:1px solid rgba(60,180,255,.3);border-radius:14px;padding:20px;text-align:center;margin:16px 0;font-family:Georgia,serif}
+.formula .big{font-size:48px;font-weight:800;letter-spacing:2px}
+.formula .sub{font-size:14px;color:#5a7aaa;margin-top:8px}
+.slider-wrap{margin:16px 0}
+.slider-wrap label{display:flex;justify-content:space-between;font-weight:700;margin-bottom:6px}
+input[type=range]{width:100%;accent-color:#3cb4ff;cursor:pointer}
+.anim-area{height:200px;position:relative;overflow:hidden;border-radius:14px;background:rgba(0,0,0,.2);margin:16px 0}
+.particle{position:absolute;border-radius:50%;transition:none}
+</style>
+</head>
+<body>
+<a class="back-btn" href="../index.html" onclick="if(window.opener||document.referrer){event.preventDefault();history.back()}">← Retour</a>
+<div class="header"><h1>💧 La Chimie de l'Eau</h1><p>Découvre la molécule la plus importante de la Terre</p></div>
+<div class="main">
+<div class="molecule-view">
+  <svg viewBox="0 0 300 200" id="mol-svg">
+    <defs>
+      <radialGradient id="oGrad"><stop offset="0%" stop-color="#ff6060"/><stop offset="100%" stop-color="#cc2020"/></radialGradient>
+      <radialGradient id="hGrad"><stop offset="0%" stop-color="#f0f0ff"/><stop offset="100%" stop-color="#a0a0d0"/></radialGradient>
+    </defs>
+    <line x1="110" y1="100" x2="150" y2="75" stroke="#7a8abf" stroke-width="8" stroke-linecap="round"/>
+    <line x1="190" y1="100" x2="150" y2="75" stroke="#7a8abf" stroke-width="8" stroke-linecap="round"/>
+    <circle cx="150" cy="75" r="30" fill="url(#oGrad)"/>
+    <text x="150" y="82" fill="white" font-size="20" font-weight="bold" text-anchor="middle" font-family="Georgia,serif">O</text>
+    <circle cx="100" cy="110" r="20" fill="url(#hGrad)"/>
+    <text x="100" y="116" fill="#333" font-size="16" font-weight="bold" text-anchor="middle" font-family="Georgia,serif">H</text>
+    <circle cx="200" cy="110" r="20" fill="url(#hGrad)"/>
+    <text x="200" y="116" fill="#333" font-size="16" font-weight="bold" text-anchor="middle" font-family="Georgia,serif">H</text>
+    <text x="150" y="25" fill="#5a7aaa" font-size="13" text-anchor="middle">angle : 104,5°</text>
+  </svg>
+</div>
+
+<div class="formula">
+  <div class="big" style="color:#3cb4ff">H<sub style="font-size:30px">2</sub>O</div>
+  <div class="sub">2 atomes d'Hydrogène + 1 atome d'Oxygène = 1 molécule d'eau</div>
+</div>
+
+<div class="card">
+  <h2>🧪 C'est quoi, une molécule d'eau ?</h2>
+  <p>L'eau est faite de milliards de minuscules briques invisibles appelées <b style="color:#3cb4ff">molécules</b>. Chaque molécule est composée de 3 atomes collés ensemble :</p>
+  <p>• 1 gros atome d'<b style="color:#ff6060">Oxygène</b> (le O rouge en haut)</p>
+  <p>• 2 petits atomes d'<b style="color:#a0a0d0">Hydrogène</b> (les H blancs en bas)</p>
+  <p>Ils forment un angle de 104,5° — comme un petit « V ». C'est cette forme spéciale qui donne à l'eau ses super-pouvoirs !</p>
+</div>
+
+<div class="state-tabs" id="state-tabs"></div>
+<div id="state-info"></div>
+
+<div class="card">
+  <h2>🌡️ Simulateur de température</h2>
+  <p>Bouge le curseur pour voir comment les molécules changent de comportement :</p>
+  <div class="slider-wrap">
+    <label><span>Température</span><span id="temp-val" style="color:#3cb4ff">20°C</span></label>
+    <input type="range" min="-30" max="150" value="20" id="temp-slider" oninput="updateSim()">
+  </div>
+  <div class="anim-area" id="anim-area"></div>
+  <p id="temp-desc" style="text-align:center;color:#5a7aaa;margin-top:8px"></p>
+</div>
+
+<div class="card">
+  <h2>🌊 Les super-pouvoirs de l'eau</h2>
+  <h3>1. Solvant universel</h3>
+  <p>L'eau peut dissoudre plus de substances que n'importe quel autre liquide. Le sel, le sucre, les minéraux… elle les sépare et les transporte. C'est pour ça que le sang (qui est surtout de l'eau) peut livrer les nutriments partout dans ton corps.</p>
+  <h3>2. La glace flotte</h3>
+  <p>C'est unique ! Presque tous les solides coulent dans leur liquide. Mais la glace est plus légère que l'eau liquide. Grâce à ça, les lacs gèlent par le haut, et les poissons survivent en dessous.</p>
+  <h3>3. Chaleur spécifique élevée</h3>
+  <p>L'eau met très longtemps à chauffer ET à refroidir. C'est pour ça que la mer garde sa chaleur l'été et que le climat près de l'océan est plus doux.</p>
+</div>
+</div>
+
+<script>
+const STATES=[
+{name:"🧊 Solide (Glace)",color:"#a0e0ff",desc:`<h2 style="color:#a0e0ff">🧊 L'état solide : la glace</h2><p>En dessous de <b>0°C</b>, les molécules d'eau se figent. Elles s'organisent en un réseau hexagonal régulier — c'est pour ça que les flocons de neige ont toujours 6 branches !</p><p>Les molécules vibrent légèrement sur place mais ne bougent plus. Le réseau cristallin prend plus de place que l'eau liquide : c'est pourquoi <b style="color:#a0e0ff">la glace flotte</b> et pourquoi une bouteille d'eau peut éclater au congélateur.</p>`},
+{name:"💧 Liquide (Eau)",color:"#3cb4ff",desc:`<h2 style="color:#3cb4ff">💧 L'état liquide : l'eau</h2><p>Entre <b>0°C et 100°C</b>, les molécules glissent les unes sur les autres. Elles restent proches mais peuvent bouger librement — c'est pour ça que l'eau coule et prend la forme de son récipient.</p><p>Les molécules se tiennent par de petits liens invisibles appelés <b>liaisons hydrogène</b>. Ces liens se font et se défont des milliards de fois par seconde. C'est la danse permanente de l'eau liquide !</p>`},
+{name:"♨️ Gaz (Vapeur)",color:"#ff9060",desc:`<h2 style="color:#ff9060">♨️ L'état gazeux : la vapeur</h2><p>Au-dessus de <b>100°C</b>, les molécules s'échappent ! Elles ont tellement d'énergie qu'elles brisent toutes leurs liaisons et s'envolent dans l'air à grande vitesse.</p><p>La vapeur d'eau est <b>invisible</b> (ce que tu vois au-dessus d'une casserole, ce sont de minuscules gouttelettes d'eau liquide, pas de la vraie vapeur). Les molécules sont très éloignées les unes des autres et se déplacent dans tous les sens.</p>`}
+];
+let selState=1,temp=20,particles=[];
+function initParticles(){particles=[];for(let i=0;i<40;i++)particles.push({x:Math.random()*100,y:Math.random()*100,vx:(Math.random()-.5)*2,vy:(Math.random()-.5)*2})}
+initParticles();
+function renderTabs(){
+  let h='';STATES.forEach((s,i)=>{h+=`<button class="state-tab ${selState===i?'active':''}" style="--c:${s.color}" onclick="selState=${i};renderState()">${s.name}</button>`});
+  document.getElementById('state-tabs').innerHTML=h;
+}
+function renderState(){
+  renderTabs();
+  document.getElementById('state-info').innerHTML=`<div class="card" style="border-left-color:${STATES[selState].color}">${STATES[selState].desc}</div>`;
+}
+function updateSim(){
+  temp=+document.getElementById('temp-slider').value;
+  document.getElementById('temp-val').textContent=temp+'°C';
+  if(temp<0)selState=0;else if(temp>=100)selState=2;else selState=1;
+  renderState();
+}
+function animParticles(){
+  const area=document.getElementById('anim-area');
+  if(!area)return requestAnimationFrame(animParticles);
+  const w=area.offsetWidth,h=area.offsetHeight;
+  let speed=temp<0?.02:temp<100?.3+temp*.01:1.5+temp*.01;
+  let col=temp<0?'#a0e0ff':temp<100?'#3cb4ff':'#ff9060';
+  let r=temp<0?6:temp<100?5:4;
+  particles.forEach(p=>{
+    if(temp<0){
+      // solid: vibrate in place
+      p.x+=((Math.random()-.5)*.3);p.y+=((Math.random()-.5)*.3);
+      // snap to grid
+      p.x=Math.max(2,Math.min(98,p.x));p.y=Math.max(2,Math.min(98,p.y));
+    } else {
+      p.vx+=(Math.random()-.5)*speed*.2;p.vy+=(Math.random()-.5)*speed*.2;
+      p.vx*=.98;p.vy*=.98;
+      let maxV=speed;p.vx=Math.max(-maxV,Math.min(maxV,p.vx));p.vy=Math.max(-maxV,Math.min(maxV,p.vy));
+      p.x+=p.vx;p.y+=p.vy;
+      if(p.x<1){p.x=1;p.vx*=-1}if(p.x>99){p.x=99;p.vx*=-1}
+      if(p.y<1){p.y=1;p.vy*=-1}if(p.y>99){p.y=99;p.vy*=-1}
+    }
+  });
+  let html='';
+  particles.forEach(p=>{
+    html+=`<div class="particle" style="left:${p.x}%;top:${p.y}%;width:${r*2}px;height:${r*2}px;background:${col};box-shadow:0 0 ${r+2}px ${col}60;transform:translate(-50%,-50%)"></div>`;
+  });
+  area.innerHTML=html;
+  let desc=temp<0?'❄️ Les molécules vibrent sur place, figées en cristal.':temp<100?'💧 Les molécules glissent librement les unes sur les autres.':'♨️ Les molécules filent dans tous les sens à toute vitesse !';
+  document.getElementById('temp-desc').textContent=desc;
+  requestAnimationFrame(animParticles);
+}
+renderState();animParticles();
+</script>
+</body>
+</html>

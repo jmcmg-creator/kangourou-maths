@@ -1,65 +1,79 @@
 /* ════════ NIVEAUX / MODES ════════ */
 const SUBJECTS=[
-  {id:"maths",name:"Royaume des Nombres",icon:"\u{1F9EE}",color:"#f59e0b",desc:"Maths : calcul, probl\u00e8mes, g\u00e9om\u00e9trie",
+  {id:"maths",name:"Math\u00e9matiques",icon:"\u{1F9EE}",color:"#f7a020",desc:"Royaume des Nombres",
     levels:[
       {id:"cp",name:"Apprenti Dragonneau",sub:"CP fort (secret)",icon:"\u{1F95A}",color:"#93c5fd",secret:true,hasStatic:true},
       {id:"ce1-ce2",name:"Apprenti Sorcier",sub:"CE1 \u2013 CE2",icon:"\u{1F9D9}",color:"#22c55e",hasStatic:true},
       {id:"cm1-cm2",name:"Chevalier du Savoir",sub:"CM1 \u2013 CM2",icon:"\u2694\uFE0F",color:"#f7a020",hasStatic:true},
       {id:"6e-5e",name:"Ma\u00eetre Dragon",sub:"6\u1d49 \u2013 5\u1d49",icon:"\u{1F409}",color:"#ef4444",hasStatic:true}
     ]},
-  {id:"culture",name:"Royaume du Savoir",icon:"\u{1F4DA}",color:"#dc2626",desc:"Histoire, G\u00e9ographie, Fran\u00e7ais, EMC",
+  {id:"culture",name:"Culture g\u00e9n\u00e9rale",icon:"\u{1F4DA}",color:"#c4b5fd",desc:"Histoire, G\u00e9o, Fran\u00e7ais, EMC",
     levels:[
-      {id:"histoire-ce2",name:"Histoire",sub:"CE2 \u2014 Pr\u00e9histoire/Romains",icon:"\u{1F3DB}\uFE0F",color:"#fbbf24",hasStatic:true},
-      {id:"histoire-cm1",name:"Histoire",sub:"CM1 \u2014 Moyen \u00c2ge/Renaissance",icon:"\u{1F451}",color:"#fbbf24",hasStatic:true},
-      {id:"histoire-cm2",name:"Histoire",sub:"CM2 \u2014 R\u00e9volution/XXe",icon:"\u{1F4DC}",color:"#fbbf24",hasStatic:true},
-      {id:"geographie-ce2",name:"G\u00e9ographie",sub:"CE2 \u2014 La France",icon:"\u{1F1EB}\u{1F1F7}",color:"#22d3ee",hasStatic:true},
-      {id:"geographie-cm1",name:"G\u00e9ographie",sub:"CM1 \u2014 R\u00e9gions de France",icon:"\u{1F5FA}\uFE0F",color:"#22d3ee",hasStatic:true},
-      {id:"geographie-cm2",name:"G\u00e9ographie",sub:"CM2 \u2014 Europe & Monde",icon:"\u{1F30D}",color:"#22d3ee",hasStatic:true},
-      {id:"francais-ce2",name:"Fran\u00e7ais",sub:"CE2 \u2014 Grammaire/Conjugaison",icon:"\u{270F}\uFE0F",color:"#f472b6",hasStatic:true},
-      {id:"francais-cm1",name:"Fran\u00e7ais",sub:"CM1 \u2014 Conjugaisons/Accords",icon:"\u{1F4D6}",color:"#f472b6",hasStatic:true},
-      {id:"francais-cm2",name:"Fran\u00e7ais",sub:"CM2 \u2014 Tous temps/Figures",icon:"\u{1F4DD}",color:"#f472b6",hasStatic:true},
-      {id:"emc-ce2",name:"EMC",sub:"CE2 \u2014 Citoyennet\u00e9",icon:"\u{1F970}",color:"#a78bfa",hasStatic:true},
-      {id:"emc-cm1",name:"EMC",sub:"CM1 \u2014 D\u00e9mocratie",icon:"\u{1F396}\uFE0F",color:"#a78bfa",hasStatic:true},
-      {id:"emc-cm2",name:"EMC",sub:"CM2 \u2014 Institutions",icon:"\u{1F3DB}\uFE0F",color:"#a78bfa",hasStatic:true}
+      {id:"histoire-ce2",name:"Histoire",sub:"CE2 \u2014 Pr\u00e9histoire/Romains",icon:"\u{1F3DB}\uFE0F",color:"#fbbf24"},
+      {id:"histoire-cm1",name:"Histoire",sub:"CM1 \u2014 Moyen \u00c2ge/Renaissance",icon:"\u{1F451}",color:"#fbbf24"},
+      {id:"histoire-cm2",name:"Histoire",sub:"CM2 \u2014 R\u00e9volution/XXe",icon:"\u{1F4DC}",color:"#fbbf24"},
+      {id:"geographie-ce2",name:"G\u00e9ographie",sub:"CE2 \u2014 La France",icon:"\u{1F1EB}\u{1F1F7}",color:"#22d3ee"},
+      {id:"geographie-cm1",name:"G\u00e9ographie",sub:"CM1 \u2014 R\u00e9gions de France",icon:"\u{1F5FA}\uFE0F",color:"#22d3ee"},
+      {id:"geographie-cm2",name:"G\u00e9ographie",sub:"CM2 \u2014 Europe & Monde",icon:"\u{1F30D}",color:"#22d3ee"},
+      {id:"francais-ce2",name:"Fran\u00e7ais",sub:"CE2 \u2014 Grammaire/Conjugaison",icon:"\u{270F}\uFE0F",color:"#f472b6"},
+      {id:"francais-cm1",name:"Fran\u00e7ais",sub:"CM1 \u2014 Conjugaisons/Accords",icon:"\u{1F4D6}",color:"#f472b6"},
+      {id:"francais-cm2",name:"Fran\u00e7ais",sub:"CM2 \u2014 Tous temps/Figures",icon:"\u{1F4DD}",color:"#f472b6"},
+      {id:"emc-ce2",name:"EMC",sub:"CE2 \u2014 Citoyennet\u00e9",icon:"\u{1F970}",color:"#a78bfa"},
+      {id:"emc-cm1",name:"EMC",sub:"CM1 \u2014 D\u00e9mocratie",icon:"\u{1F396}\uFE0F",color:"#a78bfa"},
+      {id:"emc-cm2",name:"EMC",sub:"CM2 \u2014 Institutions",icon:"\u{1F3DB}\uFE0F",color:"#a78bfa"}
     ]},
-  {id:"poesie",name:"Royaume de la Plume",icon:"\u{1F4DC}",color:"#a855f7",desc:"Po\u00e9sies (La Fontaine, Victor Hugo) \u00e0 \u00e9couter et r\u00e9citer",isPoetry:true},
-  {id:"langues",name:"Royaume des Mots",icon:"\u{1F310}",color:"#10b981",desc:"H\u00e9breu : alphabet, vocabulaire, expressions, lecture",
+  {id:"poesie",name:"Po\u00e9sies La Fontaine",icon:"\u{1F4DC}",color:"#a78bfa",desc:"\u00c9coute, r\u00e9cite \u00e0 voix haute (avec micro)",isPoetry:true},
+  {id:"langues",name:"Langues",icon:"\u{1F310}",color:"#10b981",desc:"H\u00e9breu (alphabet, vocabulaire, lecture)",
     levels:[
-      {id:"hebreu-alphabet",name:"H\u00e9breu",sub:"Alphabet (\u05D0\u05D1\u05D2)",icon:"\u{1F524}",color:"#0ea5e9",hasStatic:true},
-      {id:"hebreu-vocabulaire",name:"H\u00e9breu",sub:"Vocabulaire de base",icon:"\u{1F4DA}",color:"#0ea5e9",hasStatic:true},
-      {id:"hebreu-expressions",name:"H\u00e9breu",sub:"Expressions courantes",icon:"\u{1F5E3}\uFE0F",color:"#0ea5e9",hasStatic:true},
-      {id:"hebreu-lecture",name:"H\u00e9breu",sub:"Lecture mots et phrases",icon:"\u{1F4D6}",color:"#0ea5e9",hasStatic:true},
-      {id:"english-words",name:"Anglais oral",sub:"Mots simples (micro)",icon:"\u{1F1EC}\u{1F1E7}",color:"#3b82f6",hasStatic:true},
-      {id:"english-phrases",name:"Anglais oral",sub:"Phrases courantes (micro)",icon:"\u{1F3A4}",color:"#3b82f6",hasStatic:true}
+      {id:"hebreu-alphabet",name:"H\u00e9breu",sub:"Alphabet (\u05D0\u05D1\u05D2)",icon:"\u{1F524}",color:"#0ea5e9"},
+      {id:"hebreu-vocabulaire",name:"H\u00e9breu",sub:"Vocabulaire de base",icon:"\u{1F4DA}",color:"#0ea5e9"},
+      {id:"hebreu-expressions",name:"H\u00e9breu",sub:"Expressions courantes",icon:"\u{1F5E3}\uFE0F",color:"#0ea5e9"},
+      {id:"hebreu-lecture",name:"H\u00e9breu",sub:"Lecture mots et phrases",icon:"\u{1F4D6}",color:"#0ea5e9"}
     ]},
-  {id:"sciences",name:"Royaume des D\u00e9couvertes",icon:"\u{1F52C}",color:"#0ea5e9",desc:"Sciences : Physique, Chimie, SVT (biologie)",
+  {id:"sciences",name:"Sciences",icon:"\u{1F52C}",color:"#22d3ee",desc:"Physique, Chimie, Biologie",
     levels:[
-      {id:"physique-ce2",name:"Physique",sub:"CE2 \u2014 Mati\u00e8re/Lumi\u00e8re",icon:"\u{1F4A1}",color:"#3b82f6",hasStatic:true},
-      {id:"physique-cm1",name:"Physique",sub:"CM1 \u2014 \u00c9nergie/\u00c9lectricit\u00e9",icon:"\u26A1",color:"#3b82f6",hasStatic:true},
-      {id:"physique-cm2",name:"Physique",sub:"CM2 \u2014 Forces/Circuits",icon:"\u{1F9F2}",color:"#3b82f6",hasStatic:true},
-      {id:"chimie-ce2",name:"Chimie",sub:"CE2 \u2014 \u00c9tats mati\u00e8re",icon:"\u{1F9EA}",color:"#10b981",hasStatic:true},
-      {id:"chimie-cm1",name:"Chimie",sub:"CM1 \u2014 M\u00e9langes/Dissolution",icon:"\u{1F4A7}",color:"#10b981",hasStatic:true},
-      {id:"chimie-cm2",name:"Chimie",sub:"CM2 \u2014 Transformations",icon:"\u2697\uFE0F",color:"#10b981",hasStatic:true},
-      {id:"biologie-ce2",name:"SVT",sub:"CE2 \u2014 Corps/Animaux",icon:"\u{1F9B7}",color:"#84cc16",hasStatic:true},
-      {id:"biologie-cm1",name:"SVT",sub:"CM1 \u2014 Nutrition/Reproduction",icon:"\u{1F33F}",color:"#84cc16",hasStatic:true},
-      {id:"biologie-cm2",name:"SVT",sub:"CM2 \u2014 \u00c9cosyst\u00e8mes",icon:"\u{1F33B}",color:"#84cc16",hasStatic:true}
+      {id:"physique-ce2",name:"Physique",sub:"CE2 \u2014 Mati\u00e8re/Lumi\u00e8re",icon:"\u{1F4A1}",color:"#3b82f6"},
+      {id:"physique-cm1",name:"Physique",sub:"CM1 \u2014 \u00c9nergie/\u00c9lectricit\u00e9",icon:"\u26A1",color:"#3b82f6"},
+      {id:"physique-cm2",name:"Physique",sub:"CM2 \u2014 Forces/Circuits",icon:"\u{1F9F2}",color:"#3b82f6"},
+      {id:"chimie-ce2",name:"Chimie",sub:"CE2 \u2014 \u00c9tats mati\u00e8re",icon:"\u{1F9EA}",color:"#10b981"},
+      {id:"chimie-cm1",name:"Chimie",sub:"CM1 \u2014 M\u00e9langes/Dissolution",icon:"\u{1F4A7}",color:"#10b981"},
+      {id:"chimie-cm2",name:"Chimie",sub:"CM2 \u2014 Transformations",icon:"\u2697\uFE0F",color:"#10b981"},
+      {id:"biologie-ce2",name:"SVT",sub:"CE2 \u2014 Corps/Animaux",icon:"\u{1F9B7}",color:"#84cc16"},
+      {id:"biologie-cm1",name:"SVT",sub:"CM1 \u2014 Nutrition/Reproduction",icon:"\u{1F33F}",color:"#84cc16"},
+      {id:"biologie-cm2",name:"SVT",sub:"CM2 \u2014 \u00c9cosyst\u00e8mes",icon:"\u{1F33B}",color:"#84cc16"}
     ]},
-  {id:"culture-adulte",name:"Royaume des Sages",icon:"\u{1F9E0}",color:"#9333ea",desc:"Culture g\u00e9n\u00e9rale (niveau adulte) par th\u00e8mes",isAdult:true,
+  {id:"informatique",name:"Informatique & Code",icon:"\u{1F4BB}",color:"#6366f1",desc:"Algorithmes, code et pens\u00e9e logique",
     levels:[
-      {id:"adult-histoire",name:"Histoire",sub:"Antiquit\u00e9, Moyen \u00c2ge, \u00e9poques modernes",icon:"\u{1F3DB}\ufe0f",color:"#dc2626",hasStatic:true},
-      {id:"adult-geographie",name:"G\u00e9ographie",sub:"Pays, capitales, drapeaux, fleuves",icon:"\u{1F30D}",color:"#0ea5e9",hasStatic:true},
-      {id:"adult-arts",name:"Arts & Litt\u00e9rature",sub:"Peinture, sculpture, romans, po\u00e9sie",icon:"\u{1F3A8}",color:"#a855f7",hasStatic:true},
-      {id:"adult-sciences",name:"Sciences",sub:"Physique, biologie, espace",icon:"\u{1F52D}",color:"#10b981",hasStatic:true},
-      {id:"adult-cinema-musique",name:"Cin\u00e9ma & Musique",sub:"Films, compositeurs, groupes",icon:"\u{1F3AC}",color:"#f59e0b",hasStatic:true}
+      {id:"info-cp",name:"D\u00e9couverte",sub:"CP \u2014 S\u00e9quences & directions",icon:"\u{1F916}",color:"#818cf8"},
+      {id:"info-ce1-ce2",name:"Algorithmes",sub:"CE1-CE2 \u2014 Boucles & conditions",icon:"\u{1F504}",color:"#6366f1"},
+      {id:"info-cm1",name:"Programmation",sub:"CM1 \u2014 Scratch & variables",icon:"\u{1F4DD}",color:"#4f46e5"},
+      {id:"info-cm2",name:"Code avanc\u00e9",sub:"CM2 \u2014 HTML, binaire, donn\u00e9es",icon:"\u{1F5A5}\uFE0F",color:"#4338ca"}
+    ]},
+  {id:"art",name:"Art & Histoire de l'art",icon:"\u{1F3A8}",color:"#ec4899",desc:"\u0152uvres, artistes et mouvements",
+    levels:[
+      {id:"art-cp-ce1",name:"Premiers arts",sub:"CP-CE1 \u2014 Couleurs & formes",icon:"\u{1F58D}\uFE0F",color:"#f472b6"},
+      {id:"art-ce2",name:"Arts anciens",sub:"CE2 \u2014 Pr\u00e9histoire au Moyen \u00c2ge",icon:"\u{1F3DB}\uFE0F",color:"#ec4899"},
+      {id:"art-cm1",name:"Grands ma\u00eetres",sub:"CM1 \u2014 Renaissance & classiques",icon:"\u{1F5BC}\uFE0F",color:"#db2777"},
+      {id:"art-cm2",name:"Art moderne",sub:"CM2 \u2014 Impressionnisme \u00e0 aujourd'hui",icon:"\u2728",color:"#be185d"}
+    ]},
+  {id:"logique",name:"Logique & M\u00e9moire",icon:"\u{1F9E9}",color:"#14b8a6",desc:"Raisonnement, patterns et m\u00e9moire",
+    levels:[
+      {id:"logique-cp",name:"Premiers patterns",sub:"CP \u2014 Suites & formes",icon:"\u{1F537}",color:"#5eead4"},
+      {id:"logique-ce1-ce2",name:"Raisonnement",sub:"CE1-CE2 \u2014 D\u00e9ductions",icon:"\u{1F9E0}",color:"#14b8a6"},
+      {id:"logique-cm1",name:"\u00c9nigmes",sub:"CM1 \u2014 Casse-t\u00eate & sudoku",icon:"\u{1F510}",color:"#0d9488"},
+      {id:"logique-cm2",name:"D\u00e9fis experts",sub:"CM2 \u2014 Logique avanc\u00e9e",icon:"\u265F\uFE0F",color:"#0f766e"}
+    ]},
+  {id:"geographie",name:"G\u00e9ographie & Pays",icon:"\u{1F30D}",color:"#0ea5e9",desc:"Pays, capitales, drapeaux et continents",
+    levels:[
+      {id:"geo-cp-ce1",name:"Mon monde",sub:"CP-CE1 \u2014 Ma ville, mon pays",icon:"\u{1F3E0}",color:"#38bdf8"},
+      {id:"geo-ce2",name:"La France",sub:"CE2 \u2014 R\u00e9gions & villes",icon:"\u{1F1EB}\u{1F1F7}",color:"#0ea5e9"},
+      {id:"geo-cm1",name:"L'Europe",sub:"CM1 \u2014 Pays & capitales",icon:"\u{1F5FA}\uFE0F",color:"#0284c7"},
+      {id:"geo-cm2",name:"Le Monde",sub:"CM2 \u2014 Continents & cultures",icon:"\u{1F30F}",color:"#0369a1"}
     ]}
 ];
 
-// Aplatir tous les niveaux pour rétrocompat. `|| []` est crucial : poesie
-// n'a pas de `levels` (isPoetry:true), donc sans ça flatMap insère un
-// undefined dans LEVELS, et tout LEVELS.find(...) plante au passage de
-// ce trou — rendant les niveaux qui suivent poesie (langues, sciences)
-// non-fonctionnels.
-const LEVELS=SUBJECTS.flatMap(s=>s.levels||[]);
+// Aplatir tous les niveaux pour rétrocompat
+const LEVELS=SUBJECTS.flatMap(s=>s.levels);
 
 function getSubjectForLevel(lvId){
   for(const s of SUBJECTS) if(s.levels.find(l=>l.id===lvId)) return s;
@@ -87,7 +101,7 @@ const BADGES=[
 /* ════════ ROYAUMES — chaque domaine = un royaume avec sa mascotte ════════ */
 const ROYAUMES={
   maths:{
-    id:"maths",name:"Royaume des Nombres",color:"#f59e0b",bgGradient:"linear-gradient(135deg,#fef3c7,#fde68a,#fcd34d)",
+    id:"maths",name:"Royaume des Nombres",color:"#f7a020",bgGradient:"linear-gradient(135deg,rgba(247,160,32,0.15),rgba(247,160,32,0.05))",
     stages:[
       {threshold:0,name:"\u0152uf de feu",emoji:"\u{1F95A}",desc:"Un \u0153uf br\u00fblant repose..."},
       {threshold:100,name:"B\u00e9b\u00e9 Dragon",emoji:"\u{1F423}",desc:"Il vient d'\u00e9clore !"},
@@ -104,7 +118,7 @@ const ROYAUMES={
     ]
   },
   culture:{
-    id:"culture",name:"Royaume du Savoir",color:"#dc2626",bgGradient:"linear-gradient(135deg,#fee2e2,#fecaca,#fca5a5)",
+    id:"culture",name:"Royaume du Savoir",color:"#c4b5fd",bgGradient:"linear-gradient(135deg,rgba(196,181,253,0.15),rgba(196,181,253,0.05))",
     stages:[
       {threshold:0,name:"Vieux Livre",emoji:"\u{1F4D5}",desc:"Un livre poussi\u00e9reux..."},
       {threshold:100,name:"Apprenti Sage",emoji:"\u{1F4D6}",desc:"Tu commences \u00e0 lire !"},
@@ -121,7 +135,7 @@ const ROYAUMES={
     ]
   },
   sciences:{
-    id:"sciences",name:"Royaume des D\u00e9couvertes",color:"#0ea5e9",bgGradient:"linear-gradient(135deg,#e0f2fe,#bae6fd,#7dd3fc)",
+    id:"sciences",name:"Royaume des D\u00e9couvertes",color:"#22d3ee",bgGradient:"linear-gradient(135deg,rgba(34,211,238,0.15),rgba(34,211,238,0.05))",
     stages:[
       {threshold:0,name:"Tube \u00e0 essai",emoji:"\u{1F9EA}",desc:"Tout commence ici..."},
       {threshold:100,name:"Petit Chercheur",emoji:"\u{1F50D}",desc:"Premi\u00e8re exp\u00e9rience !"},
@@ -138,7 +152,7 @@ const ROYAUMES={
     ]
   },
   langues:{
-    id:"langues",name:"Royaume des Mots",color:"#10b981",bgGradient:"linear-gradient(135deg,#d1fae5,#a7f3d0,#6ee7b7)",
+    id:"langues",name:"Royaume des Mots",color:"#10b981",bgGradient:"linear-gradient(135deg,rgba(16,185,129,0.15),rgba(16,185,129,0.05))",
     stages:[
       {threshold:0,name:"Lettre solitaire",emoji:"\u{1F524}",desc:"Une lettre attend..."},
       {threshold:100,name:"Petit Linguiste",emoji:"\u{1F5E3}\uFE0F",desc:"Premi\u00e8res paroles !"},
@@ -153,7 +167,7 @@ const ROYAUMES={
     ]
   },
   poesie:{
-    id:"poesie",name:"Royaume de la Plume",color:"#a855f7",bgGradient:"linear-gradient(135deg,#f3e8ff,#e9d5ff,#d8b4fe)",
+    id:"poesie",name:"Royaume de la Plume",color:"#a78bfa",bgGradient:"linear-gradient(135deg,rgba(167,139,250,0.15),rgba(167,139,250,0.05))",
     stages:[
       {threshold:0,name:"Plume vierge",emoji:"\u{1FAB6}",desc:"Une plume t'attend..."},
       {threshold:100,name:"Apprenti Po\u00e8te",emoji:"\u270D\uFE0F",desc:"Premi\u00e8res rimes !"},
@@ -169,21 +183,72 @@ const ROYAUMES={
       {id:"phoenix",name:"Ph\u00e9nix",emoji:"\u{1F985}",elem:"L\u00e9gende",threshold:200}
     ]
   },
-  "culture-adulte":{
-    id:"culture-adulte",name:"Royaume des Sages",color:"#9333ea",bgGradient:"linear-gradient(135deg,#f3e8ff,#ddd6fe,#c4b5fd)",
+  informatique:{
+    id:"informatique",name:"Royaume du Code",color:"#6366f1",bgGradient:"linear-gradient(135deg,rgba(99,102,241,0.15),rgba(99,102,241,0.05))",
     stages:[
-      {threshold:0,name:"Curieux",emoji:"\u{1F914}",desc:"La connaissance attend..."},
-      {threshold:100,name:"Lettr\u00e9",emoji:"\u{1F4DA}",desc:"Tu commences \u00e0 savoir !"},
-      {threshold:300,name:"\u00c9rudit",emoji:"\u{1F393}",desc:"Le savoir t'\u00e9claire"},
-      {threshold:700,name:"Sage",emoji:"\u{1F9D9}",desc:"Tu ma\u00eetrises de nombreux th\u00e8mes"},
-      {threshold:1500,name:"Encyclop\u00e9diste",emoji:"\u{1F4D6}\u2728",desc:"Ma\u00eetre de la culture g\u00e9n\u00e9rale"}
+      {threshold:0,name:"Pixel",emoji:"\u2B1C",desc:"Un simple pixel\u2026"},
+      {threshold:100,name:"Script",emoji:"\u{1F4DC}",desc:"Premi\u00e8res lignes de code !"},
+      {threshold:300,name:"D\u00e9veloppeur",emoji:"\u{1F4BB}",desc:"Tu codes avec assurance"},
+      {threshold:700,name:"Hacker \u00e9thique",emoji:"\u{1F513}",desc:"Tu comprends les syst\u00e8mes"},
+      {threshold:1500,name:"Architecte",emoji:"\u{1F3D7}\uFE0F\u2728",desc:"Tu construis des mondes"}
     ],
     companions:[
-      {id:"clio",name:"Clio",emoji:"\u{1F3DB}\ufe0f",elem:"Histoire",threshold:10},
-      {id:"atlas",name:"Atlas",emoji:"\u{1F30D}",elem:"G\u00e9ographie",threshold:25},
-      {id:"orphee",name:"Orph\u00e9e",emoji:"\u{1F3A8}",elem:"Arts & Lettres",threshold:50},
-      {id:"galilee",name:"Galil\u00e9e",emoji:"\u{1F52D}",elem:"Sciences",threshold:100},
-      {id:"melies",name:"M\u00e9li\u00e8s",emoji:"\u{1F3AC}",elem:"Cin\u00e9ma & Musique",threshold:200}
+      {id:"bit",name:"Bittou",emoji:"0\uFE0F\u20E3",elem:"Binaire",threshold:10},
+      {id:"loop",name:"Bouclix",emoji:"\u{1F504}",elem:"Boucles",threshold:25},
+      {id:"bug",name:"Debugo",emoji:"\u{1F41B}",elem:"Debug",threshold:50},
+      {id:"algo",name:"Algorix",emoji:"\u{1F4CA}",elem:"Algorithmes",threshold:100},
+      {id:"ia",name:"Neurona",emoji:"\u{1F9E0}",elem:"IA",threshold:200}
+    ]
+  },
+  art:{
+    id:"art",name:"Royaume des Arts",color:"#ec4899",bgGradient:"linear-gradient(135deg,rgba(236,72,153,0.15),rgba(236,72,153,0.05))",
+    stages:[
+      {threshold:0,name:"Crayon",emoji:"\u270F\uFE0F",desc:"Un crayon attend ta main\u2026"},
+      {threshold:100,name:"Apprenti artiste",emoji:"\u{1F58C}\uFE0F",desc:"Premi\u00e8res couleurs !"},
+      {threshold:300,name:"Peintre",emoji:"\u{1F3A8}",desc:"Tu m\u00e9langes les styles"},
+      {threshold:700,name:"Ma\u00eetre d'atelier",emoji:"\u{1F5BC}\uFE0F",desc:"Ton \u0153uvre impressionne"},
+      {threshold:1500,name:"G\u00e9nie cr\u00e9atif",emoji:"\u{1F5BC}\uFE0F\u2728",desc:"L\u00e9onard t'applaudit"}
+    ],
+    companions:[
+      {id:"pinceau",name:"Pincelon",emoji:"\u{1F58C}\uFE0F",elem:"Peinture",threshold:10},
+      {id:"sculpture",name:"Marbrix",emoji:"\u{1F5FF}",elem:"Sculpture",threshold:25},
+      {id:"photo",name:"Flasho",emoji:"\u{1F4F8}",elem:"Photo",threshold:50},
+      {id:"musique-art",name:"Harmonia",emoji:"\u{1F3B5}",elem:"Musique",threshold:100},
+      {id:"cinema",name:"Scenar",emoji:"\u{1F3AC}",elem:"Cin\u00e9ma",threshold:200}
+    ]
+  },
+  logique:{
+    id:"logique",name:"Royaume de la Logique",color:"#14b8a6",bgGradient:"linear-gradient(135deg,rgba(20,184,166,0.15),rgba(20,184,166,0.05))",
+    stages:[
+      {threshold:0,name:"Pion",emoji:"\u265F\uFE0F",desc:"La premi\u00e8re pi\u00e8ce\u2026"},
+      {threshold:100,name:"Observateur",emoji:"\u{1F441}\uFE0F",desc:"Tu rep\u00e8res les indices"},
+      {threshold:300,name:"Strat\u00e8ge",emoji:"\u{1F3AF}",desc:"Rien ne t'\u00e9chappe"},
+      {threshold:700,name:"Ma\u00eetre logicien",emoji:"\u{1F9E9}",desc:"Tu r\u00e9sous tout"},
+      {threshold:1500,name:"Oracle",emoji:"\u{1F9E9}\u2728",desc:"Tu vois au-del\u00e0"}
+    ],
+    companions:[
+      {id:"pattern",name:"Motifon",emoji:"\u{1F537}",elem:"Patterns",threshold:10},
+      {id:"memory",name:"Mn\u00e9mox",emoji:"\u{1F9E0}",elem:"M\u00e9moire",threshold:25},
+      {id:"deduc",name:"Sherlok",emoji:"\u{1F50D}",elem:"D\u00e9duction",threshold:50},
+      {id:"puzzle",name:"Puzzlix",emoji:"\u{1F9E9}",elem:"Puzzles",threshold:100},
+      {id:"zen",name:"Z\u00e9nith",emoji:"\u{1F4AB}",elem:"Intuition",threshold:200}
+    ]
+  },
+  geographie:{
+    id:"geographie",name:"Royaume des Explorateurs",color:"#0ea5e9",bgGradient:"linear-gradient(135deg,rgba(14,165,233,0.15),rgba(14,165,233,0.05))",
+    stages:[
+      {threshold:0,name:"Boussole",emoji:"\u{1F9ED}",desc:"Une boussole t'attend\u2026"},
+      {threshold:100,name:"Voyageur",emoji:"\u{1F6B6}",desc:"Premiers pas dans le monde"},
+      {threshold:300,name:"Explorateur",emoji:"\u{1F5FA}\uFE0F",desc:"Tu parcours les continents"},
+      {threshold:700,name:"Globe-trotter",emoji:"\u2708\uFE0F",desc:"Aucune fronti\u00e8re ne t'arr\u00eate"},
+      {threshold:1500,name:"Cartographe",emoji:"\u{1F30D}\u2728",desc:"Tu connais chaque recoin"}
+    ],
+    companions:[
+      {id:"drapeau",name:"Flaggo",emoji:"\u{1F3F4}",elem:"Drapeaux",threshold:10},
+      {id:"capitale",name:"Capitalo",emoji:"\u{1F3DB}\uFE0F",elem:"Capitales",threshold:25},
+      {id:"mont",name:"Sommet",emoji:"\u{1F3D4}\uFE0F",elem:"Relief",threshold:50},
+      {id:"ocean",name:"Oceano",emoji:"\u{1F30A}",elem:"Oc\u00e9ans",threshold:100},
+      {id:"satellite",name:"Orbita",emoji:"\u{1F6F0}\uFE0F",elem:"Vue satellite",threshold:200}
     ]
   }
 };
@@ -219,7 +284,7 @@ function getStageInRoyaume(rid){
 const STAGES=ROYAUMES.maths.stages;
 const DRAGONNETS=ROYAUMES.maths.companions;
 
-/* ════════ QUÊTES JOURNANIÈRES ════════ */
+/* ════════ QUÊTES JOURNALIÈRES ════════ */
 const QUEST_TEMPLATES=[
 {id:"q_correct5",desc:"R\u00e9ussis 5 bonnes r\u00e9ponses aujourd'hui",target:5,type:"correct",reward:50},
 {id:"q_streak3",desc:"Fais une s\u00e9rie de 3 bonnes r\u00e9ponses",target:3,type:"streak",reward:30},
@@ -229,40 +294,15 @@ const QUEST_TEMPLATES=[
 {id:"q_correct10",desc:"R\u00e9ussis 10 bonnes r\u00e9ponses aujourd'hui",target:10,type:"correct",reward:100}
 ];
 
-/* ════════ STATE + PERSISTENCE — MULTI-PROFIL ════════ */
-const STORAGE_KEY="royaume_v3";          // legacy single-profile slot (read-only fallback)
-const STORAGE_PROFILES="royaume_profiles_v1";  // dict { [name]: profileData }
-const STORAGE_ACTIVE="royaume_active_v1";      // last-active profile name
-
-function loadProfilesDict(){
-  try{const d=localStorage.getItem(STORAGE_PROFILES); if(d) return JSON.parse(d)}catch(e){}
-  return {};
-}
-function saveProfilesDict(d){localStorage.setItem(STORAGE_PROFILES,JSON.stringify(d))}
-function getActiveName(){return localStorage.getItem(STORAGE_ACTIVE)||''}
-function setActiveName(n){localStorage.setItem(STORAGE_ACTIVE,n||'')}
-
-// One-time migration : si l'ancien profil unique existe et que le dict est vide,
-// on l'enregistre dans le dict sous son propre nom (et il devient actif).
-function migrateLegacyProfile(){
-  const dict=loadProfilesDict();
-  if(Object.keys(dict).length>0) return;
+/* ════════ STATE + PERSISTENCE ════════ */
+const STORAGE_KEY="royaume_v3";
+function loadProfile(){
   try{
-    const legacy=localStorage.getItem(STORAGE_KEY);
-    if(!legacy) return;
-    const p=JSON.parse(legacy);
-    if(!p||!p.name) return;
-    // Si l'ancien profil n'a pas d'AID, on lui donne celui du device (s'il existe) ou un nouveau
-    if(!p.aid){
-      const oldAid=localStorage.getItem('royaume_aid');
-      p.aid=(oldAid&&/^[a-f0-9]{32}$/.test(oldAid))?oldAid:generateAID();
-    }
-    dict[p.name]=p;
-    saveProfilesDict(dict);
-    setActiveName(p.name);
+    const d=localStorage.getItem(STORAGE_KEY);
+    if(d) return migrate(JSON.parse(d));
   }catch(e){}
+  return newProfile();
 }
-
 function newProfile(){
   return {name:"",totalGames:0,totalQuestions:0,totalCorrect:0,bestStreak:0,sessions:[],catStats:{},exerciseStats:{},playDays:[],unlockedBadges:[],
     xp:0,cristaux:0,dragonnets:[],mainDragon:"main",stage:0,
@@ -272,173 +312,72 @@ function migrate(p){
   const base=newProfile();
   return Object.assign(base,p);
 }
-
-// Charge le profil actif (s'il existe) ou retourne un profil vide.
-// Utilisé quand l'utilisateur clique sur un profil dans le picker.
-function loadProfileByName(name){
-  const dict=loadProfilesDict();
-  if(name&&dict[name]) return migrate(dict[name]);
-  return newProfile();
-}
-
-// Sauvegarde le profil courant dans le dict (clé = profile.name) ET dans
-// le STORAGE_KEY legacy pour compatibilité ascendante.
-function saveProfile(){
-  if(!profile.name) return;
-  const dict=loadProfilesDict();
-  dict[profile.name]=profile;
-  saveProfilesDict(dict);
-  setActiveName(profile.name);
-  try{localStorage.setItem(STORAGE_KEY,JSON.stringify(profile))}catch(e){}
-}
-
-migrateLegacyProfile();
-// Au boot on n'auto-charge AUCUN profil : l'utilisateur doit toujours choisir
-// dans le picker (à chaque ouverture). Ça évite d'écraser un profil
-// par accident quand plusieurs personnes utilisent l'app sur le même appareil.
-let profile=newProfile();
+function saveProfile(){localStorage.setItem(STORAGE_KEY,JSON.stringify(profile))}
+let profile=loadProfile();
 let state={screen:'home',level:null,mode:null,exercises:[],idx:0,selected:null,score:0,streak:0,maxStreak:0,results:[],timer:60,timerID:null,gameOver:false,startTime:null,gameData:null,detailOpen:false,sessionXP:0,sessionCristaux:0,aiExercises:[],generating:false,syncing:false};
 
 const $=id=>document.getElementById(id);
 const app=$('app');
 const backArrow=$('backArrow');
 
-/* ════════ HTML escaping (XSS protection) ════════ */
-const _ESC_MAP={'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#x27;','`':'&#x60;'};
-function esc(s){return s==null?'':String(s).replace(/[&<>"'`]/g,c=>_ESC_MAP[c])}
-// Light sanitizer for values used inside attribute single-quoted JS calls (rare)
-function escAttr(s){return esc(s).replace(/\\/g,'\\\\')}
-
 function shuffle(a){a=[...a];for(let i=a.length-1;i>0;i--){let j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]]}return a}
 function today(){return new Date().toISOString().slice(0,10)}
 
-/* ════════ BACKEND API (sync per-profil + AI generation) ════════ */
+/* ════════ BACKEND API (sync sécurisé via AID + AI generation) ════════ */
 const API_BASE="https://royaume-api.square-paris75.workers.dev";
 
-// AID déterministe depuis le prénom (SHA-256 normalisé → 32 hex chars).
-// Conséquence : taper "Joseph" sur n\u0027importe quel appareil donne le MÊME AID,
-// donc retrouve le MÊME profil dans le cloud. Pas besoin de lien, pas
-// d\u0027import, pas de QR : la base de données est partagée par le nom.
-async function aidFromName(name){
-  const norm=String(name||'').toLowerCase().trim().replace(/\s+/g,'');
-  if(!norm) return '';
-  const data=new TextEncoder().encode('royaume:'+norm);
-  const buf=await crypto.subtle.digest('SHA-256',data);
-  return Array.from(new Uint8Array(buf)).map(b=>b.toString(16).padStart(2,'0')).join('').slice(0,32);
-}
-// Fallback synchrone (legacy migration uniquement).
-function generateAID(){
-  return (crypto.randomUUID?crypto.randomUUID():'xxxxxxxxxxxx4xxxyxxxxxxxxxxxxxxx'.replace(/[xy]/g,c=>{const r=Math.random()*16|0;return (c==='x'?r:(r&0x3|0x8)).toString(16)})).replace(/-/g,'');
+// AID = identifiant unique aléatoire (32 hex), généré et stocké localement.
+// Sert de "clé secrète" pour le profil. Impossible à deviner.
+function getAid(){
+  let aid=localStorage.getItem('royaume_aid');
+  if(!aid){
+    // Génère UUID v4 sans tirets = 32 chars hex
+    aid=(crypto.randomUUID?crypto.randomUUID():'xxxxxxxxxxxx4xxxyxxxxxxxxxxxxxxx'.replace(/[xy]/g,c=>{const r=Math.random()*16|0;return (c==='x'?r:(r&0x3|0x8)).toString(16)})).replace(/-/g,'');
+    localStorage.setItem('royaume_aid',aid);
+  }
+  return aid;
 }
 
-// Récupère un profil distant par AID. Ne touche pas au profil local.
-async function fetchProfileByAid(aid){
-  if(!aid||!/^[a-f0-9]{32}$/.test(aid)) return null;
+// Au chargement : si URL contient ?sync=AID, on remplace l'AID local (transfert depuis autre appareil)
+(function checkSyncLink(){
+  const params=new URLSearchParams(window.location.search);
+  const incoming=params.get('sync');
+  if(incoming&&/^[a-f0-9]{32}$/.test(incoming)){
+    const current=localStorage.getItem('royaume_aid');
+    if(current!==incoming){
+      if(confirm('Tu vas récupérer le Royaume d\'un autre appareil. Cela remplacera tes données locales. Continuer ?')){
+        localStorage.setItem('royaume_aid',incoming);
+        // Vide les données locales pour forcer la récup depuis le cloud
+        localStorage.removeItem('royaume_v3');
+      }
+    }
+    // Nettoie l'URL
+    window.history.replaceState({},'',window.location.pathname);
+  }
+})();
+
+const AID=getAid();
+
+async function syncProfileFromCloud(){
   try{
-    const r=await fetch(API_BASE+'/profile/'+aid);
+    const r=await fetch(API_BASE+'/profile/'+AID);
     if(!r.ok) return null;
     const txt=await r.text();
     if(txt==='null'||!txt) return null;
-    return JSON.parse(txt);
+    const remote=JSON.parse(txt);
+    if(remote.totalGames>profile.totalGames){
+      profile=migrate(remote);
+      _localSave();
+      return 'restored';
+    }
+    return 'local_newer';
   }catch(e){return null}
 }
 
-// Fusionne deux profils (local + remote) sans rien perdre.
-// Stratégie : MAX pour les compteurs cumulatifs, UNION pour les listes,
-// merge profond pour royaumes / exerciseStats / catStats.
-// Permet à plusieurs appareils de jouer en parallèle sans s'écraser.
-function mergeProfiles(local,remote){
-  if(!remote||typeof remote!=='object') return local;
-  if(!local||!local.name) return migrate(remote);
-  const out=Object.assign({},local);
-  // Compteurs cumulatifs : max
-  ['totalGames','totalQuestions','totalCorrect','bestStreak','xp','cristaux','stage'].forEach(function(k){
-    out[k]=Math.max(local[k]||0,remote[k]||0);
-  });
-  // mainDragon : garde la valeur locale si définie, sinon remote
-  out.mainDragon=local.mainDragon||remote.mainDragon||'main';
-  // Listes : union dédup
-  function unionArr(a,b){const s=new Set();const r=[];[].concat(a||[],b||[]).forEach(function(v){const k=typeof v==='object'?JSON.stringify(v):v;if(!s.has(k)){s.add(k);r.push(v)}});return r}
-  out.unlockedBadges=unionArr(local.unlockedBadges,remote.unlockedBadges);
-  out.dragonnets=unionArr(local.dragonnets,remote.dragonnets);
-  out.playDays=unionArr(local.playDays,remote.playDays);
-  // Sessions : concatène, dédup par signature, trie par date desc, garde 50 derniers
-  const allSess=[].concat(local.sessions||[],remote.sessions||[]);
-  const seenS=new Set();
-  out.sessions=allSess.filter(function(s){const k=(s.date||'')+'|'+(s.level||'')+'|'+(s.score||0)+'|'+(s.total||0);if(seenS.has(k))return false;seenS.add(k);return true}).sort(function(a,b){return (b.date||'').localeCompare(a.date||'')}).slice(0,50);
-  // Royaumes : merge profond, max sur chaque compteur, union sur companions
-  out.royaumes=Object.assign({},local.royaumes||{});
-  Object.keys(remote.royaumes||{}).forEach(function(rid){
-    const rl=out.royaumes[rid]||{};
-    const rr=remote.royaumes[rid]||{};
-    out.royaumes[rid]={
-      xp:Math.max(rl.xp||0,rr.xp||0),
-      cristaux:Math.max(rl.cristaux||0,rr.cristaux||0),
-      games:Math.max(rl.games||0,rr.games||0),
-      questions:Math.max(rl.questions||0,rr.questions||0),
-      correct:Math.max(rl.correct||0,rr.correct||0),
-      bestStreak:Math.max(rl.bestStreak||0,rr.bestStreak||0),
-      companions:unionArr(rl.companions,rr.companions)
-    };
-  });
-  // exerciseStats : max attempt/correct, dernière date la plus récente
-  out.exerciseStats=Object.assign({},local.exerciseStats||{});
-  Object.keys(remote.exerciseStats||{}).forEach(function(id){
-    const el=out.exerciseStats[id]||{att:0,cor:0};
-    const er=remote.exerciseStats[id]||{att:0,cor:0};
-    out.exerciseStats[id]={
-      att:Math.max(el.att||0,er.att||0),
-      cor:Math.max(el.cor||0,er.cor||0),
-      lastSeen:((el.lastSeen||'')>(er.lastSeen||''))?el.lastSeen:er.lastSeen
-    };
-  });
-  // catStats : max
-  out.catStats=Object.assign({},local.catStats||{});
-  Object.keys(remote.catStats||{}).forEach(function(c){
-    const cl=out.catStats[c]||{att:0,cor:0};
-    const cr=remote.catStats[c]||{att:0,cor:0};
-    out.catStats[c]={
-      att:Math.max(cl.att||0,cr.att||0),
-      cor:Math.max(cl.cor||0,cr.cor||0)
-    };
-  });
-  // aiExercises : union par id, garde 200 derniers
-  const allAi=[].concat(local.aiExercises||[],remote.aiExercises||[]);
-  const seenAi=new Set();
-  out.aiExercises=allAi.filter(function(e){if(!e||!e.id)return false;if(seenAi.has(e.id))return false;seenAi.add(e.id);return true}).slice(-200);
-  // dailyQuest : prend celui dont la progress est la plus haute (même jour)
-  // audioUrls : merge dict avec priorité au remote (sync cross-device)
-  out.audioUrls=Object.assign({},local.audioUrls||{},remote.audioUrls||{});
-  if(remote.dailyQuest&&local.dailyQuest&&remote.dailyQuest.id===local.dailyQuest.id){
-    out.dailyQuest=Object.assign({},local.dailyQuest,{progress:Math.max(local.dailyQuest.progress||0,remote.dailyQuest.progress||0),done:!!(local.dailyQuest.done||remote.dailyQuest.done)});
-  }else if(!local.dailyQuest&&remote.dailyQuest){
-    out.dailyQuest=remote.dailyQuest;
-  }
-  return out;
-}
-
-// Pull cloud + merge dans le profil local (ne perd jamais de données).
-async function syncProfileFromCloud(){
-  if(!profile.aid) return null;
-  const remote=await fetchProfileByAid(profile.aid);
-  if(!remote) return null;
-  const before=JSON.stringify({xp:profile.xp,games:profile.totalGames,cris:profile.cristaux});
-  profile=mergeProfiles(profile,remote);
-  if(!profile.aid) profile.aid=remote.aid;
-  _localSave();
-  const after=JSON.stringify({xp:profile.xp,games:profile.totalGames,cris:profile.cristaux});
-  return before!==after?'restored':'local_newer';
-}
-
-// Push : on tente d'abord un pull-merge pour ne pas écraser une mise à jour
-// concurrente venue d'un autre appareil, puis on push le profil fusionné.
 async function pushProfileToCloud(){
-  if(!profile.name||!profile.aid) return;
+  if(!profile.name) return;
   try{
-    const remote=await fetchProfileByAid(profile.aid);
-    if(remote) profile=mergeProfiles(profile,remote);
-    _localSave();
-    await fetch(API_BASE+'/profile/'+profile.aid,{
+    await fetch(API_BASE+'/profile/'+AID,{
       method:'PUT',
       headers:{'Content-Type':'application/json'},
       body:JSON.stringify(profile)
@@ -446,83 +385,33 @@ async function pushProfileToCloud(){
   }catch(e){}
 }
 
-// Lien de sync pour partager le profil ACTIF sur un autre appareil.
 function getSyncLink(){
-  if(!profile.aid) return '';
-  return window.location.origin+window.location.pathname+'?sync='+profile.aid;
+  return window.location.origin+window.location.pathname+'?sync='+AID;
 }
-
-// Détecte ?sync=AID dans l'URL et IMPORTE le profil dans le dict local
-// (sans rien écraser). Différé pour s'exécuter quand toutes les fonctions
-// sont prêtes.
-function processIncomingSyncLink(){
-  const params=new URLSearchParams(window.location.search);
-  const incoming=params.get('sync');
-  if(!incoming||!/^[a-f0-9]{32}$/.test(incoming)) return;
-  window.history.replaceState({},'',window.location.pathname);
-  setTimeout(async()=>{
-    const remote=await fetchProfileByAid(incoming);
-    if(!remote||!remote.name){
-      alert('Aucun profil trouvé pour ce lien.');
-      return;
-    }
-    const dict=loadProfilesDict();
-    const exists=!!dict[remote.name];
-    const msg=exists
-      ? 'Mettre à jour le profil "'+remote.name+'" depuis l\u0027autre appareil ?'
-      : 'Importer le profil "'+remote.name+'" depuis l\u0027autre appareil ?';
-    if(!confirm(msg)) return;
-    remote.aid=incoming;
-    dict[remote.name]=remote;
-    saveProfilesDict(dict);
-    setActiveName(remote.name);
-    profile=migrate(remote);
-    alert('\u2705 Profil "'+remote.name+'" '+(exists?'mis à jour':'importé')+' !');
-    if(typeof navigate==='function') navigate('home');
-  },100);
-}
-processIncomingSyncLink();
 
 async function generateAIExercises(level,count){
   state.generating=true;
-  const ctrl=new AbortController();
-  const timeoutMs=25000;
-  const tid=setTimeout(()=>ctrl.abort(),timeoutMs);
   try{
     const r=await fetch(API_BASE+'/generate',{
       method:'POST',
       headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({level,count}),
-      signal:ctrl.signal
+      body:JSON.stringify({level,count})
     });
-    clearTimeout(tid);
-    if(!r.ok){
-      let body='';
-      try{body=(await r.text()).slice(0,300)}catch(_){}
-      throw new Error('HTTP '+r.status+(body?' — '+body:''));
-    }
+    if(!r.ok) throw new Error('status '+r.status);
     const data=await r.json();
     if(data.error) throw new Error(data.error.message||'API error');
-    if(!Array.isArray(data.exercises)||data.exercises.length===0){
-      throw new Error('Réponse vide (exercises absent ou []) — niveau "'+level+'" non supporté par le Worker ?');
-    }
     // Persiste dans le profil pour cross-device + sessions futures
     if(!profile.aiExercises) profile.aiExercises=[];
     profile.aiExercises=profile.aiExercises.concat(data.exercises);
-    // Limité à 200 max pour éviter explosion de taille
+    // Limite à 200 max pour éviter explosion de taille
     if(profile.aiExercises.length>200) profile.aiExercises=profile.aiExercises.slice(-200);
     saveProfile();
     state.generating=false;
     return data.exercises;
-  }catch(e){
-    clearTimeout(tid);
-    state.generating=false;
-    if(e.name==='AbortError') throw new Error('Timeout après '+(timeoutMs/1000)+'s — le Worker IA n\'a pas répondu');
-    throw e;
-  }
+  }catch(e){state.generating=false;throw e}
 }
 
-// Auto-génération en arrière-plan (fire & forget) si pool insuffisant
+// Auto-generation en arrière-plan (fire & forget) si pool insuffisant
 function maybeAutoGenerate(level){
   const pool=EX.filter(e=>e.lv===level);
   const aiPool=(profile.aiExercises||[]).filter(e=>e.lv===level);
@@ -530,7 +419,7 @@ function maybeAutoGenerate(level){
   const allPool=[...pool,...aiPool];
   const unseen=allPool.filter(e=>!profile.exerciseStats[e.id]||!profile.exerciseStats[e.id].att);
   // Si moins de 15 exos jamais vus → génère 10 nouveaux en arrière-plan
-  if(unseen.length<5){
+  if(unseen.length<15){
     generateAIExercises(level,10).catch(e=>console.warn('auto-gen failed',e));
   }
 }
@@ -543,19 +432,6 @@ saveProfile=function(){
   if(_syncTimer) clearTimeout(_syncTimer);
   _syncTimer=setTimeout(()=>pushProfileToCloud(),1000);
 };
-
-/* ════════ AUTO-SYNC sur retour à l'app ════════
-   Quand l'utilisateur rebascule sur l'onglet/PWA (visibilitychange = visible),
-   on tire un pull-merge depuis le cloud pour récupérer les éventuels gains
-   d'XP faits sur un autre appareil pendant l'absence. Si quelque chose
-   change, on rerend l'écran courant. */
-document.addEventListener('visibilitychange',function(){
-  if(document.visibilityState==='visible'&&profile&&profile.aid){
-    syncProfileFromCloud().then(function(result){
-      if(result==='restored'&&typeof render==='function') render();
-    });
-  }
-});
 
 /* ════════ EMBERS ════════ */
 setInterval(()=>{
@@ -589,8 +465,8 @@ function render(){
     case 'royaume': renderRoyaume(); break;
     case 'parent': renderParent(); break;
     case 'nameAsk': renderNameAsk(); break;
-    case 'profilePicker': renderProfilePicker(); break;
     case 'collection': renderCollection(); break;
+    case 'leconsHome': renderLecons(); break;
     case 'fichesHome': renderFichesHome(); break;
     case 'fichesSubject': renderFichesSubject(); break;
     case 'fichesTopics': renderFichesTopics(); break;
@@ -624,13 +500,7 @@ function checkDailyQuest(){
 
 /* ════════ HOME ════════ */
 function renderHome(){
-  if(!profile.name){
-    // Pas de profil actif : si au moins un profil existe localement,
-    // on affiche le picker. Sinon on demande le prénom directement.
-    const dict=loadProfilesDict();
-    navigate(Object.keys(dict).length>0?'profilePicker':'nameAsk');
-    return;
-  }
+  if(!profile.name){navigate('nameAsk');return}
   checkDailyQuest();
   // Total des XP de tous les royaumes
   const totalXp=Object.values(profile.royaumes||{}).reduce((s,r)=>s+(r.xp||0),0)+(profile.xp||0);
@@ -649,8 +519,8 @@ function renderHome(){
   }
   app.innerHTML=`
     <div class="text-center fade-in mb-4 py-4">
-      <h2 class="title" style="font-size:clamp(1.4rem,4vw,2rem)">\u{1F44B} Salut ${esc(profile.name)} !</h2>
-      <p style="color:#64748b;font-size:1rem">Bienvenue dans tes Royaumes</p>
+      <h2 class="title" style="font-size:clamp(1.4rem,4vw,2rem)">\u{1F44B} Salut ${profile.name} !</h2>
+      <p style="color:var(--text-mid);font-size:1rem">Bienvenue dans tes Royaumes</p>
       <div class="resources-row">
         <div class="resource flame">\u{1F525} ${profile.totalGames||0} parties</div>
         <div class="resource crystal">\u{1F48E} ${totalCristaux}</div>
@@ -669,23 +539,41 @@ function renderHome(){
       const st=getStageInRoyaume(rid);
       const xpBar=st.next?Math.round((data.xp-st.stage.threshold)/(st.next.threshold-st.stage.threshold)*100):100;
       const target=s.isPoetry?"navigate('poesieHome')":"navigate('subject',{subjectId:'"+s.id+"'})";
-      return `<div class="card clickable fade-in" style="animation-delay:${i*.08}s;border-color:${r.color};background:${r.bgGradient};padding:18px" onclick="${target}">
-        <div class="row" style="gap:16px">
-          <div style="font-size:3.2rem;flex-shrink:0;filter:drop-shadow(0 4px 8px rgba(0,0,0,.1))">${st.stage.emoji}</div>
-          <div class="flex-1">
-            <h3 class="card-title" style="color:#1e293b;font-size:1.15rem">${r.name}</h3>
-            <p class="sub" style="color:#5a4830;font-weight:600">${st.stage.name}</p>
-            <div class="xp-bar-track" style="margin-top:8px;background:rgba(255,255,255,.5)"><div class="xp-bar-fill" style="width:${xpBar}%"></div></div>
-            <p style="font-size:.7rem;color:#64748b;margin-top:4px;font-weight:600">${data.xp} XP \u2022 \u{1F48E} ${data.cristaux} \u2022 ${data.games} parties</p>
+      return `<div class="kingdom-gate fade-in" style="animation-delay:${i*.1}s;--k-color:${r.color}" onclick="${target}">
+        <div class="kingdom-glow" style="background:radial-gradient(ellipse at 30% 50%,${r.color}22,transparent 70%)"></div>
+        <div class="kingdom-border-glow" style="--k-color:${r.color}"></div>
+        <div class="kingdom-inner">
+          <div class="kingdom-mascot">${st.stage.emoji}</div>
+          <div class="kingdom-info">
+            <h3 class="kingdom-name" style="color:${r.color}">${r.name}</h3>
+            <p class="kingdom-stage">${st.stage.emoji} ${st.stage.name}</p>
+            <div class="kingdom-xp-track"><div class="kingdom-xp-fill" style="width:${xpBar}%;background:linear-gradient(90deg,${r.color},${r.color}cc)"></div></div>
+            <div class="kingdom-stats">
+              <span>\u2728 ${data.xp} XP</span>
+              <span>\u{1F48E} ${data.cristaux}</span>
+              <span>\u{1F3AE} ${data.games}</span>
+            </div>
           </div>
-          <div class="arrow">\u2192</div>
+          <div class="kingdom-enter" style="color:${r.color}">\u2794</div>
         </div>
       </div>`;
     }).join('')}
-    <div class="subject-card fade-in" style="border-color:#0ea5e9;background:linear-gradient(135deg,#f0f9ff,#e0f2fe)" onclick="navigate('fichesHome')">
+    <div class="kingdom-gate fade-in" style="animation-delay:.95s;--k-color:#22d3ee" onclick="navigate('leconsHome')">
+      <div class="kingdom-glow" style="background:radial-gradient(ellipse at 30% 50%,rgba(34,211,238,0.12),transparent 70%)"></div>
+      <div class="kingdom-border-glow" style="--k-color:#22d3ee"></div>
+      <div class="kingdom-inner">
+        <div class="kingdom-mascot">\u{1F52C}</div>
+        <div class="kingdom-info">
+          <h3 class="kingdom-name" style="color:#22d3ee">Le\u00e7ons Interactives</h3>
+          <p class="kingdom-stage">11 exp\u00e9riences scientifiques anim\u00e9es</p>
+        </div>
+        <div class="kingdom-enter" style="color:#22d3ee">\u2794</div>
+      </div>
+    </div>
+    <div class="subject-card fade-in" style="border-color:#fbbf24;background:rgba(251,191,36,0.06)" onclick="navigate('fichesHome')">
       <div class="subject-emoji bounce">\u{1F4D6}</div>
       <div class="subject-info">
-        <h3 class="subject-name" style="color:#0c4a6e">Fiches bilan</h3>
+        <h3 class="subject-name" style="color:#fbbf24">Fiches bilan</h3>
         <p class="subject-desc">R\u00e9visions par th\u00e8me, g\u00e9n\u00e9r\u00e9es par IA</p>
       </div>
       <div class="arrow">\u2192</div>
@@ -694,15 +582,12 @@ function renderHome(){
       <button class="btn-stone" onclick="navigate('royaume')">\u2728 Vue d'ensemble</button>
       <button class="btn-stone" onclick="navigate('parent')">\u{1F464} Espace Parent</button>
     </div>
-    <button class="btn-stone mt-3" style="width:100%;font-size:.85rem" onclick="navigate('profilePicker')">\u{1F504} Changer d'utilisateur</button>
-    <button class="btn-stone mt-2" style="width:100%;font-size:.85rem" onclick="shareSyncLink()">\u{1F517} Synchroniser sur un autre appareil</button>
   `;
 }
 
 function renderSubject(){
   const s=SUBJECTS.find(x=>x.id===state.subjectId)||SUBJECTS[0];
-  if(s.isPoetry){navigate('poesieHome');return}
-  const visibleLevels=(s.levels||[]).filter(l=>!l.secret||profile.name.toLowerCase()==='joseph');
+  const visibleLevels=s.levels.filter(l=>!l.secret||profile.name.toLowerCase()==='joseph');
   app.innerHTML=`<div class="text-center py-6 fade-in">
     <div style="font-size:3.5rem">${s.icon}</div>
     <h2 class="title" style="color:${s.color};font-size:1.6rem">${s.name}</h2>
@@ -721,115 +606,72 @@ function renderSubject(){
   <button class="btn-stone mt-4" onclick="navigate('home')">\u2190 Retour</button>`;
 }
 
+/* ════════ LEÇONS INTERACTIVES ════════ */
+const LECONS=[
+  {id:"electricite",title:"Le Laboratoire Électrique",emoji:"⚡",color:"#ff9d3c",desc:"Circuits, courant, loi d'Ohm — avec un vrai circuit animé !",file:"lecons/electricite.html"},
+  {id:"planetes",title:"Le Système Solaire",emoji:"🪐",color:"#ffc83c",desc:"Les 8 planètes qui tournent autour du Soleil",file:"lecons/planetes.html"},
+  {id:"eau",title:"La Chimie de l'Eau",emoji:"💧",color:"#3cb4ff",desc:"H₂O : la molécule la plus importante de la Terre",file:"lecons/eau.html"},
+  {id:"ondes-em",title:"Les Ondes Électromagnétiques",emoji:"📡",color:"#a064ff",desc:"Radio, lumière, rayons X — la même famille !",file:"lecons/ondes-em.html"},
+  {id:"ondes-sonores",title:"Les Ondes Sonores",emoji:"🔊",color:"#64dca0",desc:"Comment le son voyage jusqu'à tes oreilles",file:"lecons/ondes-sonores.html"},
+  {id:"cycle-eau",title:"Le Cycle de l'Eau",emoji:"🌧️",color:"#3ca0ff",desc:"Le voyage sans fin d'une goutte d'eau",file:"lecons/cycle-eau.html"},
+  {id:"photosynthese",title:"La Photosynthèse",emoji:"🌿",color:"#3cc850",desc:"Comment les plantes fabriquent leur nourriture",file:"lecons/photosynthese.html"},
+  {id:"volcans",title:"Les Volcans",emoji:"🌋",color:"#ff6428",desc:"Quand la Terre crache du feu",file:"lecons/volcans.html"},
+  {id:"corps-humain",title:"Le Corps Humain",emoji:"🫀",color:"#dc5078",desc:"Explore la machine la plus incroyable",file:"lecons/corps-humain.html"},
+  {id:"gravite",title:"Les Forces et la Gravité",emoji:"🍎",color:"#64a0ff",desc:"Pourquoi les choses tombent",file:"lecons/gravite.html"},
+  {id:"lumiere",title:"La Lumière et les Couleurs",emoji:"🌈",color:"#ffc828",desc:"Pourquoi le ciel est bleu et l'arc-en-ciel a 7 couleurs",file:"lecons/lumiere.html"},
+  {id:"atomes",title:"Les Atomes",emoji:"⚛️",color:"#50c8f0",desc:"Les briques qui composent tout l'univers",file:"lecons/atomes.html"}
+];
+function renderLecons(){
+  app.innerHTML=`
+    <div class="text-center fade-in py-6">
+      <div style="font-size:3.5rem">🔬</div>
+      <h2 class="title" style="color:#22d3ee;font-size:1.6rem">Leçons Interactives</h2>
+      <p class="sub" style="color:var(--text-mid)">Des expériences animées pour comprendre la science</p>
+    </div>
+    ${LECONS.map((l,i)=>`
+      <div class="kingdom-gate fade-in" style="animation-delay:${i*.07}s;--k-color:${l.color}" onclick="window.open('${l.file}','_blank')">
+        <div class="kingdom-glow" style="background:radial-gradient(ellipse at 30% 50%,${l.color}18,transparent 70%)"></div>
+        <div class="kingdom-border-glow" style="--k-color:${l.color}"></div>
+        <div class="kingdom-inner">
+          <div class="kingdom-mascot" style="font-size:3rem">${l.emoji}</div>
+          <div class="kingdom-info">
+            <h3 class="kingdom-name" style="color:${l.color}">${l.title}</h3>
+            <p class="kingdom-stage">${l.desc}</p>
+          </div>
+          <div class="kingdom-enter" style="color:${l.color}">➔</div>
+        </div>
+      </div>
+    `).join('')}
+    <button class="btn-stone mt-4" onclick="navigate('home')">← Retour</button>
+  `;
+}
+
 function renderNameAsk(){
-  const dict=loadProfilesDict();
-  const hasOthers=Object.keys(dict).length>0;
   app.innerHTML=`<div class="card fade-in" style="margin-top:40px">
-    <h2 class="title" style="color:#0c4a6e;font-size:1.3rem">${hasOthers?'Nouvel utilisateur':'Comment t\'appelles-tu ?'}</h2>
-    <p style="color:#1e293b;margin-bottom:16px">Ton pr\u00e9nom sera affich\u00e9 dans ton Royaume.</p>
-    <input class="name-prompt" id="nameInp" placeholder="Ton pr\u00e9nom" maxlength="20" value="${esc(profile.name||'')}">
+    <h2 class="title" style="color:#fbbf24;font-size:1.3rem">Comment t'appelles-tu, aventuri\u00e8re ?</h2>
+    <p style="color:#faf5ff;margin-bottom:16px">Ton pr\u00e9nom sera affich\u00e9 dans ton Royaume.</p>
+    <input class="name-prompt" id="nameInp" placeholder="Ton pr\u00e9nom" maxlength="20" value="${profile.name||''}">
     <button class="btn-fire" onclick="setName()">Entrer dans le Royaume \u2192</button>
-    ${hasOthers?`<button class="btn-stone mt-3" style="width:100%" onclick="navigate(\u0027profilePicker\u0027)">\u2190 Choisir un profil existant</button>`:''}
   </div>`;
   setTimeout(()=>$('nameInp').focus(),100);
 }
 async function setName(){
-  // Sanitise le nom (retire HTML/quotes pour XSS).
-  const v=$('nameInp').value.replace(/[<>"'`\\\/]/g,'').replace(/[ -]/g,'').trim().slice(0,20);
+  const v=$('nameInp').value.trim();
   if(v.length<1){alert('Entre ton pr\u00e9nom');return}
-  // AID dérivé du nom : "Joseph" sur iPhone = "Joseph" sur iPad = même AID.
-  const aid=await aidFromName(v);
-  // Affiche un loader pendant le pull cloud
-  app.innerHTML='<div class="card text-center" style="margin-top:60px"><div class="dragon-emoji float">\u{1F50D}</div><h2 class="title">Recherche de ton Royaume...</h2></div>';
-  const remote=await fetchProfileByAid(aid);
-  const dict=loadProfilesDict();
-  if(remote&&remote.name){
-    // Le profil existe dans le cloud (cet appareil ou un autre l\u0027a déjà créé)
-    remote.aid=aid;
-    profile=migrate(remote);
-    dict[remote.name]=profile;
-    saveProfilesDict(dict);
-    setActiveName(profile.name);
-  }else if(dict[v]){
-    // Existe localement mais pas dans le cloud (premier sync) → on l\u0027envoie au cloud
-    profile=migrate(dict[v]);
-    profile.aid=aid;
-    saveProfile(); // push cloud (debounced)
-  }else{
-    // Profil tout neuf
-    profile=newProfile();
-    profile.name=v;
-    profile.aid=aid;
-    saveProfile();
+  profile.name=v;
+  saveProfile();
+  navigate('home');
+}
+
+// Au démarrage : tenter de récupérer le profil depuis le cloud (cas: lien sync utilisé)
+(async function initialSync(){
+  await new Promise(r=>setTimeout(r,200)); // attendre que le DOM soit prêt
+  const result=await syncProfileFromCloud();
+  if(result==='restored'){
+    alert('🎉 Royaume récupéré ! '+profile.totalGames+' parties, '+profile.cristaux+' cristaux, '+(profile.aiExercises||[]).length+' exercices IA.');
+    if(state.screen==='home') render();
   }
-  navigate('home');
-}
-
-/* ════════ PROFILE PICKER ════════ */
-function renderProfilePicker(){
-  const dict=loadProfilesDict();
-  const names=Object.keys(dict).sort((a,b)=>{
-    const active=getActiveName();
-    if(a===active) return -1;
-    if(b===active) return 1;
-    const xa=(dict[a].xp||0)+Object.values(dict[a].royaumes||{}).reduce((s,r)=>s+(r.xp||0),0);
-    const xb=(dict[b].xp||0)+Object.values(dict[b].royaumes||{}).reduce((s,r)=>s+(r.xp||0),0);
-    return xb-xa;
-  });
-  const cards=names.map((n,i)=>{
-    const p=dict[n];
-    const xp=(p.xp||0)+Object.values(p.royaumes||{}).reduce((s,r)=>s+(r.xp||0),0);
-    const cris=(p.cristaux||0)+Object.values(p.royaumes||{}).reduce((s,r)=>s+(r.cristaux||0),0);
-    const games=p.totalGames||0;
-    const safeName=esc(n).replace(/'/g,'&#x27;');
-    return '<div class="card clickable fade-in" style="animation-delay:'+(i*.06)+'s;border-color:#f7a020" onclick="switchProfile(\u0027'+safeName+'\u0027)"><div class="row"><div style="font-size:2.5rem;flex-shrink:0">\u{1F409}</div><div class="flex-1" style="min-width:0"><h3 class="card-title" style="color:#0c4a6e">'+esc(n)+'</h3><p class="sub">\u2728 '+xp+' XP \u2022 \u{1F48E} '+cris+' \u2022 '+games+' parties</p></div><div class="arrow">\u2192</div></div></div>';
-  }).join('');
-  const deleteBtns=names.map(n=>{
-    const safeName=esc(n).replace(/'/g,'&#x27;');
-    return '<button class="btn-stone btn-small" style="margin:4px;font-size:.7rem" onclick="deleteProfile(\u0027'+safeName+'\u0027)">\u{1F5D1}\uFE0F '+esc(n)+'</button>';
-  }).join('');
-  app.innerHTML='<div class="text-center py-6 fade-in"><div style="font-size:3.5rem">\u{1F44B}</div><h2 class="title" style="color:#0c4a6e;font-size:1.5rem">Qui joue aujourd\u0027hui ?</h2><p class="sub">Choisis ton profil ou cr\u00e9es-en un nouveau</p></div>'+cards+'<div class="card clickable fade-in" style="border-color:#22c55e;background:linear-gradient(135deg,#dcfce7,#bbf7d0)" onclick="addNewProfile()"><div class="row"><div style="font-size:2.5rem;flex-shrink:0">\u2795</div><div class="flex-1"><h3 class="card-title" style="color:#15803d">Nouvel utilisateur</h3><p class="sub" style="color:#166534">Cr\u00e9er un nouveau profil</p></div></div></div>'+(names.length>0?'<details style="margin-top:24px"><summary style="color:#64748b;font-size:.85rem;cursor:pointer;text-align:center">Supprimer un profil</summary><div style="margin-top:12px;text-align:center">'+deleteBtns+'</div></details>':'');
-}
-
-async function switchProfile(name){
-  profile=loadProfileByName(name);
-  // Si le profil local n\u0027a pas encore d\u0027AID (ancien profil migré),
-  // on le derive du nom pour qu\u0027il soit synchronisé sur tous les appareils.
-  if(!profile.aid) profile.aid=await aidFromName(profile.name||name);
-  setActiveName(name);
-  navigate('home');
-  // Pull cloud en arrière-plan : si la version distante a plus de parties,
-  // on remplace localement et on rerend l\u0027écran.
-  setTimeout(async()=>{
-    if(!profile.aid) return;
-    const result=await syncProfileFromCloud();
-    if(result==='restored'){
-      _localSave();
-      if(state.screen==='home') render();
-    }
-  },50);
-}
-
-function addNewProfile(){
-  profile=newProfile();
-  navigate('nameAsk');
-}
-
-function deleteProfile(name){
-  if(!confirm('Supprimer le profil "'+name+'" ? Cette action est d\u00e9finitive.')) return;
-  const dict=loadProfilesDict();
-  delete dict[name];
-  saveProfilesDict(dict);
-  if(getActiveName()===name) setActiveName('');
-  if(profile.name===name) profile=newProfile();
-  const remaining=Object.keys(dict);
-  navigate(remaining.length>0?'profilePicker':'nameAsk');
-}
-
-// Le sync cloud automatique au boot est désactivé en multi-profil :
-// avec un AID unique par appareil et plusieurs profils locaux, le sync
-// auto fusionnerait les profils. Le sync reste accessible manuellement
-// via l'URL ?sync=AID. À refaire proprement avec un AID par profil.
+})();
 
 /* ════════ MODE SELECT ════════ */
 function renderMode(){
@@ -840,12 +682,12 @@ function renderMode(){
     <p class="sub">${lv.sub} \u2014 Choisis ton mode</p>
   </div>${MODES.map((m,i)=>`<div class="card clickable fade-in" style="animation-delay:${i*.1}s" onclick="startGame('${m.id}')">
     <div class="row"><div class="mode-icon">${m.icon}</div><div class="flex-1">
-      <h3 class="card-title" style="color:#0c4a6e">${m.name}</h3>
+      <h3 class="card-title" style="color:#fbbf24">${m.name}</h3>
       <p class="sub">${m.desc}</p></div></div></div>`).join('')}
   <div class="card mb-4" style="border-color:#c4b5fd;background:linear-gradient(145deg,rgba(139,92,246,.1),rgba(59,130,246,.1))">
     <h3 class="fredoka" style="color:#c4b5fd;font-size:.85rem;text-transform:uppercase;letter-spacing:.1em;margin-bottom:8px">\u{1F52E} Forge du Dragon (IA)</h3>
-    <p style="color:#1e293b;font-size:.85rem;margin-bottom:6px">Le Dragon forge automatiquement de nouveaux d\u00e9fis quand tu en as besoin. Tu en as actuellement <strong style="color:#c4b5fd">${(profile.aiExercises||[]).filter(e=>e.lv===state.level).length} exercices IA</strong> disponibles pour ce niveau.</p>
-    <p style="color:#475569;font-size:.75rem;margin-bottom:10px;font-style:italic">\u{1F4A1} Astuce : les exos AI ont des nombres et des sc\u00e9narios diff\u00e9rents \u00e0 chaque g\u00e9n\u00e9ration.</p>
+    <p style="color:#faf5ff;font-size:.85rem;margin-bottom:6px">Le Dragon forge automatiquement de nouveaux d\u00e9fis quand tu en as besoin. Tu en as actuellement <strong style="color:#c4b5fd">${(profile.aiExercises||[]).filter(e=>e.lv===state.level).length} exercices IA</strong> disponibles pour ce niveau.</p>
+    <p style="color:#8b7ec8;font-size:.75rem;margin-bottom:10px;font-style:italic">\u{1F4A1} Astuce : les exos AI ont des nombres et des sc\u00e9narios diff\u00e9rents \u00e0 chaque g\u00e9n\u00e9ration.</p>
     <button class="btn-stone btn-small" onclick="reqGen('${state.level}',10)" id="genBtn">\u{1F525} Forger 10 nouveaux d\u00e9fis maintenant</button>
     <div id="genStatus" style="margin-top:8px;font-size:.8rem;color:#93c5fd"></div>
   </div>
@@ -862,7 +704,7 @@ async function reqGen(lvId,n){
     if(st){st.innerHTML='\u2705 <strong>'+exos.length+' nouveaux exercices</strong> ajout\u00e9s ! Lance n\'importe quel mode pour les d\u00e9couvrir.'}
     if(btn){btn.textContent='\u{1F525} G\u00e9n\u00e9rer 10 de plus';btn.disabled=false}
   }catch(e){
-    if(st){st.innerHTML='\u274C Erreur : '+esc(e.message)}
+    if(st){st.innerHTML='\u274C Erreur : '+e.message}
     if(btn){btn.textContent='\u{1F525} R\u00e9essayer';btn.disabled=false}
   }
 }
@@ -906,10 +748,20 @@ function pickExercises(mode,lvId){
 
 async function startGame(mode){
   let exercises=pickExercises(mode,state.level);
-  // FALLBACK ULTIME : si pour une raison quelconque (niveau non couvert,
-  // bug futur, etc.) il n'y a aucun exo, on tire 10 exos au hasard de
-  // tout EX. L'utilisateur ne reste JAMAIS sans rien à jouer.
-  if(exercises.length===0) exercises=shuffle(EX).slice(0,10);
+  // Si pas d'exercices (sujet non-maths sans pool g\u00e9n\u00e9r\u00e9), g\u00e9n\u00e9rer maintenant
+  if(exercises.length===0){
+    const lv=LEVELS.find(l=>l.id===state.level);
+    if(!lv||!lv.hasStatic){
+      app.innerHTML='<div class="card text-center" style="margin-top:60px"><div class="dragon-emoji float">\u{1F52E}</div><h2 class="title">Le Dragon prépare tes défis...</h2><p class="sub">Première g\u00e9n\u00e9ration : 5 \u00e0 15 secondes</p></div>';
+      try{
+        await generateAIExercises(state.level,10);
+        exercises=pickExercises(mode,state.level);
+      }catch(e){
+        alert('\u00c9chec g\u00e9n\u00e9ration : '+e.message);
+        return;
+      }
+    }
+  }
   state.mode=mode;state.exercises=exercises;state.idx=0;state.selected=null;state.score=0;state.streak=0;state.maxStreak=0;state.results=[];state.timer=60;state.gameOver=false;state.startTime=Date.now();state.detailOpen=false;state.sessionXP=0;state.sessionCristaux=0;
   if(state.level&&state.level!=='cp') maybeAutoGenerate(state.level);
   navigate('game');
@@ -926,11 +778,11 @@ function renderGame(){
   if(state.mode==='challenge'&&state.selected===null&&!state.gameOver){
     const tc=state.timer>30?'#22c55e':state.timer>10?'#f7a020':'#ef4444';
     const tp=(state.timer/60)*100;
-    timerHTML=`<div class="mb-4"><div class="row-between" style="font-size:.85rem;margin-bottom:4px"><span class="fredoka" style="color:#64748b">Temps restant</span><span class="fredoka" style="font-weight:700;color:${tc}">${state.timer}s</span></div><div class="timer-track"><div class="timer-fill" style="width:${tp}%;background:${tc}"></div></div></div>`;
+    timerHTML=`<div class="mb-4"><div class="row-between" style="font-size:.85rem;margin-bottom:4px"><span class="fredoka" style="color:#c4b5fd">Temps restant</span><span class="fredoka" style="font-weight:700;color:${tc}">${state.timer}s</span></div><div class="timer-track"><div class="timer-fill" style="width:${tp}%;background:${tc}"></div></div></div>`;
   }
   const streakHTML=state.streak>=2?`<span style="color:#f7a020">\u{1F525} ${state.streak}</span>`:'';
-  const levelBadge=state.mode==='progression'?`<span class="badge" style="background:${lv.color}22;color:${lv.color};border-color:${lv.color}44;margin-left:6px">${esc(lv.sub)}</span>`:'';
-  app.innerHTML=`<div style="margin:8px 0"><div class="row-between cinzel" style="font-size:.75rem;color:#475569;margin-bottom:4px">
+  const levelBadge=state.mode==='progression'?`<span class="badge" style="background:${lv.color}22;color:${lv.color};border-color:${lv.color}44;margin-left:6px">${lv.sub}</span>`:'';
+  app.innerHTML=`<div style="margin:8px 0"><div class="row-between cinzel" style="font-size:.75rem;color:#8b7ec8;margin-bottom:4px">
     <span>Question ${state.idx+1}/${total}</span>
     <span>Score : ${state.score}/${state.idx+(state.selected!==null?1:0)}</span>
     ${streakHTML}</div>
@@ -938,14 +790,14 @@ function renderGame(){
   ${timerHTML}
   <div class="card fade-in mt-3">
     <div class="row gap-2 mb-4" style="flex-wrap:wrap">
-      <span class="badge">${esc(ex.cat)}</span>
+      <span class="badge">${ex.cat}</span>
       <span class="stars">${'\u2605'.repeat(ex.diff)}${'\u2606'.repeat(5-ex.diff)}</span>
       ${levelBadge}
     </div>
-    <p style="font-size:clamp(1rem,2.5vw,1.2rem);color:#1e293b;line-height:1.7;margin-bottom:24px">${esc(ex.q)}</p>
-    ${ex.oral?renderOralUI(ex):`<div class="choices-grid">
-      ${ex.ch.map((c,i)=>{let cls='choice-btn';if(state.selected!==null){if(i===ex.ans)cls+=' correct';else if(i===state.selected&&i!==ex.ans)cls+=' wrong'}return `<button class="${cls}" ${state.selected!==null?'disabled':''} onclick="selectAnswer(${i})"><span class="choice-letter">${String.fromCharCode(65+i)}.</span>${esc(c)}</button>`}).join('')}
-    </div>`}
+    <p style="font-size:clamp(1rem,2.5vw,1.2rem);color:#faf5ff;line-height:1.7;margin-bottom:24px">${ex.q}</p>
+    <div class="choices-grid">
+      ${ex.ch.map((c,i)=>{let cls='choice-btn';if(state.selected!==null){if(i===ex.ans)cls+=' correct';else if(i===state.selected&&i!==ex.ans)cls+=' wrong'}return `<button class="${cls}" ${state.selected!==null?'disabled':''} onclick="selectAnswer(${i})"><span class="choice-letter">${String.fromCharCode(65+i)}.</span>${c}</button>`}).join('')}
+    </div>
     <div id="explanation"></div>
   </div>
   ${state.selected===null?`<button class="btn-stone mt-3" onclick="finishGame(true)">Abandonner la qu\u00eate</button>`:''}`;
@@ -991,70 +843,17 @@ function selectAnswer(i){
   showExplanation(ex,correct);
 }
 
-
-/* ════════ EXERCICES ORAUX (anglais, etc.) ════════ */
-function renderOralUI(ex){
-  if(state.selected!==null){
-    return '<div class="text-center" style="padding:14px"><div style="padding:14px;background:#f0f9ff;border-radius:12px;border:1px solid #bae6fd"><p class="sub" style="margin-bottom:6px">Tu as dit :</p><p style="font-style:italic;color:#1e293b;font-size:1.05rem">"'+esc(state.lastSpoken||'(rien entendu)')+'"</p><p class="sub" style="margin-top:12px;margin-bottom:6px">Réponse attendue :</p><p style="font-weight:700;color:#0c4a6e;font-size:1.1rem">'+esc(ex.expected||'')+'</p></div></div>';
-  }
-  return '<div class="text-center" style="padding:14px"><button class="btn-fire" id="micBtn" onclick="startOralAnswer()">\u{1F3A4} Dis ta réponse</button><div id="oralLive" style="margin-top:14px;padding:12px;background:#f0fdf4;border-radius:10px;border:1px solid #86efac;min-height:60px;color:#14532d;font-style:italic;display:none"></div><p class="sub" style="margin-top:10px;font-size:.78rem">\u{1F4A1} Parle clairement, l\u0027app entend ta r\u00e9ponse via le micro.</p></div>';
-}
-function normalizeForCompare(s){
-  return String(s||'').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'').replace(/[^a-z0-9 ]/g,' ').replace(/\s+/g,' ').trim();
-}
-function startOralAnswer(){
-  const ex=state.exercises[state.idx];
-  if(!ex||!ex.oral||state.selected!==null) return;
-  const live=document.getElementById('oralLive');
-  const btn=document.getElementById('micBtn');
-  if(live){live.style.display='block';live.textContent='\u{1F3A4} Parle maintenant…'}
-  if(btn){btn.disabled=true;btn.textContent='⏳ J\u0027écoute...'}
-  startRecording(
-    function(txt){if(live)live.textContent=txt||'\u{1F3A4} Parle...'},
-    function(finalTxt){
-      if(live&&finalTxt) live.textContent=finalTxt;
-      setTimeout(function(){gradeOralAnswer(finalTxt)},300);
-    },
-    ex.lang||'en-US'
-  );
-}
-function gradeOralAnswer(spokenText){
-  const ex=state.exercises[state.idx];
-  if(!ex||state.selected!==null) return;
-  state.lastSpoken=spokenText||'';
-  const expected=normalizeForCompare(ex.expected);
-  const alts=(ex.alternatives||[]).map(normalizeForCompare);
-  const spoken=normalizeForCompare(spokenText);
-  const candidates=[expected].concat(alts).filter(Boolean);
-  const correct=candidates.some(function(c){return c&&(c===spoken||spoken.split(' ').includes(c)||spoken.includes(c))});
-  state.selected=correct?0:1;
-  state.results.push({ex:ex,choice:state.selected,correct:correct});
-  if(correct){
-    state.score++;
-    state.streak++;
-    if(state.streak>state.maxStreak)state.maxStreak=state.streak;
-    const mult=state.streak>=10?3:state.streak>=5?2:state.streak>=3?1.5:1;
-    state.sessionXP+=Math.round(ex.diff*10*mult);
-    state.sessionCristaux+=ex.diff*2+(state.streak===3||state.streak===5||state.streak===10?10:0);
-  }else{
-    state.streak=0;
-    if(state.mode==='progression') state.gameOver=true;
-  }
-  renderGame();
-  showExplanation(ex,correct);
-}
-
 function showExplanation(ex,correct){
   const el=$('explanation');
   if(!el) return;
-  const methodeHTML=(ex.methode||[]).map(m=>`<div class="pedago-step">${esc(m)}</div>`).join('');
+  const methodeHTML=ex.methode.map(m=>`<div class="pedago-step">${m}</div>`).join('');
   const gainHTML=correct?`<span class="xp-gain">+${Math.round(ex.diff*10*(state.streak>=10?3:state.streak>=5?2:state.streak>=3?1.5:1))} XP</span> <span class="crystal-gain">\u{1F48E} +${ex.diff*2}</span>`:'';
   el.innerHTML=`<div class="card fade-in mt-6">
     <div class="row gap-2 mb-2"><span style="font-size:1.5rem">${correct?'\u2705':'\u274C'}</span>
-    <h4 class="fredoka" style="font-size:1.1rem;font-weight:700;color:${correct?'#15803d':'#b91c1c'};margin:0">${correct?'Excellent, sorci\u00e8re !':'Pas cette fois\u2026'}</h4>
+    <h4 class="fredoka" style="font-size:1.1rem;font-weight:700;color:${correct?'#22c55e':'#ef4444'};margin:0">${correct?'Excellent, sorci\u00e8re !':'Pas cette fois\u2026'}</h4>
     ${gainHTML}</div>
-    <p style="color:#1e293b;margin-bottom:12px;line-height:1.6;font-weight:600">${esc(ex.se)}</p>
-    ${!correct?`<div class="error-box"><p style="font-size:.9rem;margin:0;line-height:1.5"><span class="error-label">\u{1F914} L'erreur probable : </span><span style="color:#1e293b">${esc(ex.pourquoi)}</span></p></div>`:''}
+    <p style="color:#faf5ff;margin-bottom:12px;line-height:1.6;font-weight:600">${ex.se}</p>
+    ${!correct?`<div class="error-box"><p style="font-size:.9rem;margin:0"><span class="error-label">\u{1F914} L'erreur probable : </span><span style="color:#faf5ff">${ex.pourquoi}</span></p></div>`:''}
     <a class="detail-link mt-3" style="display:inline-block;margin-top:10px" onclick="toggleDetail()">${state.detailOpen?'Masquer':'Voir'} la m\u00e9thode pas \u00e0 pas \u2192</a>
     <div id="detailPanel" class="${state.detailOpen?'':'hidden'}">
       <div class="pedago-box">
@@ -1062,10 +861,10 @@ function showExplanation(ex,correct){
         ${methodeHTML}
       </div>
       <div class="tip-box">
-        <p style="font-size:.9rem;margin:0;line-height:1.55"><span class="tip-label">\u{1F4A1} \u00c0 retenir : </span><span class="tip-text">${esc(ex.regle)}</span></p>
+        <p style="font-size:.9rem;margin:0"><span class="tip-label">\u{1F4A1} \u00c0 retenir : </span><span class="tip-text">${ex.regle}</span></p>
       </div>
-      ${ex.exemple?`<div class="pedago-box" style="background:linear-gradient(135deg,#dbeafe,#bfdbfe);border-color:rgba(59,130,246,.35)"><div class="pedago-title" style="color:#1e40af">\u{1F4DA} Exemple similaire</div><p style="color:#1e3a8a;font-size:.9rem;line-height:1.55;margin:0">${esc(ex.exemple)}</p></div>`:''}
-      <p style="font-size:.75rem;color:#0c4a6e;margin-top:10px;font-weight:600">Comp\u00e9tence : ${esc(ex.sk)}</p>
+      ${ex.exemple?`<div class="pedago-box" style="background:rgba(59,130,246,.08);border-color:rgba(59,130,246,.2)"><div class="pedago-title" style="color:#93c5fd">\u{1F4DA} Exemple similaire</div><p style="color:#faf5ff;font-size:.9rem">${ex.exemple}</p></div>`:''}
+      <p style="font-size:.75rem;color:#8b7ec8;margin-top:8px">Comp\u00e9tence : ${ex.sk}</p>
     </div>
     <button class="btn-fire mt-6" onclick="nextQuestion()">Question suivante \u2192</button>
   </div>`;
@@ -1173,8 +972,6 @@ function finishGame(abandoned){
       if(q.progress>=q.target){q.done=true;profile.cristaux+=q.reward;d.questDone=true;d.questReward=q.reward}
     }
     saveProfile();
-    // Push immédiat (en plus du debounce 1s) pour que le score arrive sur les autres appareils tout de suite.
-    pushProfileToCloud();
   }
   navigate('results');
 }
@@ -1195,40 +992,40 @@ function renderResults(){
   // \u00c9volution
   let evolveHTML='';
   if(d.royaumeEvolved&&d.newRoyaumeStage){
-    evolveHTML=`<div class="card fade-in" style="background:linear-gradient(135deg,#fef3c7,#fde68a);border-color:#0ea5e9;text-align:center">
+    evolveHTML=`<div class="card fade-in" style="background:linear-gradient(135deg,rgba(251,191,36,0.12),rgba(251,191,36,0.05));border-color:rgba(251,191,36,0.3);text-align:center">
       <div style="font-size:5rem" class="bounce">${d.newRoyaumeStage.emoji}</div>
-      <h3 class="fredoka" style="color:#0c4a6e;font-size:1.3rem;margin-top:8px">\u2728 \u00c9VOLUTION dans ${d.royaumeName} ! \u2728</h3>
-      <p style="color:#451a03;margin-top:4px;font-weight:600">Ta mascotte est devenue <strong>${d.newRoyaumeStage.name}</strong> !</p>
-      <p style="color:#0c4a6e;font-size:.9rem;margin-top:4px">${d.newRoyaumeStage.desc}</p>
+      <h3 class="fredoka" style="color:#fbbf24;font-size:1.3rem;margin-top:8px">\u2728 \u00c9VOLUTION dans ${d.royaumeName} ! \u2728</h3>
+      <p style="color:#fde68a;margin-top:4px;font-weight:600">Ta mascotte est devenue <strong>${d.newRoyaumeStage.name}</strong> !</p>
+      <p style="color:#fbbf24;font-size:.9rem;margin-top:4px">${d.newRoyaumeStage.desc}</p>
     </div>`;
   } else if(d.evolved&&d.newStage){
-    evolveHTML=`<div class="card fade-in" style="background:linear-gradient(135deg,#fef3c7,#fde68a);border-color:#0ea5e9;text-align:center">
+    evolveHTML=`<div class="card fade-in" style="background:linear-gradient(135deg,rgba(251,191,36,0.12),rgba(251,191,36,0.05));border-color:rgba(251,191,36,0.3);text-align:center">
       <div style="font-size:4rem" class="bounce">${d.newStage.emoji}</div>
-      <h3 class="fredoka" style="color:#0c4a6e;font-size:1.2rem;margin-top:8px">\u2728 \u00c9volution g\u00e9n\u00e9rale ! \u2728</h3>
-      <p style="color:#451a03;margin-top:4px">Ton dragonnet maths est devenu <strong>${d.newStage.name}</strong> !</p>
+      <h3 class="fredoka" style="color:#fbbf24;font-size:1.2rem;margin-top:8px">\u2728 \u00c9volution g\u00e9n\u00e9rale ! \u2728</h3>
+      <p style="color:#fde68a;margin-top:4px">Ton dragonnet maths est devenu <strong>${d.newStage.name}</strong> !</p>
     </div>`;
   }
   let royaumeCompHTML='';
   if(d.newRoyaumeCompanions&&d.newRoyaumeCompanions.length>0){
-    royaumeCompHTML=`<div class="card fade-in" style="background:linear-gradient(135deg,#dbeafe,#bfdbfe);border-color:#3b82f6">
-      <h3 class="fredoka" style="color:#1e40af;font-size:.95rem;text-transform:uppercase;letter-spacing:.08em">\u{1F389} Nouveau compagnon dans ${d.newRoyaumeCompanions[0].royaume} !</h3>
+    royaumeCompHTML=`<div class="card fade-in" style="background:linear-gradient(135deg,rgba(96,165,250,0.1),rgba(96,165,250,0.05));border-color:rgba(96,165,250,0.3)">
+      <h3 class="fredoka" style="color:#93c5fd;font-size:.95rem;text-transform:uppercase;letter-spacing:.08em">\u{1F389} Nouveau compagnon dans ${d.newRoyaumeCompanions[0].royaume} !</h3>
       <div class="dragonnet-grid">${d.newRoyaumeCompanions.map(c=>`<div class="dragonnet-card unlocked pulse"><div class="dragonnet-emoji">${c.emoji}</div><div class="dragonnet-name">${c.name}</div><div class="dragonnet-elem">${c.elem}</div></div>`).join('')}</div>
     </div>`;
   }
   let dragonnetsHTML='';
   if(d.newDragonnets&&d.newDragonnets.length>0){
-    dragonnetsHTML=`<div class="card fade-in" style="background:linear-gradient(145deg,#1e3a5f,#2e4a6f);border-color:#93c5fd">
+    dragonnetsHTML=`<div class="card fade-in" style="background:linear-gradient(145deg,rgba(96,165,250,0.1),rgba(96,165,250,0.05));border-color:rgba(96,165,250,0.3)">
       <h3 class="fredoka" style="color:#93c5fd;font-size:.9rem;text-transform:uppercase;letter-spacing:.1em">\u{1F409} Nouveau dragonnet d\u00e9bloqu\u00e9 !</h3>
       <div class="dragonnet-grid">${d.newDragonnets.map(dg=>`<div class="dragonnet-card unlocked pulse"><div class="dragonnet-emoji">${dg.emoji}</div><div class="dragonnet-name">${dg.name}</div><div class="dragonnet-elem">${dg.elem}</div></div>`).join('')}</div>
     </div>`;
   }
-  const badgesHTML=(d.newBadges&&d.newBadges.length>0)?`<div class="card fade-in" style="background:linear-gradient(145deg,#fff5e1,#ffeacc);border-color:#f7a020">
-    <h3 class="fredoka" style="color:#0c4a6e;font-size:.9rem;text-transform:uppercase;letter-spacing:.1em">\u2728 Nouveaux badges !</h3>
-    <div class="badge-grid">${d.newBadges.map(b=>`<div class="badge-card unlocked pulse"><div class="badge-ic">${esc(b.icon)}</div><div class="badge-name">${esc(b.name)}</div><div class="badge-desc">${esc(b.desc)}</div></div>`).join('')}</div></div>`:'';
-  const questHTML=d.questDone?`<div class="card fade-in" style="background:linear-gradient(135deg,#ede9fe,#ddd6fe);border-color:#a78bfa"><div class="text-center"><div style="font-size:2.5rem">\u{1F3AF}</div><h3 class="fredoka" style="color:#5b21b6;margin-top:6px">Qu\u00eate journali\u00e8re r\u00e9ussie !</h3><p style="color:#1e293b;margin-top:4px">Tu gagnes \u{1F48E} +${d.questReward} cristaux !</p></div></div>`:'';
+  const badgesHTML=(d.newBadges&&d.newBadges.length>0)?`<div class="card fade-in" style="background:linear-gradient(145deg,rgba(251,191,36,0.1),rgba(251,191,36,0.04));border-color:rgba(251,191,36,0.25)">
+    <h3 class="fredoka" style="color:#fbbf24;font-size:.9rem;text-transform:uppercase;letter-spacing:.1em">\u2728 Nouveaux badges !</h3>
+    <div class="badge-grid">${d.newBadges.map(b=>`<div class="badge-card unlocked pulse"><div class="badge-ic">${b.icon}</div><div class="badge-name">${b.name}</div><div class="badge-desc">${b.desc}</div></div>`).join('')}</div></div>`:'';
+  const questHTML=d.questDone?`<div class="card fade-in" style="background:rgba(139,92,246,.15);border-color:#c4b5fd"><div class="text-center"><div style="font-size:2.5rem">\u{1F3AF}</div><h3 class="fredoka" style="color:#c4b5fd;margin-top:6px">Qu\u00eate journali\u00e8re r\u00e9ussie !</h3><p style="color:#faf5ff;margin-top:4px">Tu gagnes \u{1F48E} +${d.questReward} cristaux !</p></div></div>`:'';
 
   app.innerHTML=`<div class="text-center py-8 fade-in"><div class="huge-icon">${emoji}</div>
-    <h2 class="title" style="font-size:clamp(1.3rem,3.5vw,2rem);color:#0c4a6e">${title}</h2><p style="color:#64748b">${sub}</p></div>
+    <h2 class="title" style="font-size:clamp(1.3rem,3.5vw,2rem);color:#fbbf24">${title}</h2><p style="color:#c4b5fd">${sub}</p></div>
   <div class="card mb-4"><div class="stats-grid">
     <div class="stat-card"><div class="stat-val" style="color:#f7a020">${d.score}/${d.total}</div><div class="stat-label">Bonnes r\u00e9ponses</div></div>
     <div class="stat-card"><div class="stat-val" style="color:${pct>=60?'#22c55e':'#ef4444'}">${pct}%</div><div class="stat-label">R\u00e9ussite</div></div>
@@ -1245,8 +1042,8 @@ function renderResults(){
   <div class="card mb-6"><h3 class="fredoka" style="font-size:.85rem;color:#f7a020;margin-bottom:12px;letter-spacing:.1em;text-transform:uppercase">R\u00e9capitulatif</h3>
     <div class="recap-scroll">${d.results.map(r=>`<div class="recap-item">
       <span class="recap-icon">${r.correct?'\u2705':'\u274C'}</span>
-      <div class="flex-1" style="min-width:0"><p class="recap-q">${esc(r.ex.q.length>110?r.ex.q.slice(0,110)+'\u2026':r.ex.q)}</p>
-      ${!r.correct?`<p class="recap-answer">R\u00e9ponse : ${esc(r.ex.ch[r.ex.ans])}</p>`:''}</div></div>`).join('')}</div></div>
+      <div class="flex-1"><p class="recap-q">${r.ex.q.length>110?r.ex.q.slice(0,110)+'\u2026':r.ex.q}</p>
+      ${!r.correct?`<p class="recap-answer">R\u00e9ponse : ${r.ex.ch[r.ex.ans]}</p>`:''}</div></div>`).join('')}</div></div>
   <div class="btn-row">
     <button class="btn-fire" onclick="startGame('${d.mode}')">Rejouer</button>
     <button class="btn-stone" onclick="navigate('royaume')">Mon Royaume</button>
@@ -1264,8 +1061,8 @@ function renderRoyaume(){
   const stage=STAGES[stageIdx];
   app.innerHTML=`<div class="text-center py-6 fade-in">
     <div style="font-size:3rem">\u2728</div>
-    <h2 class="title sparkle-anim" style="color:#0c4a6e;font-size:1.8rem">Mon Royaume</h2>
-    <p class="sub">${esc(profile.name)}, voici ta progression</p></div>
+    <h2 class="title sparkle-anim" style="color:#fbbf24;font-size:1.8rem">Mon Royaume</h2>
+    <p class="sub">${profile.name}, voici ta progression</p></div>
   <div class="dragon-card">
     <div class="dragon-emoji float">${stage.emoji}</div>
     <div class="dragon-name">${stage.name}</div>
@@ -1274,7 +1071,7 @@ function renderRoyaume(){
   <div class="card mb-4"><div class="stats-grid">
     <div class="stat-card"><div class="stat-val" style="color:#f7a020">${profile.totalGames}</div><div class="stat-label">Parties</div></div>
     <div class="stat-card"><div class="stat-val" style="color:#22c55e">${profile.totalCorrect}</div><div class="stat-label">Bonnes r\u00e9ponses</div></div>
-    <div class="stat-card"><div class="stat-val" style="color:#0c4a6e">${pct}%</div><div class="stat-label">R\u00e9ussite</div></div>
+    <div class="stat-card"><div class="stat-val" style="color:#fbbf24">${pct}%</div><div class="stat-label">R\u00e9ussite</div></div>
   </div>
   <div class="stats-grid mt-3">
     <div class="stat-card"><div class="stat-val" style="color:#fb923c">${profile.bestStreak}</div><div class="stat-label">S\u00e9rie record \u{1F525}</div></div>
@@ -1286,7 +1083,7 @@ function renderRoyaume(){
     <div class="resource xp">\u2728 ${profile.xp} XP</div>
   </div></div>
   ${cats.length>0?`<div class="card mb-4"><h3 class="fredoka" style="font-size:.85rem;color:#f7a020;margin-bottom:12px;letter-spacing:.1em;text-transform:uppercase">Performance par cat\u00e9gorie</h3>
-  <div class="bar-chart">${cats.map(([c,s])=>{const p=s.att>0?Math.round(s.cor/s.att*100):0;const col=p>=75?'#22c55e':p>=50?'#f7a020':'#ef4444';return `<div class="bar-row"><div class="bar-label">${esc(c)}</div><div class="bar-track"><div class="bar-fill" style="width:${p}%;background:${col}"></div></div><div class="bar-val">${p}%</div></div>`}).join('')}</div></div>`:''}
+  <div class="bar-chart">${cats.map(([c,s])=>{const p=s.att>0?Math.round(s.cor/s.att*100):0;const col=p>=75?'#22c55e':p>=50?'#f7a020':'#ef4444';return `<div class="bar-row"><div class="bar-label">${c}</div><div class="bar-track"><div class="bar-fill" style="width:${p}%;background:${col}"></div></div><div class="bar-val">${p}%</div></div>`}).join('')}</div></div>`:''}
   <div class="card mb-4"><h3 class="fredoka" style="font-size:.85rem;color:#f7a020;margin-bottom:12px;letter-spacing:.1em;text-transform:uppercase">Badges</h3>
   <div class="badge-grid">${BADGES.map(b=>{const u=b.cond(profile);return `<div class="badge-card ${u?'unlocked':''}"><div class="badge-ic">${b.icon}</div><div class="badge-name">${b.name}</div><div class="badge-desc">${b.desc}</div></div>`}).join('')}</div></div>
   <div class="btn-row">
@@ -1299,7 +1096,7 @@ function renderRoyaume(){
 function renderCollection(){
   app.innerHTML=`<div class="text-center py-6 fade-in">
     <div style="font-size:3rem">\u{1F409}</div>
-    <h2 class="title sparkle-anim" style="color:#0c4a6e;font-size:1.6rem">Collection de Dragonnets</h2>
+    <h2 class="title sparkle-anim" style="color:#fbbf24;font-size:1.6rem">Collection de Dragonnets</h2>
     <p class="sub">Gagne des bonnes r\u00e9ponses pour tous les d\u00e9bloquer !</p></div>
   <div class="card">
     <div class="dragonnet-grid">${DRAGONNETS.map(dg=>{
@@ -1328,64 +1125,30 @@ function renderParent(){
   app.innerHTML=`<div class="text-center py-6 fade-in">
     <div style="font-size:3rem">\u{1F464}</div>
     <h2 class="title" style="color:#c4b5fd;font-size:1.6rem">Espace Parent</h2>
-    <p class="sub">Suivi de ${esc(profile.name)}</p></div>
+    <p class="sub">Suivi de ${profile.name}</p></div>
   <div class="card mb-4" style="border-color:#c4b5fd"><div class="stats-grid">
     <div class="stat-card"><div class="stat-val" style="color:#c4b5fd">${profile.totalGames}</div><div class="stat-label">Parties</div></div>
     <div class="stat-card"><div class="stat-val" style="color:${pct>=60?'#22c55e':'#ef4444'}">${pct}%</div><div class="stat-label">R\u00e9ussite</div></div>
-    <div class="stat-card"><div class="stat-val" style="color:#0c4a6e">${totalMinutes}m</div><div class="stat-label">Temps total</div></div>
+    <div class="stat-card"><div class="stat-val" style="color:#fbbf24">${totalMinutes}m</div><div class="stat-label">Temps total</div></div>
   </div></div>
   ${weak.length>0?`<div class="card mb-4"><h3 class="fredoka" style="font-size:.85rem;color:#ef4444;margin-bottom:12px;letter-spacing:.1em;text-transform:uppercase">\u26A0\uFE0F Domaines \u00e0 travailler</h3>
-  ${weak.map(([c,s])=>{const p=Math.round(s.cor/s.att*100);return `<div class="weak-cat"><div><div style="font-weight:700">${esc(c)}</div><div style="font-size:.75rem">${s.cor}/${s.att} bonnes r\u00e9ponses</div></div><div style="color:#b91c1c;font-weight:700;font-family:'Cinzel',Georgia,serif;flex-shrink:0">${p}%</div></div>`}).join('')}
-  <p style="font-size:.8rem;color:#475569;margin-top:8px;font-style:italic">Conseil : lancez le \u00ab Mode adaptatif \u00bb pour travailler ces domaines.</p></div>`:''}
+  ${weak.map(([c,s])=>{const p=Math.round(s.cor/s.att*100);return `<div class="weak-cat"><div><div style="color:#fca5a5;font-weight:700">${c}</div><div style="font-size:.75rem;color:#8b7ec8">${s.cor}/${s.att} bonnes r\u00e9ponses</div></div><div style="color:#ef4444;font-weight:700;font-family:'Cinzel'">${p}%</div></div>`}).join('')}
+  <p style="font-size:.8rem;color:#8b7ec8;margin-top:8px;font-style:italic">Conseil : lancez le \u00ab Mode adaptatif \u00bb pour travailler ces domaines.</p></div>`:''}
   ${strong.length>0?`<div class="card mb-4"><h3 class="fredoka" style="font-size:.85rem;color:#22c55e;margin-bottom:12px;letter-spacing:.1em;text-transform:uppercase">\u2B50 Points forts</h3>
-  ${strong.map(([c,s])=>{const p=Math.round(s.cor/s.att*100);return `<div class="strong-cat"><div><div style="font-weight:700">${esc(c)}</div><div style="font-size:.75rem">${s.cor}/${s.att} bonnes r\u00e9ponses</div></div><div style="color:#15803d;font-weight:700;font-family:'Cinzel',Georgia,serif;flex-shrink:0">${p}%</div></div>`}).join('')}</div>`:''}
+  ${strong.map(([c,s])=>{const p=Math.round(s.cor/s.att*100);return `<div class="strong-cat"><div><div style="color:#bbf7d0;font-weight:700">${c}</div><div style="font-size:.75rem;color:#8b7ec8">${s.cor}/${s.att} bonnes r\u00e9ponses</div></div><div style="color:#22c55e;font-weight:700;font-family:'Cinzel'">${p}%</div></div>`}).join('')}</div>`:''}
   ${failedEx.length>0?`<div class="card mb-4"><h3 class="fredoka" style="font-size:.85rem;color:#f7a020;margin-bottom:12px;letter-spacing:.1em;text-transform:uppercase">Exercices \u00e0 refaire ensemble</h3>
-  <div class="recap-scroll">${failedEx.map(e=>`<div class="recap-item"><span class="recap-icon">\u{1F4DD}</span><div class="flex-1" style="min-width:0"><p class="recap-q"><strong>${esc(e.cat)}</strong> \u2014 ${esc(e.q.length>120?e.q.slice(0,120)+'\u2026':e.q)}</p><p class="recap-answer">R\u00e9ponse : ${esc(e.ch[e.ans])}</p></div></div>`).join('')}</div></div>`:''}
+  <div class="recap-scroll">${failedEx.map(e=>`<div class="recap-item"><span class="recap-icon">\u{1F4DD}</span><div class="flex-1"><p class="recap-q"><strong>${e.cat}</strong> \u2014 ${e.q.length>120?e.q.slice(0,120)+'\u2026':e.q}</p><p style="color:#22c55e;font-size:.75rem;margin-top:4px">R\u00e9ponse : ${e.ch[e.ans]}</p></div></div>`).join('')}</div></div>`:''}
   ${recentSessions.length>0?`<div class="card mb-4"><h3 class="fredoka" style="font-size:.85rem;color:#f7a020;margin-bottom:12px;letter-spacing:.1em;text-transform:uppercase">10 derni\u00e8res sessions</h3>
-  ${recentSessions.map(s=>{const p=s.total>0?Math.round(s.score/s.total*100):0;const lv=LEVELS.find(l=>l.id===s.level);const dt=new Date(s.date);const dtStr=dt.toLocaleDateString('fr-FR',{day:'2-digit',month:'2-digit'})+' '+dt.toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'});return `<div class="session-item"><div><div style="color:#1e293b;font-weight:600">${lv?esc(lv.icon)+' '+esc(lv.sub):esc(s.level)} \u00b7 ${esc(s.mode)}</div><div style="font-size:.7rem;color:#64748b">${dtStr} \u00b7 ${Math.round((s.duration||0)/60)}min</div></div><div style="color:${p>=60?'#15803d':'#b91c1c'};font-weight:700;font-family:'Cinzel',Georgia,serif;flex-shrink:0">${s.score}/${s.total}</div></div>`}).join('')}</div>`:''}
+  ${recentSessions.map(s=>{const p=s.total>0?Math.round(s.score/s.total*100):0;const lv=LEVELS.find(l=>l.id===s.level);const dt=new Date(s.date);const dtStr=dt.toLocaleDateString('fr-FR',{day:'2-digit',month:'2-digit'})+' '+dt.toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'});return `<div class="session-item"><div><div style="color:#faf5ff">${lv?lv.icon+' '+lv.sub:s.level} \u00b7 ${s.mode}</div><div style="font-size:.7rem;color:#8b7ec8">${dtStr} \u00b7 ${Math.round((s.duration||0)/60)}min</div></div><div style="color:${p>=60?'#22c55e':'#ef4444'};font-weight:700;font-family:'Cinzel'">${s.score}/${s.total}</div></div>`}).join('')}</div>`:''}
   <div class="card mb-4" style="border-color:#c4b5fd"><h3 class="fredoka" style="font-size:.85rem;color:#c4b5fd;margin-bottom:8px">\u{1F517} Sync sur un autre appareil</h3>
-  <p style="color:#1e293b;font-size:.85rem;margin-bottom:12px;line-height:1.5">Ouvrez ce lien sur l'autre téléphone/tablette pour récupérer le Royaume de ${esc(profile.name)}. <strong>Ne le partagez avec personne d'autre</strong> (équivaut à un mot de passe).</p>
+  <p style="color:#faf5ff;font-size:.8rem;margin-bottom:10px">Ouvrez ce lien sur l'autre téléphone/tablette pour récupérer le Royaume de ${profile.name}. <strong>Ne le partagez avec personne d'autre</strong> (équivaut à un mot de passe).</p>
   <button class="btn-stone btn-small" onclick="copySyncLink()">\u{1F4CB} Copier le lien</button>
   <button class="btn-stone btn-small" onclick="shareSyncLink()" style="margin-left:8px">\u{1F4F2} Partager (WhatsApp...)</button>
   <div id="syncMsg" style="margin-top:8px;font-size:.75rem;color:#22c55e"></div></div>
-  <div class="card mb-4" style="border-color:#573c1e"><h3 class="fredoka" style="font-size:.85rem;color:#475569;margin-bottom:8px">Donn\u00e9es</h3>
+  <div class="card mb-4" style="border-color:rgba(255,255,255,0.08)"><h3 class="fredoka" style="font-size:.85rem;color:#8b7ec8;margin-bottom:8px">Donn\u00e9es</h3>
   <button class="btn-stone btn-small" onclick="exportData()">\u{1F4E4} Exporter (JSON)</button>
-  <button class="btn-stone btn-small" onclick="resetData()" style="margin-top:8px;background:linear-gradient(135deg,#7f1d1d,#991b1b)">\u{1F5D1}\uFE0F R\u00e9initialiser</button></div>
-  <div class="card mb-4" style="border-color:#a78bfa"><h3 class="fredoka" style="font-size:.85rem;color:#5b21b6;margin-bottom:8px">\u{1F3A7} Audios des poésies (URLs MP3)</h3>
-  <p style="color:#1e293b;font-size:.82rem;margin-bottom:10px;line-height:1.5">Pour chaque poème, colle l\u0027URL d\u0027un MP3 (LibriVox / archive.org / autre source publique). L\u0027URL sera lue dans l\u0027écran de la fable et synchronisée sur tous tes appareils.</p>
-  <p style="color:#475569;font-size:.75rem;margin-bottom:12px"><a href="https://librivox.org/search?q=la+fontaine&search_form=advanced" target="_blank" rel="noopener" style="color:#0369a1;text-decoration:underline">\u{1F517} Chercher sur LibriVox \u2192</a> (puis clique-droit sur 64kb / 128kb pour copier le lien).</p>
-  <div id="audioUrlList" style="display:flex;flex-direction:column;gap:6px"></div>
-  <p id="audioUrlSaveMsg" style="margin-top:10px;font-size:.78rem;color:#15803d;font-weight:600;display:none">\u2705 Sauvegardé.</p></div>
-  <button class="btn-stone" onclick="navigate(\u0027home\u0027)">\u2190 Retour</button>`;
-  // Hydrate the audio URL editor (DOM is fresh)
-  setTimeout(populateAudioUrlEditor,30);
-}
-
-function populateAudioUrlEditor(){
-  const wrap=document.getElementById('audioUrlList');
-  if(!wrap||typeof FABLES==='undefined') return;
-  if(!profile.audioUrls) profile.audioUrls={};
-  wrap.innerHTML=FABLES.map(function(f){
-    const cur=profile.audioUrls[f.id]||'';
-    const safeId=esc(f.id);
-    return '<div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;border-bottom:1px solid #e0f2fe;padding:6px 0">'
-      +'<span style="font-size:1.3rem">'+f.icon+'</span>'
-      +'<span style="flex:1;min-width:120px;color:#0c4a6e;font-size:.82rem;font-weight:600">'+esc(f.title)+'</span>'
-      +'<input type="url" data-fableid="'+safeId+'" placeholder="https://archive.org/download/.../track.mp3" value="'+esc(cur).replace(/"/g,'&quot;')+'" style="flex:2;min-width:180px;padding:6px 8px;border-radius:6px;border:1px solid #bae6fd;background:#ffffff;color:#1e293b;font-size:.78rem;font-family:monospace" onchange="saveAudioUrl(this)" />'
-      +(cur?'<button class="btn-stone btn-small" style="font-size:.7rem" onclick="document.querySelector(\u0027[data-fableid=&quot;'+safeId+'&quot;]\u0027).value=\u0027\u0027;saveAudioUrl(document.querySelector(\u0027[data-fableid=&quot;'+safeId+'&quot;]\u0027))">\u{1F5D1}\uFE0F</button>':'')
-      +'</div>';
-  }).join('');
-}
-
-function saveAudioUrl(input){
-  const id=input.getAttribute('data-fableid');
-  const v=(input.value||'').trim();
-  if(!profile.audioUrls) profile.audioUrls={};
-  if(v) profile.audioUrls[id]=v;
-  else delete profile.audioUrls[id];
-  saveProfile();
-  const msg=document.getElementById('audioUrlSaveMsg');
-  if(msg){msg.style.display='block'; setTimeout(function(){msg.style.display='none'},1500)}
+  <button class="btn-stone btn-small" onclick="resetData()" style="margin-top:8px;background:rgba(239,68,68,0.15);border-color:rgba(239,68,68,0.3);color:#fca5a5">\u{1F5D1}\uFE0F R\u00e9initialiser</button></div>
+  <button class="btn-stone" onclick="navigate('home')">\u2190 Retour</button>`;
 }
 
 function copySyncLink(){
@@ -1409,7 +1172,7 @@ function exportData(){
   const blob=new Blob([JSON.stringify(profile,null,2)],{type:'application/json'});
   const url=URL.createObjectURL(blob);
   const a=document.createElement('a');
-  a.href=url;a.download='royaume-'+(profile.name||'invite').replace(/[^\p{L}\p{N}_-]/gu,'_')+'-'+today()+'.json';
+  a.href=url;a.download='royaume-'+profile.name+'-'+today()+'.json';
   a.click();
   URL.revokeObjectURL(url);
 }
@@ -1425,146 +1188,46 @@ function resetData(){
 const FABLES=[
   {id:"corbeau-renard",title:"Le Corbeau et le Renard",icon:"\u{1F98A}",dur:75,
     text:"Maître Corbeau, sur un arbre perché, tenait en son bec un fromage. Maître Renard, par l'odeur alléché, lui tint à peu près ce langage : \"Hé ! bonjour, Monsieur du Corbeau. Que vous êtes joli ! que vous me semblez beau ! Sans mentir, si votre ramage se rapporte à votre plumage, vous êtes le Phénix des hôtes de ces bois.\" À ces mots le Corbeau ne se sent pas de joie ; et pour montrer sa belle voix, il ouvre un large bec, laisse tomber sa proie. Le Renard s'en saisit, et dit : \"Mon bon Monsieur, apprenez que tout flatteur vit aux dépens de celui qui l'écoute.\"",
-    morale:"Tout flatteur vit aux dépens de celui qui l'écoute.",author:"Jean de La Fontaine",recueil:"Fables, 1668"},
+    morale:"Tout flatteur vit aux dépens de celui qui l'écoute."},
   {id:"lievre-tortue",title:"Le Lièvre et la Tortue",icon:"\u{1F422}",dur:60,
     text:"Rien ne sert de courir ; il faut partir à point. Le Lièvre et la Tortue en sont un témoignage. Gageons, dit celle-ci, que vous n'atteindrez point sitôt que moi ce but. Sitôt ? Êtes-vous sage ? répartit l'animal léger. La Tortue partit. Elle s'évertue, elle se hâte avec lenteur. Le Lièvre cependant méprise une telle victoire, tient la gageure à peu de gloire. Quand il voit que l'autre touche presque au bout de la carrière, il partit comme un trait ; mais les élans qu'il fit furent vains : la Tortue arriva la première.",
-    morale:"Rien ne sert de courir ; il faut partir à point.",author:"Jean de La Fontaine",recueil:"Fables, 1668"},
+    morale:"Rien ne sert de courir ; il faut partir à point."},
   {id:"cigale-fourmi",title:"La Cigale et la Fourmi",icon:"\u{1F41C}",dur:55,
     text:"La Cigale, ayant chanté tout l'été, se trouva fort dépourvue quand la bise fut venue : pas un seul petit morceau de mouche ou de vermisseau. Elle alla crier famine chez la Fourmi sa voisine, la priant de lui prêter quelque grain pour subsister jusqu'à la saison nouvelle. La Fourmi n'est pas prêteuse : c'est là son moindre défaut. \"Que faisiez-vous au temps chaud ? dit-elle à cette emprunteuse. Nuit et jour à tout venant je chantais, ne vous déplaise. Vous chantiez ? j'en suis fort aise. Eh bien ! dansez maintenant.\"",
-    morale:"Il faut prévoir le futur, pas seulement profiter du présent.",author:"Jean de La Fontaine",recueil:"Fables, 1668"},
+    morale:"Il faut prévoir le futur, pas seulement profiter du présent."},
   {id:"loup-agneau",title:"Le Loup et l'Agneau",icon:"\u{1F40F}",dur:60,
     text:"La raison du plus fort est toujours la meilleure. Un Agneau se désaltérait dans le courant d'une onde pure. Un Loup survient à jeun qui cherchait aventure, et que la faim en ces lieux attirait. \"Qui te rend si hardi de troubler mon breuvage ? dit cet animal plein de rage. Tu seras châtié de ta témérité.\" \"Sire, répond l'Agneau, que Votre Majesté ne se mette pas en colère ; mais plutôt qu'elle considère que je me vas désaltérant dans le courant, plus de vingt pas au-dessous d'Elle.\" Là-dessus, au fond des forêts le Loup l'emporte, et puis le mange, sans autre forme de procès.",
-    morale:"La raison du plus fort est toujours la meilleure.",author:"Jean de La Fontaine",recueil:"Fables, 1668"},
+    morale:"La raison du plus fort est toujours la meilleure."},
   {id:"grenouille-boeuf",title:"La Grenouille qui se veut faire aussi grosse que le Bœuf",icon:"\u{1F438}",dur:50,
     text:"Une Grenouille vit un Bœuf qui lui sembla de belle taille. Elle, qui n'était pas grosse en tout comme un œuf, envieuse, s'étend, et s'enfle, et se travaille pour égaler l'animal en grosseur, disant : \"Regardez bien, ma sœur ; est-ce assez ? dites-moi ; n'y suis-je point encore ? Nenni. M'y voici donc ? Point du tout. M'y voilà ? Vous n'en approchez point.\" La chétive pécore s'enfla si bien qu'elle creva.",
-    morale:"Le monde est plein de gens qui ne sont pas plus sages : tout petit prince a des ambassadeurs.",author:"Jean de La Fontaine",recueil:"Fables, 1668"},
+    morale:"Le monde est plein de gens qui ne sont pas plus sages : tout petit prince a des ambassadeurs."},
   {id:"renard-raisins",title:"Le Renard et les Raisins",icon:"\u{1F347}",dur:35,
     text:"Certain Renard Gascon, d'autres disent Normand, mourant presque de faim, vit au haut d'une treille des Raisins mûrs apparemment, et couverts d'une peau vermeille. Le galand en eût fait volontiers un repas ; mais comme il n'y pouvait atteindre : \"Ils sont trop verts, dit-il, et bons pour des goujats.\" Fit-il pas mieux que de se plaindre ?",
-    morale:"On méprise ce qu'on ne peut obtenir.",author:"Jean de La Fontaine",recueil:"Fables, 1668"},
+    morale:"On méprise ce qu'on ne peut obtenir."},
   {id:"chene-roseau",title:"Le Chêne et le Roseau",icon:"\u{1F33F}",dur:65,
     text:"Le Chêne un jour dit au Roseau : \"Vous avez bien sujet d'accuser la nature ; un roitelet pour vous est un pesant fardeau ; le moindre vent qui d'aventure fait rider la face de l'eau, vous oblige à baisser la tête.\" Le vent redouble ses efforts, et fait si bien qu'il déracine celui de qui la tête au ciel était voisine, et dont les pieds touchaient à l'empire des morts.",
-    morale:"Plier sait mieux résister que rester rigide.",author:"Jean de La Fontaine",recueil:"Fables, 1668"},
+    morale:"Plier sait mieux résister que rester rigide."},
   {id:"lion-rat",title:"Le Lion et le Rat",icon:"\u{1F981}",dur:55,
     text:"Il faut, autant qu'on peut, obliger tout le monde : on a souvent besoin d'un plus petit que soi. De cette vérité deux fables feront foi. Entre les pattes d'un Lion un Rat sortit assez à l'étourdie. Le Roi des animaux, en cette occasion, montra ce qu'il était, et lui donna la vie. Quelque temps après, ce Lion fut pris dans des rets, dont ses rugissements ne le purent défaire. Sire Rat accourut, et fit tant par ses dents qu'une maille rongée emporta tout l'ouvrage.",
-    morale:"Patience et longueur de temps font plus que force ni que rage.",author:"Jean de La Fontaine",recueil:"Fables, 1668"},
-  {id:"hugo-demain-aube",title:"Demain, dès l'aube",icon:"\u{1F305}",dur:60,author:"Victor Hugo",recueil:"Les Contemplations, 1856",
-    text:"Demain, dès l'aube, à l'heure où blanchit la campagne, je partirai. Vois-tu, je sais que tu m'attends. J'irai par la forêt, j'irai par la montagne. Je ne puis demeurer loin de toi plus longtemps. Je marcherai les yeux fixés sur mes pensées, sans rien voir au-dehors, sans entendre aucun bruit, seul, inconnu, le dos courbé, les mains croisées, triste, et le jour pour moi sera comme la nuit. Je ne regarderai ni l'or du soir qui tombe, ni les voiles au loin descendant vers Harfleur, et quand j'arriverai, je mettrai sur ta tombe un bouquet de houx vert et de bruyère en fleur.",
-    morale:"Hommage de Victor Hugo à sa fille Léopoldine, noyée à 19 ans.",moraleLabel:"Th\u00e8me"},
-  {id:"hugo-mes-deux-filles",title:"Mes deux filles",icon:"\u{1F33C}",dur:45,author:"Victor Hugo",recueil:"Les Contemplations, 1856",
-    text:"Dans le frais clair-obscur du soir charmant qui tombe, l'une pareille au cygne et l'autre à la colombe, belles, et toutes deux joyeuses, ô douceur ! voyez, la grande sœur et la petite sœur sont assises au seuil du jardin, et sur elles un bouquet d'œillets blancs aux longues tiges frêles, dans une urne de marbre agité par le vent, se penche, et les regarde, immobile et vivant, et frissonne dans l'ombre, et semble, au bord du vase, un vol de papillons arrêté dans l'extase.",
-    morale:"Tendresse paternelle pour ses deux filles, Léopoldine et Adèle.",moraleLabel:"Th\u00e8me"},
-  {id:"hugo-lorsque-enfant",title:"Lorsque l'enfant paraît",icon:"\u{1F476}",dur:50,author:"Victor Hugo",recueil:"Les Feuilles d'Automne, 1831",
-    text:"Lorsque l'enfant paraît, le cercle de famille applaudit à grands cris ; son doux regard qui brille fait briller tous les yeux, et les plus tristes fronts, les plus souillés peut-être, se dérident soudain à voir l'enfant paraître, innocent et joyeux. Soit que juin ait verdi mon seuil, ou que novembre fasse autour d'un grand feu vacillant dans la chambre se rapprocher les bancs, l'enfant vient, on rit, on crie, on l'appelle, et la mère tremble en le voyant marcher.",
-    morale:"L'arrivée d'un enfant illumine et unit toute la famille.",moraleLabel:"Th\u00e8me"},
-  {id:"hugo-bonhomme-hiver",title:"Le Bonhomme Hiver",icon:"\u26C4",dur:35,author:"Victor Hugo",recueil:"L'Art d'\u00eatre grand-p\u00e8re, 1877",
-    text:"Le bonhomme hiver, vieux roi blanc, est venu. Le sapin a maigri. Le bouleau s'est noirci. Le vent souffle, l'eau gèle, et le moineau transi cherche un grain dans la neige. Janvier soufflait, faisant grelotter les hameaux. Au feu, vite, à l'âtre ! Et que les enfants chantent en battant des mains, et que rie le grand-père, car le bonhomme hiver, en passant, sème aussi des étoiles d'argent sur les toits endormis.",
-    morale:"L'hiver, malgré son froid, apporte la magie du foyer et de la neige.",moraleLabel:"Th\u00e8me"},
-  {id:"hugo-a-ma-fille",title:"À ma fille",icon:"\u{1F49B}",dur:50,author:"Victor Hugo",recueil:"Les Voix intérieures, 1837",
-    text:"Ô mon enfant, tu vois, je me soumets. Fais comme moi : vis du monde éloigné. Heureux qui peut aimer, et qui dans la nuit noire, tout en cherchant la foi, peut rencontrer l'amour ! Il a du moins la lampe et peut attendre le jour. Heureux ce cœur ! Aimer, c'est la moitié de croire. Marche à travers les bois avec la fleur des champs. Marche à travers les pleurs avec un chant joyeux.",
-    morale:"Père tendre, Hugo conseille à sa fille la simplicité et l'amour.",moraleLabel:"Thème"},
-  {id:"hugo-l-enfance",title:"L'enfance",icon:"\u{1F33C}",dur:40,author:"Victor Hugo",recueil:"Les Contemplations, 1856",
-    text:"L'enfant chantait ; la mère au lit, exsangue, agonisait, beau front dans l'ombre enseveli ; la mort au-dessus d'elle errait dans le nuage ; et j'écoutais ce râle, et j'entendais ce chant. L'enfant avait cinq ans, et, près de la fenêtre, ses rires et ses jeux faisaient un charmant bruit ; et la mère, à côté de cet ange en plein jour, faisait une autre chose : elle mourait d'amour.",
-    morale:"L'enfant joue, ignorant la peine ; la mère l'aime jusqu'à la fin.",moraleLabel:"Thème"},
-  {id:"hugo-sentiers",title:"Sentiers où l'herbe se balance",icon:"\u{1F343}",dur:40,author:"Victor Hugo",recueil:"Les Contemplations, 1856",
-    text:"Sentiers où l'herbe se balance, vallons, coteaux, bois chevelus, pourquoi ce deuil et ce silence ? \u2014 Celui qui venait ne vient plus. Pourquoi personne à ta fenêtre, et pourquoi ton jardin sans fleurs, ô maison ? où donc est ton maître ? \u2014 Je ne sais pas, il est ailleurs.",
-    morale:"L'absence de l'être aimé (Léopoldine) vide la nature de ses couleurs.",moraleLabel:"Thème"},
-  {id:"hugo-printemps",title:"Printemps",icon:"\u{1F33C}",dur:55,author:"Victor Hugo",recueil:"Toute la lyre, posthume",
-    text:"Voici donc les longs jours, lumière, amour, délire ! Voici le printemps ! mars, avril au doux sourire, mai fleuri, juin brûlant, tous les beaux mois amis ! Les peupliers, au bord des fleuves endormis, se courbent mollement comme de grandes palmes ; l'oiseau palpite au fond des bois tièdes et calmes ; il semble que tout rit, et que les arbres verts sont joyeux d'être ensemble et se disent des vers.",
-    morale:"Hugo célèbre l'arrivée joyeuse du printemps et le réveil de la nature.",moraleLabel:"Thème"},
-  {id:"hugo-les-mots",title:"Les Mots",icon:"\u{1F4DD}",dur:55,author:"Victor Hugo",recueil:"Les Contemplations, 1856",
-    text:"Guerre à la rhétorique et paix à la syntaxe ! Et tout quatre-vingt-treize éclata. Les mots, sortant des bois sauvages où ils dormaient, soudain, terribles, jaillirent ; la foule entrait dans Babel ! J'ai dit à l'ombre : Sois ! Et l'ombre fut. J'ai mis un bonnet rouge au vieux dictionnaire. Plus de mot sénateur ! plus de mot roturier ! Je fis une tempête au fond de l'encrier, et je mêlai, parmi les ombres débordées, au peuple noir des mots l'essaim blanc des idées.",
-    morale:"Hugo défend la liberté des mots : aucun mot n'est trop noble ou trop populaire pour la poésie.",moraleLabel:"Thème"}
+    morale:"Patience et longueur de temps font plus que force ni que rage."}
 ];
 
-/* ════════ TTS NATUREL ════════
-   Stratégie pour avoir une voix proche de l'humain sur iOS Safari :
-   1. Attendre que les voix soient chargées (getVoices() est asynchrone).
-   2. Prioriser : Siri (iOS 16+, ultra naturelle) > Premium > Enhanced
-      > localService:false (cloud) > toute voix fr-FR.
-   3. Découper le texte en phrases pour des pauses naturelles
-      (la synthèse fait des respirations entre chaque utterance).
-   4. rate=0.92 (légèrement lent pour la déclamation), pitch=1.
-*/
-let _voicesCache=null;
-let _selectedVoiceName=null;
-function listFrenchVoices(){
-  if(!('speechSynthesis' in window)) return [];
-  const all=speechSynthesis.getVoices()||[];
-  return all.filter(v=>(v.lang||'').toLowerCase().startsWith('fr'));
-}
-function pickBestFrenchVoice(){
-  if(!('speechSynthesis' in window)) return null;
-  const voices=listFrenchVoices();
-  if(voices.length===0) return null;
-  // 1. Voix sélectionnée manuellement ?
-  if(_selectedVoiceName){
-    const v=voices.find(x=>x.name===_selectedVoiceName);
-    if(v) return v;
-  }
-  // 2. Hiérarchie de qualité (regex sur le nom)
-  const tiers=[
-    /siri/i,                               // iOS 16+ Siri voices
-    /\bpremium\b/i,                       // "Aurélie (Premium)" etc.
-    /\benhanced\b|\baméliorée?\b/i,      // "Enhanced"
-    /\b(audrey|aur[eé]lie|thomas|marie|c[eé]lia|am[eé]lie)\b/i, // voix iOS connues
-  ];
-  for(const re of tiers){
-    const v=voices.find(x=>re.test(x.name));
-    if(v) return v;
-  }
-  // 3. Voix cloud (souvent meilleures) : localService=false
-  const cloud=voices.find(x=>x.localService===false);
-  if(cloud) return cloud;
-  // 4. fr-FR par défaut
-  return voices.find(x=>(x.lang||'').toLowerCase()==='fr-fr')||voices[0];
-}
-function ensureVoicesLoaded(cb){
-  if(!('speechSynthesis' in window)){cb();return}
-  const voices=speechSynthesis.getVoices();
-  if(voices&&voices.length>0){cb();return}
-  // Sur certains navigateurs, getVoices() est vide jusqu'à l'événement voiceschanged
-  const handler=()=>{speechSynthesis.removeEventListener('voiceschanged',handler);cb()};
-  speechSynthesis.addEventListener('voiceschanged',handler);
-  // Sécurité : timeout au cas où l'événement ne se déclencherait pas
-  setTimeout(()=>{speechSynthesis.removeEventListener('voiceschanged',handler);cb()},800);
-}
-function splitForProsody(text){
-  // Découpe en phrases pour respirations naturelles entre chaque.
-  // Garde la ponctuation pour que la synthèse fasse l'intonation.
-  return String(text).split(/(?<=[.!?…])\s+/).filter(s=>s.trim().length>0);
-}
 function speakText(text){
-  if(!('speechSynthesis' in window)){alert('Synth\u00e8se vocale non disponible sur ce navigateur');return}
+  if(!('speechSynthesis' in window)){alert('Synthèse vocale non disponible sur ce navigateur');return}
   speechSynthesis.cancel();
-  ensureVoicesLoaded(()=>{
-    const voice=pickBestFrenchVoice();
-    const chunks=splitForProsody(text);
-    chunks.forEach((chunk,i)=>{
-      const u=new SpeechSynthesisUtterance(chunk);
-      u.lang='fr-FR';
-      u.rate=0.92;
-      u.pitch=1.0;
-      u.volume=1.0;
-      if(voice) u.voice=voice;
-      speechSynthesis.speak(u);
-    });
-  });
+  const u=new SpeechSynthesisUtterance(text);
+  u.lang='fr-FR';u.rate=0.85;u.pitch=1;
+  speechSynthesis.speak(u);
 }
 function stopSpeaking(){if('speechSynthesis' in window)speechSynthesis.cancel()}
-function setSelectedVoice(name){
-  _selectedVoiceName=name||null;
-  try{localStorage.setItem('royaume_tts_voice',name||'')}catch(e){}
-}
-// Restore voix sélectionnée
-try{const v=localStorage.getItem('royaume_tts_voice');if(v)_selectedVoiceName=v}catch(e){}
 
 let _recognition=null;
-function startRecording(onResult,onEnd,lang){
+function startRecording(onResult,onEnd){
   const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
   if(!SR){alert('Reconnaissance vocale non supportée. Utilise Safari sur iPhone ou Chrome.');return null}
   if(_recognition){_recognition.stop();_recognition=null}
   _recognition=new SR();
-  _recognition.lang=lang||'fr-FR';
+  _recognition.lang='fr-FR';
   _recognition.continuous=true;
   _recognition.interimResults=true;
   let finalTxt='';
@@ -1617,16 +1280,6 @@ function renderPoesieHome(){
   <button class="btn-stone mt-4" onclick="navigate('home')">\u2190 Retour</button>`;
 }
 
-
-// Récupère l'URL audio (MP3) configurée pour une fable.
-// Source : profile.audioUrls (édité dans Espace Parent, synchronisé via le cloud)
-// → fallback : f.audioUrl (hardcodé dans FABLES s'il y est).
-function getFableAudioUrl(fableId){
-  const url=(profile.audioUrls&&profile.audioUrls[fableId])||(FABLES.find(function(f){return f.id===fableId})||{}).audioUrl||'';
-  // Accepte URLs absolues http(s) ET chemins relatifs sûrs (ex: audio/xxx.mp3 généré par le workflow OpenAI TTS).
-  return url&&(/^https?:\/\//.test(url)||/^audio\/[a-zA-Z0-9_\-]+\.mp3$/.test(url))?url:'';
-}
-
 function renderPoesieFable(){
   const f=FABLES.find(x=>x.id===state.fableId);
   if(!f){navigate('poesieHome');return}
@@ -1634,34 +1287,26 @@ function renderPoesieFable(){
   app.innerHTML=`<div class="text-center py-4 fade-in">
     <div style="font-size:3rem">${f.icon}</div>
     <h2 class="title" style="color:#5b21b6">${f.title}</h2>
-    <p class="sub">de ${esc(f.author||'Jean de La Fontaine')}${f.recueil?' \u2014 '+esc(f.recueil):''}</p>
+    <p class="sub">de Jean de La Fontaine</p>
   </div>
   <div class="card mb-4" style="border-color:#c4b5fd">
-    <div id="fableTextWrap" style="position:relative">
-      <div id="fableText" data-poem="${encodeURIComponent(f.text)}" style="font-style:italic;color:#1e293b;line-height:1.7;font-size:1.05rem;font-weight:500;${state.fableTextHidden?'filter:blur(8px);user-select:none;pointer-events:none':''}">${f.text}</div>
-      ${state.fableTextHidden?`<div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(255,255,255,.85);border-radius:10px;flex-direction:column;text-align:center;padding:20px"><div style="font-size:2rem">\u{1F648}</div><p style="font-weight:700;color:#5b21b6;margin:8px 0">Texte masqué — pas de triche !</p><p class="sub" style="margin-bottom:10px">Écoute la fable d'abord, puis récite de mémoire.</p><button class="btn-stone btn-small" onclick="toggleFableText()">\u{1F441}\uFE0F Voir le texte</button></div>`:''}
-    </div>
+    <div style="font-style:italic;color:#faf5ff;line-height:1.7;font-size:1.05rem;font-weight:500" id="fableText">${f.text}</div>
     <div class="divider"></div>
-    ${f.morale?`<div style="background:#fef3c7;padding:10px 14px;border-radius:10px;border-left:3px solid #0ea5e9;color:#0c4a6e;font-weight:600">\u{1F4A1} ${esc(f.moraleLabel||'Morale')} : <em>${esc(f.morale)}</em></div>`:''}
-    <div style="margin-top:12px;text-align:center">
-      <button class="btn-stone btn-small" onclick="toggleFableText()" style="font-size:.78rem">${state.fableTextHidden?'\u{1F441}\uFE0F Voir le texte':'\u{1F648} Cacher le texte (mode récitation)'}</button>
-    </div>
+    <div style="background:rgba(251,191,36,0.08);padding:10px 14px;border-radius:10px;border-left:3px solid rgba(251,191,36,0.5);color:#fbbf24;font-weight:600">\u{1F4A1} Morale : <em>${f.morale}</em></div>
   </div>
-  ${(()=>{const u=getFableAudioUrl(f.id); return u?`<div class="card mb-4" style="border-color:#a78bfa"><h3 class="card-title" style="color:#5b21b6;margin-bottom:12px">\u{1F3A7} Écoute la fable (lecture humaine)</h3><p class="sub mb-2">Lecture publique (LibriVox / archive.org) — qualité humaine.</p><audio controls preload="metadata" style="width:100%;margin-top:6px" src="${esc(u)}">Ton navigateur ne supporte pas l'\u00e9l\u00e9ment audio.</audio></div>`:''})()}
   <div class="card mb-4" style="border-color:#a78bfa">
-    <h3 class="card-title" style="color:#5b21b6;margin-bottom:12px">\u{1F3A7} Écoute (voix de synthèse)</h3>
-    <p class="sub mb-2">Synthèse vocale du Sage. Choisis la voix qui sonne le mieux.</p>
-    <div id="voicePickerWrap" style="margin-bottom:10px"></div>
+    <h3 class="card-title" style="color:#5b21b6;margin-bottom:12px">\u{1F3A7} Écoute la fable</h3>
+    <p class="sub mb-2">Le Sage va te lire la fable lentement.</p>
     <div class="btn-row">
       <button class="btn-fire" onclick="speakText(document.getElementById('fableText').innerText)">\u25B6\uFE0F Écouter</button>
       <button class="btn-stone" onclick="stopSpeaking()">\u23F9\uFE0F Stop</button>
     </div>
   </div>
   <div class="card mb-4" style="border-color:#22c55e">
-    <h3 class="card-title" style="color:#15803d;margin-bottom:12px">\u{1F3A4} À toi de réciter !</h3>
+    <h3 class="card-title" style="color:#34d399;margin-bottom:12px">\u{1F3A4} À toi de réciter !</h3>
     <p class="sub mb-2">Clique sur le micro et récite la fable. L'app va comparer ce que tu dis au texte.</p>
-    <button class="btn-fire" id="recBtn" onclick="togglePoesieRec()">\u{1F534} Démarrer (rapide)</button><button class="btn-stone mt-2" id="recBtnWhisper" onclick="togglePoesieRecWhisper()" style="background:linear-gradient(135deg,#a855f7,#c084fc);color:#fff;border-color:#a855f7"><span>\u{1F916}</span> Whisper IA (précis, lent)</button>
-    <div id="recLive" style="margin-top:14px;padding:12px;background:#f0fdf4;border-radius:10px;border:1px solid #86efac;min-height:60px;color:#14532d;font-style:italic;display:none"></div>
+    <button class="btn-fire" id="recBtn" onclick="togglePoesieRec()">\u{1F534} Démarrer le micro</button>
+    <div id="recLive" style="margin-top:14px;padding:12px;background:rgba(52,211,153,0.06);border-radius:10px;border:1px solid #86efac;min-height:60px;color:#a7f3d0;font-style:italic;display:none"></div>
     <div id="recResult"></div>
   </div>
   <div class="card mb-4">
@@ -1670,36 +1315,8 @@ function renderPoesieFable(){
   </div>
   <button class="btn-stone" onclick="navigate('poesieHome')">\u2190 Autres fables</button>`;
 }
-function populateVoicePicker(){
-  const wrap=document.getElementById('voicePickerWrap');
-  if(!wrap) return;
-  ensureVoicesLoaded(()=>{
-    const voices=listFrenchVoices();
-    if(voices.length===0){
-      wrap.innerHTML='<p class="sub" style="color:#475569;font-size:.8rem">Aucune voix française trouvée sur cet appareil.</p>';
-      return;
-    }
-    const auto=pickBestFrenchVoice();
-    const sel=_selectedVoiceName||(auto&&auto.name)||'';
-    const opts=voices.map(v=>{
-      const tier=/siri/i.test(v.name)?' \u{1F3C5}':/premium|enhanced|am\u00e9lior/i.test(v.name)?' \u2728':'';
-      const local=v.localService?'':' \u2601\uFE0F';
-      return '<option value="'+esc(v.name)+'"'+(v.name===sel?' selected':'')+'>'+esc(v.name)+tier+local+' ('+esc(v.lang)+')</option>';
-    }).join('');
-    wrap.innerHTML='<label style="font-size:.8rem;color:#64748b;display:block;margin-bottom:4px">Voix :</label><select onchange="setSelectedVoice(this.value)" style="width:100%;padding:8px;border-radius:8px;border:1px solid #c4b5fd;background:#f0f9ff;color:#1e293b;font-family:inherit;font-size:.9rem">'+opts+'</select><p class="sub" style="font-size:.7rem;margin-top:4px;color:#475569">\u{1F3C5} = Siri \u00b7 \u2728 = Premium/Enhanced \u00b7 \u2601\uFE0F = cloud</p>';
-  });
-}
-// Auto-populate when poesieFable screen renders
-const _origRender=render;
-render=function(){_origRender();if(state.screen==='poesieFable') setTimeout(populateVoicePicker,50)};
 
 window._poesieRecording=false;
-
-function toggleFableText(){
-  state.fableTextHidden=!state.fableTextHidden;
-  if(state.screen==='poesieFable') render();
-}
-
 function togglePoesieRec(){
   const btn=$('recBtn');const live=$('recLive');const res=$('recResult');
   if(window._poesieRecording){
@@ -1717,15 +1334,13 @@ function togglePoesieRec(){
   btn.textContent='\u23F9\uFE0F Arrêter';
   btn.classList.add('pulse');
   window._poesieRecording=true;
-  // Mode anti-triche : on masque le texte de la fable au moment de réciter.
-  if(!state.fableTextHidden){state.fableTextHidden=true; const t=document.getElementById('fableTextWrap'); if(t)t.style.opacity='.3'}
   startRecording(
     (txt)=>{live.textContent=txt||'\u{1F3A4} Parle...'},
     (finalTxt)=>{
       window._poesieRecording=false;
       btn.textContent='\u{1F504} Recommencer';
       btn.classList.remove('pulse');
-      if(!finalTxt||finalTxt.trim().length<5){res.innerHTML='<p style="color:#0c4a6e;margin-top:10px">Pas de voix détectée. Réessaie !</p>';return}
+      if(!finalTxt||finalTxt.trim().length<5){res.innerHTML='<p style="color:#fbbf24;margin-top:10px">Pas de voix détectée. Réessaie !</p>';return}
       const cmp=compareTexts(f.text,finalTxt);
       // Save score
       if(!profile.poesieStats)profile.poesieStats={};
@@ -1740,7 +1355,7 @@ function togglePoesieRec(){
       res.innerHTML=`<div class="divider"></div>
         <div class="card" style="background:${cmp.score>=70?'#dcfce7':cmp.score>=40?'#fef3c7':'#fee2e2'};border-color:${cmp.score>=70?'#22c55e':cmp.score>=40?'#fbbf24':'#ef4444'}">
           <h3 class="card-title">${cmp.score>=80?'\u{1F389} Excellent !':cmp.score>=60?'\u{1F44D} Bien joué !':cmp.score>=40?'\u{1F4AA} Continue !':'\u{1F4DA} Réécoute et retente'}</h3>
-          <p style="font-size:1.4rem;font-weight:700;color:#0c4a6e;margin:8px 0">${cmp.score}% \u2014 ${cmp.matched}/${cmp.total} mots</p>
+          <p style="font-size:1.4rem;font-weight:700;color:#fbbf24;margin:8px 0">${cmp.score}% \u2014 ${cmp.matched}/${cmp.total} mots</p>
           <p class="sub">+${xpGain} XP gagnés \u2728</p>
           <div class="divider"></div>
           <p class="sub mb-2">Mots reconnus (en vert) :</p>
@@ -1750,141 +1365,14 @@ function togglePoesieRec(){
   );
 }
 
-/* ════════ WHISPER (transformers.js) — STT haute qualité pour la récitation ════════
-   Charge Xenova/whisper-tiny (~40 Mo) en lazy. Tourne 100% côté navigateur via WebAssembly :
-   pas de backend, pas d'API key, pas d'audio envoyé à un serveur. Premier lancement long
-   (téléchargement + warmup), puis cache navigateur sur les prochaines sessions. */
-let _whisperPipe=null;
-let _whisperLoading=false;
-let _whisperLoadProgress=null; // callback fn(percent, msg)
-
-async function loadWhisper(onProgress){
-  if(_whisperPipe) return _whisperPipe;
-  if(_whisperLoading){
-    while(_whisperLoading) await new Promise(function(r){setTimeout(r,300)});
-    return _whisperPipe;
-  }
-  _whisperLoading=true;
-  _whisperLoadProgress=onProgress||null;
-  try{
-    if(_whisperLoadProgress) _whisperLoadProgress(0,'Téléchargement de Whisper (\u224840 Mo, première fois seulement)...');
-    const mod=await import('https://cdn.jsdelivr.net/npm/@xenova/transformers@2.17.2/+esm');
-    if(_whisperLoadProgress) _whisperLoadProgress(15,'Chargement du modèle...');
-    _whisperPipe=await mod.pipeline('automatic-speech-recognition','Xenova/whisper-tiny',{
-      progress_callback:function(p){
-        if(_whisperLoadProgress&&p&&typeof p.progress==='number'){
-          _whisperLoadProgress(15+Math.round(p.progress*80),p.file||'modèle');
-        }
-      }
-    });
-    if(_whisperLoadProgress) _whisperLoadProgress(100,'Whisper prêt !');
-    return _whisperPipe;
-  }catch(e){
-    console.error('Whisper load failed:',e);
-    throw e;
-  }finally{
-    _whisperLoading=false;
-  }
-}
-
-let _whisperRecorder=null;
-let _whisperStream=null;
-async function startWhisperRecording(onLive,onComplete,lang){
-  lang=lang||'french';
-  if(!navigator.mediaDevices||!window.MediaRecorder){
-    onComplete('','MediaRecorder non disponible sur ce navigateur');
-    return null;
-  }
-  try{
-    _whisperStream=await navigator.mediaDevices.getUserMedia({audio:true});
-  }catch(e){
-    onComplete('','Permission micro refusée : '+e.message);
-    return null;
-  }
-  const chunks=[];
-  _whisperRecorder=new MediaRecorder(_whisperStream);
-  _whisperRecorder.ondataavailable=function(e){if(e.data&&e.data.size>0)chunks.push(e.data)};
-  _whisperRecorder.onstop=async function(){
-    try{
-      _whisperStream.getTracks().forEach(function(t){t.stop()});
-      _whisperStream=null;
-      onLive&&onLive('Transcription Whisper en cours...');
-      const blob=new Blob(chunks,{type:_whisperRecorder.mimeType||'audio/webm'});
-      const arrayBuf=await blob.arrayBuffer();
-      const Ctx=window.AudioContext||window.webkitAudioContext;
-      const audioCtx=new Ctx({sampleRate:16000});
-      const audioBuf=await audioCtx.decodeAudioData(arrayBuf);
-      const audio=audioBuf.getChannelData(0);
-      audioCtx.close();
-      const pipe=await loadWhisper(function(pct,msg){onLive&&onLive('\u{1F916} '+msg+' ('+pct+'%)')});
-      onLive&&onLive('\u{1F916} Whisper transcrit ta voix...');
-      const out=await pipe(audio,{language:lang,task:'transcribe',chunk_length_s:30});
-      onComplete((out&&out.text||'').trim(),null);
-    }catch(e){
-      console.error('Whisper transcription failed:',e);
-      onComplete('','Erreur Whisper : '+e.message);
-    }
-  };
-  _whisperRecorder.start();
-  return _whisperRecorder;
-}
-function stopWhisperRecording(){
-  if(_whisperRecorder&&_whisperRecorder.state==='recording'){
-    _whisperRecorder.stop();
-  }
-}
-
-/* Wrapper qui utilise togglePoesieRec mais avec Whisper au lieu de SpeechRecognition.
-   Affiche un loader si le modèle n'est pas encore chargé. */
-function togglePoesieRecWhisper(){
-  const btn=document.getElementById('recBtnWhisper');
-  const live=document.getElementById('recLive');
-  const res=document.getElementById('recResult');
-  if(window._poesieRecordingWhisper){
-    stopWhisperRecording();
-    return; // onstop callback ci-dessous gère le reste
-  }
-  const f=FABLES.find(function(x){return x.id===state.fableId});
-  if(!f) return;
-  res.innerHTML='';
-  live.style.display='block';
-  live.textContent='\u{1F916} Initialisation Whisper...';
-  btn.textContent='\u23F9\uFE0F Arrêter';
-  btn.classList.add('pulse');
-  window._poesieRecordingWhisper=true;
-  // Mode anti-triche : on masque le texte de la fable au moment de réciter.
-  if(!state.fableTextHidden){state.fableTextHidden=true; const t=document.getElementById('fableTextWrap'); if(t)t.style.opacity='.3'}
-  startWhisperRecording(
-    function(msg){live.textContent=msg||'\u{1F3A4} Parle...'},
-    function(finalTxt,err){
-      window._poesieRecordingWhisper=false;
-      btn.textContent='\u{1F916} Whisper IA (recommencer)';
-      btn.classList.remove('pulse');
-      if(err){res.innerHTML='<p style="color:#b91c1c;margin-top:10px">'+esc(err)+'</p>';return}
-      if(!finalTxt||finalTxt.trim().length<5){res.innerHTML='<p style="color:#0c4a6e;margin-top:10px">Pas de voix détectée. Réessaie !</p>';return}
-      const cmp=compareTexts(f.text,finalTxt);
-      if(!profile.poesieStats) profile.poesieStats={};
-      const s=profile.poesieStats[f.id]||{plays:0,best:0};
-      s.plays++;
-      if(cmp.score>s.best) s.best=cmp.score;
-      profile.poesieStats[f.id]=s;
-      const xpGain=Math.round(cmp.score/2);
-      profile.xp+=xpGain;
-      saveProfile();
-      const wordsHTML=cmp.result.map(function(x){return '<span style="color:'+(x.ok?'#15803d':'#9c6f3a')+';'+(x.ok?'':'text-decoration:underline wavy #ef4444')+';margin:0 2px">'+esc(x.w)+'</span>'}).join('');
-      res.innerHTML='<div class="divider"></div><div class="card" style="background:'+(cmp.score>=70?'#dcfce7':cmp.score>=40?'#fef3c7':'#fee2e2')+';border-color:'+(cmp.score>=70?'#22c55e':cmp.score>=40?'#fbbf24':'#ef4444')+'"><h3 class="card-title">'+(cmp.score>=80?'\u{1F389} Excellent (Whisper)':cmp.score>=60?'\u{1F44D} Bien joué':cmp.score>=40?'\u{1F4AA} Continue':'\u{1F4DA} Réécoute')+'</h3><p style="font-size:1.4rem;font-weight:700;color:#0c4a6e;margin:8px 0">'+cmp.score+'% \u2014 '+cmp.matched+'/'+cmp.total+' mots</p><p class="sub">+'+xpGain+' XP gagnés \u2728 \u00b7 Whisper IA</p><div class="divider"></div><p class="sub mb-2">Whisper a transcrit :</p><p style="font-style:italic;color:#1e293b;font-size:.95rem;line-height:1.55;margin-bottom:10px">"'+esc(finalTxt)+'"</p><p class="sub mb-2">Mots reconnus (en vert) :</p><div style="font-size:.95rem;line-height:1.7">'+wordsHTML+'</div></div>';
-    }
-  );
-}
-
 /* ════════ FICHES BILAN ════════ */
 function renderFichesHome(){
   app.innerHTML=`<div class="text-center py-6 fade-in">
     <div style="font-size:3.5rem">\u{1F4D6}</div>
-    <h2 class="title" style="color:#0c4a6e;font-size:1.6rem">Fiches Bilan</h2>
+    <h2 class="title" style="color:#fbbf24;font-size:1.6rem">Fiches Bilan</h2>
     <p class="sub">Choisis un domaine pour r\u00e9viser</p>
   </div>
-  ${SUBJECTS.filter(s=>!s.isPoetry&&Array.isArray(s.levels)&&s.levels.length>0).map((s,i)=>`<div class="subject-card fade-in" style="border-color:${s.color};animation-delay:${i*.1}s" onclick="navigate('fichesSubject',{subjectId:'${s.id}'})">
+  ${SUBJECTS.map((s,i)=>`<div class="subject-card fade-in" style="border-color:${s.color};animation-delay:${i*.1}s" onclick="navigate('fichesSubject',{subjectId:'${s.id}'})">
     <div class="subject-emoji">${s.icon}</div>
     <div class="subject-info">
       <h3 class="subject-name" style="color:${s.color}">${s.name}</h3>
@@ -1896,7 +1384,6 @@ function renderFichesHome(){
 }
 function renderFichesSubject(){
   const s=SUBJECTS.find(x=>x.id===state.subjectId)||SUBJECTS[0];
-  if(s.isPoetry||!Array.isArray(s.levels)){navigate('fichesHome');return}
   const visibleLevels=s.levels.filter(l=>!l.secret||profile.name.toLowerCase()==='joseph');
   app.innerHTML=`<div class="text-center py-6 fade-in">
     <div style="font-size:3rem">${s.icon}</div>
@@ -1946,29 +1433,19 @@ function renderFichesTopics(){
     <h2 class="title" style="color:${lv.color}">${lv.name}</h2>
     <p class="sub">${lv.sub||''} \u2014 Choisis un th\u00e8me</p>
   </div>
-  ${state.topics.map((t,i)=>{
-    // Stash full topic in window for safe lookup; only use index in onclick.
-    window._topicCache=window._topicCache||[];
-    window._topicCache[i]=t;
-    return `<div class="card clickable fade-in" style="animation-delay:${i*.05}s" onclick="loadTopicByIndex(${i})">
-      <div class="row">
-        <div style="font-size:2rem;flex-shrink:0">${esc(t.emoji||'\u{1F4D6}')}</div>
-        <div class="flex-1" style="min-width:0">
-          <h3 class="card-title">${esc(t.title||'Th\u00e8me')}</h3>
-          <p class="sub">${esc(t.desc||'')}</p>
-        </div>
-        <div class="arrow">\u2192</div>
+  ${state.topics.map((t,i)=>`<div class="card clickable fade-in" style="animation-delay:${i*.05}s" onclick="loadFiche('${(t.id||'').replace(/[^a-z0-9-]/gi,'')}','${(t.title||'').replace(/'/g,'').replace(/\"/g,'')}')">
+    <div class="row">
+      <div style="font-size:2rem">${t.emoji||'\u{1F4D6}'}</div>
+      <div class="flex-1">
+        <h3 class="card-title">${t.title}</h3>
+        <p class="sub">${t.desc||''}</p>
       </div>
-    </div>`;
-  }).join('')}
+      <div class="arrow">\u2192</div>
+    </div>
+  </div>`).join('')}
   <button class="btn-stone mt-4" onclick="navigate('fichesSubject',{subjectId:state.subjectId})">\u2190 Retour</button>`;
 }
 
-function loadTopicByIndex(i){
-  const t=(window._topicCache||[])[i];
-  if(!t)return;
-  loadFiche(String(t.id||'').slice(0,80),String(t.title||'').slice(0,200));
-}
 async function loadFiche(topicId,topicTitle){
   state.fiche=null;state.ficheTopic={id:topicId,title:topicTitle};
   navigate('fichesView');
@@ -1990,19 +1467,19 @@ function renderFichesView(){
   const f=state.fiche;
   const lv=LEVELS.find(l=>l.id===state.ficheLv);
   app.innerHTML=`<div class="text-center py-4 fade-in">
-    <div style="font-size:2rem">${lv?esc(lv.icon):'\u{1F4D6}'}</div>
-    <p class="sub">${lv?esc(lv.sub||lv.name):''}</p>
+    <div style="font-size:2rem">${lv?lv.icon:'\u{1F4D6}'}</div>
+    <p class="sub">${lv?lv.sub||lv.name:''}</p>
   </div>
   <div class="fiche-card fade-in">
-    <h1 class="fiche-h1">${esc(f.titre||state.ficheTopic.title)}</h1>
-    ${f.intro?`<p class="fiche-intro">${esc(f.intro)}</p>`:''}
-    ${(f.essentiel&&f.essentiel.length>0)?`<div class="fiche-section"><h3>\u2728 L'essentiel</h3><ul class="fiche-list">${f.essentiel.map(p=>`<li>${esc(p)}</li>`).join('')}</ul></div>`:''}
-    ${(f.dates&&f.dates.length>0)?`<div class="fiche-section"><h3>\u{1F4C5} Dates cl\u00e9s</h3>${f.dates.map(d=>`<div class="fiche-mini"><b>${esc(d.date)}</b> \u2014 ${esc(d.evenement)}</div>`).join('')}</div>`:''}
-    ${(f.personnalites&&f.personnalites.length>0)?`<div class="fiche-section"><h3>\u{1F464} Personnalit\u00e9s</h3>${f.personnalites.map(p=>`<div class="fiche-mini"><b>${esc(p.nom)}</b> \u2014 ${esc(p.role)}</div>`).join('')}</div>`:''}
-    ${(f.vocabulaire&&f.vocabulaire.length>0)?`<div class="fiche-section"><h3>\u{1F4DA} Vocabulaire</h3>${f.vocabulaire.map(v=>`<div class="fiche-mini"><b>${esc(v.mot)}</b> : ${esc(v.definition)}</div>`).join('')}</div>`:''}
-    ${f.anecdote?`<div class="fiche-anecdote">\u{1F4A1} <b>Le savais-tu ?</b> ${esc(f.anecdote)}</div>`:''}
-    ${f.retiens_bien?`<div class="fiche-retiens">\u{1F31F} ${esc(f.retiens_bien)}</div>`:''}
-    ${(f.quiz_rapide&&f.quiz_rapide.length>0)?`<div class="fiche-section"><h3>\u{1F3AF} Quiz \u00e9clair</h3>${f.quiz_rapide.map((q,i)=>`<div class="fiche-mini" onclick="this.querySelector('span').classList.toggle('hidden')" style="cursor:pointer"><b>Q${i+1} :</b> ${esc(q.q)}<br><span class="hidden" style="color:#15803d;font-weight:600">\u279c ${esc(q.r)}</span><br><small style="color:#0c4a6e">(clique pour voir la r\u00e9ponse)</small></div>`).join('')}</div>`:''}
+    <h1 class="fiche-h1">${f.titre||state.ficheTopic.title}</h1>
+    ${f.intro?`<p class="fiche-intro">${f.intro}</p>`:''}
+    ${(f.essentiel&&f.essentiel.length>0)?`<div class="fiche-section"><h3>\u2728 L'essentiel</h3><ul class="fiche-list">${f.essentiel.map(p=>`<li>${p}</li>`).join('')}</ul></div>`:''}
+    ${(f.dates&&f.dates.length>0)?`<div class="fiche-section"><h3>\u{1F4C5} Dates cl\u00e9s</h3>${f.dates.map(d=>`<div class="fiche-mini"><b>${d.date}</b> \u2014 ${d.evenement}</div>`).join('')}</div>`:''}
+    ${(f.personnalites&&f.personnalites.length>0)?`<div class="fiche-section"><h3>\u{1F464} Personnalit\u00e9s</h3>${f.personnalites.map(p=>`<div class="fiche-mini"><b>${p.nom}</b> \u2014 ${p.role}</div>`).join('')}</div>`:''}
+    ${(f.vocabulaire&&f.vocabulaire.length>0)?`<div class="fiche-section"><h3>\u{1F4DA} Vocabulaire</h3>${f.vocabulaire.map(v=>`<div class="fiche-mini"><b>${v.mot}</b> : ${v.definition}</div>`).join('')}</div>`:''}
+    ${f.anecdote?`<div class="fiche-anecdote">\u{1F4A1} <b>Le savais-tu ?</b> ${f.anecdote}</div>`:''}
+    ${f.retiens_bien?`<div class="fiche-retiens">\u{1F31F} ${f.retiens_bien}</div>`:''}
+    ${(f.quiz_rapide&&f.quiz_rapide.length>0)?`<div class="fiche-section"><h3>\u{1F3AF} Quiz \u00e9clair</h3>${f.quiz_rapide.map((q,i)=>`<div class="fiche-mini" onclick="this.querySelector('span').classList.toggle('hidden')" style="cursor:pointer"><b>Q${i+1} :</b> ${q.q}<br><span class="hidden" style="color:#34d399;font-weight:600">\u279c ${q.r}</span><br><small style="color:#8b7ec8">(clique pour voir la r\u00e9ponse)</small></div>`).join('')}</div>`:''}
   </div>
   <div class="btn-row">
     <button class="btn-stone" onclick="loadFiche(state.ficheTopic.id,state.ficheTopic.title)">\u{1F504} R\u00e9g\u00e9n\u00e9rer</button>

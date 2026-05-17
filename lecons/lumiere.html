@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>🌈 La Lumière et les Couleurs</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:#080812;color:#f0e8ff;font-family:'Trebuchet MS',sans-serif;min-height:100vh}
+.back-btn{position:fixed;top:16px;left:16px;z-index:100;background:rgba(255,200,40,.12);border:2px solid #ffc828;color:#ffe080;border-radius:30px;padding:8px 18px;font-size:14px;font-weight:700;cursor:pointer;text-decoration:none}
+.header{text-align:center;padding:28px 20px 14px}
+.header h1{font-family:Georgia,serif;font-size:clamp(24px,5vw,34px);color:#ffe080;margin:0}
+.header p{color:#8a7a40;font-size:15px;margin-top:6px}
+.main{max-width:900px;margin:0 auto;padding:0 20px 40px}
+.card{background:rgba(12,12,25,.9);border:1px solid rgba(255,255,255,.08);border-left:4px solid #ffc828;border-radius:14px;padding:18px 22px;margin-bottom:14px;line-height:1.7;font-size:15px}
+.card h2{font-family:Georgia,serif;font-size:22px;margin:0 0 10px;color:#ffe080}
+.prism-box{background:rgba(0,0,0,.4);border-radius:18px;padding:20px;margin:20px 0;text-align:center}
+.prism-box canvas{width:100%;max-width:600px;border-radius:12px;display:block;margin:0 auto}
+.mixer-box{background:rgba(10,10,25,.8);border:1px solid rgba(255,255,255,.08);border-radius:18px;padding:20px;margin:20px 0}
+.mixer-box h3{font-family:Georgia,serif;margin:0 0 14px;font-size:18px}
+.sliders{display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px}
+@media(max-width:600px){.sliders{grid-template-columns:1fr}}
+.sl-group label{display:flex;justify-content:space-between;font-weight:700;margin-bottom:6px;font-size:14px}
+.color-preview{width:100%;height:120px;border-radius:14px;margin-top:14px;display:flex;align-items:center;justify-content:center;font-size:20px;font-weight:700;font-family:Georgia,serif;transition:background .2s;border:1px solid rgba(255,255,255,.1)}
+.rainbow{display:flex;height:40px;border-radius:20px;overflow:hidden;margin:16px 0}
+.rb{flex:1}
+.wave-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:8px;margin:16px 0}
+.wave-item{text-align:center;padding:12px 6px;border-radius:12px;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.05)}
+.wave-item .swatch{width:30px;height:30px;border-radius:50%;margin:0 auto 6px;border:2px solid rgba(255,255,255,.15)}
+.wave-item .nm{font-size:16px;font-weight:800;font-family:Georgia,serif}
+.wave-item .name{font-size:11px;color:#8a7a60}
+</style>
+</head>
+<body>
+<a class="back-btn" href="../index.html" onclick="if(window.opener||document.referrer){event.preventDefault();history.back()}">← Retour</a>
+<div class="header"><h1>🌈 La Lumière et les Couleurs</h1><p>Pourquoi le ciel est bleu et l'arc-en-ciel a 7 couleurs</p></div>
+<div class="main">
+
+<div class="card">
+  <h2>💡 C'est quoi, la lumière ?</h2>
+  <p>La lumière est une <b style="color:#ffc828">onde électromagnétique</b> que tes yeux peuvent détecter. Elle voyage à <b>300 000 km/s</b> — la vitesse maximale de l'univers ! En 1 seconde, la lumière fait 7,5 fois le tour de la Terre.</p>
+  <p>Ce que tu vois comme de la lumière « blanche » (le soleil, une ampoule) est en réalité un <b>mélange de toutes les couleurs</b>. Newton l'a prouvé en faisant passer la lumière à travers un prisme de verre.</p>
+</div>
+
+<div class="prism-box">
+  <h3 style="font-family:Georgia,serif;margin:0 0 12px;color:#f0e8ff">🔺 Le prisme de Newton</h3>
+  <canvas id="prismCanvas" height="250"></canvas>
+  <p style="font-size:13px;color:#8a7a60;margin-top:10px">La lumière blanche entre → le prisme sépare les couleurs → l'arc-en-ciel sort !</p>
+</div>
+
+<div class="card">
+  <h2>🌈 Les 7 couleurs</h2>
+  <p>Chaque couleur correspond à une <b>longueur d'onde</b> différente (mesurée en nanomètres). Le rouge a la plus grande longueur d'onde, le violet la plus petite :</p>
+</div>
+<div class="rainbow"><div class="rb" style="background:#ff0000"></div><div class="rb" style="background:#ff8800"></div><div class="rb" style="background:#ffee00"></div><div class="rb" style="background:#00cc00"></div><div class="rb" style="background:#0066ff"></div><div class="rb" style="background:#4400cc"></div><div class="rb" style="background:#8800aa"></div></div>
+<div class="wave-grid">
+  <div class="wave-item"><div class="swatch" style="background:#ff0000"></div><div class="nm" style="color:#ff0000">700</div><div class="name">Rouge</div></div>
+  <div class="wave-item"><div class="swatch" style="background:#ff8800"></div><div class="nm" style="color:#ff8800">620</div><div class="name">Orange</div></div>
+  <div class="wave-item"><div class="swatch" style="background:#ffee00"></div><div class="nm" style="color:#ffee00">580</div><div class="name">Jaune</div></div>
+  <div class="wave-item"><div class="swatch" style="background:#00cc00"></div><div class="nm" style="color:#00cc00">530</div><div class="name">Vert</div></div>
+  <div class="wave-item"><div class="swatch" style="background:#0066ff"></div><div class="nm" style="color:#0066ff">470</div><div class="name">Bleu</div></div>
+  <div class="wave-item"><div class="swatch" style="background:#4400cc"></div><div class="nm" style="color:#4400cc">440</div><div class="name">Indigo</div></div>
+  <div class="wave-item"><div class="swatch" style="background:#8800aa"></div><div class="nm" style="color:#8800aa">400</div><div class="name">Violet</div></div>
+</div>
+
+<div class="mixer-box">
+  <h3>🎨 Mélangeur de couleurs (synthèse additive)</h3>
+  <p style="font-size:13px;color:#8a7a60;margin-bottom:14px">Les écrans (TV, téléphone) fabriquent toutes les couleurs avec seulement 3 lumières : Rouge + Vert + Bleu (RVB)</p>
+  <div class="sliders">
+    <div class="sl-group"><label><span style="color:#ff4040">Rouge</span><span id="r-val">255</span></label><input type="range" min="0" max="255" value="255" style="accent-color:#ff4040" oninput="rVal=+this.value;updateMixer()"></div>
+    <div class="sl-group"><label><span style="color:#40ff40">Vert</span><span id="g-val">200</span></label><input type="range" min="0" max="255" value="200" style="accent-color:#40ff40" oninput="gVal=+this.value;updateMixer()"></div>
+    <div class="sl-group"><label><span style="color:#4040ff">Bleu</span><span id="b-val">50</span></label><input type="range" min="0" max="255" value="50" style="accent-color:#4040ff" oninput="bVal=+this.value;updateMixer()"></div>
+  </div>
+  <div class="color-preview" id="preview" style="background:rgb(255,200,50)">
+    <span id="hex-val">#FFC832</span>
+  </div>
+</div>
+
+<div class="card" style="border-left-color:#60a0ff">
+  <h2 style="color:#60a0ff">🌤️ Pourquoi le ciel est bleu ?</h2>
+  <p>La lumière du Soleil entre dans l'atmosphère et rencontre les minuscules molécules d'air. Ces molécules <b>dispersent</b> (renvoient dans tous les sens) surtout les <b style="color:#4080ff">courtes longueurs d'onde</b> : le bleu et le violet.</p>
+  <p>Comme nos yeux sont plus sensibles au bleu qu'au violet, on voit le ciel bleu ! Au coucher du soleil, la lumière traverse plus d'atmosphère et le bleu est complètement dispersé : il ne reste que le <b style="color:#ff6020">rouge et l'orange</b>.</p>
+</div>
+
+<div class="card" style="border-left-color:#ff4040">
+  <h2 style="color:#ff4040">🌹 Pourquoi les objets ont des couleurs ?</h2>
+  <p>Un objet <b style="color:#ff4040">rouge</b> absorbe toutes les couleurs de la lumière SAUF le rouge, qu'il renvoie vers tes yeux. Un objet <b>noir</b> absorbe tout. Un objet <b style="color:#f0f0f0">blanc</b> renvoie tout.</p>
+  <p>C'est pour ça que les vêtements noirs chauffent plus au soleil : ils absorbent plus de lumière = plus d'énergie = plus de chaleur !</p>
+</div>
+</div>
+
+<script>
+let rVal=255,gVal=200,bVal=50;
+function updateMixer(){
+  document.getElementById('r-val').textContent=rVal;
+  document.getElementById('g-val').textContent=gVal;
+  document.getElementById('b-val').textContent=bVal;
+  const col=`rgb(${rVal},${gVal},${bVal})`;
+  document.getElementById('preview').style.background=col;
+  const hex='#'+[rVal,gVal,bVal].map(v=>v.toString(16).padStart(2,'0')).join('').toUpperCase();
+  document.getElementById('hex-val').textContent=hex;
+  document.getElementById('hex-val').style.color=(rVal+gVal+bVal)>380?'#000':'#fff';
+}
+// Prism animation
+const pc=document.getElementById('prismCanvas'),pctx=pc.getContext('2d');
+function resizePrism(){pc.width=Math.min(600,pc.parentElement.offsetWidth-40);pc.height=250}
+resizePrism();window.addEventListener('resize',resizePrism);
+let pTick=0;
+function drawPrism(){
+  pTick+=.02;
+  const w=pc.width,h=pc.height;
+  pctx.clearRect(0,0,w,h);
+  // Incoming white light
+  pctx.strokeStyle='rgba(255,255,240,.7)';pctx.lineWidth=6;
+  pctx.shadowBlur=15;pctx.shadowColor='rgba(255,255,200,.5)';
+  pctx.beginPath();pctx.moveTo(20,h/2);pctx.lineTo(w*.35,h/2);pctx.stroke();
+  pctx.shadowBlur=0;
+  // Prism triangle
+  const px=w*.35,py=h*.2,pw=w*.2,ph=h*.6;
+  pctx.beginPath();pctx.moveTo(px+pw/2,py);pctx.lineTo(px,py+ph);pctx.lineTo(px+pw,py+ph);pctx.closePath();
+  pctx.fillStyle='rgba(160,180,220,.15)';pctx.fill();
+  pctx.strokeStyle='rgba(200,220,255,.4)';pctx.lineWidth=2;pctx.stroke();
+  // Rainbow output
+  const colors=['#ff0000','#ff8800','#ffee00','#00cc00','#0066ff','#4400cc','#8800aa'];
+  const startX=px+pw*.7,startY=h/2;
+  colors.forEach((c,i)=>{
+    const angle=(i-3)*0.08;
+    const endX=w-20,endY=startY+angle*(w*.5)+Math.sin(pTick+i*.3)*3;
+    pctx.beginPath();pctx.moveTo(startX,startY);pctx.lineTo(endX,endY);
+    pctx.strokeStyle=c;pctx.lineWidth=3;pctx.shadowBlur=8;pctx.shadowColor=c;
+    pctx.stroke();pctx.shadowBlur=0;
+  });
+  // Labels
+  pctx.fillStyle='rgba(255,255,255,.4)';pctx.font='13px Georgia';
+  pctx.fillText('Lumière blanche',30,h/2-15);
+  pctx.fillText('Prisme',px+pw/2-20,py+ph+20);
+  requestAnimationFrame(drawPrism);
+}
+drawPrism();
+</script>
+</body>
+</html>

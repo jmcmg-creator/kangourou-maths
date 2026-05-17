@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>🌋 Les Volcans</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:#150808;color:#ffe0d0;font-family:'Trebuchet MS',sans-serif;min-height:100vh}
+.back-btn{position:fixed;top:16px;left:16px;z-index:100;background:rgba(255,100,40,.12);border:2px solid #ff6428;color:#ffa080;border-radius:30px;padding:8px 18px;font-size:14px;font-weight:700;cursor:pointer;text-decoration:none}
+.header{text-align:center;padding:28px 20px 14px}
+.header h1{font-family:Georgia,serif;font-size:clamp(24px,5vw,34px);color:#ffa080;margin:0}
+.header p{color:#8a5a40;font-size:15px;margin-top:6px}
+.main{max-width:900px;margin:0 auto;padding:0 20px 40px}
+.card{background:rgba(30,15,10,.9);border:1px solid rgba(255,255,255,.08);border-left:4px solid #ff6428;border-radius:14px;padding:18px 22px;margin-bottom:14px;line-height:1.7;font-size:15px}
+.card h2{font-family:Georgia,serif;font-size:22px;margin:0 0 10px;color:#ffa080}
+.volcano-scene{position:relative;width:100%;aspect-ratio:16/9;border-radius:18px;overflow:hidden;background:linear-gradient(180deg,#1a0808 0%,#2a1010 30%,#3a1818 50%);margin-bottom:20px}
+.volcano-scene canvas{width:100%;height:100%;display:block}
+.erupt-btn{display:block;margin:0 auto 20px;background:linear-gradient(135deg,#ff6428,#ff3010);color:white;border:none;border-radius:30px;padding:14px 36px;font-size:18px;font-weight:700;cursor:pointer;font-family:Georgia,serif;transition:all .2s;box-shadow:0 4px 20px rgba(255,100,40,.3)}
+.erupt-btn:hover{transform:scale(1.05);box-shadow:0 8px 30px rgba(255,100,40,.5)}
+.type-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin:16px 0}
+@media(max-width:700px){.type-grid{grid-template-columns:1fr}}
+.type-card{background:rgba(255,255,255,.04);border-radius:14px;padding:16px;border-top:3px solid var(--tc);cursor:pointer;transition:all .2s}
+.type-card:hover{background:rgba(255,255,255,.06);transform:translateY(-3px)}
+.type-card h3{font-family:Georgia,serif;font-size:16px;margin:0 0 6px;color:var(--tc)}
+.type-card p{font-size:13px;color:#8a6a5a;margin:0;line-height:1.6}
+.type-card .emoji{font-size:36px;text-align:center;margin-bottom:8px}
+.fact-row{display:flex;gap:12px;flex-wrap:wrap;margin:16px 0}
+.fact{flex:1;min-width:150px;background:rgba(255,255,255,.03);border-radius:12px;padding:14px;text-align:center;border:1px solid rgba(255,255,255,.05)}
+.fact .num{font-size:24px;font-weight:800;font-family:Georgia,serif;color:#ff6428}
+.fact .txt{font-size:12px;color:#8a6a5a;margin-top:4px}
+</style>
+</head>
+<body>
+<a class="back-btn" href="../index.html" onclick="if(window.opener||document.referrer){event.preventDefault();history.back()}">← Retour</a>
+<div class="header"><h1>🌋 Les Volcans</h1><p>Quand la Terre crache du feu</p></div>
+<div class="main">
+
+<div class="volcano-scene"><canvas id="vCanvas"></canvas></div>
+<button class="erupt-btn" id="eruptBtn" onclick="startEruption()">🌋 Déclencher l'éruption !</button>
+
+<div class="card">
+  <h2>🔥 C'est quoi, un volcan ?</h2>
+  <p>Un volcan est une ouverture dans la croûte terrestre par laquelle du <b style="color:#ff6428">magma</b> (roche en fusion) remonte des profondeurs de la Terre.</p>
+  <p>Sous nos pieds, à quelques dizaines de kilomètres, la roche est tellement chaude (1 200°C !) qu'elle fond et devient liquide. Cette roche fondue s'appelle le <b>magma</b>. Quand la pression devient trop forte, le magma remonte et sort par le volcan : c'est une <b style="color:#ff3010">éruption</b> !</p>
+  <p>Une fois à la surface, le magma s'appelle la <b style="color:#ffa040">lave</b>.</p>
+</div>
+
+<h3 style="font-family:Georgia,serif;text-align:center;margin:20px 0 12px;color:#ffa080">🏔️ Les 3 types de volcans</h3>
+<div class="type-grid">
+  <div class="type-card" style="--tc:#ff4020">
+    <div class="emoji">💥</div>
+    <h3>Explosif (Stratovolcan)</h3>
+    <p>Éruptions violentes avec des nuées ardentes, des cendres et des explosions. Ex : Vésuve, Pinatubo, Mont St. Helens. En forme de cône pointu.</p>
+  </div>
+  <div class="type-card" style="--tc:#ff8040">
+    <div class="emoji">🌊</div>
+    <h3>Effusif (Volcan bouclier)</h3>
+    <p>La lave coule doucement comme du miel. Moins dangereux mais peut durer des mois. Ex : Kilauea (Hawaï), Piton de la Fournaise. En forme de dôme aplati.</p>
+  </div>
+  <div class="type-card" style="--tc:#ffc040">
+    <div class="emoji">🕳️</div>
+    <h3>Caldeira</h3>
+    <p>Super-volcans dont le sommet s'est effondré après une éruption géante, laissant un énorme cratère. Ex : Yellowstone (USA), Santorin (Grèce).</p>
+  </div>
+</div>
+
+<div class="card" style="border-left-color:#ffc040">
+  <h2 style="color:#ffc040">🌍 Où sont les volcans ?</h2>
+  <p>La plupart des volcans se trouvent le long de la <b style="color:#ff6428">« Ceinture de feu du Pacifique »</b>, un anneau de 40 000 km qui entoure l'océan Pacifique. C'est là que les plaques tectoniques se rencontrent.</p>
+  <p>Il y a environ <b>1 500 volcans actifs</b> sur Terre. En ce moment, une cinquantaine sont en éruption ! La France a son propre volcan actif : le <b>Piton de la Fournaise</b> à La Réunion.</p>
+</div>
+
+<div class="fact-row">
+  <div class="fact"><div class="num">1 200°C</div><div class="txt">Température de la lave</div></div>
+  <div class="fact"><div class="num">75%</div><div class="txt">des volcans sont sous l'eau</div></div>
+  <div class="fact"><div class="num">21 km</div><div class="txt">Olympus Mons (Mars) le plus grand volcan du système solaire</div></div>
+  <div class="fact"><div class="num">79 apr. J-C</div><div class="txt">Le Vésuve détruit Pompéi</div></div>
+</div>
+</div>
+
+<script>
+const canvas=document.getElementById('vCanvas'),ctx=canvas.getContext('2d');
+let erupting=false,eruptTick=0,particles=[];
+function resize(){canvas.width=canvas.parentElement.offsetWidth;canvas.height=canvas.parentElement.offsetHeight}
+resize();window.addEventListener('resize',resize);
+function startEruption(){erupting=true;eruptTick=0;particles=[];document.getElementById('eruptBtn').textContent='🔥 En éruption !!';setTimeout(()=>{erupting=false;document.getElementById('eruptBtn').textContent='🌋 Déclencher l\'éruption !'},6000)}
+function draw(){
+  const w=canvas.width,h=canvas.height;
+  ctx.clearRect(0,0,w,h);
+  // Sky
+  const skyG=ctx.createLinearGradient(0,0,0,h*.4);
+  skyG.addColorStop(0,erupting?'#2a0505':'#0a0515');
+  skyG.addColorStop(1,erupting?'#4a1010':'#1a0a20');
+  ctx.fillStyle=skyG;ctx.fillRect(0,0,w,h*.4);
+  // Ground
+  ctx.fillStyle='#2a1a10';ctx.fillRect(0,h*.6,w,h*.4);
+  // Volcano shape
+  const cx=w/2,base=h*.65,peak=h*.15;
+  ctx.beginPath();
+  ctx.moveTo(cx-w*.35,base);
+  ctx.quadraticCurveTo(cx-w*.1,base-h*.15,cx-30,peak+20);
+  ctx.lineTo(cx-15,peak);ctx.lineTo(cx+15,peak);
+  ctx.lineTo(cx+30,peak+20);
+  ctx.quadraticCurveTo(cx+w*.1,base-h*.15,cx+w*.35,base);
+  ctx.closePath();
+  const vG=ctx.createLinearGradient(0,peak,0,base);
+  vG.addColorStop(0,'#4a3020');vG.addColorStop(.5,'#3a2518');vG.addColorStop(1,'#2a1a10');
+  ctx.fillStyle=vG;ctx.fill();
+  // Crater glow
+  if(erupting){
+    ctx.beginPath();ctx.arc(cx,peak+5,20,0,Math.PI*2);
+    ctx.fillStyle=`rgba(255,${100+Math.random()*60},20,${.6+Math.random()*.3})`;ctx.fill();
+    ctx.beginPath();ctx.arc(cx,peak+5,35,0,Math.PI*2);
+    ctx.fillStyle='rgba(255,80,20,.15)';ctx.fill();
+  }
+  // Eruption particles
+  if(erupting){
+    eruptTick++;
+    if(eruptTick%2===0&&eruptTick<200){
+      for(let i=0;i<5;i++){
+        particles.push({x:cx+(Math.random()-.5)*20,y:peak,vx:(Math.random()-.5)*4,vy:-3-Math.random()*6,life:80+Math.random()*40,age:0,type:Math.random()>.3?'lava':'smoke',size:3+Math.random()*5});
+      }
+    }
+  }
+  particles.forEach(p=>{
+    p.age++;p.vy+=.06;p.x+=p.vx;p.y+=p.vy;
+    const alpha=Math.max(0,1-p.age/p.life);
+    if(p.type==='lava'){
+      ctx.beginPath();ctx.arc(p.x,p.y,p.size,0,Math.PI*2);
+      ctx.fillStyle=`rgba(255,${Math.floor(80+Math.random()*80)},20,${alpha})`;ctx.fill();
+    } else {
+      ctx.beginPath();ctx.arc(p.x,p.y,p.size*2,0,Math.PI*2);
+      ctx.fillStyle=`rgba(100,80,70,${alpha*.3})`;ctx.fill();
+    }
+    // Lava flow when it hits ground
+    if(p.type==='lava'&&p.y>base-10&&p.age<p.life){
+      ctx.beginPath();ctx.arc(p.x,base-5,p.size*.8,0,Math.PI*2);
+      ctx.fillStyle=`rgba(255,60,10,${alpha*.4})`;ctx.fill();
+    }
+  });
+  particles=particles.filter(p=>p.age<p.life);
+  // Stars (only when not erupting)
+  if(!erupting){
+    for(let i=0;i<30;i++){
+      const sx=(i*137.5)%w,sy=(i*97.3)%(h*.3);
+      ctx.fillStyle=`rgba(255,255,255,${.2+Math.sin(Date.now()*.001+i)*.3})`;
+      ctx.fillRect(sx,sy,1.5,1.5);
+    }
+  }
+  requestAnimationFrame(draw);
+}
+draw();
+</script>
+</body>
+</html>

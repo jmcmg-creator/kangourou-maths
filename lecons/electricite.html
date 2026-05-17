@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>⚡ Le Laboratoire Électrique</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:#0a0e27;color:#eaf0ff;font-family:'Trebuchet MS','Verdana',sans-serif;min-height:100vh;overflow-x:hidden}
+.back-btn{position:fixed;top:16px;left:16px;z-index:100;background:rgba(255,157,60,.15);border:2px solid #ff9d3c;color:#ffd089;border-radius:30px;padding:8px 18px;font-size:14px;font-weight:700;cursor:pointer;text-decoration:none;font-family:inherit}
+.back-btn:hover{background:rgba(255,157,60,.3)}
+.header{text-align:center;padding:28px 20px 10px}
+.header h1{font-family:Georgia,'Times New Roman',serif;font-size:clamp(28px,5vw,38px);color:#ffd089;letter-spacing:1px;margin:0}
+.header p{color:#8a96c4;font-size:16px;margin-top:6px}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:22px;max-width:1150px;margin:0 auto;padding:0 20px 40px}
+@media(max-width:800px){.grid{grid-template-columns:1fr}}
+.card{background:#121a3a;border:1px solid #1c2752;border-left:4px solid #ff9d3c;border-radius:14px;padding:18px 22px;margin-bottom:14px;line-height:1.65;font-size:16px}
+.card h2{font-family:Georgia,serif;font-size:24px;margin:0 0 12px;color:#ffd089}
+.card b.e{color:#3df0ff} .card b.c{color:#ff9d3c} .card b.r{color:#ff5d6c} .card b.y{color:#ffe14d} .card b.g{color:#3ff09a}
+.card .highlight{color:#ffd089}
+.nav-row{display:flex;justify-content:space-between;margin-top:8px;align-items:center}
+.btn{background:transparent;border:2px solid #ff9d3c;color:#eaf0ff;border-radius:30px;padding:10px 20px;font-size:15px;font-weight:700;cursor:pointer;font-family:inherit;transition:all .2s}
+.btn.active{background:#ff9d3c;color:#0a0e27}
+.btn.dim{border-color:#8a96c4;color:#8a96c4}
+.btn.dim.active{background:#8a96c4;color:#0a0e27}
+.step-info{color:#8a96c4;font-size:14px}
+.controls{background:#121a3a;border-radius:16px;padding:22px;margin-top:18px;border:1px solid #1c2752}
+.controls h3{font-family:Georgia,serif;margin:0 0 16px;font-size:18px}
+.slider-wrap{margin-bottom:18px}
+.slider-header{display:flex;justify-content:space-between;font-size:15px;font-weight:700;margin-bottom:6px}
+.slider-hint{font-size:13px;color:#8a96c4;margin-top:4px}
+input[type=range]{width:100%;cursor:pointer;accent-color:#ff9d3c}
+input[type=range].red{accent-color:#ff5d6c}
+.lab{background:#121a3a;border-radius:18px;padding:20px;border:1px solid #1c2752;position:sticky;top:20px}
+.gauges{display:flex;justify-content:space-around;margin-top:16px;flex-wrap:wrap;gap:10px}
+.gauge{background:#0a0e27;border-radius:12px;padding:12px 18px;text-align:center;min-width:130px}
+.gauge .label{font-size:12px;color:#8a96c4}
+.gauge .val{font-size:30px;font-weight:800;font-family:Georgia,serif}
+.gauge .unit{font-size:12px;color:#8a96c4}
+.status{text-align:center;margin-top:14px;font-size:14px}
+.tip{text-align:center;color:#8a96c4;font-size:13px;margin-top:28px;padding:0 20px 20px}
+</style>
+</head>
+<body>
+<a class="back-btn" href="../index.html" onclick="if(window.opener||document.referrer){event.preventDefault();history.back()}">← Retour</a>
+<div class="header">
+  <h1>⚡ Le Laboratoire Électrique</h1>
+  <p>Comment fonctionne vraiment un circuit électrique</p>
+</div>
+<div class="grid">
+  <div id="lesson-col"></div>
+  <div id="lab-col"></div>
+</div>
+<p class="tip">Astuce : mets le freinage à 12 et la pile à 1 → l'ampoule s'éteint presque. Fais l'inverse → elle brille très fort !</p>
+<script>
+const STEPS=[
+{title:"1. C'est quoi l'électricité ?",body:`<p>Imagine une rivière, mais au lieu de gouttes d'eau, ce sont des milliards de minuscules billes invisibles appelées <b class="e">électrons</b>.</p><p>Ces électrons vivent à l'intérieur des fils de métal (souvent du cuivre). Normalement ils restent tranquilles. Mais si on les pousse, ils se mettent tous à <b>avancer ensemble</b> dans le fil.</p><p class="highlight">⚡ L'électricité, c'est le déplacement de tous ces électrons en même temps.</p>`},
+{title:"2. La pile : la pompe qui pousse",body:`<p>Les électrons ne bougent pas tout seuls. Il faut quelque chose qui les <b>pousse</b>. C'est le travail de la <b class="c">pile</b>.</p><p>La pile est comme une pompe à eau : elle aspire les électrons d'un côté (le –) et les renvoie de l'autre côté (le +). Plus la pile est forte, plus elle pousse fort.</p><p>Cette force de poussée s'appelle la <b class="c">tension</b>, et on la mesure en <b>Volts</b>.</p>`},
+{title:"3. Le circuit : un chemin fermé",body:`<p>Pour que les électrons circulent, ils ont besoin d'une <b>route complète qui revient au point de départ</b>, comme un circuit de petites voitures.</p><p>Si on coupe la route quelque part (avec un <b class="r">interrupteur</b>), plus aucun électron ne peut passer : tout s'arrête d'un coup.</p><p class="highlight">👉 Dans le labo à droite, clique sur l'interrupteur pour voir !</p>`},
+{title:"4. L'ampoule : le travail des électrons",body:`<p>Quand les électrons traversent l'ampoule, ils doivent se faufiler dans un fil très fin : le <b class="y">filament</b>.</p><p>Ça les freine. En se bousculant, ils chauffent ce fil tellement fort qu'il devient <b class="y">blanc et lumineux</b> : c'est la lumière !</p><p>Ce freinage s'appelle la <b class="r">résistance</b> (mesurée en <b>Ohms</b>). Plus le freinage est grand, moins il passe d'électrons.</p>`},
+{title:"5. La grande règle : la loi d'Ohm",body:`<p>Voici le secret que connaissent tous les scientifiques :</p><div style="background:#0a0e27;border-radius:12px;padding:16px;text-align:center;font-size:20px;font-family:Georgia,serif;margin:12px 0;border:1px solid #ff9d3c"><span style="color:#3df0ff">Courant</span> = <span style="color:#ff9d3c">Tension</span> ÷ <span style="color:#ff5d6c">Résistance</span></div><p>Si tu <b>pousses plus fort</b> (plus de Volts), il passe plus d'électrons. Si tu <b>freines plus</b> (plus d'Ohms), il en passe moins.</p><p class="highlight">🔬 Bouge les curseurs et regarde l'ampoule changer !</p>`},
+{title:"6. Les deux interrupteurs : le test du ET",body:`<p>Maintenant le circuit a <b>deux interrupteurs</b>. Clique sur les deux dans le labo.</p><p>Il suffit qu'<b>un seul</b> soit ouvert pour <b class="r">tout bloquer</b>.</p><p>Pour que l'ampoule s'allume, il faut l'interrupteur 1 <b class="g">ET</b> l'interrupteur 2 fermés <b>en même temps</b>. C'est un montage <b class="c">« en série »</b>.</p><p class="highlight">🧠 Essaie les 4 combinaisons et trouve la seule qui allume l'ampoule.</p>`}
+];
+let step=0,voltage=6,resistance=3,sw1=true,sw2=true,tick=0;
+function renderLesson(){
+  const s=STEPS[step];
+  document.getElementById('lesson-col').innerHTML=`
+    <div class="card"><h2>${s.title}</h2>${s.body}</div>
+    <div class="nav-row">
+      <button class="btn ${step>0?'dim active':'dim'}" onclick="step=Math.max(0,step-1);renderLesson()">◀ Retour</button>
+      <span class="step-info">étape ${step+1} / ${STEPS.length}</span>
+      <button class="btn ${step<STEPS.length-1?'active':''}" onclick="step=Math.min(STEPS.length-1,step+1);renderLesson()">Suivant ▶</button>
+    </div>
+    ${step>=1?`<div class="controls"><h3>🎛️ Les commandes du labo</h3>
+      <div class="slider-wrap"><div class="slider-header"><span>Force de la pile</span><span style="color:#ff9d3c">${voltage}</span></div>
+      <input type="range" min="0" max="12" step="1" value="${voltage}" oninput="voltage=+this.value;renderLesson();renderLab()">
+      <div class="slider-hint">Plus tu montes, plus la pile pousse fort.</div></div>
+      <div class="slider-wrap"><div class="slider-header"><span>Freinage de l'ampoule</span><span style="color:#ff5d6c">${resistance}</span></div>
+      <input type="range" class="red" min="1" max="12" step="1" value="${resistance}" oninput="resistance=+this.value;renderLesson();renderLab()">
+      <div class="slider-hint">Plus tu montes, plus c'est dur pour les électrons.</div></div>
+    </div>`:''}`;
+}
+function renderLab(){
+  const on=sw1&&sw2,cur=on?voltage/resistance:0,pow=voltage*cur,bri=Math.min(1,pow/18);
+  const path=[[120,90],[560,90],[560,330],[120,330]];
+  const segs=[];for(let i=0;i<path.length;i++){const a=path[i],b=path[(i+1)%path.length];segs.push({a,b,len:Math.hypot(b[0]-a[0],b[1]-a[1])})}
+  const total=segs.reduce((s,x)=>s+x.len,0);
+  function ptAt(d){let dd=((d%total)+total)%total;for(const s of segs){if(dd<=s.len){const t=dd/s.len;return[s.a[0]+(s.b[0]-s.a[0])*t,s.a[1]+(s.b[1]-s.a[1])*t]}dd-=s.len}return path[0]}
+  const n=26,speed=cur*1.4,offset=(tick*speed)%total;
+  let electrons='';
+  if(on&&cur>0)for(let i=0;i<n;i++){const d=offset+(i*total)/n;const[x,y]=ptAt(d);electrons+=`<circle cx="${x}" cy="${y}" r="7" fill="#aef7ff" opacity=".35"/><circle cx="${x}" cy="${y}" r="4" fill="#3df0ff"/>`}
+  // switch SVGs
+  function swSVG(x,y,isOn,id,col,lbl){
+    const gW=70;
+    return`<g onclick="sw${id}=!sw${id};renderLab()" style="cursor:pointer">
+      <rect x="${x-12}" y="${y-42}" width="${gW+24}" height="84" fill="transparent"/>
+      <circle cx="${x}" cy="${y}" r="8" fill="#eaf0ff"/><circle cx="${x+gW}" cy="${y}" r="8" fill="#eaf0ff"/>
+      <line x1="${x}" y1="${y}" x2="${isOn?x+gW:x+gW*.55}" y2="${isOn?y:y-34}" stroke="${isOn?'#3ff09a':'#ff5d6c'}" stroke-width="9" stroke-linecap="round"/>
+      <rect x="${x+gW/2-26}" y="${y-64}" width="52" height="22" rx="11" fill="${isOn?'#3ff09a':'#ff5d6c'}"/>
+      <text x="${x+gW/2}" y="${y-49}" fill="#0a0e27" font-size="13" font-weight="bold" text-anchor="middle">${isOn?'FERMÉ':'OUVERT'}</text>
+      <text x="${x+gW/2}" y="${y+34}" fill="${col}" font-size="14" font-weight="bold" text-anchor="middle">${lbl}</text>
+      <text x="${x+gW/2}" y="${y+51}" fill="#8a96c4" font-size="11" text-anchor="middle">clique pour changer</text>
+    </g>`}
+  let statusMsg='';
+  if(!sw1&&!sw2)statusMsg='💤 Les DEUX interrupteurs sont ouverts : rien ne passe.';
+  else if(!sw1)statusMsg="🚫 L'interrupteur 1 est ouvert → tout le circuit est bloqué.";
+  else if(!sw2)statusMsg="🚫 L'interrupteur 2 est ouvert → tout le circuit est bloqué.";
+  else if(bri>.75)statusMsg="🌟 Les deux fermés : l'ampoule brille très fort !";
+  else if(bri>.35)statusMsg="💡 Les deux fermés : l'ampoule éclaire doucement.";
+  else statusMsg="🔅 Les deux fermés, mais l'ampoule est toute faible...";
+  const statusCol=bri>.6?'#ffe14d':'#8a96c4';
+  document.getElementById('lab-col').innerHTML=`<div class="lab">
+    <svg viewBox="0 0 680 420" style="width:100%;height:auto">
+      ${cur>0?`<circle cx="340" cy="90" r="${70+bri*60}" fill="#ffe14d" opacity="${bri*.28}"/>`:''}
+      <rect x="120" y="90" width="440" height="240" rx="20" fill="none" stroke="#4a5a8a" stroke-width="9"/>
+      ${swSVG(300,330,sw1,1,'#3df0ff','Interrupteur 1')}
+      ${swSVG(420,90,sw2,2,'#ff9d3c','Interrupteur 2')}
+      <rect x="98" y="170" width="44" height="80" rx="6" fill="#1c2752" stroke="#ff9d3c" stroke-width="2"/>
+      <text x="120" y="195" fill="#ff9d3c" font-size="20" text-anchor="middle" font-weight="bold">+</text>
+      <text x="120" y="240" fill="#3df0ff" font-size="22" text-anchor="middle" font-weight="bold">–</text>
+      <text x="120" y="285" fill="#8a96c4" font-size="13" text-anchor="middle">la pile</text>
+      <text x="120" y="160" fill="#ffd089" font-size="15" text-anchor="middle" font-weight="bold">${voltage} V</text>
+      <circle cx="340" cy="90" r="34" fill="${cur>0?`rgba(255,225,77,${.25+bri*.75})`:'#1c2752'}" stroke="#ff9d3c" stroke-width="3"/>
+      <path d="M326 90Q333 78 340 90Q347 102 354 90" fill="none" stroke="${cur>0?'#fff6c2':'#8a96c4'}" stroke-width="${cur>0?3+bri*2:2}"/>
+      <text x="340" y="48" fill="#8a96c4" font-size="13" text-anchor="middle">l'ampoule</text>
+      ${electrons}
+      ${cur>0?'<text x="340" y="355" fill="#3df0ff" font-size="13" text-anchor="middle">← sens des électrons</text>':''}
+    </svg>
+    <div class="gauges">
+      <div class="gauge" style="border:1px solid #ff9d3c"><div class="label">Tension</div><div class="val" style="color:#ff9d3c">${voltage}</div><div class="unit">Volts</div></div>
+      <div class="gauge" style="border:1px solid #ff5d6c"><div class="label">Résistance</div><div class="val" style="color:#ff5d6c">${resistance}</div><div class="unit">Ohms</div></div>
+      <div class="gauge" style="border:1px solid #3df0ff"><div class="label">Courant</div><div class="val" style="color:#3df0ff">${cur.toFixed(1)}</div><div class="unit">Ampères</div></div>
+    </div>
+    <div class="status" style="color:${statusCol}">${statusMsg}</div>
+  </div>`;
+}
+// Animation loop
+function animate(){tick++;renderLab();requestAnimationFrame(animate)}
+renderLesson();animate();
+</script>
+</body>
+</html>

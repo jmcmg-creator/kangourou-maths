@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>⚛️ Les Atomes</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:#08081a;color:#e0e8ff;font-family:'Trebuchet MS',sans-serif;min-height:100vh}
+.back-btn{position:fixed;top:16px;left:16px;z-index:100;background:rgba(80,200,240,.12);border:2px solid #50c8f0;color:#90e0ff;border-radius:30px;padding:8px 18px;font-size:14px;font-weight:700;cursor:pointer;text-decoration:none}
+.header{text-align:center;padding:28px 20px 14px}
+.header h1{font-family:Georgia,serif;font-size:clamp(24px,5vw,34px);color:#90e0ff;margin:0}
+.header p{color:#4a7a9a;font-size:15px;margin-top:6px}
+.main{max-width:900px;margin:0 auto;padding:0 20px 40px}
+.card{background:rgba(10,12,35,.9);border:1px solid rgba(255,255,255,.08);border-left:4px solid #50c8f0;border-radius:14px;padding:18px 22px;margin-bottom:14px;line-height:1.7;font-size:15px}
+.card h2{font-family:Georgia,serif;font-size:22px;margin:0 0 10px;color:#90e0ff}
+.atom-view{background:rgba(0,0,0,.4);border-radius:18px;padding:20px;margin:20px 0;text-align:center}
+.atom-view canvas{display:block;margin:0 auto;border-radius:50%}
+.elem-picker{display:flex;gap:8px;justify-content:center;flex-wrap:wrap;margin:16px 0}
+.elem-btn{width:60px;height:60px;border-radius:12px;border:2px solid rgba(255,255,255,.1);background:rgba(255,255,255,.04);cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:center;transition:all .2s;font-family:Georgia,serif}
+.elem-btn:hover,.elem-btn.active{border-color:var(--ec);background:rgba(255,255,255,.08);transform:scale(1.1)}
+.elem-btn .sym{font-size:20px;font-weight:800}
+.elem-btn .num{font-size:10px;color:#4a7a9a}
+.detail{background:rgba(10,12,35,.95);border:2px solid rgba(255,255,255,.08);border-radius:18px;padding:22px;margin:20px 0}
+.detail h2{font-family:Georgia,serif;font-size:24px;margin:0 0 4px}
+.detail .sub{font-size:14px;color:#4a7a9a;margin-bottom:14px}
+.stats{display:flex;gap:12px;flex-wrap:wrap;margin:10px 0}
+.stat{background:rgba(255,255,255,.04);border-radius:10px;padding:10px 14px;text-align:center;min-width:100px;border:1px solid rgba(255,255,255,.05)}
+.stat b{display:block;font-size:18px;font-family:Georgia,serif}
+.stat span{font-size:11px;color:#4a7a9a}
+.legend{display:flex;gap:16px;justify-content:center;margin:12px 0;font-size:13px}
+.legend-dot{width:12px;height:12px;border-radius:50%;display:inline-block;margin-right:4px;vertical-align:middle}
+</style>
+</head>
+<body>
+<a class="back-btn" href="../index.html" onclick="if(window.opener||document.referrer){event.preventDefault();history.back()}">← Retour</a>
+<div class="header"><h1>⚛️ Les Atomes</h1><p>Les briques minuscules qui composent tout l'univers</p></div>
+<div class="main">
+
+<div class="card">
+  <h2>🔬 Tout est fait d'atomes</h2>
+  <p>Ton corps, l'air que tu respires, cette tablette, les étoiles… <b>tout</b> dans l'univers est fait de minuscules briques appelées <b style="color:#50c8f0">atomes</b>. Ils sont si petits qu'il en faudrait <b>10 millions côte à côte</b> pour couvrir 1 millimètre !</p>
+  <p>Il existe 118 types d'atomes différents, qu'on appelle des <b>éléments chimiques</b>. Ils sont tous rangés dans le fameux <b style="color:#ffe040">tableau périodique</b>.</p>
+</div>
+
+<div class="atom-view">
+  <h3 style="font-family:Georgia,serif;margin:0 0 12px;color:#e0e8ff">🔭 Explore un atome</h3>
+  <canvas id="atomCanvas" width="350" height="350"></canvas>
+  <div class="legend">
+    <span><span class="legend-dot" style="background:#ff5050"></span> Protons (+)</span>
+    <span><span class="legend-dot" style="background:#5050ff"></span> Neutrons</span>
+    <span><span class="legend-dot" style="background:#50e0ff"></span> Électrons (–)</span>
+  </div>
+</div>
+
+<div class="elem-picker" id="elems"></div>
+<div class="detail" id="detail"></div>
+
+<div class="card" style="border-left-color:#ff5050">
+  <h2 style="color:#ff5050">🧩 L'intérieur d'un atome</h2>
+  <p>Chaque atome est composé de 3 types de particules :</p>
+  <p>• <b style="color:#ff5050">Protons</b> (+) : dans le noyau. Leur nombre définit quel élément c'est !</p>
+  <p>• <b style="color:#5050ff">Neutrons</b> (0) : dans le noyau aussi. Ils « collent » les protons ensemble.</p>
+  <p>• <b style="color:#50e0ff">Électrons</b> (–) : ils tournent autour du noyau à toute vitesse. Ce sont eux qui créent les liaisons chimiques entre atomes.</p>
+  <p>Le noyau est <b>10 000 fois plus petit</b> que l'atome entier. Si l'atome était un stade de foot, le noyau serait une bille au centre !</p>
+</div>
+
+<div class="card" style="border-left-color:#ffe040">
+  <h2 style="color:#ffe040">⭐ Le savais-tu ?</h2>
+  <p>• Ton corps contient environ <b>7 × 10²⁷ atomes</b> (7 000 000 000 000 000 000 000 000 000).</p>
+  <p>• Les atomes de ton corps ont été fabriqués dans des <b>étoiles</b> qui ont explosé il y a des milliards d'années. Tu es littéralement fait de poussière d'étoiles !</p>
+  <p>• Un atome est composé à <b>99,99%</b> de vide. Si tu enlevais tout le vide de tous les atomes de tous les humains, l'humanité entière tiendrait dans un morceau de sucre.</p>
+</div>
+</div>
+
+<script>
+const ELEMS=[
+{sym:"H",name:"Hydrogène",z:1,n:0,color:"#50e0ff",mass:"1,008",desc:"L'élément le plus simple et le plus abondant de l'univers (75%). Le Soleil en brûle 600 millions de tonnes par seconde !",use:"Eau (H₂O), étoiles, carburant fusées"},
+{sym:"He",name:"Hélium",z:2,n:2,color:"#ffe040",mass:"4,003",desc:"Gaz très léger qui fait flotter les ballons et rend ta voix aiguë. Après l'hydrogène, c'est l'élément le plus courant dans l'univers.",use:"Ballons, IRM médicale, plongée profonde"},
+{sym:"C",name:"Carbone",z:6,n:6,color:"#808080",mass:"12,01",desc:"La base de toute la vie ! Chaque molécule organique contient du carbone. Sous pression, il devient diamant. En couches, il devient graphite (crayon).",use:"Vie, diamant, graphite, CO₂, plastiques"},
+{sym:"O",name:"Oxygène",z:8,n:8,color:"#ff5050",mass:"16,00",desc:"Tu en respires 550 litres par jour. Il compose 21% de l'air et 65% de ton corps (surtout dans l'eau). Sans lui, pas de feu ni de vie.",use:"Respiration, eau, combustion, ozone"},
+{sym:"Fe",name:"Fer",z:26,n:30,color:"#c08040",mass:"55,85",desc:"Le métal le plus utilisé par l'humanité. Le noyau de la Terre est une boule de fer de 2 400 km de diamètre. Dans ton sang, le fer des globules rouges transporte l'oxygène.",use:"Acier, sang, noyau terrestre, aimants"},
+{sym:"Au",name:"Or",z:79,n:118,color:"#ffd700",mass:"196,97",desc:"Ne rouille jamais, ne ternit pas, incroyablement malléable. Tout l'or jamais extrait tiendrait dans un cube de 22 mètres de côté. Il a été créé par des collisions d'étoiles à neutrons !",use:"Bijoux, électronique, médecine, espace"}
+];
+let selElem=0,tick=0;
+function renderElems(){
+  let h='';ELEMS.forEach((e,i)=>{
+    h+=`<div class="elem-btn ${selElem===i?'active':''}" style="--ec:${e.color}" onclick="selElem=${i};renderDetail()">
+      <div class="num">${e.z}</div><div class="sym" style="color:${e.color}">${e.sym}</div>
+    </div>`;
+  });
+  document.getElementById('elems').innerHTML=h;
+}
+function renderDetail(){
+  renderElems();
+  const e=ELEMS[selElem];
+  document.getElementById('detail').innerHTML=`
+    <h2 style="color:${e.color}">${e.sym} — ${e.name}</h2>
+    <div class="sub">Élément n°${e.z} du tableau périodique</div>
+    <div class="stats">
+      <div class="stat"><b style="color:#ff5050">${e.z}</b><span>Protons</span></div>
+      <div class="stat"><b style="color:#5050ff">${e.n}</b><span>Neutrons</span></div>
+      <div class="stat"><b style="color:#50e0ff">${e.z}</b><span>Électrons</span></div>
+      <div class="stat"><b style="color:${e.color}">${e.mass}</b><span>Masse atomique</span></div>
+    </div>
+    <p style="margin-top:14px;line-height:1.8">${e.desc}</p>
+    <p style="margin-top:8px;font-size:13px;color:#4a7a9a"><b>Utilisations :</b> ${e.use}</p>
+  `;
+}
+// Atom animation
+const canvas=document.getElementById('atomCanvas'),ctx=canvas.getContext('2d');
+function drawAtom(){
+  tick+=.02;
+  const w=canvas.width,h=canvas.height,cx=w/2,cy=h/2;
+  ctx.clearRect(0,0,w,h);
+  const e=ELEMS[selElem];
+  // Electron orbits
+  const shells=[];
+  let remaining=e.z;
+  [2,8,18,32,32,18,8].forEach(max=>{if(remaining<=0)return;const n=Math.min(remaining,max);shells.push(n);remaining-=n});
+  shells.forEach((count,si)=>{
+    const r=50+si*35;
+    // Orbit ring
+    ctx.beginPath();ctx.arc(cx,cy,r,0,Math.PI*2);
+    ctx.strokeStyle='rgba(80,224,255,.1)';ctx.lineWidth=1;ctx.stroke();
+    // Electrons
+    for(let j=0;j<count;j++){
+      const angle=tick*(2-si*.3)+j*(Math.PI*2/count);
+      const ex=cx+Math.cos(angle)*r;
+      const ey=cy+Math.sin(angle)*r;
+      ctx.beginPath();ctx.arc(ex,ey,4,0,Math.PI*2);
+      ctx.fillStyle='#50e0ff';ctx.fill();
+      ctx.beginPath();ctx.arc(ex,ey,7,0,Math.PI*2);
+      ctx.fillStyle='rgba(80,224,255,.2)';ctx.fill();
+    }
+  });
+  // Nucleus
+  const nSize=8+Math.sqrt(e.z)*2;
+  // Protons & neutrons in nucleus
+  const total=e.z+e.n;
+  for(let i=0;i<Math.min(total,40);i++){
+    const angle=i*2.4+Math.sin(tick+i)*.3;
+    const dist=Math.sqrt(i/total)*nSize;
+    const nx=cx+Math.cos(angle)*dist;
+    const ny=cy+Math.sin(angle)*dist;
+    const isProton=i<e.z;
+    ctx.beginPath();ctx.arc(nx,ny,3.5,0,Math.PI*2);
+    ctx.fillStyle=isProton?'#ff5050':'#5050ff';ctx.fill();
+  }
+  // Glow
+  ctx.beginPath();ctx.arc(cx,cy,nSize+5,0,Math.PI*2);
+  ctx.fillStyle='rgba(255,100,100,.08)';ctx.fill();
+  // Element label
+  ctx.fillStyle=e.color;ctx.font='bold 16px Georgia';ctx.textAlign='center';
+  ctx.fillText(e.sym,cx,cy+nSize+25);ctx.textAlign='start';
+  requestAnimationFrame(drawAtom);
+}
+renderDetail();drawAtom();
+</script>
+</body>
+</html>

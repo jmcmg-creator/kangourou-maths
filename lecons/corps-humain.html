@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>🫀 Le Corps Humain</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:#0a0815;color:#e8e0ff;font-family:'Trebuchet MS',sans-serif;min-height:100vh}
+.back-btn{position:fixed;top:16px;left:16px;z-index:100;background:rgba(220,80,120,.12);border:2px solid #dc5078;color:#f0a0b8;border-radius:30px;padding:8px 18px;font-size:14px;font-weight:700;cursor:pointer;text-decoration:none}
+.header{text-align:center;padding:28px 20px 14px}
+.header h1{font-family:Georgia,serif;font-size:clamp(24px,5vw,34px);color:#f0a0b8;margin:0}
+.header p{color:#7a5a6a;font-size:15px;margin-top:6px}
+.main{max-width:900px;margin:0 auto;padding:0 20px 40px}
+.card{background:rgba(15,12,30,.9);border:1px solid rgba(255,255,255,.08);border-left:4px solid #dc5078;border-radius:14px;padding:18px 22px;margin-bottom:14px;line-height:1.7;font-size:15px}
+.card h2{font-family:Georgia,serif;font-size:22px;margin:0 0 10px;color:#f0a0b8}
+.body-explorer{display:grid;grid-template-columns:250px 1fr;gap:20px;margin:20px 0}
+@media(max-width:700px){.body-explorer{grid-template-columns:1fr}}
+.body-svg-wrap{background:rgba(0,0,0,.3);border-radius:18px;padding:20px;text-align:center}
+.body-svg-wrap svg{max-height:450px;width:auto;max-width:100%}
+.organ-list{display:flex;flex-direction:column;gap:8px}
+.organ-btn{background:rgba(255,255,255,.04);border:2px solid rgba(255,255,255,.08);border-radius:14px;padding:12px 16px;cursor:pointer;transition:all .2s;display:flex;align-items:center;gap:12px;text-align:left}
+.organ-btn:hover,.organ-btn.active{border-color:var(--oc);background:rgba(255,255,255,.06);transform:translateX(4px)}
+.organ-btn .emoji{font-size:28px;flex-shrink:0}
+.organ-btn .name{font-weight:700;font-size:15px;color:#e8e0ff}
+.organ-btn .hint{font-size:12px;color:#7a5a6a}
+.detail-panel{background:rgba(15,12,30,.95);border:2px solid rgba(255,255,255,.08);border-radius:18px;padding:22px;margin:20px 0}
+.detail-panel h2{font-family:Georgia,serif;font-size:24px;margin:0 0 6px}
+.detail-panel .subtitle{font-size:14px;color:#7a5a6a;margin-bottom:14px}
+.stat-row{display:flex;gap:12px;flex-wrap:wrap;margin:14px 0}
+.stat{background:rgba(255,255,255,.04);border-radius:10px;padding:10px 14px;text-align:center;min-width:110px;border:1px solid rgba(255,255,255,.05)}
+.stat b{display:block;font-size:20px;font-family:Georgia,serif}
+.stat span{font-size:11px;color:#7a5a6a}
+</style>
+</head>
+<body>
+<a class="back-btn" href="../index.html" onclick="if(window.opener||document.referrer){event.preventDefault();history.back()}">← Retour</a>
+<div class="header"><h1>🫀 Le Corps Humain</h1><p>Explore la machine la plus incroyable du monde</p></div>
+<div class="main">
+
+<div class="card">
+  <h2>🧬 Une machine extraordinaire</h2>
+  <p>Ton corps est composé d'environ <b>37 000 milliards de cellules</b> qui travaillent ensemble 24h/24. Chaque seconde, des millions de réactions chimiques se produisent. Ton cœur bat, tes poumons respirent, ton cerveau pense — tout ça sans que tu aies besoin d'y réfléchir !</p>
+</div>
+
+<div class="organ-list" id="organs"></div>
+<div class="detail-panel" id="detail"></div>
+</div>
+
+<script>
+const ORGANS=[
+{name:"Le Cerveau",emoji:"🧠",color:"#c090ff",role:"Centre de commande",weight:"1,4 kg",fact:"100 milliards de neurones",speed:"430 km/h (signaux nerveux)",
+desc:"Le cerveau est le chef d'orchestre de tout ton corps. Il contrôle tes pensées, tes émotions, tes mouvements, ta mémoire et même ta respiration pendant que tu dors. Il consomme 20% de toute ton énergie alors qu'il ne pèse que 2% de ton poids ! Il est relié à tout le corps par la moelle épinière et les nerfs — un réseau de câbles de 150 000 km de long."},
+{name:"Le Cœur",emoji:"🫀",color:"#ff5070",role:"La pompe du sang",weight:"300 g",fact:"100 000 battements/jour",speed:"5 litres/minute",
+desc:"Ton cœur est un muscle infatigable qui pompe le sang dans tout ton corps. Il bat environ 100 000 fois par jour, 35 millions de fois par an ! Le sang transporte l'oxygène des poumons vers chaque cellule, et ramène le CO₂ pour être expiré. Si tu alignais tous tes vaisseaux sanguins bout à bout, ils feraient 100 000 km — assez pour faire 2,5 fois le tour de la Terre !"},
+{name:"Les Poumons",emoji:"🫁",color:"#70b0ff",role:"L'échange d'air",weight:"1 kg (les deux)",fact:"20 000 respirations/jour",speed:"6 litres d'air/minute",
+desc:"Tes poumons inspirent l'air pour capturer l'oxygène et expirent le CO₂ (déchet). À l'intérieur, il y a 300 millions de minuscules sacs appelés alvéoles. Si tu les dépliais tous à plat, ils couvriraient un terrain de tennis ! C'est là que l'oxygène passe dans le sang et que le CO₂ en sort."},
+{name:"L'Estomac",emoji:"🫃",color:"#40c080",role:"Le broyeur chimique",weight:"Variable",fact:"2-3 litres de capacité",speed:"3-5 heures pour digérer",
+desc:"L'estomac est une poche musclée qui malaxe ta nourriture et la baigne dans de l'acide chlorhydrique (pH 1-2, assez fort pour dissoudre du métal !). Cet acide tue les bactéries et commence à découper les protéines. L'estomac se protège avec une couche de mucus qu'il renouvelle toutes les 2 semaines. Sans ce mucus, il se digérerait lui-même !"},
+{name:"Les Os (Squelette)",emoji:"🦴",color:"#e0d0a0",role:"La charpente",weight:"15% du poids total",fact:"206 os chez l'adulte",speed:"Os réparé en 6-8 semaines",
+desc:"Ton squelette est ta charpente : il te tient debout, protège tes organes (le crâne protège le cerveau, les côtes protègent le cœur) et permet le mouvement grâce aux articulations. Les bébés naissent avec 270 os, mais certains fusionnent en grandissant pour n'en laisser que 206. L'os le plus petit : l'étrier dans l'oreille (3 mm). Le plus long : le fémur dans la cuisse."},
+{name:"La Peau",emoji:"🖐️",color:"#e0a080",role:"Le bouclier",weight:"3-4 kg",fact:"2 m² de surface",speed:"Se renouvelle en 28 jours",
+desc:"La peau est le plus grand organe du corps. Elle te protège des microbes, du soleil et des chocs. Elle régule ta température (transpiration quand il fait chaud, frissons quand il fait froid). Tu perds environ 30 000 cellules de peau morte par heure — et tu les remplaces en permanence. La poussière chez toi, c'est en grande partie de la peau morte !"},
+{name:"Les Muscles",emoji:"💪",color:"#ff8060",role:"Les moteurs",weight:"40% du poids total",fact:"640 muscles",speed:"Réflexe : 0,1 seconde",
+desc:"Tu as plus de 640 muscles qui te permettent de bouger, sourire, mâcher, respirer et même faire battre ton cœur. Le plus puissant : le masséter (mâchoire) qui peut exercer 70 kg de force ! Le plus petit : le stapédien dans l'oreille (1 mm). Tes muscles sont rattachés aux os par des tendons et fonctionnent toujours par paires : quand l'un se contracte, l'autre se relâche."}
+];
+let selOrgan=0;
+function render(){
+  let h='';ORGANS.forEach((o,i)=>{
+    h+=`<div class="organ-btn ${selOrgan===i?'active':''}" style="--oc:${o.color}" onclick="selOrgan=${i};render()">
+      <div class="emoji">${o.emoji}</div>
+      <div><div class="name" style="color:${selOrgan===i?o.color:'#e8e0ff'}">${o.name}</div><div class="hint">${o.role}</div></div>
+    </div>`;
+  });
+  document.getElementById('organs').innerHTML=h;
+  const o=ORGANS[selOrgan];
+  document.getElementById('detail').innerHTML=`
+    <h2 style="color:${o.color}">${o.emoji} ${o.name}</h2>
+    <div class="subtitle">${o.role}</div>
+    <div class="stat-row">
+      <div class="stat"><b style="color:${o.color}">${o.weight}</b><span>Poids</span></div>
+      <div class="stat"><b style="color:${o.color}">${o.fact}</b><span>Chiffre clé</span></div>
+      <div class="stat"><b style="color:${o.color}">${o.speed}</b><span>Performance</span></div>
+    </div>
+    <p style="line-height:1.8;margin-top:14px">${o.desc}</p>
+  `;
+}
+render();
+</script>
+</body>
+</html>

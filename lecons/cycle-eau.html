@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>🌧️ Le Cycle de l'Eau</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:#061020;color:#e0f0ff;font-family:'Trebuchet MS',sans-serif;min-height:100vh}
+.back-btn{position:fixed;top:16px;left:16px;z-index:100;background:rgba(60,160,255,.12);border:2px solid #3ca0ff;color:#90d0ff;border-radius:30px;padding:8px 18px;font-size:14px;font-weight:700;cursor:pointer;text-decoration:none}
+.header{text-align:center;padding:28px 20px 14px}
+.header h1{font-family:Georgia,serif;font-size:clamp(24px,5vw,34px);color:#90d0ff;margin:0}
+.header p{color:#4a7aaa;font-size:15px;margin-top:6px}
+.main{max-width:900px;margin:0 auto;padding:0 20px 40px}
+.scene-wrap{position:relative;width:100%;border-radius:20px;overflow:hidden;margin-bottom:20px;background:linear-gradient(180deg,#1a3060 0%,#2a5090 30%,#4a90d0 50%,#70c0e0 60%,#40a060 62%,#306030 65%,#204020 100%);aspect-ratio:16/9}
+.scene-wrap svg{width:100%;height:100%;position:absolute;top:0;left:0}
+.phase-tabs{display:flex;gap:8px;justify-content:center;margin:16px 0;flex-wrap:wrap}
+.phase-tab{background:transparent;border:2px solid rgba(255,255,255,.12);color:#e0f0ff;border-radius:24px;padding:10px 18px;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit;transition:all .2s}
+.phase-tab.active{background:var(--c);color:#061020;border-color:var(--c)}
+.card{background:rgba(10,20,50,.9);border:1px solid rgba(255,255,255,.08);border-left:4px solid #3ca0ff;border-radius:14px;padding:18px 22px;margin-bottom:14px;line-height:1.7;font-size:15px}
+.card h2{font-family:Georgia,serif;font-size:22px;margin:0 0 10px;color:#90d0ff}
+.fact-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:16px 0}
+@media(max-width:600px){.fact-grid{grid-template-columns:1fr}}
+.fact{background:rgba(255,255,255,.04);border-radius:14px;padding:16px;border:1px solid rgba(255,255,255,.06)}
+.fact h3{font-family:Georgia,serif;font-size:16px;margin:0 0 6px;color:#70c0e0}
+.fact p{font-size:13px;color:#7aaac0;margin:0;line-height:1.6}
+</style>
+</head>
+<body>
+<a class="back-btn" href="../index.html" onclick="if(window.opener||document.referrer){event.preventDefault();history.back()}">← Retour</a>
+<div class="header"><h1>🌧️ Le Cycle de l'Eau</h1><p>Le voyage sans fin d'une goutte d'eau</p></div>
+<div class="main">
+
+<div class="scene-wrap" id="scene">
+<svg viewBox="0 0 800 450" id="cycleSvg">
+  <!-- Sun -->
+  <circle cx="700" cy="60" r="40" fill="#ffe040" opacity=".9"/>
+  <circle cx="700" cy="60" r="55" fill="#ffe040" opacity=".15"/>
+  <!-- Mountains -->
+  <polygon points="50,280 200,140 350,280" fill="#3a6a40" opacity=".7"/>
+  <polygon points="200,280 380,100 520,280" fill="#2a5a30" opacity=".8"/>
+  <polygon points="340,128 380,100 420,128" fill="white" opacity=".6"/>
+  <!-- Sea -->
+  <rect x="0" y="280" width="800" height="170" fill="#2060a0" opacity=".5"/>
+  <!-- Cloud -->
+  <g id="cloud1" opacity=".9">
+    <ellipse cx="300" cy="70" rx="80" ry="30" fill="#c0d8f0"/>
+    <ellipse cx="260" cy="60" rx="50" ry="25" fill="#d0e4f8"/>
+    <ellipse cx="340" cy="65" rx="55" ry="22" fill="#d0e4f8"/>
+  </g>
+  <!-- Arrows / labels -->
+  <text x="620" y="200" fill="#ffe040" font-size="14" font-weight="bold" font-family="Georgia,serif" opacity=".8">☀️ Chaleur</text>
+  <!-- Evap arrows -->
+  <path d="M400,280 Q420,200 360,100" fill="none" stroke="#70c0e0" stroke-width="3" stroke-dasharray="8,4" opacity=".6"/>
+  <text x="430" y="230" fill="#70c0e0" font-size="13" font-weight="bold" transform="rotate(-60,430,230)">Évaporation ↑</text>
+  <!-- Rain -->
+  <text x="220" y="130" fill="#90b8e0" font-size="13" font-weight="bold">Précipitations ↓</text>
+  <!-- River -->
+  <path d="M250,250 Q300,260 400,270 Q500,275 600,280" fill="none" stroke="#3ca0ff" stroke-width="4" opacity=".5"/>
+  <text x="420" y="262" fill="#3ca0ff" font-size="12" font-weight="bold">Ruissellement →</text>
+  <!-- Infiltration -->
+  <path d="M200,290 L200,360" stroke="#2a80c0" stroke-width="3" stroke-dasharray="6,4" opacity=".4"/>
+  <text x="130" y="340" fill="#2a80c0" font-size="11" font-weight="bold">Infiltration ↓</text>
+  <!-- Condensation -->
+  <text x="480" y="55" fill="#c0d8f0" font-size="13" font-weight="bold">Condensation ☁️</text>
+</svg>
+</div>
+
+<div class="phase-tabs" id="tabs"></div>
+<div id="phase-info"></div>
+
+<div class="card">
+  <h2>🌍 Le cycle sans fin</h2>
+  <p>L'eau de la Terre a <b>4,5 milliards d'années</b>. La goutte que tu bois aujourd'hui a peut-être été bue par un dinosaure, est tombée en pluie sur la forêt amazonienne, a gelé dans un glacier arctique, puis s'est évaporée de l'océan Pacifique avant d'arriver dans ton verre.</p>
+  <p>Il n'y a <b>pas de nouvelle eau</b> sur Terre. Tout est recyclé en permanence par ce cycle magnifique.</p>
+</div>
+
+<h3 style="font-family:Georgia,serif;text-align:center;margin:20px 0 12px;color:#90d0ff">📊 Chiffres étonnants</h3>
+<div class="fact-grid">
+  <div class="fact"><h3>💧 97,5%</h3><p>de l'eau sur Terre est <b>salée</b> (océans). On ne peut pas la boire directement.</p></div>
+  <div class="fact"><h3>🧊 2,1%</h3><p>est de l'eau <b>douce gelée</b> dans les glaciers et les calottes polaires.</p></div>
+  <div class="fact"><h3>🚰 0,4%</h3><p>seulement est de l'eau douce <b>accessible</b> (rivières, lacs, nappes souterraines).</p></div>
+  <div class="fact"><h3>☁️ 13 000 km³</h3><p>d'eau flottent dans l'atmosphère sous forme de vapeur et nuages à tout moment.</p></div>
+  <div class="fact"><h3>🌧️ 505 000 km³</h3><p>de pluie tombent sur Terre chaque année — assez pour remplir 200 millions de piscines olympiques.</p></div>
+  <div class="fact"><h3>⏱️ 9 jours</h3><p>c'est le temps moyen qu'une goutte passe dans l'atmosphère avant de retomber en pluie.</p></div>
+</div>
+</div>
+
+<script>
+const PHASES=[
+{name:"☀️ Évaporation",color:"#ffe040",desc:`<h2 style="color:#ffe040">☀️ L'évaporation</h2><p>Le Soleil chauffe la surface de l'eau (océans, lacs, rivières). Les molécules d'eau s'agitent de plus en plus et finissent par <b>s'échapper dans l'air</b> sous forme de vapeur invisible.</p><p>Les plantes aussi libèrent de l'eau par leurs feuilles : c'est la <b style="color:#40a060">transpiration végétale</b>. Une seule chêne peut « transpirer » 400 litres d'eau par jour !</p><p>Plus il fait chaud et venteux, plus l'évaporation est rapide.</p>`},
+{name:"☁️ Condensation",color:"#c0d8f0",desc:`<h2 style="color:#c0d8f0">☁️ La condensation</h2><p>La vapeur d'eau monte dans l'atmosphère. En altitude, il fait plus froid. Les molécules ralentissent et se regroupent autour de minuscules particules (poussière, pollen) pour former des <b>gouttelettes microscopiques</b>.</p><p>Des milliards de ces gouttelettes ensemble forment un <b>nuage</b>. Un nuage typique pèse environ 500 tonnes !</p><p>Si ça continue à refroidir, les gouttelettes grossissent jusqu'à devenir trop lourdes...</p>`},
+{name:"🌧️ Précipitations",color:"#3ca0ff",desc:`<h2 style="color:#3ca0ff">🌧️ Les précipitations</h2><p>Quand les gouttelettes dans le nuage deviennent trop lourdes, elles tombent sous forme de <b>pluie</b>. Si il fait très froid en altitude, elles gèlent et tombent en <b>neige</b>, <b>grêle</b> ou <b>verglas</b>.</p><p>Une goutte de pluie tombe à environ <b>20 km/h</b> et met 2 minutes pour atteindre le sol depuis un nuage à 2 km. La pluie qui tombe sur les montagnes alimente les rivières et les nappes souterraines.</p>`},
+{name:"🏔️ Ruissellement",color:"#40a060",desc:`<h2 style="color:#40a060">🏔️ Le ruissellement et l'infiltration</h2><p>L'eau de pluie a deux chemins possibles :</p><p><b>Le ruissellement :</b> l'eau coule sur la surface du sol, forme des ruisseaux, puis des rivières, qui finissent par rejoindre l'océan. C'est le chemin rapide (quelques jours à semaines).</p><p><b>L'infiltration :</b> l'eau s'enfonce dans le sol à travers les roches et forme des <b>nappes souterraines</b>. C'est le chemin lent : l'eau peut rester sous terre pendant des centaines, voire des milliers d'années !</p>`}
+];
+let selPhase=0;
+function renderTabs(){
+  let h='';PHASES.forEach((p,i)=>{h+=`<button class="phase-tab ${selPhase===i?'active':''}" style="--c:${p.color}" onclick="selPhase=${i};render()">${p.name}</button>`});
+  document.getElementById('tabs').innerHTML=h;
+}
+function render(){
+  renderTabs();
+  document.getElementById('phase-info').innerHTML=`<div class="card" style="border-left-color:${PHASES[selPhase].color}">${PHASES[selPhase].desc}</div>`;
+}
+// Rain animation
+let drops=[];for(let i=0;i<30;i++)drops.push({x:200+Math.random()*200,y:100+Math.random()*80,speed:2+Math.random()*3,delay:Math.random()*60});
+let tick=0;
+function animRain(){
+  tick++;
+  const svg=document.getElementById('cycleSvg');
+  // Remove old rain
+  svg.querySelectorAll('.raindrop').forEach(e=>e.remove());
+  drops.forEach(d=>{
+    if(tick<d.delay)return;
+    d.y+=d.speed;
+    if(d.y>280){d.y=100+Math.random()*30;d.x=200+Math.random()*200}
+    const line=document.createElementNS('http://www.w3.org/2000/svg','line');
+    line.setAttribute('class','raindrop');
+    line.setAttribute('x1',d.x);line.setAttribute('y1',d.y);
+    line.setAttribute('x2',d.x-1);line.setAttribute('y2',d.y+8);
+    line.setAttribute('stroke','#70b0e0');line.setAttribute('stroke-width','2');
+    line.setAttribute('opacity','0.5');
+    svg.appendChild(line);
+  });
+  // Animate cloud
+  const c=document.getElementById('cloud1');
+  if(c)c.setAttribute('transform',`translate(${Math.sin(tick*.01)*15},${Math.sin(tick*.015)*5})`);
+  requestAnimationFrame(animRain);
+}
+render();animRain();
+</script>
+</body>
+</html>

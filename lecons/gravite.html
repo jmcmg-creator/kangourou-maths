@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>🍎 Les Forces et la Gravité</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:#080810;color:#e0e8ff;font-family:'Trebuchet MS',sans-serif;min-height:100vh}
+.back-btn{position:fixed;top:16px;left:16px;z-index:100;background:rgba(100,160,255,.12);border:2px solid #64a0ff;color:#a0c8ff;border-radius:30px;padding:8px 18px;font-size:14px;font-weight:700;cursor:pointer;text-decoration:none}
+.header{text-align:center;padding:28px 20px 14px}
+.header h1{font-family:Georgia,serif;font-size:clamp(24px,5vw,34px);color:#a0c8ff;margin:0}
+.header p{color:#5070a0;font-size:15px;margin-top:6px}
+.main{max-width:900px;margin:0 auto;padding:0 20px 40px}
+.card{background:rgba(10,12,30,.9);border:1px solid rgba(255,255,255,.08);border-left:4px solid #64a0ff;border-radius:14px;padding:18px 22px;margin-bottom:14px;line-height:1.7;font-size:15px}
+.card h2{font-family:Georgia,serif;font-size:22px;margin:0 0 10px;color:#a0c8ff}
+.sim-box{background:rgba(10,10,30,.8);border:1px solid rgba(255,255,255,.08);border-radius:18px;padding:20px;margin-bottom:20px}
+.sim-box h3{font-family:Georgia,serif;margin:0 0 14px;font-size:18px}
+.sim-box canvas{width:100%;display:block;border-radius:12px;cursor:pointer}
+.controls{display:flex;gap:16px;flex-wrap:wrap;margin:14px 0}
+.ctrl{flex:1;min-width:180px}
+.ctrl label{display:flex;justify-content:space-between;font-weight:700;margin-bottom:6px;font-size:14px}
+input[type=range]{width:100%;cursor:pointer;accent-color:#64a0ff}
+.drop-btn{display:block;margin:12px auto 0;background:#64a0ff;color:#080810;border:none;border-radius:30px;padding:12px 28px;font-size:16px;font-weight:700;cursor:pointer;font-family:inherit;transition:all .2s}
+.drop-btn:hover{transform:scale(1.05);box-shadow:0 0 20px rgba(100,160,255,.3)}
+.planet-picker{display:flex;gap:10px;justify-content:center;margin:16px 0;flex-wrap:wrap}
+.planet-btn{background:transparent;border:2px solid rgba(255,255,255,.12);color:#e0e8ff;border-radius:24px;padding:10px 16px;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit;transition:all .2s}
+.planet-btn.active{background:var(--pc);color:#080810;border-color:var(--pc)}
+.compare-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:10px;margin:16px 0}
+.cmp{background:rgba(255,255,255,.04);border-radius:12px;padding:14px;text-align:center;border:1px solid rgba(255,255,255,.05)}
+.cmp .emoji{font-size:30px}
+.cmp .name{font-size:13px;font-weight:700;margin:4px 0}
+.cmp .val{font-size:18px;font-weight:800;font-family:Georgia,serif;color:#64a0ff}
+.cmp .unit{font-size:11px;color:#5070a0}
+</style>
+</head>
+<body>
+<a class="back-btn" href="../index.html" onclick="if(window.opener||document.referrer){event.preventDefault();history.back()}">← Retour</a>
+<div class="header"><h1>🍎 Les Forces et la Gravité</h1><p>Pourquoi les choses tombent (et les planètes tournent)</p></div>
+<div class="main">
+
+<div class="card">
+  <h2>🍎 La découverte de Newton</h2>
+  <p>La légende raconte qu'Isaac Newton a vu une pomme tomber d'un arbre et s'est demandé : <i>« Pourquoi la pomme tombe-t-elle vers le bas et pas vers le haut ? »</i></p>
+  <p>Sa réponse a changé le monde : la Terre <b>attire</b> la pomme vers elle avec une force invisible appelée la <b style="color:#64a0ff">gravité</b>. Et cette même force est celle qui fait tourner la Lune autour de la Terre et la Terre autour du Soleil !</p>
+  <p>La gravité dépend de deux choses : la <b>masse</b> (plus c'est lourd, plus ça attire) et la <b>distance</b> (plus c'est loin, moins ça attire).</p>
+</div>
+
+<div class="sim-box">
+  <h3>🧪 Simulateur de chute libre</h3>
+  <p style="font-size:13px;color:#5070a0;margin-bottom:12px">Lâche des objets et regarde comment ils tombent sur différentes planètes</p>
+  <div class="planet-picker" id="planets"></div>
+  <canvas id="dropCanvas" height="300"></canvas>
+  <div class="controls">
+    <div class="ctrl"><label><span>Masse de l'objet</span><span id="mass-val" style="color:#ff9060">5 kg</span></label><input type="range" min="1" max="100" value="5" style="accent-color:#ff9060" oninput="objMass=+this.value;document.getElementById('mass-val').textContent=objMass+' kg'"></div>
+    <div class="ctrl"><label><span>Hauteur</span><span id="height-val" style="color:#64a0ff">50 m</span></label><input type="range" min="10" max="200" value="50" oninput="dropH=+this.value;document.getElementById('height-val').textContent=dropH+' m';resetDrop()"></div>
+  </div>
+  <button class="drop-btn" onclick="startDrop()">🍎 Lâcher !</button>
+  <p id="drop-msg" style="text-align:center;margin-top:10px;font-size:14px;color:#5070a0"></p>
+</div>
+
+<div class="card">
+  <h2>⚖️ Ton poids sur chaque planète</h2>
+  <p>Ton <b>poids</b> change selon la planète (c'est la force avec laquelle elle t'attire), mais ta <b>masse</b> reste la même. Si tu pèses 30 kg sur Terre :</p>
+</div>
+<div class="compare-grid" id="weight-grid"></div>
+
+<div class="card" style="border-left-color:#ffe040">
+  <h2 style="color:#ffe040">🚀 Le savais-tu ?</h2>
+  <p>• Sur la Lune, tu pourrais sauter <b>6 fois plus haut</b> qu'ici !</p>
+  <p>• Si tu tombes dans un trou traversant la Terre, tu mettrais <b>42 minutes</b> pour arriver de l'autre côté (en théorie).</p>
+  <p>• Les astronautes dans l'ISS ne sont pas « sans gravité » : ils sont en <b>chute libre permanente</b> autour de la Terre. Ils tombent, mais la Terre se courbe sous eux à la même vitesse !</p>
+  <p>• La gravité déforme même le <b>temps</b> : les horloges en altitude avancent très légèrement plus vite que celles au sol. Le GPS doit corriger cet effet !</p>
+</div>
+</div>
+
+<script>
+const PLANETS=[
+{name:"Lune",emoji:"🌙",g:1.62,color:"#c0c0c0"},
+{name:"Mars",emoji:"🔴",g:3.72,color:"#d05030"},
+{name:"Terre",emoji:"🌍",g:9.81,color:"#4d9de0"},
+{name:"Jupiter",emoji:"🟤",g:24.79,color:"#d4a055"},
+{name:"Soleil",emoji:"☀️",g:274,color:"#ffc83c"}
+];
+const WEIGHT_PLANETS=[
+{name:"Lune",emoji:"🌙",mult:0.165},{name:"Mars",emoji:"🔴",mult:0.378},
+{name:"Terre",emoji:"🌍",mult:1},{name:"Jupiter",emoji:"🟤",mult:2.528},
+{name:"Saturne",emoji:"💍",mult:1.065},{name:"Uranus",emoji:"🧊",mult:0.886}
+];
+let selPlanet=2,objMass=5,dropH=50;
+let dropping=false,dropY=0,dropV=0,dropTime=0,landed=false;
+function renderPlanets(){
+  let h='';PLANETS.forEach((p,i)=>{
+    h+=`<button class="planet-btn ${selPlanet===i?'active':''}" style="--pc:${p.color}" onclick="selPlanet=${i};renderPlanets();resetDrop()">${p.emoji} ${p.name} (${p.g} m/s²)</button>`;
+  });
+  document.getElementById('planets').innerHTML=h;
+}
+function renderWeights(){
+  let h='';WEIGHT_PLANETS.forEach(p=>{
+    h+=`<div class="cmp"><div class="emoji">${p.emoji}</div><div class="name">${p.name}</div><div class="val">${(30*p.mult).toFixed(1)}</div><div class="unit">kg apparent</div></div>`;
+  });
+  document.getElementById('weight-grid').innerHTML=h;
+}
+function resetDrop(){dropping=false;dropY=0;dropV=0;dropTime=0;landed=false;document.getElementById('drop-msg').textContent=''}
+function startDrop(){resetDrop();dropping=true}
+const canvas=document.getElementById('dropCanvas'),ctx=canvas.getContext('2d');
+function resize(){canvas.width=canvas.parentElement.offsetWidth-40;canvas.height=300}
+resize();window.addEventListener('resize',resize);
+function draw(){
+  const w=canvas.width,h=canvas.height;
+  ctx.clearRect(0,0,w,h);
+  const p=PLANETS[selPlanet];
+  // Background
+  ctx.fillStyle='rgba(0,0,0,.3)';ctx.fillRect(0,0,w,h);
+  // Ground
+  const groundY=h-30;
+  ctx.fillStyle='rgba(255,255,255,.05)';ctx.fillRect(0,groundY,w,30);
+  ctx.strokeStyle='rgba(255,255,255,.15)';ctx.beginPath();ctx.moveTo(0,groundY);ctx.lineTo(w,groundY);ctx.stroke();
+  // Height markers
+  ctx.fillStyle='rgba(255,255,255,.1)';ctx.font='11px Trebuchet MS';
+  for(let m=0;m<=dropH;m+=Math.ceil(dropH/5)){
+    const y=20+(groundY-20)*(1-m/dropH);
+    ctx.fillText(m+'m',10,y+4);
+    ctx.strokeStyle='rgba(255,255,255,.04)';ctx.beginPath();ctx.moveTo(40,y);ctx.lineTo(w,y);ctx.stroke();
+  }
+  // Object
+  const objScreenY=20+(groundY-20)*(dropY/dropH);
+  const finalY=Math.min(objScreenY,groundY-15);
+  ctx.beginPath();ctx.arc(w/2,finalY,12+Math.min(objMass*.1,8),0,Math.PI*2);
+  ctx.fillStyle=landed?'#ff9060':p.color;ctx.fill();
+  ctx.fillStyle='white';ctx.font='14px Georgia';ctx.textAlign='center';
+  ctx.fillText('🍎',w/2,finalY+5);ctx.textAlign='start';
+  // Physics
+  if(dropping&&!landed){
+    dropTime+=1/60;
+    dropV+=p.g/60;
+    dropY+=dropV/60;
+    if(dropY>=dropH){
+      dropY=dropH;landed=true;dropping=false;
+      const realTime=Math.sqrt(2*dropH/p.g);
+      const impactV=Math.sqrt(2*p.g*dropH);
+      document.getElementById('drop-msg').textContent=`✅ Touché en ${realTime.toFixed(2)}s — vitesse d'impact : ${impactV.toFixed(1)} m/s (${(impactV*3.6).toFixed(0)} km/h)`;
+    }
+  }
+  // Info
+  ctx.fillStyle=p.color;ctx.font='bold 14px Trebuchet MS';
+  ctx.fillText(`${p.emoji} ${p.name} — g = ${p.g} m/s²`,w/2-80,h-8);
+  if(dropping||landed){
+    ctx.fillStyle='#ff9060';ctx.font='13px Trebuchet MS';
+    ctx.fillText(`v = ${dropV.toFixed(1)} m/s`,w-130,25);
+    ctx.fillText(`t = ${dropTime.toFixed(2)} s`,w-130,42);
+  }
+  requestAnimationFrame(draw);
+}
+renderPlanets();renderWeights();draw();
+</script>
+</body>
+</html>

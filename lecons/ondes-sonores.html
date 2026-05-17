@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>🔊 Les Ondes Sonores</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:#0c0818;color:#e8e4ff;font-family:'Trebuchet MS',sans-serif;min-height:100vh}
+.back-btn{position:fixed;top:16px;left:16px;z-index:100;background:rgba(100,220,160,.12);border:2px solid #64dca0;color:#a0f0cc;border-radius:30px;padding:8px 18px;font-size:14px;font-weight:700;cursor:pointer;text-decoration:none}
+.header{text-align:center;padding:28px 20px 14px}
+.header h1{font-family:Georgia,serif;font-size:clamp(24px,5vw,34px);color:#a0f0cc;margin:0}
+.header p{color:#5a8a70;font-size:15px;margin-top:6px}
+.main{max-width:900px;margin:0 auto;padding:0 20px 40px}
+.card{background:rgba(15,12,40,.9);border:1px solid rgba(255,255,255,.08);border-left:4px solid #64dca0;border-radius:14px;padding:18px 22px;margin-bottom:14px;line-height:1.7;font-size:15px}
+.card h2{font-family:Georgia,serif;font-size:22px;margin:0 0 10px;color:#a0f0cc}
+.demo-box{background:rgba(10,10,35,.8);border:1px solid rgba(255,255,255,.08);border-radius:18px;padding:20px;margin-bottom:20px}
+.demo-box canvas{width:100%;display:block;border-radius:12px}
+.controls{display:flex;gap:20px;flex-wrap:wrap;margin:16px 0}
+.ctrl{flex:1;min-width:200px}
+.ctrl label{display:flex;justify-content:space-between;font-weight:700;margin-bottom:6px;font-size:14px}
+input[type=range]{width:100%;cursor:pointer;accent-color:#64dca0}
+.play-btn{display:block;margin:14px auto 0;background:#64dca0;color:#0c0818;border:none;border-radius:30px;padding:14px 30px;font-size:16px;font-weight:700;cursor:pointer;font-family:inherit;transition:all .2s}
+.play-btn:hover{transform:scale(1.05);box-shadow:0 0 20px rgba(100,220,160,.3)}
+.compare-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin:16px 0}
+@media(max-width:600px){.compare-grid{grid-template-columns:1fr}}
+.compare-card{background:rgba(255,255,255,.04);border-radius:14px;padding:16px;text-align:center;cursor:pointer;border:2px solid transparent;transition:all .2s}
+.compare-card:hover{border-color:#64dca0;background:rgba(100,220,160,.06)}
+.compare-card .emoji{font-size:40px;margin-bottom:8px}
+.compare-card h3{font-size:15px;margin:0 0 4px}
+.compare-card p{font-size:12px;color:#5a8a70;margin:0}
+.air-sim{position:relative;height:120px;background:rgba(0,0,0,.2);border-radius:14px;overflow:hidden;margin:16px 0}
+.air-dot{position:absolute;width:8px;height:8px;border-radius:50%;background:#64dca0;transform:translate(-50%,-50%)}
+</style>
+</head>
+<body>
+<a class="back-btn" href="../index.html" onclick="if(window.opener||document.referrer){event.preventDefault();history.back()}">← Retour</a>
+<div class="header"><h1>🔊 Les Ondes Sonores</h1><p>Comment le son voyage de la guitare à ton oreille</p></div>
+<div class="main">
+<div class="card">
+  <h2>👂 C'est quoi, le son ?</h2>
+  <p>Quand tu frappes un tambour, la peau vibre. Cette vibration <b>pousse</b> les molécules d'air juste à côté, qui poussent les suivantes, qui poussent les suivantes… comme une vague de dominos invisibles !</p>
+  <p>Le son, c'est une <b style="color:#64dca0">onde de compression</b> : les molécules d'air se serrent et s'écartent en alternance. Quand cette vague arrive à ton oreille, ton tympan vibre à son tour et ton cerveau traduit ça en son.</p>
+  <p><b>Différence avec la lumière :</b> le son a besoin d'un support (air, eau, métal). Dans l'espace, c'est le silence total — personne ne peut t'entendre crier !</p>
+</div>
+
+<div class="demo-box">
+  <h3 style="font-family:Georgia,serif;margin:0 0 12px;color:#e8e4ff">🎵 Simulateur d'onde sonore</h3>
+  <canvas id="soundCanvas" height="180"></canvas>
+  <div class="controls">
+    <div class="ctrl"><label><span>Fréquence (grave → aigu)</span><span id="freq-val" style="color:#64dca0">440 Hz</span></label><input type="range" min="80" max="2000" value="440" id="freq-sl" oninput="sFreq=+this.value;document.getElementById('freq-val').textContent=sFreq+' Hz'"></div>
+    <div class="ctrl"><label><span>Volume (amplitude)</span><span id="vol-val" style="color:#ff9060">60</span></label><input type="range" min="5" max="85" value="60" id="vol-sl" style="accent-color:#ff9060" oninput="sAmp=+this.value;document.getElementById('vol-val').textContent=sAmp"></div>
+  </div>
+  <button class="play-btn" id="play-btn" onclick="toggleSound()">🔊 Écouter le son</button>
+</div>
+
+<div class="card">
+  <h2>📊 Grave vs Aigu, Fort vs Faible</h2>
+  <p><b style="color:#64dca0">La fréquence</b> (en Hertz) détermine si le son est grave ou aigu :</p>
+  <p>• <b>Grave</b> = peu de vibrations par seconde (80 Hz = voix de papa)</p>
+  <p>• <b>Aigu</b> = beaucoup de vibrations par seconde (2000 Hz = sifflement)</p>
+  <p><b style="color:#ff9060">L'amplitude</b> détermine le volume : plus la vague est haute, plus le son est fort.</p>
+</div>
+
+<h3 style="font-family:Georgia,serif;text-align:center;margin:24px 0 12px;color:#a0f0cc">🎯 Compare les sons</h3>
+<div class="compare-grid" id="compare"></div>
+
+<div class="card" style="margin-top:16px">
+  <h2>🏃 La vitesse du son</h2>
+  <p>Le son voyage à environ <b style="color:#64dca0">340 m/s</b> dans l'air (1 224 km/h). C'est rapide, mais bien plus lent que la lumière (300 000 km/s).</p>
+  <p>C'est pour ça que tu vois l'éclair <b>avant</b> d'entendre le tonnerre ! Compte les secondes entre les deux et divise par 3 → tu auras la distance de l'orage en kilomètres.</p>
+  <p>Dans l'eau, le son va <b>4× plus vite</b> (1 500 m/s). Dans l'acier : <b>15× plus vite</b> (5 000 m/s) ! Plus le matériau est dense, plus les molécules se passent la vibration rapidement.</p>
+</div>
+
+<div class="card">
+  <h2>🔕 Le mur du son</h2>
+  <p>Quand un avion dépasse la vitesse du son (Mach 1 = 1 224 km/h), il crée un énorme <b>BANG</b> appelé bang sonique. L'avion va plus vite que ses propres ondes sonores, qui s'empilent en un cône de choc.</p>
+  <p>Le Concorde faisait ça à chaque vol ! Aujourd'hui, seuls les avions militaires dépassent Mach 1 régulièrement.</p>
+</div>
+</div>
+
+<script>
+let sFreq=440,sAmp=60,tick=0,audioCtx=null,oscillator=null,isPlaying=false;
+const SOUNDS=[
+{name:"Voix grave",emoji:"🗣️",freq:120,amp:50,desc:"120 Hz — voix de basse"},
+{name:"La (diapason)",emoji:"🎵",freq:440,amp:60,desc:"440 Hz — la note de référence"},
+{name:"Sifflement",emoji:"🐦",freq:1800,amp:40,desc:"1 800 Hz — chant d'oiseau"},
+{name:"Basse (musique)",emoji:"🎸",freq:80,amp:80,desc:"80 Hz — vibrations profondes"},
+{name:"Piano (do aigu)",emoji:"🎹",freq:1047,amp:55,desc:"1 047 Hz — do de la 6e octave"},
+{name:"Ultrason",emoji:"🦇",freq:2000,amp:30,desc:"Les chauves-souris entendent au-delà"}
+];
+function renderCompare(){
+  let h='';SOUNDS.forEach((s,i)=>{
+    h+=`<div class="compare-card" onclick="sFreq=${s.freq};sAmp=${s.amp};document.getElementById('freq-sl').value=${s.freq};document.getElementById('vol-sl').value=${s.amp};document.getElementById('freq-val').textContent='${s.freq} Hz';document.getElementById('vol-val').textContent='${s.amp}'">
+      <div class="emoji">${s.emoji}</div><h3>${s.name}</h3><p>${s.desc}</p>
+    </div>`;
+  });
+  document.getElementById('compare').innerHTML=h;
+}
+function toggleSound(){
+  if(isPlaying){stopSound();return}
+  audioCtx=new(window.AudioContext||window.webkitAudioContext)();
+  oscillator=audioCtx.createOscillator();
+  const gain=audioCtx.createGain();
+  oscillator.type='sine';oscillator.frequency.value=sFreq;
+  gain.gain.value=sAmp/300;
+  oscillator.connect(gain);gain.connect(audioCtx.destination);
+  oscillator.start();isPlaying=true;
+  document.getElementById('play-btn').textContent='⏹ Arrêter le son';
+  // Update freq live
+  const intv=setInterval(()=>{if(!isPlaying){clearInterval(intv);return}oscillator.frequency.value=sFreq;gain.gain.value=sAmp/300},50);
+  setTimeout(()=>{stopSound()},5000);
+}
+function stopSound(){
+  if(oscillator){try{oscillator.stop()}catch(e){}}
+  if(audioCtx){audioCtx.close()}
+  isPlaying=false;
+  document.getElementById('play-btn').textContent='🔊 Écouter le son';
+}
+// Wave canvas
+const canvas=document.getElementById('soundCanvas'),ctx=canvas.getContext('2d');
+function resize(){canvas.width=canvas.parentElement.offsetWidth-40;canvas.height=180}
+resize();window.addEventListener('resize',resize);
+function draw(){
+  tick+=.04;
+  const w=canvas.width,h=canvas.height;
+  ctx.clearRect(0,0,w,h);
+  ctx.strokeStyle='rgba(100,220,160,.1)';ctx.lineWidth=1;
+  for(let y=0;y<h;y+=30){ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(w,y);ctx.stroke()}
+  ctx.strokeStyle='rgba(255,255,255,.1)';ctx.setLineDash([4,4]);
+  ctx.beginPath();ctx.moveTo(0,h/2);ctx.lineTo(w,h/2);ctx.stroke();ctx.setLineDash([]);
+  const visFreq=Math.log2(sFreq/80)*3+2;
+  ctx.beginPath();ctx.strokeStyle='#64dca0';ctx.lineWidth=3;
+  ctx.shadowBlur=10;ctx.shadowColor='#64dca0';
+  for(let x=0;x<w;x++){const y=h/2+Math.sin((x/w)*visFreq*Math.PI*2-tick*4)*sAmp;x===0?ctx.moveTo(x,y):ctx.lineTo(x,y)}
+  ctx.stroke();ctx.shadowBlur=0;
+  ctx.fillStyle='#5a8a70';ctx.font='12px Trebuchet MS';
+  ctx.fillText(sFreq<200?'Grave 🐘':sFreq<600?'Medium 🗣️':sFreq<1200?'Aigu 🎵':'Très aigu 🐦',10,18);
+  ctx.fillText(sAmp<30?'Faible 🔉':sAmp<60?'Moyen 🔊':'Fort 📢',w-100,18);
+  requestAnimationFrame(draw);
+}
+renderCompare();draw();
+</script>
+</body>
+</html>
