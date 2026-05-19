@@ -484,6 +484,20 @@ function render(){
     case 'poesieHome': renderPoesieHome(); break;
     case 'poesieFable': renderPoesieFable(); break;
   }
+  updateFooter();
+}
+
+// Barre « Changer d'utilisateur » en pied de page : visible dès qu'un profil
+// est actif, sauf sur les écrans de choix/création de profil.
+function updateFooter(){
+  const sw=document.getElementById('userSwitch');
+  if(!sw) return;
+  const show=!!profile.name && state.screen!=='nameAsk' && state.screen!=='profilePicker';
+  sw.classList.toggle('hidden',!show);
+  if(show){
+    const nm=document.getElementById('footerUserName');
+    if(nm) nm.textContent=profile.name;
+  }
 }
 
 /* ════════ STAGE DRAGONNET ════════ */
@@ -580,8 +594,7 @@ function renderHome(){
       <button class="btn-stone" onclick="navigate('royaume')">\u2728 Vue d'ensemble</button>
       <button class="btn-stone" onclick="navigate('parent')">\u{1F464} Espace Parent</button>
     </div>
-    <button class="btn-stone mt-3" style="width:100%;font-size:.85rem" onclick="navigate('profilePicker')">\u{1F504} Changer d'utilisateur</button>
-    <button class="btn-stone mt-2" style="width:100%;font-size:.85rem" onclick="shareSyncLink()">\u{1F517} Synchroniser sur un autre appareil</button>
+    <button class="btn-stone mt-3" style="width:100%;font-size:.85rem" onclick="shareSyncLink()">\u{1F517} Synchroniser sur un autre appareil</button>
   `;
 }
 

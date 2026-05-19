@@ -140,6 +140,10 @@ header h1{font-family:'Fredoka','Cinzel',Georgia,serif;font-size:clamp(1.1rem,3v
 .header-sub{font-size:.7rem;color:#64748b;font-family:'Fredoka','Cinzel',Georgia,serif;letter-spacing:.15em;text-transform:uppercase}
 .header-left{display:flex;align-items:center;gap:8px;cursor:pointer}
 footer{position:relative;z-index:10;text-align:center;padding:24px;font-size:.7rem;color:#64748b;font-family:'Fredoka','Cinzel',Georgia,serif}
+.user-switch{display:flex;align-items:center;justify-content:center;gap:10px;flex-wrap:wrap;margin-bottom:14px;padding-bottom:16px;border-bottom:1px solid rgba(14,165,233,.2)}
+.user-switch-label{font-size:.92rem;color:#0c4a6e;font-weight:600}
+.user-switch-btn{background:linear-gradient(135deg,#e0f2fe,#bae6fd);border:1px solid #7dd3fc;color:#0c4a6e;cursor:pointer;border-radius:9999px;padding:9px 18px;font-size:.85rem;font-family:'Fredoka','Cinzel',Georgia,serif;font-weight:600;transition:all .25s;min-height:40px}
+.user-switch-btn:hover{background:linear-gradient(135deg,#bae6fd,#7dd3fc);transform:translateY(-1px);box-shadow:0 4px 12px rgba(14,165,233,.25)}
 #embers{position:fixed;inset:0;pointer-events:none;overflow:hidden;z-index:-1}
 #toast-area{position:fixed;top:80px;left:0;right:0;z-index:1000;pointer-events:none;display:flex;flex-direction:column;align-items:center;gap:8px}
 #toast-area>*{pointer-events:auto}
@@ -214,7 +218,13 @@ footer{position:relative;z-index:10;text-align:center;padding:24px;font-size:.7r
 </header>
 <div class="container" id="app"></div>
 <div id="toast-area"></div>
-<footer>Le Royaume des Nombres &#8212; Inspir&#233; du concours Kangourou des Math&#233;matiques</footer>
+<footer>
+<div id="userSwitch" class="user-switch hidden">
+<span class="user-switch-label">&#128100; <b id="footerUserName"></b></span>
+<button class="user-switch-btn" onclick="navigate('profilePicker')">&#128260; Changer d'utilisateur</button>
+</div>
+<div>Le Royaume des Nombres &#8212; Inspir&#233; du concours Kangourou des Math&#233;matiques</div>
+</footer>
 <script src="exercises.js?v=20260426l"></script>
 <script src="exercises_extra.js?v=20260426l"></script>
 <script src="game.js?v=20260426l"></script>
