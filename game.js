@@ -294,26 +294,69 @@ const QUEST_TEMPLATES=[
 {id:"q_correct10",desc:"R\u00e9ussis 10 bonnes r\u00e9ponses aujourd'hui",target:10,type:"correct",reward:100}
 ];
 
-/* ════════ STATE + PERSISTENCE ════════ */
+/* ════════ STATE + PERSISTENCE — MULTI-PROFIL ════════
+   royaume_v3          : ancien profil unique (legacy, lu une fois pour migration)
+   royaume_profiles_v1 : dictionnaire { [prénom]: profil }
+   royaume_active_v1   : prénom du dernier profil utilisé
+*/
 const STORAGE_KEY="royaume_v3";
-function loadProfile(){
-  try{
-    const d=localStorage.getItem(STORAGE_KEY);
-    if(d) return migrate(JSON.parse(d));
-  }catch(e){}
-  return newProfile();
+const STORAGE_PROFILES="royaume_profiles_v1";
+const STORAGE_ACTIVE="royaume_active_v1";
+
+function loadProfilesDict(){
+  try{const d=localStorage.getItem(STORAGE_PROFILES); if(d) return JSON.parse(d)||{};}catch(e){}
+  return {};
 }
+function saveProfilesDict(d){try{localStorage.setItem(STORAGE_PROFILES,JSON.stringify(d))}catch(e){}}
+function getActiveName(){return localStorage.getItem(STORAGE_ACTIVE)||''}
+function setActiveName(n){try{localStorage.setItem(STORAGE_ACTIVE,n||'')}catch(e){}}
+
 function newProfile(){
   return {name:"",totalGames:0,totalQuestions:0,totalCorrect:0,bestStreak:0,sessions:[],catStats:{},exerciseStats:{},playDays:[],unlockedBadges:[],
     xp:0,cristaux:0,dragonnets:[],mainDragon:"main",stage:0,
-    dailyQuest:null,aiExercises:[]};
+    dailyQuest:null,aiExercises:[],aid:""};
 }
 function migrate(p){
   const base=newProfile();
   return Object.assign(base,p);
 }
-function saveProfile(){localStorage.setItem(STORAGE_KEY,JSON.stringify(profile))}
-let profile=loadProfile();
+function loadProfileByName(name){
+  const dict=loadProfilesDict();
+  if(name&&dict[name]) return migrate(dict[name]);
+  return newProfile();
+}
+// Sauvegarde le profil courant dans le dictionnaire (clé = prénom) et
+// dans le slot legacy pour compatibilité.
+function saveProfile(){
+  if(!profile.name) return;
+  const dict=loadProfilesDict();
+  dict[profile.name]=profile;
+  saveProfilesDict(dict);
+  setActiveName(profile.name);
+  try{localStorage.setItem(STORAGE_KEY,JSON.stringify(profile))}catch(e){}
+}
+// Migration unique : l'ancien profil unique entre dans le dictionnaire.
+function migrateLegacyProfile(){
+  const dict=loadProfilesDict();
+  if(Object.keys(dict).length>0) return;
+  try{
+    const legacy=localStorage.getItem(STORAGE_KEY);
+    if(!legacy) return;
+    const p=migrate(JSON.parse(legacy));
+    if(!p||!p.name) return;
+    dict[p.name]=p;
+    saveProfilesDict(dict);
+    setActiveName(p.name);
+  }catch(e){}
+}
+migrateLegacyProfile();
+// Au boot : aucun profil chargé d'office. renderHome affichera le sélecteur
+// si des profils existent, sinon l'écran « entre ton prénom ».
+let profile=newProfile();
+
+/* ════════ HTML escaping (protection XSS) ════════ */
+const _ESC_MAP={'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#x27;','`':'&#x60;'};
+function esc(x){return x==null?'':String(x).replace(/[&<>"'`]/g,c=>_ESC_MAP[c])}
 let state={screen:'home',level:null,mode:null,exercises:[],idx:0,selected:null,score:0,streak:0,maxStreak:0,results:[],timer:60,timerID:null,gameOver:false,startTime:null,gameData:null,detailOpen:false,sessionXP:0,sessionCristaux:0,aiExercises:[],generating:false,syncing:false};
 
 const $=id=>document.getElementById(id);
@@ -326,67 +369,84 @@ function today(){return new Date().toISOString().slice(0,10)}
 /* ════════ BACKEND API (sync sécurisé via AID + AI generation) ════════ */
 const API_BASE="https://royaume-api.square-paris75.workers.dev";
 
-// AID = identifiant unique aléatoire (32 hex), généré et stocké localement.
-// Sert de "clé secrète" pour le profil. Impossible à deviner.
-function getAid(){
-  let aid=localStorage.getItem('royaume_aid');
-  if(!aid){
-    // Génère UUID v4 sans tirets = 32 chars hex
-    aid=(crypto.randomUUID?crypto.randomUUID():'xxxxxxxxxxxx4xxxyxxxxxxxxxxxxxxx'.replace(/[xy]/g,c=>{const r=Math.random()*16|0;return (c==='x'?r:(r&0x3|0x8)).toString(16)})).replace(/-/g,'');
-    localStorage.setItem('royaume_aid',aid);
-  }
-  return aid;
+// AID déterministe : SHA-256 du prénom normalisé -> 32 hex.
+// « Joseph » donne le MÊME AID sur tous les appareils, donc son profil se
+// retrouve automatiquement dans le cloud — sans lien de transfert.
+async function aidFromName(name){
+  const norm=String(name||'').toLowerCase().trim().replace(/\s+/g,'');
+  if(!norm) return '';
+  const buf=await crypto.subtle.digest('SHA-256',new TextEncoder().encode('royaume:'+norm));
+  return Array.from(new Uint8Array(buf)).map(b=>b.toString(16).padStart(2,'0')).join('').slice(0,32);
+}
+// Garantit que profile.aid est renseigné (dérivé du nom si absent).
+async function ensureAid(){
+  if(!profile.aid&&profile.name){profile.aid=await aidFromName(profile.name);}
+  return profile.aid;
 }
 
-// Au chargement : si URL contient ?sync=AID, on remplace l'AID local (transfert depuis autre appareil)
-(function checkSyncLink(){
-  const params=new URLSearchParams(window.location.search);
-  const incoming=params.get('sync');
-  if(incoming&&/^[a-f0-9]{32}$/.test(incoming)){
-    const current=localStorage.getItem('royaume_aid');
-    if(current!==incoming){
-      if(confirm('Tu vas récupérer le Royaume d\'un autre appareil. Cela remplacera tes données locales. Continuer ?')){
-        localStorage.setItem('royaume_aid',incoming);
-        // Vide les données locales pour forcer la récup depuis le cloud
-        localStorage.removeItem('royaume_v3');
-      }
-    }
-    // Nettoie l'URL
-    window.history.replaceState({},'',window.location.pathname);
-  }
-})();
-
-const AID=getAid();
-
-async function syncProfileFromCloud(){
+async function fetchProfileByAid(aid){
+  if(!aid||!/^[a-f0-9]{32}$/.test(aid)) return null;
   try{
-    const r=await fetch(API_BASE+'/profile/'+AID);
+    const r=await fetch(API_BASE+'/profile/'+aid);
     if(!r.ok) return null;
     const txt=await r.text();
     if(txt==='null'||!txt) return null;
-    const remote=JSON.parse(txt);
-    if(remote.totalGames>profile.totalGames){
-      profile=migrate(remote);
-      _localSave();
-      return 'restored';
-    }
-    return 'local_newer';
+    return JSON.parse(txt);
   }catch(e){return null}
 }
 
+async function syncProfileFromCloud(){
+  await ensureAid();
+  if(!profile.aid) return null;
+  const remote=await fetchProfileByAid(profile.aid);
+  if(!remote) return null;
+  if((remote.totalGames||0)>(profile.totalGames||0)){
+    profile=migrate(remote);
+    if(!profile.aid) await ensureAid();
+    _localSave();
+    return 'restored';
+  }
+  return 'local_newer';
+}
+
 async function pushProfileToCloud(){
-  if(!profile.name) return;
+  await ensureAid();
+  if(!profile.name||!profile.aid) return;
   try{
-    await fetch(API_BASE+'/profile/'+AID,{
+    await fetch(API_BASE+'/profile/'+profile.aid,{
       method:'PUT',
       headers:{'Content-Type':'application/json'},
-      body:JSON.stringify(profile)
+      body:JSON.stringify(profile),
+      keepalive:true
     });
   }catch(e){}
 }
 
 function getSyncLink(){
-  return window.location.origin+window.location.pathname+'?sync='+AID;
+  return profile.aid?(window.location.origin+window.location.pathname+'?sync='+profile.aid):'';
+}
+
+// Lien ?sync=AID entrant : importe le profil distant dans le dictionnaire
+// local (sans rien écraser de force, l'utilisateur confirme).
+function processIncomingSyncLink(){
+  const params=new URLSearchParams(window.location.search);
+  const incoming=params.get('sync');
+  if(!incoming||!/^[a-f0-9]{32}$/.test(incoming)) return;
+  window.history.replaceState({},'',window.location.pathname);
+  setTimeout(async()=>{
+    const remote=await fetchProfileByAid(incoming);
+    if(!remote||!remote.name){alert('Aucun profil trouvé pour ce lien.');return}
+    const dict=loadProfilesDict();
+    const exists=!!dict[remote.name];
+    if(!confirm((exists?'Mettre à jour':'Importer')+' le profil « '+remote.name+' » depuis l\'autre appareil ?')) return;
+    remote.aid=incoming;
+    dict[remote.name]=remote;
+    saveProfilesDict(dict);
+    setActiveName(remote.name);
+    profile=migrate(remote);
+    alert('✅ Profil « '+remote.name+' » '+(exists?'mis à jour':'importé')+' !');
+    navigate('home');
+  },150);
 }
 
 async function generateAIExercises(level,count){
@@ -432,6 +492,14 @@ saveProfile=function(){
   if(_syncTimer) clearTimeout(_syncTimer);
   _syncTimer=setTimeout(()=>pushProfileToCloud(),1000);
 };
+// Flush immédiat : pousse vers le cloud sans attendre le debounce. Sur mobile,
+// l'app peut être fermée/mise en arrière-plan avant la fin du debounce.
+function flushProfileSync(){
+  if(_syncTimer){clearTimeout(_syncTimer);_syncTimer=null;}
+  pushProfileToCloud();
+}
+document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='hidden')flushProfileSync();});
+window.addEventListener('pagehide',flushProfileSync);
 
 /* ════════ EMBERS ════════ */
 setInterval(()=>{
@@ -465,6 +533,7 @@ function render(){
     case 'royaume': renderRoyaume(); break;
     case 'parent': renderParent(); break;
     case 'nameAsk': renderNameAsk(); break;
+    case 'profilePicker': renderProfilePicker(); break;
     case 'collection': renderCollection(); break;
     case 'leconsHome': renderLecons(); break;
     case 'fichesHome': renderFichesHome(); break;
@@ -474,6 +543,7 @@ function render(){
     case 'poesieHome': renderPoesieHome(); break;
     case 'poesieFable': renderPoesieFable(); break;
   }
+  updateFooter();
 }
 
 /* ════════ STAGE DRAGONNET ════════ */
@@ -500,7 +570,10 @@ function checkDailyQuest(){
 
 /* ════════ HOME ════════ */
 function renderHome(){
-  if(!profile.name){navigate('nameAsk');return}
+  if(!profile.name){
+    navigate(Object.keys(loadProfilesDict()).length>0?'profilePicker':'nameAsk');
+    return;
+  }
   checkDailyQuest();
   // Total des XP de tous les royaumes
   const totalXp=Object.values(profile.royaumes||{}).reduce((s,r)=>s+(r.xp||0),0)+(profile.xp||0);
@@ -647,31 +720,130 @@ function renderLecons(){
 }
 
 function renderNameAsk(){
+  const hasProfiles=Object.keys(loadProfilesDict()).length>0;
   app.innerHTML=`<div class="card fade-in" style="margin-top:40px">
-    <h2 class="title" style="color:#fbbf24;font-size:1.3rem">Comment t'appelles-tu, aventuri\u00e8re ?</h2>
-    <p style="color:#faf5ff;margin-bottom:16px">Ton pr\u00e9nom sera affich\u00e9 dans ton Royaume.</p>
-    <input class="name-prompt" id="nameInp" placeholder="Ton pr\u00e9nom" maxlength="20" value="${profile.name||''}">
-    <button class="btn-fire" onclick="setName()">Entrer dans le Royaume \u2192</button>
+    <h2 class="title" style="color:#fbbf24;font-size:1.3rem">${hasProfiles?'Nouvel aventurier':"Comment t'appelles-tu ?"}</h2>
+    <p style="color:#faf5ff;margin-bottom:16px">Ton prénom sera affiché dans ton Royaume.</p>
+    <input class="name-prompt" id="nameInp" placeholder="Ton prénom" maxlength="20" value="${esc(profile.name||'')}">
+    <button class="btn-fire" onclick="setName()">Entrer dans le Royaume →</button>
+    ${hasProfiles?`<button class="btn-stone" style="width:100%;margin-top:12px" onclick="navigate('profilePicker')">← Choisir un profil existant</button>`:''}
   </div>`;
-  setTimeout(()=>$('nameInp').focus(),100);
+  setTimeout(()=>{const i=$('nameInp');if(i)i.focus();},100);
 }
 async function setName(){
-  const v=$('nameInp').value.trim();
-  if(v.length<1){alert('Entre ton pr\u00e9nom');return}
-  profile.name=v;
-  saveProfile();
+  // Nettoie le prénom : retire les caractères dangereux (protection XSS).
+  const v=$('nameInp').value.replace(/[<>"'&]/g,'').trim().slice(0,20);
+  if(v.length<1){alert('Entre ton prénom');return}
+  const aid=await aidFromName(v);
+  app.innerHTML='<div class="card text-center fade-in" style="margin-top:60px"><div class="big-icon">🔍</div><h2 class="title">Recherche de ton Royaume…</h2></div>';
+  const remote=await fetchProfileByAid(aid);
+  const dict=loadProfilesDict();
+  if(remote&&remote.name){
+    // Profil déjà présent dans le cloud (cet appareil ou un autre).
+    remote.aid=aid;
+    profile=migrate(remote);
+    dict[profile.name]=profile;
+    saveProfilesDict(dict);
+    setActiveName(profile.name);
+  }else if(dict[v]){
+    // Présent en local mais pas dans le cloud → on l'adopte et on le pousse.
+    profile=migrate(dict[v]);
+    profile.aid=aid;
+    saveProfile();
+  }else{
+    // Tout nouveau profil.
+    profile=newProfile();
+    profile.name=v;
+    profile.aid=aid;
+    saveProfile();
+  }
   navigate('home');
 }
 
-// Au démarrage : tenter de récupérer le profil depuis le cloud (cas: lien sync utilisé)
-(async function initialSync(){
-  await new Promise(r=>setTimeout(r,200)); // attendre que le DOM soit prêt
-  const result=await syncProfileFromCloud();
-  if(result==='restored'){
-    alert('🎉 Royaume récupéré ! '+profile.totalGames+' parties, '+profile.cristaux+' cristaux, '+(profile.aiExercises||[]).length+' exercices IA.');
-    if(state.screen==='home') render();
-  }
-})();
+/* ════════ SÉLECTEUR DE PROFIL (MULTI-UTILISATEUR) ════════ */
+function renderProfilePicker(){
+  const dict=loadProfilesDict();
+  const active=getActiveName();
+  const names=Object.keys(dict).sort((a,b)=>{
+    if(a===active) return -1;
+    if(b===active) return 1;
+    return (dict[b].totalGames||0)-(dict[a].totalGames||0);
+  });
+  const cards=names.map((n,i)=>{
+    const p=dict[n];
+    const xp=(p.xp||0)+Object.values(p.royaumes||{}).reduce((s,r)=>s+(r.xp||0),0);
+    return `<div class="card fade-in" style="animation-delay:${i*.06}s;cursor:pointer;border-color:#fbbf24" onclick="switchProfile('${esc(n)}')">
+      <div class="row">
+        <div style="font-size:2.4rem">🧙</div>
+        <div class="flex-1">
+          <h3 class="title" style="margin:0;font-size:1.15rem">${esc(n)}</h3>
+          <p class="sub">✨ ${xp} XP · 🎮 ${p.totalGames||0} parties</p>
+        </div>
+        <div class="arrow">→</div>
+      </div>
+    </div>`;
+  }).join('');
+  const delBtns=names.map(n=>`<button class="btn-stone btn-small" style="margin:4px" onclick="deleteProfile('${esc(n)}')">🗑️ ${esc(n)}</button>`).join('');
+  app.innerHTML=`<div class="text-center py-6 fade-in">
+    <div class="big-icon">👋</div>
+    <h2 class="title">Qui joue aujourd'hui ?</h2>
+    <p class="sub">Choisis ton profil ou crée-en un nouveau</p>
+  </div>
+  ${cards}
+  <div class="card fade-in" style="cursor:pointer;border-color:#34d399" onclick="addNewProfile()">
+    <div class="row">
+      <div style="font-size:2.4rem">➕</div>
+      <div class="flex-1"><h3 class="title" style="margin:0;font-size:1.1rem;color:#34d399">Nouvel aventurier</h3><p class="sub">Créer un nouveau profil</p></div>
+    </div>
+  </div>
+  ${names.length>0?`<details style="margin-top:24px"><summary style="color:var(--text-dim);font-size:.85rem;cursor:pointer;text-align:center">Supprimer un profil</summary><div style="margin-top:12px;text-align:center">${delBtns}</div></details>`:''}`;
+}
+
+async function switchProfile(name){
+  profile=loadProfileByName(name);
+  if(!profile.aid) profile.aid=await aidFromName(profile.name||name);
+  setActiveName(profile.name);
+  navigate('home');
+  // Sync cloud en arrière-plan : restaure si le cloud est plus avancé,
+  // sinon met le cloud à jour si la version locale est plus avancée.
+  setTimeout(async()=>{
+    const result=await syncProfileFromCloud();
+    if(result==='restored'){
+      _localSave();
+      if(state.screen==='home') render();
+    }else if(result==='local_newer'){
+      pushProfileToCloud();
+    }
+  },50);
+}
+
+function addNewProfile(){
+  profile=newProfile();
+  navigate('nameAsk');
+}
+
+function deleteProfile(name){
+  if(!confirm('Supprimer le profil « '+name+' » sur cet appareil ? Action définitive.')) return;
+  const dict=loadProfilesDict();
+  delete dict[name];
+  saveProfilesDict(dict);
+  if(getActiveName()===name) setActiveName('');
+  if(profile.name===name) profile=newProfile();
+  navigate(Object.keys(dict).length>0?'profilePicker':'nameAsk');
+}
+
+// Barre « changer d'utilisateur » en pied de page : visible dès qu'un profil
+// est actif, sauf sur les écrans de choix/création de profil.
+function updateFooter(){
+  const sw=$('userSwitch');
+  if(!sw) return;
+  const show=!!profile.name && state.screen!=='nameAsk' && state.screen!=='profilePicker';
+  sw.classList.toggle('hidden',!show);
+  if(show){const nm=$('footerUserName');if(nm)nm.textContent=profile.name;}
+}
+
+// Au démarrage : traiter un éventuel lien ?sync=AID entrant.
+processIncomingSyncLink();
 
 /* ════════ MODE SELECT ════════ */
 function renderMode(){
@@ -1178,9 +1350,13 @@ function exportData(){
 }
 function resetData(){
   if(confirm('R\u00e9initialiser TOUTES les donn\u00e9es de '+profile.name+' ? Irr\u00e9versible.')){
+    const dict=loadProfilesDict();
+    delete dict[profile.name];
+    saveProfilesDict(dict);
+    if(getActiveName()===profile.name) setActiveName('');
     localStorage.removeItem(STORAGE_KEY);
-    profile=loadProfile();
-    navigate('nameAsk');
+    profile=newProfile();
+    navigate('home');
   }
 }
 

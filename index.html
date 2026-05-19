@@ -577,6 +577,11 @@ footer{
   font-size:.7rem;color:var(--text-dim);font-family:'Fredoka',sans-serif;
   border-top:1px solid rgba(255,255,255,0.03);letter-spacing:.05em;
 }
+.user-switch{display:flex;align-items:center;justify-content:center;gap:10px;flex-wrap:wrap;margin-bottom:18px;padding-bottom:18px;border-bottom:1px solid rgba(255,255,255,0.06)}
+.user-switch-label{font-size:.9rem;color:var(--text-mid);font-weight:600;letter-spacing:.02em}
+.user-switch-label b{color:var(--gold)}
+.user-switch-btn{background:rgba(251,191,36,0.1);border:1px solid var(--border-glow);color:var(--gold);cursor:pointer;border-radius:9999px;padding:9px 18px;font-size:.85rem;font-family:'Fredoka',sans-serif;font-weight:600;transition:all .2s;min-height:42px;letter-spacing:.02em}
+.user-switch-btn:hover,.user-switch-btn:active{background:rgba(251,191,36,0.2);box-shadow:0 0 18px rgba(251,191,36,0.18)}
 
 /* ══ RESPONSIVE ══ */
 @media(max-width:480px){
@@ -629,7 +634,11 @@ footer{
 <div id="embers"></div>
 
 <footer>
-Maths &bull; Culture &bull; Sciences &bull; Langues &bull; Po&eacute;sie &bull; Informatique &bull; Art &bull; Logique &bull; G&eacute;ographie
+<div id="userSwitch" class="user-switch hidden">
+<span class="user-switch-label">&#128100; <b id="footerUserName"></b></span>
+<button class="user-switch-btn" onclick="navigate('profilePicker')">&#128260; Changer d'utilisateur</button>
+</div>
+<div>Maths &bull; Culture &bull; Sciences &bull; Langues &bull; Po&eacute;sie &bull; Informatique &bull; Art &bull; Logique &bull; G&eacute;ographie</div>
 </footer>
 
 <!-- Starfield generator -->
@@ -649,6 +658,6 @@ Maths &bull; Culture &bull; Sciences &bull; Langues &bull; Po&eacute;sie &bull; 
 </script>
 
 <script src="exercises.js?v=12"></script>
-<script src="game.js?v=14"></script>
+<script src="game.js?v=15"></script>
 </body>
 </html>
