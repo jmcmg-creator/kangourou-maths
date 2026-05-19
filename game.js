@@ -334,13 +334,16 @@ async function syncProfileFromCloud(){
 }
 
 // Push du profil ACTIF vers le cloud (utilise profile.aid).
+// `keepalive:true` permet à la requête d'aboutir même si l'utilisateur
+// ferme l'onglet juste après — sinon les derniers points seraient perdus.
 async function pushProfileToCloud(){
   if(!profile.name||!profile.aid) return;
   try{
     await fetch(API_BASE+'/profile/'+profile.aid,{
       method:'PUT',
       headers:{'Content-Type':'application/json'},
-      body:JSON.stringify(profile)
+      body:JSON.stringify(profile),
+      keepalive:true
     });
   }catch(e){}
 }
@@ -442,6 +445,18 @@ saveProfile=function(){
   if(_syncTimer) clearTimeout(_syncTimer);
   _syncTimer=setTimeout(()=>pushProfileToCloud(),1000);
 };
+
+// Flush immédiat : pousse le profil vers le cloud SANS attendre le debounce.
+// Indispensable quand l'app se ferme ou passe en arrière-plan (sur mobile
+// surtout), sinon les derniers points joués ne sont jamais synchronisés.
+function flushProfileSync(){
+  if(_syncTimer){clearTimeout(_syncTimer);_syncTimer=null;}
+  pushProfileToCloud();
+}
+document.addEventListener('visibilitychange',()=>{
+  if(document.visibilityState==='hidden') flushProfileSync();
+});
+window.addEventListener('pagehide',flushProfileSync);
 
 /* ════════ EMBERS ════════ */
 setInterval(()=>{
@@ -697,14 +712,18 @@ async function switchProfile(name){
   if(!profile.aid) profile.aid=await aidFromName(profile.name||name);
   setActiveName(name);
   navigate('home');
-  // Pull cloud en arrière-plan : si la version distante a plus de parties,
-  // on remplace localement et on rerend l\u0027écran.
+  // Sync cloud en arrière-plan :
+  //  - version distante plus avancée -> on restaure localement et on rerend ;
+  //  - version LOCALE plus avancée -> on met le cloud a jour (cas du navigateur
+  //    d'origine dont les points n'avaient pas encore ete pousses).
   setTimeout(async()=>{
     if(!profile.aid) return;
     const result=await syncProfileFromCloud();
     if(result==='restored'){
       _localSave();
       if(state.screen==='home') render();
+    }else if(result==='local_newer'){
+      pushProfileToCloud();
     }
   },50);
 }
