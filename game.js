@@ -22,7 +22,7 @@ const SUBJECTS=[
       {id:"emc-cm1",name:"EMC",sub:"CM1 \u2014 D\u00e9mocratie",icon:"\u{1F396}\uFE0F",color:"#a78bfa"},
       {id:"emc-cm2",name:"EMC",sub:"CM2 \u2014 Institutions",icon:"\u{1F3DB}\uFE0F",color:"#a78bfa"}
     ]},
-  {id:"poesie",name:"Po\u00e9sies La Fontaine",icon:"\u{1F4DC}",color:"#a78bfa",desc:"\u00c9coute, r\u00e9cite \u00e0 voix haute (avec micro)",isPoetry:true},
+  {id:"poesie",name:"Po\u00e9sies",icon:"\u{1F4DC}",color:"#a78bfa",desc:"\u00c9coute, r\u00e9cite \u00e0 voix haute (avec micro)",isPoetry:true},
   {id:"langues",name:"Langues",icon:"\u{1F310}",color:"#10b981",desc:"H\u00e9breu (alphabet, vocabulaire, lecture)",
     levels:[
       {id:"hebreu-alphabet",name:"H\u00e9breu",sub:"Alphabet (\u05D0\u05D1\u05D2)",icon:"\u{1F524}",color:"#0ea5e9"},
@@ -1362,30 +1362,32 @@ function resetData(){
 
 /* ════════ POÉSIES LA FONTAINE ════════ */
 const FABLES=[
-  {id:"corbeau-renard",title:"Le Corbeau et le Renard",icon:"\u{1F98A}",dur:75,
+  {id:"corbeau-renard",title:"Le Corbeau et le Renard",icon:"\u{1F98A}",dur:75,author:"Jean de La Fontaine",
     text:"Maître Corbeau, sur un arbre perché, tenait en son bec un fromage. Maître Renard, par l'odeur alléché, lui tint à peu près ce langage : \"Hé ! bonjour, Monsieur du Corbeau. Que vous êtes joli ! que vous me semblez beau ! Sans mentir, si votre ramage se rapporte à votre plumage, vous êtes le Phénix des hôtes de ces bois.\" À ces mots le Corbeau ne se sent pas de joie ; et pour montrer sa belle voix, il ouvre un large bec, laisse tomber sa proie. Le Renard s'en saisit, et dit : \"Mon bon Monsieur, apprenez que tout flatteur vit aux dépens de celui qui l'écoute.\"",
     morale:"Tout flatteur vit aux dépens de celui qui l'écoute."},
-  {id:"lievre-tortue",title:"Le Lièvre et la Tortue",icon:"\u{1F422}",dur:60,
+  {id:"lievre-tortue",title:"Le Lièvre et la Tortue",icon:"\u{1F422}",dur:60,author:"Jean de La Fontaine",
     text:"Rien ne sert de courir ; il faut partir à point. Le Lièvre et la Tortue en sont un témoignage. Gageons, dit celle-ci, que vous n'atteindrez point sitôt que moi ce but. Sitôt ? Êtes-vous sage ? répartit l'animal léger. La Tortue partit. Elle s'évertue, elle se hâte avec lenteur. Le Lièvre cependant méprise une telle victoire, tient la gageure à peu de gloire. Quand il voit que l'autre touche presque au bout de la carrière, il partit comme un trait ; mais les élans qu'il fit furent vains : la Tortue arriva la première.",
     morale:"Rien ne sert de courir ; il faut partir à point."},
-  {id:"cigale-fourmi",title:"La Cigale et la Fourmi",icon:"\u{1F41C}",dur:55,
+  {id:"cigale-fourmi",title:"La Cigale et la Fourmi",icon:"\u{1F41C}",dur:55,author:"Jean de La Fontaine",
     text:"La Cigale, ayant chanté tout l'été, se trouva fort dépourvue quand la bise fut venue : pas un seul petit morceau de mouche ou de vermisseau. Elle alla crier famine chez la Fourmi sa voisine, la priant de lui prêter quelque grain pour subsister jusqu'à la saison nouvelle. La Fourmi n'est pas prêteuse : c'est là son moindre défaut. \"Que faisiez-vous au temps chaud ? dit-elle à cette emprunteuse. Nuit et jour à tout venant je chantais, ne vous déplaise. Vous chantiez ? j'en suis fort aise. Eh bien ! dansez maintenant.\"",
     morale:"Il faut prévoir le futur, pas seulement profiter du présent."},
-  {id:"loup-agneau",title:"Le Loup et l'Agneau",icon:"\u{1F40F}",dur:60,
+  {id:"loup-agneau",title:"Le Loup et l'Agneau",icon:"\u{1F40F}",dur:60,author:"Jean de La Fontaine",
     text:"La raison du plus fort est toujours la meilleure. Un Agneau se désaltérait dans le courant d'une onde pure. Un Loup survient à jeun qui cherchait aventure, et que la faim en ces lieux attirait. \"Qui te rend si hardi de troubler mon breuvage ? dit cet animal plein de rage. Tu seras châtié de ta témérité.\" \"Sire, répond l'Agneau, que Votre Majesté ne se mette pas en colère ; mais plutôt qu'elle considère que je me vas désaltérant dans le courant, plus de vingt pas au-dessous d'Elle.\" Là-dessus, au fond des forêts le Loup l'emporte, et puis le mange, sans autre forme de procès.",
     morale:"La raison du plus fort est toujours la meilleure."},
-  {id:"grenouille-boeuf",title:"La Grenouille qui se veut faire aussi grosse que le Bœuf",icon:"\u{1F438}",dur:50,
+  {id:"grenouille-boeuf",title:"La Grenouille qui se veut faire aussi grosse que le Bœuf",icon:"\u{1F438}",dur:50,author:"Jean de La Fontaine",
     text:"Une Grenouille vit un Bœuf qui lui sembla de belle taille. Elle, qui n'était pas grosse en tout comme un œuf, envieuse, s'étend, et s'enfle, et se travaille pour égaler l'animal en grosseur, disant : \"Regardez bien, ma sœur ; est-ce assez ? dites-moi ; n'y suis-je point encore ? Nenni. M'y voici donc ? Point du tout. M'y voilà ? Vous n'en approchez point.\" La chétive pécore s'enfla si bien qu'elle creva.",
     morale:"Le monde est plein de gens qui ne sont pas plus sages : tout petit prince a des ambassadeurs."},
-  {id:"renard-raisins",title:"Le Renard et les Raisins",icon:"\u{1F347}",dur:35,
+  {id:"renard-raisins",title:"Le Renard et les Raisins",icon:"\u{1F347}",dur:35,author:"Jean de La Fontaine",
     text:"Certain Renard Gascon, d'autres disent Normand, mourant presque de faim, vit au haut d'une treille des Raisins mûrs apparemment, et couverts d'une peau vermeille. Le galand en eût fait volontiers un repas ; mais comme il n'y pouvait atteindre : \"Ils sont trop verts, dit-il, et bons pour des goujats.\" Fit-il pas mieux que de se plaindre ?",
     morale:"On méprise ce qu'on ne peut obtenir."},
-  {id:"chene-roseau",title:"Le Chêne et le Roseau",icon:"\u{1F33F}",dur:65,
+  {id:"chene-roseau",title:"Le Chêne et le Roseau",icon:"\u{1F33F}",dur:65,author:"Jean de La Fontaine",
     text:"Le Chêne un jour dit au Roseau : \"Vous avez bien sujet d'accuser la nature ; un roitelet pour vous est un pesant fardeau ; le moindre vent qui d'aventure fait rider la face de l'eau, vous oblige à baisser la tête.\" Le vent redouble ses efforts, et fait si bien qu'il déracine celui de qui la tête au ciel était voisine, et dont les pieds touchaient à l'empire des morts.",
     morale:"Plier sait mieux résister que rester rigide."},
-  {id:"lion-rat",title:"Le Lion et le Rat",icon:"\u{1F981}",dur:55,
+  {id:"lion-rat",title:"Le Lion et le Rat",icon:"\u{1F981}",dur:55,author:"Jean de La Fontaine",
     text:"Il faut, autant qu'on peut, obliger tout le monde : on a souvent besoin d'un plus petit que soi. De cette vérité deux fables feront foi. Entre les pattes d'un Lion un Rat sortit assez à l'étourdie. Le Roi des animaux, en cette occasion, montra ce qu'il était, et lui donna la vie. Quelque temps après, ce Lion fut pris dans des rets, dont ses rugissements ne le purent défaire. Sire Rat accourut, et fit tant par ses dents qu'une maille rongée emporta tout l'ouvrage.",
-    morale:"Patience et longueur de temps font plus que force ni que rage."}
+    morale:"Patience et longueur de temps font plus que force ni que rage."},
+  {id:"schneider-tu-dis",title:"Tu dis... Tu dis...",author:"J.-P. Schneider",icon:"\u{1FAB6}",dur:40,
+    text:"Tu dis sable<br>et déjà<br>la mer est à tes pieds.<br>Tu dis forêt<br>et déjà<br>les arbres te tendent leurs bras.<br>Tu dis colline<br>et déjà<br>le sentier court avec toi vers le sommet.<br>Tu dis nuage<br>et déjà<br>un cumulus t'offre la promesse du voyage.<br>Tu dis poème<br>Et déjà<br>les mots volent et dansent<br>comme étincelles dans la cheminée."}
 ];
 
 function speakText(text){
@@ -1435,7 +1437,7 @@ function compareTexts(orig,spoken){
 function renderPoesieHome(){
   app.innerHTML=`<div class="text-center py-6 fade-in">
     <div style="font-size:3.5rem">\u{1F4DC}</div>
-    <h2 class="title" style="color:#a78bfa;font-size:1.6rem">Poésies La Fontaine</h2>
+    <h2 class="title" style="color:#a78bfa;font-size:1.6rem">Poésies</h2>
     <p class="sub">Écoute, lis, récite à voix haute</p>
   </div>
   ${FABLES.map((f,i)=>{
@@ -1447,7 +1449,7 @@ function renderPoesieHome(){
         <div style="font-size:2.2rem">${f.icon}</div>
         <div class="flex-1">
           <h3 class="card-title" style="color:#5b21b6">${f.title}</h3>
-          <p class="sub">${f.dur}s à lire ${star?' \u2014 '+star:''}</p>
+          <p class="sub">${f.author?f.author+' · ':''}${f.dur}s à lire ${star?' \u2014 '+star:''}</p>
         </div>
         <div class="arrow">\u2192</div>
       </div>
@@ -1463,12 +1465,12 @@ function renderPoesieFable(){
   app.innerHTML=`<div class="text-center py-4 fade-in">
     <div style="font-size:3rem">${f.icon}</div>
     <h2 class="title" style="color:#5b21b6">${f.title}</h2>
-    <p class="sub">de Jean de La Fontaine</p>
+    <p class="sub">${f.author?'de '+f.author:''}</p>
   </div>
   <div class="card mb-4" style="border-color:#c4b5fd">
     <div style="font-style:italic;color:#faf5ff;line-height:1.7;font-size:1.05rem;font-weight:500" id="fableText">${f.text}</div>
-    <div class="divider"></div>
-    <div style="background:rgba(251,191,36,0.08);padding:10px 14px;border-radius:10px;border-left:3px solid rgba(251,191,36,0.5);color:#fbbf24;font-weight:600">\u{1F4A1} Morale : <em>${f.morale}</em></div>
+    ${f.morale?`<div class="divider"></div>
+    <div style="background:rgba(251,191,36,0.08);padding:10px 14px;border-radius:10px;border-left:3px solid rgba(251,191,36,0.5);color:#fbbf24;font-weight:600">\u{1F4A1} Morale : <em>${f.morale}</em></div>`:''}
   </div>
   <div class="card mb-4" style="border-color:#a78bfa">
     <h3 class="card-title" style="color:#5b21b6;margin-bottom:12px">\u{1F3A7} Écoute la fable</h3>
