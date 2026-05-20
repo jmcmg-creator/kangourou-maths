@@ -1390,14 +1390,65 @@ const FABLES=[
     text:"Tu dis sable<br>et déjà<br>la mer est à tes pieds.<br>Tu dis forêt<br>et déjà<br>les arbres te tendent leurs bras.<br>Tu dis colline<br>et déjà<br>le sentier court avec toi vers le sommet.<br>Tu dis nuage<br>et déjà<br>un cumulus t'offre la promesse du voyage.<br>Tu dis poème<br>Et déjà<br>les mots volent et dansent<br>comme étincelles dans la cheminée."}
 ];
 
+// Retire les balises HTML avant lecture/comparaison (les poèmes ont des <br>).
+function stripHtmlText(t){return String(t).replace(/<br\s*\/?>/gi,'\n').replace(/<[^>]+>/g,'')}
+
+// Choisit la meilleure voix française disponible sur le navigateur/OS courant.
+function _pickFrenchVoice(){
+  if(!('speechSynthesis' in window)) return null;
+  const all=speechSynthesis.getVoices()||[];
+  const fr=all.filter(v=>/^fr/i.test(v.lang));
+  if(!fr.length) return null;
+  // Préférences (les voix les plus naturelles sur iOS / macOS / Android)
+  const prefs=['Thomas','Aurélie','Audrey','Marie','Daniel','Amelie','Amélie','Google français'];
+  for(const p of prefs){const v=fr.find(x=>x.name.includes(p));if(v) return v;}
+  // À défaut : la première voix locale (souvent meilleure que les voix réseau).
+  return fr.find(v=>v.localService)||fr[0];
+}
+
 function speakText(text){
   if(!('speechSynthesis' in window)){alert('Synthèse vocale non disponible sur ce navigateur');return}
   speechSynthesis.cancel();
-  const u=new SpeechSynthesisUtterance(text);
-  u.lang='fr-FR';u.rate=0.85;u.pitch=1;
+  const u=new SpeechSynthesisUtterance(stripHtmlText(text));
+  u.lang='fr-FR';
+  u.rate=0.82;     // un peu plus lent pour la poésie
+  u.pitch=1.05;    // légèrement plus chaleureux
+  const v=_pickFrenchVoice();
+  if(v) u.voice=v;
   speechSynthesis.speak(u);
 }
 function stopSpeaking(){if('speechSynthesis' in window)speechSynthesis.cancel()}
+
+// Lecteur audio unifié : MP3 studio si disponible (f.audioUrl), sinon
+// synthèse vocale du navigateur. Géré via un singleton <audio>.
+let _poesieAudio=null;
+function playPoesie(){
+  const f=FABLES.find(x=>x.id===state.fableId);
+  if(!f) return;
+  stopPoesie();
+  const btn=$('playBtn');
+  if(f.audioUrl){
+    _poesieAudio=new Audio(f.audioUrl);
+    _poesieAudio.preload='auto';
+    _poesieAudio.addEventListener('ended',()=>{_poesieAudio=null;if(btn)btn.textContent='▶️ Écouter';});
+    _poesieAudio.addEventListener('error',()=>{
+      _poesieAudio=null;
+      if(btn)btn.textContent='▶️ Écouter';
+      // Bascule sur la synthèse vocale si le MP3 ne se charge pas.
+      speakText(stripHtmlText(f.text));
+    });
+    _poesieAudio.play().catch(()=>speakText(stripHtmlText(f.text)));
+    if(btn)btn.textContent='⏸ Pause';
+  }else{
+    speakText(stripHtmlText(f.text));
+    if(btn)btn.textContent='⏸ En lecture…';
+  }
+}
+function stopPoesie(){
+  if(_poesieAudio){try{_poesieAudio.pause()}catch(e){};_poesieAudio=null;}
+  stopSpeaking();
+  const btn=$('playBtn');if(btn)btn.textContent='▶️ Écouter';
+}
 
 let _recognition=null;
 function startRecording(onResult,onEnd){
@@ -1425,7 +1476,7 @@ function startRecording(onResult,onEnd){
 function stopRecording(){if(_recognition){_recognition.stop();_recognition=null}}
 
 function compareTexts(orig,spoken){
-  const norm=s=>s.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^\w\s]/g,' ').replace(/\s+/g,' ').trim();
+  const norm=s=>s.toLowerCase().replace(/<br\s*\/?>/gi,' ').replace(/<[^>]+>/g,'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^\w\s]/g,' ').replace(/\s+/g,' ').trim();
   const o=norm(orig).split(' ');
   const s=norm(spoken).split(' ');
   const sSet=new Set(s);
@@ -1473,11 +1524,11 @@ function renderPoesieFable(){
     <div style="background:rgba(251,191,36,0.08);padding:10px 14px;border-radius:10px;border-left:3px solid rgba(251,191,36,0.5);color:#fbbf24;font-weight:600">\u{1F4A1} Morale : <em>${f.morale}</em></div>`:''}
   </div>
   <div class="card mb-4" style="border-color:#a78bfa">
-    <h3 class="card-title" style="color:#5b21b6;margin-bottom:12px">\u{1F3A7} Écoute la fable</h3>
-    <p class="sub mb-2">Le Sage va te lire la fable lentement.</p>
+    <h3 class="card-title" style="color:#5b21b6;margin-bottom:6px">\u{1F3A7} Écoute</h3>
+    <p class="sub mb-2">${f.audioUrl?'\u{1F3A4} Lecture studio (voix expressive d\'un conteur).':'\u{1F916} Voix de synthèse du navigateur (intonation limitée).'}</p>
     <div class="btn-row">
-      <button class="btn-fire" onclick="speakText(document.getElementById('fableText').innerText)">\u25B6\uFE0F Écouter</button>
-      <button class="btn-stone" onclick="stopSpeaking()">\u23F9\uFE0F Stop</button>
+      <button class="btn-fire" id="playBtn" onclick="playPoesie()">\u25B6\uFE0F Écouter</button>
+      <button class="btn-stone" onclick="stopPoesie()">\u23F9\uFE0F Stop</button>
     </div>
   </div>
   <div class="card mb-4" style="border-color:#22c55e">

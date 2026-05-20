@@ -32,9 +32,15 @@ if (!KEY) {
   process.exit(1);
 }
 
-const MODEL = process.env.TTS_MODEL || 'tts-1-hd';
-const VOICE = process.env.TTS_VOICE || 'nova';
+// gpt-4o-mini-tts comprend des instructions de style et donne une lecture
+// nettement plus expressive que tts-1-hd. Voix « fable » = conteur.
+const MODEL = process.env.TTS_MODEL || 'gpt-4o-mini-tts';
+const VOICE = process.env.TTS_VOICE || 'fable';
 const FORCE = process.env.FORCE === '1';
+const INSTRUCTIONS = process.env.TTS_INSTRUCTIONS || "Lis ce texte en français comme un conteur professionnel pour enfants de 7 à 11 ans : avec émotion et intonation marquée, en variant le ton et le rythme, en faisant des pauses entre les vers et après les virgules, et en donnant vie aux personnages quand ils parlent. Articule clairement. Garde un ton chaleureux et bienveillant.";
+
+// Retire les balises HTML (ex. <br>) avant d'envoyer le texte à TTS.
+function stripHtml(t){return String(t).replace(/<br\s*\/?>/gi,'\n').replace(/<[^>]+>/g,'').replace(/\s+\n/g,'\n').trim();}
 
 if (!existsSync(AUDIO_DIR)) mkdirSync(AUDIO_DIR, { recursive: true });
 
@@ -57,10 +63,14 @@ for (const f of fables) {
     console.log(`⏭  ${f.id}: déjà présent (skip).`);
   } else {
     console.log(`🎙  ${f.id}: génération...`);
+    const cleanText = stripHtml(f.text);
+    const body = { model: MODEL, voice: VOICE, input: cleanText, response_format: 'mp3' };
+    // L'API instructions n'est supportée que par gpt-4o*-tts.
+    if (MODEL.startsWith('gpt-4o')) body.instructions = INSTRUCTIONS;
     const r = await fetch('https://api.openai.com/v1/audio/speech', {
       method: 'POST',
       headers: { 'Authorization': `Bearer ${KEY}`, 'Content-Type': 'application/json' },
-      body: JSON.stringify({ model: MODEL, voice: VOICE, input: f.text, response_format: 'mp3' })
+      body: JSON.stringify(body)
     });
     if (!r.ok) {
       const err = await r.text();
