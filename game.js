@@ -483,7 +483,40 @@ function render(){
     case 'fichesView': renderFichesView(); break;
     case 'poesieHome': renderPoesieHome(); break;
     case 'poesieFable': renderPoesieFable(); break;
+    case 'themePicker': renderThemePicker(); break;
   }
+  // Réapplique le thème actif à chaque render (le body n'est pas refait
+  // mais on garantit que les variables CSS et le dégradé sont à jour).
+  if(typeof applyThemeStyles==='function') applyThemeStyles();
+}
+
+/* ════════ THEME PICKER ════════ */
+function renderThemePicker(){
+  const cur=(profile&&profile.theme)||localStorage.getItem('royaume_theme')||'dragons';
+  app.innerHTML=`<div class="text-center py-4 fade-in">
+    <div style="font-size:3rem">\u{1F3A8}</div>
+    <h2 class="title" style="font-size:1.6rem">Choisis ton thème</h2>
+    <p class="sub">Toute l'app change d'ambiance — exercices compris.</p>
+  </div>
+  ${Object.values(THEMES).map((t,i)=>{
+    const active=t.id===cur;
+    return `<div class="card clickable fade-in" style="animation-delay:${i*.06}s;border-color:${t.palette.primary};background:${t.palette.bgGradient};${active?'box-shadow:0 0 0 3px '+t.palette.primary:''}" onclick="pickTheme('${t.id}')">
+      <div class="row" style="gap:16px">
+        <div style="font-size:3rem;flex-shrink:0">${t.icon}</div>
+        <div class="flex-1">
+          <h3 class="card-title" style="color:${t.palette.headerColor}">${esc(t.name)}</h3>
+          <p class="sub" style="color:#475569">${esc(t.desc)}</p>
+          ${active?`<p class="sub" style="color:${t.palette.primary};font-weight:700;margin-top:4px">✓ Thème actif</p>`:''}
+        </div>
+      </div>
+    </div>`;
+  }).join('')}
+  <button class="btn-stone mt-4" onclick="navigate('home')">← Retour</button>`;
+}
+
+function pickTheme(id){
+  setActiveTheme(id);
+  navigate('home');
 }
 
 /* ════════ STAGE DRAGONNET ════════ */
@@ -580,7 +613,8 @@ function renderHome(){
       <button class="btn-stone" onclick="navigate('royaume')">\u2728 Vue d'ensemble</button>
       <button class="btn-stone" onclick="navigate('parent')">\u{1F464} Espace Parent</button>
     </div>
-    <button class="btn-stone mt-3" style="width:100%;font-size:.85rem" onclick="navigate('profilePicker')">\u{1F504} Changer d'utilisateur</button>
+    <button class="btn-stone mt-3" style="width:100%;font-size:.85rem" onclick="navigate('themePicker')">\u{1F3A8} Choisir un th\u00e8me (${esc(getActiveTheme().name)})</button>
+    <button class="btn-stone mt-2" style="width:100%;font-size:.85rem" onclick="navigate('profilePicker')">\u{1F504} Changer d'utilisateur</button>
     <button class="btn-stone mt-2" style="width:100%;font-size:.85rem" onclick="shareSyncLink()">\u{1F517} Synchroniser sur un autre appareil</button>
   `;
 }
@@ -803,8 +837,11 @@ async function startGame(mode){
 
 /* ════════ GAME SCREEN ════════ */
 function renderGame(){
-  const ex=state.exercises[state.idx];
-  if(!ex) return finishGame();
+  const rawEx=state.exercises[state.idx];
+  if(!rawEx) return finishGame();
+  // Re-habille le texte/choix selon le thème actif (la donnée originale
+  // n'est jamais mutée — themeExercise renvoie un clone).
+  const ex=typeof themeExercise==='function'?themeExercise(rawEx):rawEx;
   const total=state.exercises.length;
   const pct=(state.idx/total)*100;
   const lv=LEVELS.find(l=>l.id===ex.lv);
@@ -933,6 +970,8 @@ function gradeOralAnswer(spokenText){
 function showExplanation(ex,correct){
   const el=$('explanation');
   if(!el) return;
+  // Ré-habille aussi la correction selon le thème actif.
+  if(typeof themeExercise==='function') ex=themeExercise(ex);
   const methodeHTML=(ex.methode||[]).map(m=>`<div class="pedago-step">${esc(m)}</div>`).join('');
   const gainHTML=correct?`<span class="xp-gain">+${Math.round(ex.diff*10*(state.streak>=10?3:state.streak>=5?2:state.streak>=3?1.5:1))} XP</span> <span class="crystal-gain">\u{1F48E} +${ex.diff*2}</span>`:'';
   el.innerHTML=`<div class="card fade-in mt-6">
@@ -1487,7 +1526,9 @@ function renderPoesieFable(){
   <div class="card mb-4" style="border-color:#22c55e">
     <h3 class="card-title" style="color:#15803d;margin-bottom:12px">\u{1F3A4} À toi de réciter !</h3>
     <p class="sub mb-2">Clique sur le micro et récite la fable. L'app va comparer ce que tu dis au texte.</p>
+    <div id="reEngineWrap" style="margin-bottom:10px"></div>
     <button class="btn-fire" id="recBtn" onclick="togglePoesieRec()">\u{1F534} Démarrer le micro</button>
+    <div id="whisperProgress" style="margin-top:10px;font-size:.82rem;color:#5b21b6;display:none"></div>
     <div id="recLive" style="margin-top:14px;padding:12px;background:#f0fdf4;border-radius:10px;border:1px solid #86efac;min-height:60px;color:#14532d;font-style:italic;display:none"></div>
     <div id="recResult"></div>
   </div>
@@ -1700,6 +1741,141 @@ function renderFichesView(){
     <button class="btn-stone" onclick="loadFiche(state.ficheTopic.id,state.ficheTopic.title)">\u{1F504} R\u00e9g\u00e9n\u00e9rer</button>
     <button class="btn-stone" onclick="navigate('fichesTopics')">\u2190 Autres th\u00e8mes</button>
   </div>`;
+}
+
+/* \u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550 WHISPER + S\u00c9LECTEUR DE MOTEUR DE RECONNAISSANCE \u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550
+   Surcharge togglePoesieRec pour brancher Whisper (transformers.js) avec
+   Web Speech en repli. D\u00e9claration en fin de fichier : par hoisting,
+   cette version remplace la d\u00e9finition pr\u00e9c\u00e9dente.
+*/
+function getRecoEngine(){
+  try{return localStorage.getItem('royaume_reco_engine')||'whisper'}catch(e){return 'whisper'}
+}
+function setRecoEngine(v){
+  try{localStorage.setItem('royaume_reco_engine',v)}catch(e){}
+  populateRecoEnginePicker();
+}
+function populateRecoEnginePicker(){
+  const wrap=document.getElementById('reEngineWrap');
+  if(!wrap) return;
+  const cur=getRecoEngine();
+  const whisperOk=window.Whisper&&window.Whisper.isAvailable();
+  const wBg=cur==='whisper'?'background:linear-gradient(135deg,#a78bfa,#7c3aed);color:#fff;border-color:#7c3aed':'';
+  const sBg=cur==='webspeech'?'background:linear-gradient(135deg,#7dd3fc,#0ea5e9);color:#fff;border-color:#0ea5e9':'';
+  const hint=cur==='whisper'?'\u{1F512} 100% sur ton appareil. 1\u02b3\u1d49 utilisation : ~40 Mo t\u00e9l\u00e9charg\u00e9s.':'Reconnaissance navigateur \u2014 rapide mais moins pr\u00e9cise.';
+  wrap.innerHTML='<label style="font-size:.8rem;color:#475569;display:block;margin-bottom:4px">Moteur de reconnaissance :</label>'
+    +'<div class="btn-row" style="gap:8px">'
+      +'<button class="btn-stone" style="flex:1;'+wBg+'" onclick="setRecoEngine(\'whisper\')" '+(whisperOk?'':'disabled')+'>\u{1F9E0} Whisper IA'+(whisperOk?'':' (indispo)')+'</button>'
+      +'<button class="btn-stone" style="flex:1;'+sBg+'" onclick="setRecoEngine(\'webspeech\')">\u26a1 Standard</button>'
+    +'</div>'
+    +'<p class="sub" style="font-size:.7rem;margin-top:4px;color:#64748b">'+hint+'</p>';
+}
+
+window.addEventListener('whisper:progress',function(e){
+  const wrap=document.getElementById('whisperProgress');
+  if(!wrap) return;
+  const d=e.detail||{};
+  wrap.style.display='block';
+  const labels={
+    'loading-lib':'\u2699\ufe0f Chargement du moteur Whisper\u2026',
+    'downloading-model':'\u2b07\ufe0f T\u00e9l\u00e9chargement du mod\u00e8le ('+Math.round(d.pct||0)+'%)',
+    'decoding-audio':'\u{1F3B5} Analyse de l\'audio\u2026',
+    'transcribing':'\u{1F9E0} Whisper transcrit\u2026',
+    'ready':'\u2705 Whisper pr\u00eat',
+    'done':''
+  };
+  wrap.textContent=labels[d.stage]||d.stage||'';
+  if(d.stage==='done'){setTimeout(function(){if(wrap)wrap.style.display='none'},800)}
+});
+
+// \u00c9tend render pour rafra\u00eechir le s\u00e9lecteur de moteur + prefetch Whisper.
+const _prevRender=render;
+render=function(){
+  _prevRender();
+  if(state.screen==='poesieFable'){
+    setTimeout(populateRecoEnginePicker,60);
+    if(window.Whisper) try{window.Whisper.prefetch()}catch(e){}
+  }
+};
+
+window._poesieWhisperSession=null;
+function togglePoesieRec(){
+  const btn=document.getElementById('recBtn');
+  const live=document.getElementById('recLive');
+  const res=document.getElementById('recResult');
+  if(!btn||!live||!res) return;
+  if(window._poesieRecording){
+    if(window._poesieWhisperSession){
+      try{window._poesieWhisperSession.stop()}catch(e){}
+      window._poesieWhisperSession=null;
+      btn.textContent='\u23f3 Whisper transcrit\u2026';
+      btn.disabled=true;
+    }else{
+      stopRecording();
+      window._poesieRecording=false;
+      btn.textContent='\u{1F534} D\u00e9marrer le micro';
+      btn.classList.remove('pulse');
+    }
+    return;
+  }
+  const f=FABLES.find(x=>x.id===state.fableId);
+  if(!f) return;
+  res.innerHTML='';
+  live.style.display='block';
+  live.textContent='\u{1F3A4} J\'\u00e9coute...';
+  btn.textContent='\u23f9\ufe0f Arr\u00eater';
+  btn.classList.add('pulse');
+  window._poesieRecording=true;
+
+  const onFinal=function(finalTxt){
+    window._poesieRecording=false;
+    window._poesieWhisperSession=null;
+    btn.disabled=false;
+    btn.textContent='\u{1F504} Recommencer';
+    btn.classList.remove('pulse');
+    const wp=document.getElementById('whisperProgress');if(wp)wp.style.display='none';
+    if(!finalTxt||String(finalTxt).trim().length<5){res.innerHTML='<p style="color:#0c4a6e;margin-top:10px">Pas de voix d\u00e9tect\u00e9e. R\u00e9essaie !</p>';return}
+    live.textContent=finalTxt;
+    const cmp=compareTexts(f.text,finalTxt);
+    if(!profile.poesieStats) profile.poesieStats={};
+    const s=profile.poesieStats[f.id]||{plays:0,best:0};
+    s.plays++; if(cmp.score>s.best) s.best=cmp.score;
+    profile.poesieStats[f.id]=s;
+    const xpGain=Math.round(cmp.score/2);
+    profile.xp=(profile.xp||0)+xpGain;
+    saveProfile();
+    const wordsHTML=cmp.result.map(function(x){return '<span style="color:'+(x.ok?'#15803d':'#9c6f3a')+';'+(x.ok?'':'text-decoration:underline wavy #ef4444')+';margin:0 2px">'+x.w+'</span>'}).join('');
+    const bg=cmp.score>=70?'#dcfce7':cmp.score>=40?'#fef3c7':'#fee2e2';
+    const bc=cmp.score>=70?'#22c55e':cmp.score>=40?'#fbbf24':'#ef4444';
+    const heading=cmp.score>=80?'\u{1F389} Excellent !':cmp.score>=60?'\u{1F44D} Bien jou\u00e9 !':cmp.score>=40?'\u{1F4AA} Continue !':'\u{1F4DA} R\u00e9\u00e9coute et retente';
+    res.innerHTML='<div class="divider"></div>'
+      +'<div class="card" style="background:'+bg+';border-color:'+bc+'">'
+        +'<h3 class="card-title">'+heading+'</h3>'
+        +'<p style="font-size:1.4rem;font-weight:700;color:#0c4a6e;margin:8px 0">'+cmp.score+'% \u2014 '+cmp.matched+'/'+cmp.total+' mots</p>'
+        +'<p class="sub">+'+xpGain+' XP gagn\u00e9s \u2728</p>'
+        +'<div class="divider"></div>'
+        +'<p class="sub mb-2">Mots reconnus (en vert) :</p>'
+        +'<div style="font-size:.95rem;line-height:1.7">'+wordsHTML+'</div>'
+      +'</div>';
+  };
+
+  const engine=getRecoEngine();
+  const whisperOk=window.Whisper&&window.Whisper.isAvailable();
+  if(engine==='whisper'&&whisperOk){
+    Promise.resolve(window.Whisper.start(onFinal,function(err){
+      console.warn('Whisper a \u00e9chou\u00e9, repli Web Speech :',err);
+      window._poesieWhisperSession=null;
+      startRecording(
+        function(txt){live.textContent=txt||'\u{1F3A4} Parle...'},
+        onFinal
+      );
+    })).then(function(session){window._poesieWhisperSession=session});
+  }else{
+    startRecording(
+      function(txt){live.textContent=txt||'\u{1F3A4} Parle...'},
+      onFinal
+    );
+  }
 }
 
 render();
