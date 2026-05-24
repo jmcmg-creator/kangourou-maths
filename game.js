@@ -542,6 +542,7 @@ function render(){
     case 'fichesView': renderFichesView(); break;
     case 'poesieHome': renderPoesieHome(); break;
     case 'poesieFable': renderPoesieFable(); break;
+    case 'addPoem': renderAddPoem(); break;
   }
   updateFooter();
 }
@@ -1317,6 +1318,25 @@ function renderParent(){
   <button class="btn-stone btn-small" onclick="copySyncLink()">\u{1F4CB} Copier le lien</button>
   <button class="btn-stone btn-small" onclick="shareSyncLink()" style="margin-left:8px">\u{1F4F2} Partager (WhatsApp...)</button>
   <div id="syncMsg" style="margin-top:8px;font-size:.75rem;color:#22c55e"></div></div>
+  ${(()=>{
+    const list=profile.customPoems||[];
+    const items=list.map(p=>`<div class="row-between" style="padding:10px 0;border-top:1px solid rgba(255,255,255,0.06)">
+      <div class="flex-1" style="min-width:0">
+        <div style="color:#faf5ff;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(p.title)}</div>
+        <div class="sub" style="margin-top:2px">${esc(p.author||'sans auteur')} · ${p.dur||'?'}s</div>
+      </div>
+      <div class="row gap-2">
+        <button class="btn-stone btn-small" onclick="editCustomPoem('${p.id}')">✏️</button>
+        <button class="btn-stone btn-small" onclick="deleteCustomPoem('${p.id}')" style="background:rgba(239,68,68,0.15);border-color:rgba(239,68,68,0.3);color:#fca5a5">🗑️</button>
+      </div>
+    </div>`).join('');
+    return `<div class="card mb-4" style="border-color:#a78bfa">
+      <h3 class="fredoka" style="font-size:.85rem;color:#a78bfa;margin-bottom:8px;letter-spacing:.1em;text-transform:uppercase">📝 Tes poésies pour ${esc(profile.name)}</h3>
+      <p style="color:#faf5ff;font-size:.8rem;margin-bottom:10px">Ajoute des poésies que ton enfant devra apprendre et réciter. Elles s'ajoutent à la liste des Poésies du Royaume et se synchronisent sur tous tes appareils.</p>
+      <button class="btn-fire btn-small" onclick="state.editingPoemId=null;navigate('addPoem')">➕ Ajouter une poésie</button>
+      ${list.length>0?`<div style="margin-top:12px">${items}</div>`:'<p class="sub" style="margin-top:10px;font-style:italic">Aucune poésie ajoutée pour le moment.</p>'}
+    </div>`;
+  })()}
   <div class="card mb-4" style="border-color:rgba(255,255,255,0.08)"><h3 class="fredoka" style="font-size:.85rem;color:#8b7ec8;margin-bottom:8px">Donn\u00e9es</h3>
   <button class="btn-stone btn-small" onclick="exportData()">\u{1F4E4} Exporter (JSON)</button>
   <button class="btn-stone btn-small" onclick="resetData()" style="margin-top:8px;background:rgba(239,68,68,0.15);border-color:rgba(239,68,68,0.3);color:#fca5a5">\u{1F5D1}\uFE0F R\u00e9initialiser</button></div>
@@ -1361,6 +1381,11 @@ function resetData(){
 }
 
 /* ════════ POÉSIES LA FONTAINE ════════ */
+/* Helpers poésies : agrège FABLES (built-in) + profile.customPoems (perso) */
+function getAllPoems(){return [...FABLES, ...(profile.customPoems||[])]}
+function getPoemById(id){return getAllPoems().find(p=>p.id===id)}
+function isCustomPoem(id){return id&&id.startsWith('custom-')}
+
 const FABLES=[
   {id:"corbeau-renard",title:"Le Corbeau et le Renard",icon:"\u{1F98A}",dur:75,author:"Jean de La Fontaine",
     text:"Maître Corbeau, sur un arbre perché, tenait en son bec un fromage. Maître Renard, par l'odeur alléché, lui tint à peu près ce langage : \"Hé ! bonjour, Monsieur du Corbeau. Que vous êtes joli ! que vous me semblez beau ! Sans mentir, si votre ramage se rapporte à votre plumage, vous êtes le Phénix des hôtes de ces bois.\" À ces mots le Corbeau ne se sent pas de joie ; et pour montrer sa belle voix, il ouvre un large bec, laisse tomber sa proie. Le Renard s'en saisit, et dit : \"Mon bon Monsieur, apprenez que tout flatteur vit aux dépens de celui qui l'écoute.\"",
@@ -1423,10 +1448,14 @@ function stopSpeaking(){if('speechSynthesis' in window)speechSynthesis.cancel()}
 // synthèse vocale du navigateur. Géré via un singleton <audio>.
 let _poesieAudio=null;
 function playPoesie(){
-  const f=FABLES.find(x=>x.id===state.fableId);
+  const f=getPoemById(state.fableId);
   if(!f) return;
   stopPoesie();
   const btn=$('playBtn');
+  // Texte propre pour la synthèse vocale : on prend l'innerText du DOM rendu
+  // (entités HTML décodées, sauts de ligne respectés), avec fallback sur stripHtmlText.
+  const ftEl=$('fableText');
+  const cleanText=ftEl?ftEl.innerText:stripHtmlText(f.text);
   if(f.audioUrl){
     _poesieAudio=new Audio(f.audioUrl);
     _poesieAudio.preload='auto';
@@ -1434,13 +1463,12 @@ function playPoesie(){
     _poesieAudio.addEventListener('error',()=>{
       _poesieAudio=null;
       if(btn)btn.textContent='▶️ Écouter';
-      // Bascule sur la synthèse vocale si le MP3 ne se charge pas.
-      speakText(stripHtmlText(f.text));
+      speakText(cleanText);
     });
-    _poesieAudio.play().catch(()=>speakText(stripHtmlText(f.text)));
+    _poesieAudio.play().catch(()=>speakText(cleanText));
     if(btn)btn.textContent='⏸ Pause';
   }else{
-    speakText(stripHtmlText(f.text));
+    speakText(cleanText);
     if(btn)btn.textContent='⏸ En lecture…';
   }
 }
@@ -1485,13 +1513,71 @@ function compareTexts(orig,spoken){
   return {matched,total:o.length,score:Math.round(matched/o.length*100),result};
 }
 
+/* ════════ POÉSIES PERSONNALISÉES (ajoutées par le parent) ════════ */
+function renderAddPoem(){
+  const editing=state.editingPoemId?((profile.customPoems||[]).find(p=>p.id===state.editingPoemId)):null;
+  app.innerHTML=`<div class="text-center py-6 fade-in">
+    <div style="font-size:3rem">📝</div>
+    <h2 class="title" style="color:#a78bfa;font-size:1.5rem">${editing?'Modifier la poésie':'Ajouter une poésie'}</h2>
+    <p class="sub">Pour que ton enfant l'écoute, la lise et la récite</p>
+  </div>
+  <div class="card mb-4">
+    <label class="sub" style="display:block;margin-bottom:6px;font-weight:600">Titre</label>
+    <input class="name-prompt" id="poemTitle" placeholder="Ex. La fourmi" maxlength="80" value="${esc(editing?editing.title:'')}">
+    <label class="sub" style="display:block;margin:14px 0 6px;font-weight:600">Auteur (facultatif)</label>
+    <input class="name-prompt" id="poemAuthor" placeholder="Ex. Robert Desnos" maxlength="60" value="${esc(editing?editing.author||'':'')}">
+    <label class="sub" style="display:block;margin:14px 0 6px;font-weight:600">Texte de la poésie</label>
+    <textarea id="poemText" rows="12" style="width:100%;padding:14px;background:rgba(255,255,255,0.04);border:1px solid var(--border-subtle);border-radius:12px;color:var(--text-bright);font-family:inherit;font-size:1rem;line-height:1.6;resize:vertical">${esc(editing?editing.text:'')}</textarea>
+    <p class="sub" style="margin-top:6px">Les sauts de ligne sont respectés. Pas besoin de balises.</p>
+  </div>
+  <div class="btn-row">
+    <button class="btn-fire" onclick="saveCustomPoem()">${editing?'💾 Mettre à jour':'➕ Ajouter à mes poésies'}</button>
+    <button class="btn-stone" onclick="cancelAddPoem()">Annuler</button>
+  </div>`;
+  setTimeout(()=>{const i=$('poemTitle');if(i&&!editing)i.focus();},100);
+}
+
+function cancelAddPoem(){state.editingPoemId=null;navigate('parent');}
+
+function saveCustomPoem(){
+  const title=$('poemTitle').value.trim();
+  const author=$('poemAuthor').value.trim();
+  const rawText=$('poemText').value.trim();
+  if(!title){alert('Donne un titre à la poésie.');return}
+  if(rawText.length<20){alert('Le texte de la poésie est trop court (au moins quelques vers).');return}
+  if(!profile.customPoems) profile.customPoems=[];
+  if(state.editingPoemId){
+    const p=profile.customPoems.find(x=>x.id===state.editingPoemId);
+    if(p){p.title=title;p.author=author;p.text=rawText;p.updatedAt=today();}
+    state.editingPoemId=null;
+  }else{
+    const id='custom-'+Date.now().toString(36)+Math.random().toString(36).slice(2,5);
+    const words=rawText.split(/\s+/).filter(Boolean).length;
+    const dur=Math.max(20,Math.min(180,Math.round(words/2.5))); // ~150 mots/min
+    profile.customPoems.push({id,title,author,text:rawText,dur,icon:'📝',addedAt:today(),custom:true});
+  }
+  saveProfile();
+  navigate('poesieHome');
+}
+
+function editCustomPoem(id){state.editingPoemId=id;navigate('addPoem');}
+
+function deleteCustomPoem(id){
+  const p=(profile.customPoems||[]).find(x=>x.id===id);
+  if(!p) return;
+  if(!confirm('Supprimer la poésie « '+p.title+' » ?')) return;
+  profile.customPoems=profile.customPoems.filter(x=>x.id!==id);
+  saveProfile();
+  navigate(state.screen==='poesieFable'?'poesieHome':'parent');
+}
+
 function renderPoesieHome(){
   app.innerHTML=`<div class="text-center py-6 fade-in">
     <div style="font-size:3.5rem">\u{1F4DC}</div>
     <h2 class="title" style="color:#a78bfa;font-size:1.6rem">Poésies</h2>
     <p class="sub">Écoute, lis, récite à voix haute</p>
   </div>
-  ${FABLES.map((f,i)=>{
+  ${getAllPoems().map((f,i)=>{
     const stats=(profile.poesieStats||{})[f.id]||{};
     const best=stats.best||0;
     const star=best>=80?'\u2B50\u2B50\u2B50':best>=60?'\u2B50\u2B50':best>=40?'\u2B50':'';
@@ -1499,7 +1585,7 @@ function renderPoesieHome(){
       <div class="row">
         <div style="font-size:2.2rem">${f.icon}</div>
         <div class="flex-1">
-          <h3 class="card-title" style="color:#5b21b6">${f.title}</h3>
+          <h3 class="card-title" style="color:#5b21b6">${f.title}${f.custom?' <span style="font-size:.7rem;color:#34d399;border:1px solid #34d399;padding:2px 7px;border-radius:9999px;vertical-align:middle">📝 perso</span>':''}</h3>
           <p class="sub">${f.author?f.author+' · ':''}${f.dur}s à lire ${star?' \u2014 '+star:''}</p>
         </div>
         <div class="arrow">\u2192</div>
@@ -1510,16 +1596,20 @@ function renderPoesieHome(){
 }
 
 function renderPoesieFable(){
-  const f=FABLES.find(x=>x.id===state.fableId);
+  const f=getPoemById(state.fableId);
   if(!f){navigate('poesieHome');return}
   const stats=(profile.poesieStats||{})[f.id]||{plays:0,best:0};
+  // Les poésies persos sont stockées en texte brut : on les échappe et on
+  // convertit les sauts de ligne. Les fables built-in sont déjà mises en
+  // forme avec des <br> littéraux dans le code.
+  const textHtml=f.custom?esc(f.text).replace(/\n/g,'<br>'):f.text;
   app.innerHTML=`<div class="text-center py-4 fade-in">
     <div style="font-size:3rem">${f.icon}</div>
-    <h2 class="title" style="color:#5b21b6">${f.title}</h2>
-    <p class="sub">${f.author?'de '+f.author:''}</p>
+    <h2 class="title" style="color:#5b21b6">${esc(f.title)}</h2>
+    <p class="sub">${f.author?'de '+esc(f.author):''}${f.custom?' · 📝 ajoutée par toi':''}</p>
   </div>
   <div class="card mb-4" style="border-color:#c4b5fd">
-    <div style="font-style:italic;color:#faf5ff;line-height:1.7;font-size:1.05rem;font-weight:500" id="fableText">${f.text}</div>
+    <div style="font-style:italic;color:#faf5ff;line-height:1.7;font-size:1.05rem;font-weight:500" id="fableText">${textHtml}</div>
     ${f.morale?`<div class="divider"></div>
     <div style="background:rgba(251,191,36,0.08);padding:10px 14px;border-radius:10px;border-left:3px solid rgba(251,191,36,0.5);color:#fbbf24;font-weight:600">\u{1F4A1} Morale : <em>${f.morale}</em></div>`:''}
   </div>
@@ -1542,7 +1632,8 @@ function renderPoesieFable(){
     <h3 class="card-title" style="margin-bottom:8px">\u{1F4CA} Tes scores</h3>
     <div class="row gap-2"><div class="resource">\u{1F39E}\uFE0F ${stats.plays||0} essais</div><div class="resource flame">\u{1F31F} Meilleur : ${stats.best||0}%</div></div>
   </div>
-  <button class="btn-stone" onclick="navigate('poesieHome')">\u2190 Autres fables</button>`;
+  ${f.custom?`<div class="btn-row mb-4"><button class="btn-stone btn-small" onclick="editCustomPoem('${f.id}')">\u270f\ufe0f Modifier</button><button class="btn-stone btn-small" onclick="deleteCustomPoem('${f.id}')" style="background:rgba(239,68,68,0.15);border-color:rgba(239,68,68,0.3);color:#fca5a5">\ud83d\uddd1\ufe0f Supprimer</button></div>`:''}
+  <button class="btn-stone" onclick="navigate('poesieHome')">\u2190 Autres po\u00e9sies</button>`;
 }
 
 window._poesieRecording=false;
@@ -1555,7 +1646,7 @@ function togglePoesieRec(){
     btn.classList.remove('pulse');
     return;
   }
-  const f=FABLES.find(x=>x.id===state.fableId);
+  const f=getPoemById(state.fableId);
   if(!f)return;
   res.innerHTML='';
   live.style.display='block';
@@ -1570,7 +1661,10 @@ function togglePoesieRec(){
       btn.textContent='\u{1F504} Recommencer';
       btn.classList.remove('pulse');
       if(!finalTxt||finalTxt.trim().length<5){res.innerHTML='<p style="color:#fbbf24;margin-top:10px">Pas de voix détectée. Réessaie !</p>';return}
-      const cmp=compareTexts(f.text,finalTxt);
+      // Utilise l'innerText du DOM rendu : sauts de ligne propres et entités HTML décodées.
+      const ftEl=$('fableText');
+      const cleanOrig=ftEl?ftEl.innerText:f.text;
+      const cmp=compareTexts(cleanOrig,finalTxt);
       // Save score
       if(!profile.poesieStats)profile.poesieStats={};
       const s=profile.poesieStats[f.id]||{plays:0,best:0};

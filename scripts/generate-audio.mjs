@@ -64,14 +64,24 @@ for (const f of fables) {
   } else {
     console.log(`🎙  ${f.id}: génération...`);
     const cleanText = stripHtml(f.text);
-    const body = { model: MODEL, voice: VOICE, input: cleanText, response_format: 'mp3' };
-    // L'API instructions n'est supportée que par gpt-4o*-tts.
-    if (MODEL.startsWith('gpt-4o')) body.instructions = INSTRUCTIONS;
-    const r = await fetch('https://api.openai.com/v1/audio/speech', {
-      method: 'POST',
-      headers: { 'Authorization': `Bearer ${KEY}`, 'Content-Type': 'application/json' },
-      body: JSON.stringify(body)
-    });
+    // Tente d'abord le modèle haut de gamme avec instructions, puis bascule
+    // sur tts-1-hd si le compte OpenAI n'a pas accès à gpt-4o-mini-tts.
+    async function callTTS(model, voice, withInstr) {
+      const body = { model, voice, input: cleanText, response_format: 'mp3' };
+      if (withInstr && model.startsWith('gpt-4o')) body.instructions = INSTRUCTIONS;
+      return fetch('https://api.openai.com/v1/audio/speech', {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${KEY}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify(body)
+      });
+    }
+    let r = await callTTS(MODEL, VOICE, true);
+    if (!r.ok && MODEL.startsWith('gpt-4o')) {
+      const err = await r.text();
+      console.warn(`⚠  ${f.id}: ${MODEL} a échoué (HTTP ${r.status}: ${err.slice(0,120)}). Bascule sur tts-1-hd.`);
+      // La voix "fable" existe aussi sur tts-1-hd.
+      r = await callTTS('tts-1-hd', VOICE, false);
+    }
     if (!r.ok) {
       const err = await r.text();
       console.error(`❌ ${f.id}: HTTP ${r.status} — ${err.slice(0, 200)}`);
