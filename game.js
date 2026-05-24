@@ -885,10 +885,11 @@ async function reqGen(lvId,n){
 /* ════════ ROTATION INTELLIGENTE ════════ */
 function pickExercises(mode,lvId){
   const lv=LEVELS.find(l=>l.id===lvId);
-  const hasStatic=lv&&lv.hasStatic;
   // Inclure les exercices AI générés (persistés dans le profil)
   const aiPool=(profile.aiExercises||[]).filter(e=>e.lv===lvId);
-  const staticPool=hasStatic?EX.filter(e=>e.lv===lvId):[];
+  // Toujours essayer le pool statique : tout niveau présent dans
+  // exercises.js / exercises_extra.js a des exos prêts à l'emploi.
+  const staticPool=EX.filter(e=>e.lv===lvId);
   const pool=staticPool.concat(aiPool);
   if(mode==='progression'){
     return shuffle(EX.filter(e=>e.lv!=='cp')).sort((a,b)=>a.diff-b.diff).slice(0,10);
@@ -923,16 +924,15 @@ async function startGame(mode){
   let exercises=pickExercises(mode,state.level);
   // Si pas d'exercices (sujet non-maths sans pool g\u00e9n\u00e9r\u00e9), g\u00e9n\u00e9rer maintenant
   if(exercises.length===0){
-    const lv=LEVELS.find(l=>l.id===state.level);
-    if(!lv||!lv.hasStatic){
-      app.innerHTML='<div class="card text-center" style="margin-top:60px"><div class="dragon-emoji float">\u{1F52E}</div><h2 class="title">Le Dragon prépare tes défis...</h2><p class="sub">Première g\u00e9n\u00e9ration : 5 \u00e0 15 secondes</p></div>';
-      try{
-        await generateAIExercises(state.level,10);
-        exercises=pickExercises(mode,state.level);
-      }catch(e){
-        alert('\u00c9chec g\u00e9n\u00e9ration : '+e.message);
-        return;
-      }
+    // Aucun exercice statique ni IA pour ce niveau : on tente la génération IA
+    // (avant : gate hasStatic — bloquait tout royaume non-maths si IA indispo).
+    app.innerHTML='<div class="card text-center" style="margin-top:60px"><div class="dragon-emoji float">\u{1F52E}</div><h2 class="title">Le Dragon prépare tes défis...</h2><p class="sub">Première g\u00e9n\u00e9ration : 5 \u00e0 15 secondes</p></div>';
+    try{
+      await generateAIExercises(state.level,10);
+      exercises=pickExercises(mode,state.level);
+    }catch(e){
+      alert('\u00c9chec g\u00e9n\u00e9ration : '+e.message);
+      return;
     }
   }
   state.mode=mode;state.exercises=exercises;state.idx=0;state.selected=null;state.score=0;state.streak=0;state.maxStreak=0;state.results=[];state.timer=60;state.gameOver=false;state.startTime=Date.now();state.detailOpen=false;state.sessionXP=0;state.sessionCristaux=0;
