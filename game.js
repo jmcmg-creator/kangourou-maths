@@ -622,12 +622,22 @@ function navigate(screen,data,opts){
   state.screen=screen;
   if(data) Object.assign(state,data);
   backArrow.classList.toggle('hidden',_navStack.length===0||screen==='home');
+  // Push une entrée d'historique pour que le swipe-back iOS/Android tombe
+  // sur notre popstate et fasse goBack(). 'home' remplace l'entrée (pas d'accumulation).
+  try{
+    if(screen==='home') history.replaceState({nav:'home'},'',location.href);
+    else history.pushState({nav:screen,i:Date.now()},'',location.href);
+  }catch(e){}
   render();
   window.scrollTo(0,0);
 }
 
-function goBack(){
-  if(_navStack.length===0){navigate('home',null,{replace:true});return}
+let _suppressNextPop=false;
+function goBack(fromBrowser){
+  if(_navStack.length===0){
+    if(!fromBrowser) navigate('home',null,{replace:true});
+    return;
+  }
   if(!_leaveScreenGuard(_navStack[_navStack.length-1])) return;
   const prev=_navStack.pop();
   _cleanupOnLeaveScreen(state.screen);
@@ -635,10 +645,21 @@ function goBack(){
   backArrow.classList.toggle('hidden',_navStack.length===0||prev==='home');
   render();
   window.scrollTo(0,0);
+  // Si on a été appelé par la flèche (pas par le navigateur), on sync
+  // l'historique navigateur pour que swipe-back enchaîne sans glitch.
+  if(!fromBrowser){
+    _suppressNextPop=true;
+    try{history.back()}catch(e){_suppressNextPop=false}
+  }
 }
 
-// Le bouton retour matériel (Android) est laissé au navigateur ; la flèche
-// du header utilise goBack() qui s'appuie sur _navStack.
+// Swipe-back iOS / bouton retour Android : chaque navigate() a pushé une
+// entrée d'historique ; le popstate déclenché par le swipe fait pop notre pile.
+try{history.replaceState({nav:'home'},'',location.href)}catch(e){}
+window.addEventListener('popstate',function(){
+  if(_suppressNextPop){_suppressNextPop=false;return}
+  goBack(true);
+});
 
 function render(){
   switch(state.screen){
@@ -1631,29 +1652,56 @@ function setSelectedVoice(name){
 try{const v=localStorage.getItem('royaume_tts_voice');if(v)_selectedVoiceName=v}catch(e){}
 
 let _recognition=null;
+let _recUserStopped=false;
+let _recRestartCount=0;
+const _IS_IOS=/iPad|iPhone|iPod/.test(navigator.userAgent)||(navigator.platform==='MacIntel'&&navigator.maxTouchPoints>1);
 function startRecording(onResult,onEnd,lang){
   const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
   if(!SR){alert('Reconnaissance vocale non supportée. Utilise Safari sur iPhone ou Chrome.');return null}
-  if(_recognition){_recognition.stop();_recognition=null}
-  _recognition=new SR();
-  _recognition.lang=lang||'fr-FR';
-  _recognition.continuous=true;
-  _recognition.interimResults=true;
+  if(_recognition){try{_recognition.stop()}catch(e){}_recognition=null}
+  _recUserStopped=false;
+  _recRestartCount=0;
   let finalTxt='';
-  _recognition.onresult=(e)=>{
-    let interim='';
-    for(let i=e.resultIndex;i<e.results.length;i++){
-      if(e.results[i].isFinal) finalTxt+=e.results[i][0].transcript+' ';
-      else interim+=e.results[i][0].transcript;
-    }
-    onResult(finalTxt+interim);
-  };
-  _recognition.onend=()=>{onEnd&&onEnd(finalTxt)};
-  _recognition.onerror=(e)=>{onEnd&&onEnd(finalTxt+' [erreur: '+e.error+']')};
-  _recognition.start();
+  const _lang=lang||'fr-FR';
+  function _spawn(){
+    _recognition=new SR();
+    _recognition.lang=_lang;
+    _recognition.continuous=true;
+    _recognition.interimResults=true;
+    _recognition.onresult=(e)=>{
+      let interim='';
+      for(let i=e.resultIndex;i<e.results.length;i++){
+        if(e.results[i].isFinal) finalTxt+=e.results[i][0].transcript+' ';
+        else interim+=e.results[i][0].transcript;
+      }
+      onResult(finalTxt+interim);
+    };
+    _recognition.onend=()=>{
+      // iOS Safari ignore continuous=true et coupe après ~5s de silence.
+      // Tant que l'utilisateur n'a pas appuyé sur Stop, on relance silencieusement
+      // pour donner l'illusion d'une écoute continue. Cap de sécurité à 12 redémarrages.
+      if(!_recUserStopped&&_IS_IOS&&_recRestartCount<12){
+        _recRestartCount++;
+        try{_spawn();return}catch(e){}
+      }
+      onEnd&&onEnd(finalTxt);
+    };
+    _recognition.onerror=(e)=>{
+      // 'no-speech' / 'aborted' sur iOS : on retombe sur onend (qui décidera
+      // de relancer ou non). Les autres erreurs : on remonte au caller.
+      if(e.error==='no-speech'||e.error==='aborted') return;
+      _recUserStopped=true;
+      onEnd&&onEnd(finalTxt+' [erreur: '+e.error+']');
+    };
+    _recognition.start();
+  }
+  try{_spawn();}catch(e){onEnd&&onEnd(finalTxt+' [erreur: '+e.message+']');return null}
   return _recognition;
 }
-function stopRecording(){if(_recognition){_recognition.stop();_recognition=null}}
+function stopRecording(){
+  _recUserStopped=true;
+  if(_recognition){try{_recognition.stop()}catch(e){}_recognition=null}
+}
 
 function compareTexts(orig,spoken){
   const norm=s=>s.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^\w\s]/g,' ').replace(/\s+/g,' ').trim();
