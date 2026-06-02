@@ -48,7 +48,12 @@
       });
       _emitProgress('ready',100);
       return pipe;
-    })();
+    })().catch((e)=>{
+      // Sans ça, la 1ʳᵉ erreur (CSP, hors-ligne) est mise en cache pour
+      // toujours et l'utilisateur ne peut plus jamais réessayer sans recharger.
+      _pipelinePromise=null;
+      throw e;
+    });
     return _pipelinePromise;
   }
 
@@ -77,15 +82,24 @@
       if(onError) onError(e);
       return null;
     }
+
     const mime=_pickMimeType();
     _chunks=[];
     _mediaRecorder=new MediaRecorder(_stream,mime?{mimeType:mime}:undefined);
     _mediaRecorder.ondataavailable=(e)=>{if(e.data&&e.data.size>0) _chunks.push(e.data)};
+    _mediaRecorder.onerror=(e)=>{
+      // Sans ce gestionnaire, une coupure micro mid-session laisserait l'UI bloquée.
+      try{if(_stream){_stream.getTracks().forEach(t=>t.stop());_stream=null}}catch(_){}
+      if(onError) onError(e.error||new Error('MediaRecorder error'));
+    };
     _mediaRecorder.onstop=async()=>{
       try{
         if(_stream){_stream.getTracks().forEach(t=>t.stop());_stream=null}
         const blob=new Blob(_chunks,{type:mime||'audio/webm'});
-        if(blob.size<200){
+        // Sur iOS Safari (MP4) la 1ʳᵉ utterance peut être petite mais valide ;
+        // on garde un seuil très bas et on vérifie aussi qu'on a au moins
+        // un chunk pour détecter "vraiment rien".
+        if(_chunks.length===0||blob.size<60){
           if(onResult) onResult('');
           return;
         }

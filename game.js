@@ -245,7 +245,22 @@ function newProfile(){
 }
 function migrate(p){
   const base=newProfile();
-  return Object.assign(base,p);
+  const merged=Object.assign(base,p||{});
+  // Coercion des types pour survivre à un profil cloud corrompu/anciens schemas.
+  if(!Array.isArray(merged.sessions)) merged.sessions=[];
+  if(!Array.isArray(merged.playDays)) merged.playDays=[];
+  if(!Array.isArray(merged.unlockedBadges)) merged.unlockedBadges=[];
+  if(!Array.isArray(merged.dragonnets)) merged.dragonnets=[];
+  if(!Array.isArray(merged.aiExercises)) merged.aiExercises=[];
+  if(!merged.catStats||typeof merged.catStats!=='object') merged.catStats={};
+  if(!merged.exerciseStats||typeof merged.exerciseStats!=='object') merged.exerciseStats={};
+  if(!merged.royaumes||typeof merged.royaumes!=='object') merged.royaumes={};
+  if(!merged.poesieStats||typeof merged.poesieStats!=='object') merged.poesieStats={};
+  // Coercion numérique pour éviter la propagation de NaN si un champ arrive null/undefined.
+  ['totalGames','totalQuestions','totalCorrect','bestStreak','xp','cristaux','stage'].forEach(k=>{
+    const v=Number(merged[k]); merged[k]=Number.isFinite(v)?v:0;
+  });
+  return merged;
 }
 
 // Charge le profil actif (s'il existe) ou retourne un profil vide.
@@ -285,7 +300,12 @@ function esc(s){return s==null?'':String(s).replace(/[&<>"'`]/g,c=>_ESC_MAP[c])}
 function escAttr(s){return esc(s).replace(/\\/g,'\\\\')}
 
 function shuffle(a){a=[...a];for(let i=a.length-1;i>0;i--){let j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]]}return a}
-function today(){return new Date().toISOString().slice(0,10)}
+function today(){
+  // ISO local (sv-SE rend YYYY-MM-DD) pour que la quête du jour et playDays
+  // s'alignent sur la journée *locale* de l'enfant, pas sur UTC.
+  try{return new Date().toLocaleDateString('sv-SE')}
+  catch(e){return new Date().toISOString().slice(0,10)}
+}
 
 /* ════════ BACKEND API (sync per-profil + AI generation) ════════ */
 const API_BASE="https://royaume-api.square-paris75.workers.dev";
@@ -354,6 +374,53 @@ function getSyncLink(){
 // Détecte ?sync=AID dans l'URL et IMPORTE le profil dans le dict local
 // (sans rien écraser). Différé pour s'exécuter quand toutes les fonctions
 // sont prêtes.
+// Fusionne 2 profils (local+remote) pour ne JAMAIS perdre de progression.
+// Max sur les compteurs, union sur les sessions/badges/playDays, royaume le plus avancé conservé.
+function mergeProfiles(local,remote){
+  if(!local||!local.name) return remote;
+  if(!remote||!remote.name) return local;
+  const out=Object.assign({},local,remote);
+  out.totalGames=Math.max(local.totalGames||0,remote.totalGames||0);
+  out.totalQuestions=Math.max(local.totalQuestions||0,remote.totalQuestions||0);
+  out.totalCorrect=Math.max(local.totalCorrect||0,remote.totalCorrect||0);
+  out.bestStreak=Math.max(local.bestStreak||0,remote.bestStreak||0);
+  out.xp=Math.max(local.xp||0,remote.xp||0);
+  out.cristaux=Math.max(local.cristaux||0,remote.cristaux||0);
+  const seenSess=new Set();
+  out.sessions=[...(local.sessions||[]),...(remote.sessions||[])].filter(s=>{
+    const k=(s&&s.date||'')+'|'+(s&&s.mode||'')+'|'+(s&&s.score||0)+'|'+(s&&s.total||0);
+    if(seenSess.has(k)) return false; seenSess.add(k); return true;
+  }).slice(-100);
+  out.playDays=Array.from(new Set([...(local.playDays||[]),...(remote.playDays||[])])).sort();
+  out.unlockedBadges=Array.from(new Set([...(local.unlockedBadges||[]),...(remote.unlockedBadges||[])]));
+  out.dragonnets=Array.from(new Set([...(local.dragonnets||[]),...(remote.dragonnets||[])]));
+  out.royaumes={};
+  const rids=new Set([...Object.keys(local.royaumes||{}),...Object.keys(remote.royaumes||{})]);
+  for(const rid of rids){
+    const a=(local.royaumes||{})[rid]||{};const b=(remote.royaumes||{})[rid]||{};
+    out.royaumes[rid]=(a.xp||0)>=(b.xp||0)?a:b;
+  }
+  function mergeStats(a,b){
+    const o={};const keys=new Set([...Object.keys(a||{}),...Object.keys(b||{})]);
+    for(const k of keys){
+      const av=(a||{})[k]||{};const bv=(b||{})[k]||{};
+      o[k]={};
+      const sk=new Set([...Object.keys(av),...Object.keys(bv)]);
+      for(const f of sk) o[k][f]=Math.max(Number(av[f])||0,Number(bv[f])||0);
+    }
+    return o;
+  }
+  out.catStats=mergeStats(local.catStats,remote.catStats);
+  out.exerciseStats=mergeStats(local.exerciseStats,remote.exerciseStats);
+  out.poesieStats={};
+  const pk=new Set([...Object.keys(local.poesieStats||{}),...Object.keys(remote.poesieStats||{})]);
+  for(const k of pk){
+    const a=(local.poesieStats||{})[k]||{};const b=(remote.poesieStats||{})[k]||{};
+    out.poesieStats[k]={plays:Math.max(a.plays||0,b.plays||0),best:Math.max(a.best||0,b.best||0)};
+  }
+  return out;
+}
+
 function processIncomingSyncLink(){
   const params=new URLSearchParams(window.location.search);
   const incoming=params.get('sync');
@@ -366,18 +433,21 @@ function processIncomingSyncLink(){
       return;
     }
     const dict=loadProfilesDict();
-    const exists=!!dict[remote.name];
+    const local=dict[remote.name];
+    const exists=!!local;
     const msg=exists
-      ? 'Mettre à jour le profil "'+remote.name+'" depuis l\u0027autre appareil ?'
+      ? 'Fusionner ta progression avec le profil "'+remote.name+'" de l\u0027autre appareil ?'
       : 'Importer le profil "'+remote.name+'" depuis l\u0027autre appareil ?';
     if(!confirm(msg)) return;
-    remote.aid=incoming;
-    dict[remote.name]=remote;
+    const merged=migrate(exists?mergeProfiles(local,remote):remote);
+    merged.aid=incoming;
+    dict[merged.name]=merged;
     saveProfilesDict(dict);
-    setActiveName(remote.name);
-    profile=migrate(remote);
-    alert('\u2705 Profil "'+remote.name+'" '+(exists?'mis à jour':'importé')+' !');
-    if(typeof navigate==='function') navigate('home');
+    setActiveName(merged.name);
+    profile=merged;
+    saveProfile();
+    alert('\u2705 Profil "'+merged.name+'" '+(exists?'fusionné':'importé')+' !');
+    if(typeof navigate==='function') navigate('home',null,{replace:true});
   },100);
 }
 processIncomingSyncLink();
@@ -434,14 +504,36 @@ function maybeAutoGenerate(level){
   }
 }
 
-// Override saveProfile to push to cloud (debounced)
+// Override saveProfile to push to cloud (debounced) + flush sur pagehide.
 let _syncTimer=null;
 const _localSave=saveProfile;
 saveProfile=function(){
-  _localSave();
+  try{_localSave()}
+  catch(e){
+    // QuotaExceededError : on essaie de purger les données non-essentielles puis on réessaie une fois.
+    if(e&&/quota/i.test(e.name||'')){
+      try{if(profile){profile.sessions=(profile.sessions||[]).slice(-20);profile.aiExercises=(profile.aiExercises||[]).slice(-50);}_localSave()}
+      catch(_){console.warn('localStorage plein, save abandonnée')}
+    }
+  }
   if(_syncTimer) clearTimeout(_syncTimer);
   _syncTimer=setTimeout(()=>pushProfileToCloud(),1000);
 };
+// Flush immédiat sur fermeture d'onglet/app pour ne pas perdre la dernière sauvegarde.
+window.addEventListener('pagehide',function(){
+  if(_syncTimer){clearTimeout(_syncTimer);_syncTimer=null}
+  if(profile&&profile.name&&profile.aid){
+    try{
+      const body=JSON.stringify(profile);
+      if(navigator.sendBeacon){
+        const blob=new Blob([body],{type:'application/json'});
+        navigator.sendBeacon(API_BASE+'/profile/'+profile.aid,blob);
+      }else{
+        fetch(API_BASE+'/profile/'+profile.aid,{method:'PUT',headers:{'Content-Type':'application/json'},body,keepalive:true});
+      }
+    }catch(e){}
+  }
+});
 
 /* ════════ EMBERS ════════ */
 setInterval(()=>{
@@ -454,16 +546,86 @@ setInterval(()=>{
   setTimeout(()=>e.remove(),2500);
 },500);
 
-/* ════════ NAVIGATION ════════ */
-$('headerHome').onclick=()=>navigate('home');
-function navigate(screen,data){
+/* ════════ NAVIGATION ════════
+   Pile d'historique : chaque navigate() push une frame ; goBack() pop.
+   La flèche du header devient un vrai bouton "retour" indépendant de
+   l'icône maison (qui rentre vraiment à l'accueil après confirmation).
+*/
+const _navStack=[];
+
+// Le clic sur la zone du logo va à home (avec confirmation si partie en cours).
+$('headerHome').onclick=(e)=>{
+  // Si la flèche back est visible et l'utilisateur clique dessus, on pop.
+  if(e.target&&e.target.id==='backArrow'){goBack();return}
+  if(_leaveScreenGuard('home')) navigate('home',null,{replace:true});
+};
+
+// Hooks appelés quand on quitte un écran (stoppe les ressources).
+function _cleanupOnLeaveScreen(prevScreen){
   if(state.timerID){clearInterval(state.timerID);state.timerID=null}
+  // Récitation / synthèse vocale : arrêt systématique au changement d'écran.
+  try{if(typeof stopSpeaking==='function') stopSpeaking()}catch(e){}
+  if(prevScreen==='poesieFable'){
+    try{if(typeof stopRecording==='function') stopRecording()}catch(e){}
+    try{if(window._poesieWhisperSession){window._poesieWhisperSession.stop();window._poesieWhisperSession=null}}catch(e){}
+    try{if(window.Whisper) window.Whisper.stop()}catch(e){}
+    window._poesieRecording=false;
+    window._poesieWhisperPending=false;
+  }
+  if(prevScreen==='game'){
+    // Si on quitte un défi sans avoir fini, on jette l'état pour éviter
+    // une reprise pourrie au prochain renderGame.
+    if(!state.gameOver){
+      state.exercises=[];state.idx=0;state.selected=null;
+      state.results=[];state.streak=0;state.score=0;state.detailOpen=false;
+    }
+  }
+}
+
+// Demande confirmation si on quitte une partie en cours. Retourne true si OK.
+function _leaveScreenGuard(nextScreen){
+  if(state.screen==='game'&&!state.gameOver&&nextScreen!=='game'){
+    return window.confirm("Abandonner la quête en cours ? Tu perdras ta progression.");
+  }
+  if(state.screen==='poesieFable'&&window._poesieRecording){
+    return window.confirm("Une récitation est en cours. Arrêter le micro et quitter ?");
+  }
+  return true;
+}
+
+function navigate(screen,data,opts){
+  opts=opts||{};
+  if(state.screen===screen&&!opts.force) {
+    // Re-navigation vers le même écran : on rend juste à nouveau (refresh).
+    if(data) Object.assign(state,data);
+    render();return;
+  }
+  if(!opts.replace&&!opts.skipGuard){
+    if(!_leaveScreenGuard(screen)) return;
+  }
+  const prev=state.screen;
+  _cleanupOnLeaveScreen(prev);
+  if(!opts.replace&&prev&&prev!==screen) _navStack.push(prev);
   state.screen=screen;
   if(data) Object.assign(state,data);
-  backArrow.classList.toggle('hidden',screen==='home');
+  backArrow.classList.toggle('hidden',_navStack.length===0||screen==='home');
   render();
   window.scrollTo(0,0);
 }
+
+function goBack(){
+  if(_navStack.length===0){navigate('home',null,{replace:true});return}
+  if(!_leaveScreenGuard(_navStack[_navStack.length-1])) return;
+  const prev=_navStack.pop();
+  _cleanupOnLeaveScreen(state.screen);
+  state.screen=prev;
+  backArrow.classList.toggle('hidden',_navStack.length===0||prev==='home');
+  render();
+  window.scrollTo(0,0);
+}
+
+// Le bouton retour matériel (Android) est laissé au navigateur ; la flèche
+// du header utilise goBack() qui s'appuie sur _navStack.
 
 function render(){
   switch(state.screen){
@@ -492,7 +654,8 @@ function render(){
 
 /* ════════ THEME PICKER ════════ */
 function renderThemePicker(){
-  const cur=(profile&&profile.theme)||localStorage.getItem('royaume_theme')||'dragons';
+  const raw=(profile&&profile.theme)||localStorage.getItem('royaume_theme')||'dragons';
+  const cur=THEMES[raw]?raw:DEFAULT_THEME_ID;
   app.innerHTML=`<div class="text-center py-4 fade-in">
     <div style="font-size:3rem">\u{1F3A8}</div>
     <h2 class="title" style="font-size:1.6rem">Choisis ton thème</h2>
@@ -654,35 +817,37 @@ function renderNameAsk(){
   setTimeout(()=>$('nameInp').focus(),100);
 }
 async function setName(){
-  // Sanitise le nom (retire HTML/quotes pour XSS).
-  const v=$('nameInp').value.replace(/[<>"'`\\\/]/g,'').replace(/[ -]/g,'').trim().slice(0,20);
+  // Sanitise : retire HTML/quotes, compresse les espaces, GARDE les tirets
+  // (pour "Jean-Pierre", "Marie-Anne").
+  const raw=$('nameInp').value||'';
+  const v=raw.replace(/[<>"'`\\\/]/g,'').replace(/\s+/g,' ').trim().slice(0,20);
   if(v.length<1){alert('Entre ton pr\u00e9nom');return}
-  // AID dérivé du nom : "Joseph" sur iPhone = "Joseph" sur iPad = même AID.
-  const aid=await aidFromName(v);
-  // Affiche un loader pendant le pull cloud
-  app.innerHTML='<div class="card text-center" style="margin-top:60px"><div class="dragon-emoji float">\u{1F50D}</div><h2 class="title">Recherche de ton Royaume...</h2></div>';
-  const remote=await fetchProfileByAid(aid);
+  app.innerHTML='<div class="card text-center" style="margin-top:60px"><div class="dragon-emoji float">\u{1F50D}</div><h2 class="title">Préparation de ton Royaume...</h2></div>';
   const dict=loadProfilesDict();
-  if(remote&&remote.name){
-    // Le profil existe dans le cloud (cet appareil ou un autre l\u0027a déjà créé)
-    remote.aid=aid;
-    profile=migrate(remote);
-    dict[remote.name]=profile;
-    saveProfilesDict(dict);
-    setActiveName(profile.name);
-  }else if(dict[v]){
-    // Existe localement mais pas dans le cloud (premier sync) → on l\u0027envoie au cloud
-    profile=migrate(dict[v]);
-    profile.aid=aid;
-    saveProfile(); // push cloud (debounced)
+  // Lookup insensible à la casse pour éviter "Joseph" / "joseph" en doublon.
+  const existingKey=Object.keys(dict).find(k=>k.toLowerCase()===v.toLowerCase());
+  if(existingKey){
+    profile=migrate(dict[existingKey]);
+    if(!profile.aid||!/^[a-f0-9]{32}$/.test(profile.aid)) profile.aid=generateAID();
+    try{
+      const remote=await fetchProfileByAid(profile.aid);
+      if(remote&&remote.name&&((remote.totalGames||0)>(profile.totalGames||0))){
+        const localAid=profile.aid;profile=migrate(remote);profile.aid=localAid;
+      }
+    }catch(e){}
   }else{
-    // Profil tout neuf
+    // Nouveau profil — AID aléatoire (plus de dérivation depuis le prénom).
     profile=newProfile();
     profile.name=v;
-    profile.aid=aid;
-    saveProfile();
+    profile.aid=generateAID();
+    // Récupère le thème éventuellement choisi avant le signup.
+    try{const t=localStorage.getItem('royaume_theme');if(t) profile.theme=t}catch(e){}
   }
-  navigate('home');
+  dict[profile.name]=profile;
+  saveProfilesDict(dict);
+  setActiveName(profile.name);
+  saveProfile(); // push cloud (debounced)
+  navigate('home',null,{replace:true});
 }
 
 /* ════════ PROFILE PICKER ════════ */
@@ -736,6 +901,8 @@ function addNewProfile(){
 }
 
 function deleteProfile(name){
+  // Évite un push 1s plus tard qui ressusciterait le profil supprimé.
+  if(profile&&profile.name===name&&_syncTimer){clearTimeout(_syncTimer);_syncTimer=null}
   if(!confirm('Supprimer le profil "'+name+'" ? Cette action est d\u00e9finitive.')) return;
   const dict=loadProfilesDict();
   delete dict[name];
@@ -837,6 +1004,7 @@ async function startGame(mode){
 
 /* ════════ GAME SCREEN ════════ */
 function renderGame(){
+  if(!Array.isArray(state.exercises)||state.exercises.length===0){navigate('home',null,{replace:true});return}
   const rawEx=state.exercises[state.idx];
   if(!rawEx) return finishGame();
   // Re-habille le texte/choix selon le thème actif (la donnée originale
@@ -1023,11 +1191,11 @@ function finishGame(abandoned){
     rdata.correct+=state.score;
     if(state.maxStreak>(rdata.bestStreak||0))rdata.bestStreak=state.maxStreak;
     // Stats globales (rétrocompat)
-    profile.totalGames++;
+    profile.totalGames=(Number(profile.totalGames)||0)+1;
     profile.totalQuestions+=total;
     profile.totalCorrect+=state.score;
     if(state.maxStreak>profile.bestStreak)profile.bestStreak=state.maxStreak;
-    profile.xp+=state.sessionXP;
+    profile.xp=(Number(profile.xp)||0)+(Number(state.sessionXP)||0);
     profile.cristaux+=state.sessionCristaux;
     // Compagnons débloqués pour ce royaume
     const royaume=ROYAUMES[rid];
@@ -1171,7 +1339,7 @@ function renderResults(){
       <div class="flex-1" style="min-width:0"><p class="recap-q">${esc(r.ex.q.length>110?r.ex.q.slice(0,110)+'\u2026':r.ex.q)}</p>
       ${!r.correct?`<p class="recap-answer">R\u00e9ponse : ${esc(r.ex.ch[r.ex.ans])}</p>`:''}</div></div>`).join('')}</div></div>
   <div class="btn-row">
-    <button class="btn-fire" onclick="startGame('${d.mode}')">Rejouer</button>
+    <button class="btn-fire" onclick="startGame('${esc(d.mode)}')">Rejouer</button>
     <button class="btn-stone" onclick="navigate('royaume')">Mon Royaume</button>
     <button class="btn-stone" onclick="navigate('home')">Accueil</button>
   </div>
@@ -1303,11 +1471,18 @@ function exportData(){
   URL.revokeObjectURL(url);
 }
 function resetData(){
-  if(confirm('R\u00e9initialiser TOUTES les donn\u00e9es de '+profile.name+' ? Irr\u00e9versible.')){
-    localStorage.removeItem(STORAGE_KEY);
-    profile=loadProfile();
-    navigate('nameAsk');
-  }
+  if(!confirm('R\u00e9initialiser TOUTES les donn\u00e9es de '+profile.name+' ? Irr\u00e9versible.')) return;
+  // Annule un push cloud en attente sur l'ancien profil.
+  if(_syncTimer){clearTimeout(_syncTimer);_syncTimer=null}
+  // Retire vraiment le profil du dict (pas seulement le slot legacy).
+  const dict=loadProfilesDict();
+  delete dict[profile.name];
+  saveProfilesDict(dict);
+  try{localStorage.removeItem(STORAGE_KEY)}catch(e){}
+  setActiveName('');
+  profile=newProfile();
+  _navStack.length=0;
+  navigate('nameAsk',null,{replace:true});
 }
 
 /* ════════ POÉSIES LA FONTAINE ════════ */
@@ -1405,11 +1580,12 @@ function ensureVoicesLoaded(cb){
   if(!('speechSynthesis' in window)){cb();return}
   const voices=speechSynthesis.getVoices();
   if(voices&&voices.length>0){cb();return}
-  // Sur certains navigateurs, getVoices() est vide jusqu'à l'événement voiceschanged
-  const handler=()=>{speechSynthesis.removeEventListener('voiceschanged',handler);cb()};
+  // Guard "done" pour ne pas appeler cb() deux fois (event ET timeout).
+  let done=false;
+  const run=()=>{if(done) return; done=true; cb()};
+  const handler=()=>{speechSynthesis.removeEventListener('voiceschanged',handler);run()};
   speechSynthesis.addEventListener('voiceschanged',handler);
-  // Sécurité : timeout au cas où l'événement ne se déclencherait pas
-  setTimeout(()=>{speechSynthesis.removeEventListener('voiceschanged',handler);cb()},800);
+  setTimeout(()=>{speechSynthesis.removeEventListener('voiceschanged',handler);run()},800);
 }
 function splitForProsody(text){
   // Découpe en phrases pour respirations naturelles entre chaque.
@@ -1562,54 +1738,6 @@ const _origRender=render;
 render=function(){_origRender();if(state.screen==='poesieFable') setTimeout(populateVoicePicker,50)};
 
 window._poesieRecording=false;
-function togglePoesieRec(){
-  const btn=$('recBtn');const live=$('recLive');const res=$('recResult');
-  if(window._poesieRecording){
-    stopRecording();
-    window._poesieRecording=false;
-    btn.textContent='\u{1F534} Démarrer le micro';
-    btn.classList.remove('pulse');
-    return;
-  }
-  const f=FABLES.find(x=>x.id===state.fableId);
-  if(!f)return;
-  res.innerHTML='';
-  live.style.display='block';
-  live.textContent='\u{1F3A4} J\'écoute...';
-  btn.textContent='\u23F9\uFE0F Arrêter';
-  btn.classList.add('pulse');
-  window._poesieRecording=true;
-  startRecording(
-    (txt)=>{live.textContent=txt||'\u{1F3A4} Parle...'},
-    (finalTxt)=>{
-      window._poesieRecording=false;
-      btn.textContent='\u{1F504} Recommencer';
-      btn.classList.remove('pulse');
-      if(!finalTxt||finalTxt.trim().length<5){res.innerHTML='<p style="color:#0c4a6e;margin-top:10px">Pas de voix détectée. Réessaie !</p>';return}
-      const cmp=compareTexts(f.text,finalTxt);
-      // Save score
-      if(!profile.poesieStats)profile.poesieStats={};
-      const s=profile.poesieStats[f.id]||{plays:0,best:0};
-      s.plays++;if(cmp.score>s.best)s.best=cmp.score;
-      profile.poesieStats[f.id]=s;
-      // XP reward
-      const xpGain=Math.round(cmp.score/2);
-      profile.xp+=xpGain;
-      saveProfile();
-      const wordsHTML=cmp.result.map(x=>`<span style="color:${x.ok?'#15803d':'#9c6f3a'};${x.ok?'':'text-decoration:underline wavy #ef4444'};margin:0 2px">${x.w}</span>`).join('');
-      res.innerHTML=`<div class="divider"></div>
-        <div class="card" style="background:${cmp.score>=70?'#dcfce7':cmp.score>=40?'#fef3c7':'#fee2e2'};border-color:${cmp.score>=70?'#22c55e':cmp.score>=40?'#fbbf24':'#ef4444'}">
-          <h3 class="card-title">${cmp.score>=80?'\u{1F389} Excellent !':cmp.score>=60?'\u{1F44D} Bien joué !':cmp.score>=40?'\u{1F4AA} Continue !':'\u{1F4DA} Réécoute et retente'}</h3>
-          <p style="font-size:1.4rem;font-weight:700;color:#0c4a6e;margin:8px 0">${cmp.score}% \u2014 ${cmp.matched}/${cmp.total} mots</p>
-          <p class="sub">+${xpGain} XP gagnés \u2728</p>
-          <div class="divider"></div>
-          <p class="sub mb-2">Mots reconnus (en vert) :</p>
-          <div style="font-size:.95rem;line-height:1.7">${wordsHTML}</div>
-        </div>`;
-    }
-  );
-}
-
 /* ════════ FICHES BILAN ════════ */
 function renderFichesHome(){
   app.innerHTML=`<div class="text-center py-6 fade-in">
@@ -1653,19 +1781,27 @@ async function loadTopics(lvId){
   state.ficheLv=lvId;
   state.topics=null;
   navigate('fichesTopics');
+  const expected={screen:state.screen,lv:lvId};
   const cached=(profile.topicsCache||{})[lvId];
-  if(cached){state.topics=cached;render();return}
+  if(cached){state.topics=cached;if(state.screen===expected.screen&&state.ficheLv===expected.lv) render();return}
   try{
     const subj=lvId.includes('-')?lvId:'maths-'+lvId;
     const r=await fetch(API_BASE+'/topics',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({subject:subj})});
     const data=await r.json();
     if(data.error)throw new Error(data.error.message||'err');
-    state.topics=data.topics;
+    // Si l'utilisateur a quitté entre temps, on cache la réponse mais on ne re-render pas.
     if(!profile.topicsCache)profile.topicsCache={};
     profile.topicsCache[lvId]=data.topics;
     saveProfile();
+    if(state.screen!==expected.screen||state.ficheLv!==expected.lv) return;
+    state.topics=data.topics;
     render();
-  }catch(e){state.topics=[];alert('Erreur chargement th\u00e8mes : '+e.message);render()}
+  }catch(e){
+    if(state.screen!==expected.screen||state.ficheLv!==expected.lv) return;
+    state.topics=[];
+    alert('Erreur chargement th\u00e8mes : '+e.message);
+    render();
+  }
 }
 
 function renderFichesTopics(){
@@ -1681,7 +1817,8 @@ function renderFichesTopics(){
   </div>
   ${state.topics.map((t,i)=>{
     // Stash full topic in window for safe lookup; only use index in onclick.
-    window._topicCache=window._topicCache||[];
+    // Remplacement complet à chaque rendu pour ne pas garder des indices périmés d'un autre sujet.
+    if(i===0) window._topicCache=[];
     window._topicCache[i]=t;
     return `<div class="card clickable fade-in" style="animation-delay:${i*.05}s" onclick="loadTopicByIndex(${i})">
       <div class="row">
@@ -1694,7 +1831,7 @@ function renderFichesTopics(){
       </div>
     </div>`;
   }).join('')}
-  <button class="btn-stone mt-4" onclick="navigate('fichesSubject',{subjectId:state.subjectId})">\u2190 Retour</button>`;
+  <button class="btn-stone mt-4" onclick="goBack()">\u2190 Retour</button>`;
 }
 
 function loadTopicByIndex(i){
@@ -1705,14 +1842,20 @@ function loadTopicByIndex(i){
 async function loadFiche(topicId,topicTitle){
   state.fiche=null;state.ficheTopic={id:topicId,title:topicTitle};
   navigate('fichesView');
+  const expected={screen:state.screen,topicId};
   try{
     const subj=state.ficheLv.includes('-')?state.ficheLv:'maths-'+state.ficheLv;
     const r=await fetch(API_BASE+'/fiche',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({subject:subj,topic:topicTitle})});
     const data=await r.json();
     if(data.error)throw new Error(data.error.message||'err');
+    if(state.screen!==expected.screen||(state.ficheTopic&&state.ficheTopic.id)!==expected.topicId) return;
     state.fiche=data;
     render();
-  }catch(e){alert('Erreur g\u00e9n\u00e9ration fiche : '+e.message);navigate('fichesTopics')}
+  }catch(e){
+    if(state.screen!==expected.screen) return;
+    alert('Erreur g\u00e9n\u00e9ration fiche : '+e.message);
+    navigate('fichesTopics');
+  }
 }
 
 function renderFichesView(){
@@ -1749,7 +1892,9 @@ function renderFichesView(){
    cette version remplace la d\u00e9finition pr\u00e9c\u00e9dente.
 */
 function getRecoEngine(){
-  try{return localStorage.getItem('royaume_reco_engine')||'whisper'}catch(e){return 'whisper'}
+  // Défaut 'webspeech' : pas de téléchargement involontaire de 40 Mo
+  // sur la 1°re visite poésie. L'utilisateur active Whisper explicitement.
+  try{return localStorage.getItem('royaume_reco_engine')||'webspeech'}catch(e){return 'webspeech'}
 }
 function setRecoEngine(v){
   try{localStorage.setItem('royaume_reco_engine',v)}catch(e){}
@@ -1759,6 +1904,9 @@ function populateRecoEnginePicker(){
   const wrap=document.getElementById('reEngineWrap');
   if(!wrap) return;
   const cur=getRecoEngine();
+  // No-op si déjà peuplé avec le bon moteur : évite de perdre le focus utilisateur.
+  if(wrap.dataset.engine===cur) return;
+  wrap.dataset.engine=cur;
   const whisperOk=window.Whisper&&window.Whisper.isAvailable();
   const wBg=cur==='whisper'?'background:linear-gradient(135deg,#a78bfa,#7c3aed);color:#fff;border-color:#7c3aed':'';
   const sBg=cur==='webspeech'?'background:linear-gradient(135deg,#7dd3fc,#0ea5e9);color:#fff;border-color:#0ea5e9':'';
@@ -1794,22 +1942,31 @@ render=function(){
   _prevRender();
   if(state.screen==='poesieFable'){
     setTimeout(populateRecoEnginePicker,60);
-    if(window.Whisper) try{window.Whisper.prefetch()}catch(e){}
+    // Pas de prefetch automatique : on charge à la demande au 1°er clic Whisper.
   }
 };
 
 window._poesieWhisperSession=null;
+window._poesieWhisperPending=false;
+window._poesieWhisperCancelled=false;
 function togglePoesieRec(){
   const btn=document.getElementById('recBtn');
   const live=document.getElementById('recLive');
   const res=document.getElementById('recResult');
   if(!btn||!live||!res) return;
   if(window._poesieRecording){
-    if(window._poesieWhisperSession){
-      try{window._poesieWhisperSession.stop()}catch(e){}
+    if(window._poesieWhisperPending||window._poesieWhisperSession){
+      // Whisper en cours (pending = start() pas encore r\u00e9solu, OU session active).
+      window._poesieWhisperCancelled=true;
+      try{if(window._poesieWhisperSession) window._poesieWhisperSession.stop()}catch(e){}
+      try{if(window.Whisper) window.Whisper.stop()}catch(e){}
       window._poesieWhisperSession=null;
-      btn.textContent='\u23f3 Whisper transcrit\u2026';
-      btn.disabled=true;
+      window._poesieWhisperPending=false;
+      window._poesieRecording=false;
+      btn.textContent='\u{1F504} Recommencer';
+      btn.classList.remove('pulse');
+      btn.disabled=false;
+      const wp=document.getElementById('whisperProgress');if(wp)wp.style.display='none';
     }else{
       stopRecording();
       window._poesieRecording=false;
@@ -1818,6 +1975,7 @@ function togglePoesieRec(){
     }
     return;
   }
+  window._poesieWhisperCancelled=false;
   const f=FABLES.find(x=>x.id===state.fableId);
   if(!f) return;
   res.innerHTML='';
@@ -1862,14 +2020,26 @@ function togglePoesieRec(){
   const engine=getRecoEngine();
   const whisperOk=window.Whisper&&window.Whisper.isAvailable();
   if(engine==='whisper'&&whisperOk){
+    window._poesieWhisperPending=true;
     Promise.resolve(window.Whisper.start(onFinal,function(err){
       console.warn('Whisper a \u00e9chou\u00e9, repli Web Speech :',err);
+      window._poesieWhisperPending=false;
       window._poesieWhisperSession=null;
+      if(window._poesieWhisperCancelled){window._poesieWhisperCancelled=false;return}
       startRecording(
         function(txt){live.textContent=txt||'\u{1F3A4} Parle...'},
         onFinal
       );
-    })).then(function(session){window._poesieWhisperSession=session});
+    })).then(function(session){
+      window._poesieWhisperPending=false;
+      if(window._poesieWhisperCancelled){
+        try{if(session) session.stop()}catch(e){}
+        window._poesieWhisperCancelled=false;
+        window._poesieWhisperSession=null;
+        return;
+      }
+      window._poesieWhisperSession=session;
+    });
   }else{
     startRecording(
       function(txt){live.textContent=txt||'\u{1F3A4} Parle...'},
