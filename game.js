@@ -535,16 +535,26 @@ window.addEventListener('pagehide',function(){
   }
 });
 
-/* ════════ EMBERS ════════ */
-setInterval(()=>{
-  const e=document.createElement('div');
-  e.className='ember';
-  e.style.left=Math.random()*100+'%';
-  e.style.bottom=(70+Math.random()*30)+'%';
-  e.style.animationDelay=Math.random()*2+'s';
-  $('embers').appendChild(e);
-  setTimeout(()=>e.remove(),2500);
-},500);
+/* ════════ EMBERS ════════
+   Pause quand l'onglet/app est en arrière-plan (iOS suspend les timers et
+   les déclenche en rafale au réveil → flot d'embers d'un coup).
+*/
+let _emberID=null;
+function _startEmbers(){
+  if(_emberID) return;
+  _emberID=setInterval(()=>{
+    if(document.hidden) return;
+    const e=document.createElement('div');
+    e.className='ember';
+    e.style.left=Math.random()*100+'%';
+    e.style.bottom=(70+Math.random()*30)+'%';
+    e.style.animationDelay=Math.random()*2+'s';
+    const root=$('embers');if(root){root.appendChild(e);setTimeout(()=>e.remove(),2500)}
+  },500);
+}
+function _stopEmbers(){if(_emberID){clearInterval(_emberID);_emberID=null}}
+_startEmbers();
+document.addEventListener('visibilitychange',()=>{document.hidden?_stopEmbers():_startEmbers()});
 
 /* ════════ NAVIGATION ════════
    Pile d'historique : chaque navigate() push une frame ; goBack() pop.
@@ -605,7 +615,10 @@ function navigate(screen,data,opts){
   }
   const prev=state.screen;
   _cleanupOnLeaveScreen(prev);
-  if(!opts.replace&&prev&&prev!==screen) _navStack.push(prev);
+  // Home est la racine : on vide toujours la pile en arrivant. Ailleurs,
+  // on push l'écran courant pour permettre le retour.
+  if(screen==='home') _navStack.length=0;
+  else if(!opts.replace&&prev&&prev!==screen) _navStack.push(prev);
   state.screen=screen;
   if(data) Object.assign(state,data);
   backArrow.classList.toggle('hidden',_navStack.length===0||screen==='home');

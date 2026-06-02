@@ -2,7 +2,7 @@
 <html lang="fr">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="Royaume">
@@ -16,8 +16,11 @@
 <title>Le Royaume des Nombres &mdash; Kangourou Maths</title>
 <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700;900&family=Crimson+Text:ital,wght@0,400;0,600;0,700;1,400&family=Fredoka:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
-*{box-sizing:border-box;margin:0;padding:0}
-body{background:linear-gradient(180deg,#dbeafe 0%,#eff6ff 35%,#f0f9ff 70%,#ffffff 100%);color:#1e293b;font-family:'Crimson Text',Georgia,serif;overflow-x:hidden;min-height:100vh;background-attachment:fixed}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+html,body{height:100%}
+body{background:linear-gradient(180deg,#dbeafe 0%,#eff6ff 35%,#f0f9ff 70%,#ffffff 100%);color:#1e293b;font-family:'Crimson Text',Georgia,serif;overflow-x:hidden;min-height:100vh;min-height:100dvh;background-attachment:scroll;padding:env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);-webkit-text-size-adjust:100%;-webkit-touch-callout:none;overscroll-behavior-y:contain;touch-action:manipulation}
+button,.clickable,.choice-btn,.subject-card,.card.clickable{touch-action:manipulation;-webkit-user-select:none;user-select:none}
+input,textarea,select{-webkit-user-select:auto;user-select:auto}
 ::-webkit-scrollbar{width:8px}
 ::-webkit-scrollbar-track{background:#e0f2fe}
 ::-webkit-scrollbar-thumb{background:#7dd3fc;border-radius:4px}
@@ -215,10 +218,10 @@ footer{position:relative;z-index:10;text-align:center;padding:24px;font-size:.7r
 <div class="container" id="app"></div>
 <div id="toast-area"></div>
 <footer>Le Royaume des Nombres &#8212; Inspir&#233; du concours Kangourou des Math&#233;matiques</footer>
-<script src="themes.js?v=20260602b"></script>
+<script src="themes.js?v=20260602c"></script>
 <script src="exercises.js?v=20260426l"></script>
 <script src="exercises_extra.js?v=20260426l"></script>
-<script src="game.js?v=20260602b"></script>
-<script src="whisper.js?v=20260602b"></script>
+<script src="game.js?v=20260602c"></script>
+<script src="whisper.js?v=20260602c"></script>
 </body>
 </html>
