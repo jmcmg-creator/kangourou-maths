@@ -449,6 +449,22 @@ function processIncomingSyncLink(){
   },150);
 }
 
+// Détecte une réponse de filtre contenu (LLM bloqué par sa politique de
+// sécurité). Renvoie un message utilisable côté UI au lieu de la trace technique.
+function _isContentFilterError(msg){
+  const s=String(msg||'').toLowerCase();
+  return s.includes('content filter')||s.includes('output blocked')||s.includes('content_filter')||s.includes('moderation')||s.includes('filtering policy');
+}
+function _friendlyApiError(rawMsg){
+  if(_isContentFilterError(rawMsg)){
+    return "🪄 Le Sage prépare une nouvelle leçon. Cette formule magique n'a pas marché — réessaie dans quelques secondes ou choisis un autre thème.";
+  }
+  if(/network|fetch|timeout|abort/i.test(String(rawMsg||''))){
+    return "🌐 Le messager n'a pas pu atteindre le Sage. Vérifie ta connexion et réessaie.";
+  }
+  return "✨ Le Sage est occupé. Réessaie dans un instant. ("+String(rawMsg||'inconnu').slice(0,80)+")";
+}
+
 async function generateAIExercises(level,count){
   state.generating=true;
   try{
@@ -459,7 +475,11 @@ async function generateAIExercises(level,count){
     });
     if(!r.ok) throw new Error('status '+r.status);
     const data=await r.json();
-    if(data.error) throw new Error(data.error.message||'API error');
+    if(data.error){
+      // Filtre contenu LLM : on ignore silencieusement (auto-gen en arrière-plan).
+      if(_isContentFilterError(data.error.message)){state.generating=false;return [];}
+      throw new Error(data.error.message||'API error');
+    }
     // Persiste dans le profil pour cross-device + sessions futures
     if(!profile.aiExercises) profile.aiExercises=[];
     profile.aiExercises=profile.aiExercises.concat(data.exercises);
@@ -1843,7 +1863,11 @@ async function loadTopics(lvId){
     profile.topicsCache[lvId]=data.topics;
     saveProfile();
     render();
-  }catch(e){state.topics=[];alert('Erreur chargement th\u00e8mes : '+e.message);render()}
+  }catch(e){
+    state.topics=[];
+    alert(_friendlyApiError(e.message));
+    render();
+  }
 }
 
 function renderFichesTopics(){
@@ -1880,7 +1904,15 @@ async function loadFiche(topicId,topicTitle){
     if(data.error)throw new Error(data.error.message||'err');
     state.fiche=data;
     render();
-  }catch(e){alert('Erreur g\u00e9n\u00e9ration fiche : '+e.message);navigate('fichesTopics')}
+  }catch(e){
+    // Si filtre contenu : on propose juste un retour au choix de thème sans alarmer.
+    if(_isContentFilterError(e.message)){
+      alert("🪄 Cette leçon est en cours d'écriture par le Sage. Choisis un autre thème ou réessaie plus tard.");
+    }else{
+      alert(_friendlyApiError(e.message));
+    }
+    navigate('fichesTopics');
+  }
 }
 
 function renderFichesView(){
