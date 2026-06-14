@@ -512,6 +512,72 @@ setInterval(()=>{
   setTimeout(()=>e.remove(),2500);
 },500);
 
+/* ════════ GARDE-FOUS SÉCURITÉ ENFANTS ════════
+   Portail parental + filtre prénoms + consentement micro.
+   Conformité Apple Kids / RGPD-K basique.
+*/
+const _PROFANITY=['merde','putain','con','conne','salop','encule','pute','bite','couille','chiant','cul','enfoir','niqu','batard','enculer','enfoiré','pd','pédé','tarlouze','tafiole','nique'];
+function isCleanName(name){
+  if(!name) return true;
+  const norm=String(name).toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'');
+  return !_PROFANITY.some(w=>norm.includes(w));
+}
+function parentalGate(onPass,onCancel){
+  // Déjà passé dans les 15 dernières minutes ? on laisse passer.
+  try{
+    const last=parseInt(localStorage.getItem('royaume_parental_ok')||'0',10);
+    if(Date.now()-last<15*60*1000){onPass&&onPass();return}
+  }catch(e){}
+  const a=7+Math.floor(Math.random()*8); // 7-14
+  const b=6+Math.floor(Math.random()*8); // 6-13
+  const answer=a*b;
+  const choices=new Set([answer]);
+  while(choices.size<4){
+    const off=(Math.random()<.5?-1:1)*(2+Math.floor(Math.random()*15));
+    const v=answer+off;
+    if(v>0) choices.add(v);
+  }
+  const arr=[...choices].sort(()=>Math.random()-.5);
+  const overlay=document.createElement('div');
+  overlay.id='parentalGate';
+  overlay.style.cssText='position:fixed;inset:0;background:rgba(15,10,46,.92);backdrop-filter:blur(8px);z-index:9999;display:flex;align-items:center;justify-content:center;padding:20px';
+  overlay.innerHTML=
+    '<div style="background:var(--bg-card-solid,#1e1650);border:1px solid rgba(251,191,36,.3);border-radius:18px;padding:24px;max-width:380px;width:100%;box-shadow:0 12px 48px rgba(0,0,0,.6);text-align:center">'
+    +'<div style="font-size:2.5rem;margin-bottom:8px">🔐</div>'
+    +'<h2 style="color:var(--gold,#fbbf24);font-size:1.2rem;margin-bottom:6px;font-family:Fredoka,sans-serif">Espace adulte</h2>'
+    +'<p style="color:var(--text-mid,#c4b5fd);font-size:.9rem;margin-bottom:14px">Résous cette opération pour continuer :</p>'
+    +'<p style="font-size:1.8rem;font-weight:700;color:var(--gold,#fbbf24);font-family:Fredoka,sans-serif;margin-bottom:16px">'+a+' × '+b+' = ?</p>'
+    +'<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:14px">'
+    +arr.map(c=>'<button data-val="'+c+'" style="min-height:48px;background:rgba(251,191,36,.1);color:var(--text-bright,#faf5ff);border:1px solid rgba(251,191,36,.3);border-radius:12px;font-weight:700;font-size:1.1rem;cursor:pointer;font-family:Quicksand,sans-serif">'+c+'</button>').join('')
+    +'</div>'
+    +'<button data-cancel="1" style="background:transparent;color:var(--text-dim,#8b7ec8);border:1px solid rgba(255,255,255,.1);border-radius:10px;padding:8px 16px;font-size:.85rem;cursor:pointer;font-family:Quicksand,sans-serif">Annuler</button>'
+    +'<p style="font-size:.7rem;margin-top:12px;color:var(--text-dim,#8b7ec8)">Empêche les enfants d\'accéder seuls aux réglages.</p>'
+    +'</div>';
+  document.body.appendChild(overlay);
+  overlay.addEventListener('click',function(e){
+    const t=e.target;
+    if(t.dataset&&t.dataset.cancel){overlay.remove();onCancel&&onCancel();return}
+    if(t.dataset&&t.dataset.val){
+      const v=parseInt(t.dataset.val,10);
+      if(v===answer){
+        try{localStorage.setItem('royaume_parental_ok',String(Date.now()))}catch(e){}
+        overlay.remove();onPass&&onPass();
+      }else{
+        t.style.background='rgba(248,113,113,.3)';
+        t.style.borderColor='#f87171';
+        t.disabled=true;
+        const remaining=Array.from(overlay.querySelectorAll('button[data-val]')).filter(b=>!b.disabled);
+        if(remaining.length===0){overlay.remove();onCancel&&onCancel()}
+      }
+    }
+  });
+}
+function ensureMicConsent(onYes,onNo){
+  try{if(localStorage.getItem('royaume_mic_consent')==='1'){onYes&&onYes();return}}catch(e){}
+  const ok=window.confirm("Le micro va s'allumer pour écouter la récitation.\n\n• Le son reste sur ton appareil (rien n'est envoyé sur Internet).\n• Tu peux arrêter à tout moment.\n\nAutoriser le micro ?");
+  if(ok){try{localStorage.setItem('royaume_mic_consent','1')}catch(e){}onYes&&onYes()}else{onNo&&onNo()}
+}
+
 /* ════════ NAVIGATION ════════ */
 $('headerHome').onclick=()=>navigate('home');
 function navigate(screen,data){
@@ -654,7 +720,7 @@ function renderHome(){
     </div>
     <div class="btn-row mt-4">
       <button class="btn-stone" onclick="navigate('royaume')">\u2728 Vue d'ensemble</button>
-      <button class="btn-stone" onclick="navigate('parent')">\u{1F464} Espace Parent</button>
+      <button class="btn-stone" onclick="parentalGate(function(){navigate('parent')})">\u{1F510} Espace Parent</button>
     </div>
   `;
 }
@@ -735,6 +801,7 @@ async function setName(){
   // Nettoie le prénom : retire les caractères dangereux (protection XSS).
   const v=$('nameInp').value.replace(/[<>"'&]/g,'').trim().slice(0,20);
   if(v.length<1){alert('Entre ton prénom');return}
+  if(!isCleanName(v)){alert('Ce prénom contient un mot interdit. Choisis-en un autre.');return}
   const aid=await aidFromName(v);
   app.innerHTML='<div class="card text-center fade-in" style="margin-top:60px"><div class="big-icon">🔍</div><h2 class="title">Recherche de ton Royaume…</h2></div>';
   const remote=await fetchProfileByAid(aid);
@@ -818,7 +885,8 @@ async function switchProfile(name){
   },50);
 }
 
-function addNewProfile(){
+function addNewProfile(){parentalGate(function(){_doAddNewProfile()})}
+function _doAddNewProfile(){
   profile=newProfile();
   navigate('nameAsk');
 }
@@ -1222,7 +1290,7 @@ function renderResults(){
     <button class="btn-stone" onclick="navigate('royaume')">Mon Royaume</button>
     <button class="btn-stone" onclick="navigate('home')">Accueil</button>
   </div>
-  <button class="parent-btn mt-4" onclick="navigate('parent')" style="width:100%">\u{1F464} Recap pour Papa/Maman</button>`;
+  <button class="parent-btn mt-4" onclick="parentalGate(function(){navigate('parent')})" style="width:100%">\u{1F510} Recap pour Papa/Maman</button>`;
 }
 
 /* ════════ MON ROYAUME ════════ */
@@ -1351,7 +1419,8 @@ function copySyncLink(){
     prompt('Copie ce lien et ouvre-le sur l\'autre appareil :',link);
   });
 }
-async function shareSyncLink(){
+function shareSyncLink(){parentalGate(function(){_doShareSyncLink()})}
+async function _doShareSyncLink(){
   const link=getSyncLink();
   if(navigator.share){
     try{await navigator.share({title:'Mon Royaume des Nombres',text:'Ouvre ce lien pour récupérer mon Royaume',url:link});}catch(e){}
@@ -1369,6 +1438,9 @@ function exportData(){
   URL.revokeObjectURL(url);
 }
 function resetData(){
+  parentalGate(function(){_doResetDataInner()});
+}
+function _doResetDataInner(){
   if(confirm('R\u00e9initialiser TOUTES les donn\u00e9es de '+profile.name+' ? Irr\u00e9versible.')){
     const dict=loadProfilesDict();
     delete dict[profile.name];
@@ -1479,29 +1551,54 @@ function stopPoesie(){
 }
 
 let _recognition=null;
+// iOS Safari ignore continuous=true et coupe après ~5s de silence.
+// On détecte iOS et on relance silencieusement jusqu'à 12 fois tant que
+// l'utilisateur n'a pas cliqué Stop → illusion d'écoute continue pour
+// les longues récitations.
+let _recUserStopped=false;
+let _recRestartCount=0;
+const _IS_IOS=/iPad|iPhone|iPod/.test(navigator.userAgent)||(navigator.platform==='MacIntel'&&navigator.maxTouchPoints>1);
 function startRecording(onResult,onEnd){
   const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
   if(!SR){alert('Reconnaissance vocale non supportée. Utilise Safari sur iPhone ou Chrome.');return null}
-  if(_recognition){_recognition.stop();_recognition=null}
-  _recognition=new SR();
-  _recognition.lang='fr-FR';
-  _recognition.continuous=true;
-  _recognition.interimResults=true;
+  if(_recognition){try{_recognition.stop()}catch(e){}_recognition=null}
+  _recUserStopped=false;
+  _recRestartCount=0;
   let finalTxt='';
-  _recognition.onresult=(e)=>{
-    let interim='';
-    for(let i=e.resultIndex;i<e.results.length;i++){
-      if(e.results[i].isFinal) finalTxt+=e.results[i][0].transcript+' ';
-      else interim+=e.results[i][0].transcript;
-    }
-    onResult(finalTxt+interim);
-  };
-  _recognition.onend=()=>{onEnd&&onEnd(finalTxt)};
-  _recognition.onerror=(e)=>{onEnd&&onEnd(finalTxt+' [erreur: '+e.error+']')};
-  _recognition.start();
+  function _spawn(){
+    _recognition=new SR();
+    _recognition.lang='fr-FR';
+    _recognition.continuous=true;
+    _recognition.interimResults=true;
+    _recognition.onresult=(e)=>{
+      let interim='';
+      for(let i=e.resultIndex;i<e.results.length;i++){
+        if(e.results[i].isFinal) finalTxt+=e.results[i][0].transcript+' ';
+        else interim+=e.results[i][0].transcript;
+      }
+      onResult(finalTxt+interim);
+    };
+    _recognition.onend=()=>{
+      if(!_recUserStopped&&_IS_IOS&&_recRestartCount<12){
+        _recRestartCount++;
+        try{_spawn();return}catch(e){}
+      }
+      onEnd&&onEnd(finalTxt);
+    };
+    _recognition.onerror=(e)=>{
+      if(e.error==='no-speech'||e.error==='aborted') return;
+      _recUserStopped=true;
+      onEnd&&onEnd(finalTxt+' [erreur: '+e.error+']');
+    };
+    _recognition.start();
+  }
+  try{_spawn()}catch(e){onEnd&&onEnd(finalTxt+' [erreur: '+e.message+']');return null}
   return _recognition;
 }
-function stopRecording(){if(_recognition){_recognition.stop();_recognition=null}}
+function stopRecording(){
+  _recUserStopped=true;
+  if(_recognition){try{_recognition.stop()}catch(e){}_recognition=null}
+}
 
 function compareTexts(orig,spoken){
   const norm=s=>s.toLowerCase().replace(/<br\s*\/?>/gi,' ').replace(/<[^>]+>/g,'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^\w\s]/g,' ').replace(/\s+/g,' ').trim();
@@ -1639,6 +1736,10 @@ function renderPoesieFable(){
 window._poesieRecording=false;
 function togglePoesieRec(){
   const btn=$('recBtn');const live=$('recLive');const res=$('recResult');
+  if(!window._poesieRecording&&!localStorage.getItem('royaume_mic_consent')){
+    ensureMicConsent(function(){togglePoesieRec()},function(){});
+    return;
+  }
   if(window._poesieRecording){
     stopRecording();
     window._poesieRecording=false;
