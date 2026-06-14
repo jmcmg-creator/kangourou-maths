@@ -49,7 +49,9 @@ input,textarea,select{-webkit-user-select:auto;user-select:auto}
 .card{background:#ffffff;border:2px solid #38bdf8;box-shadow:0 4px 18px rgba(14,165,233,.12),0 1px 3px rgba(0,0,0,.04);border-radius:18px;padding:20px;margin-bottom:16px;transition:transform .3s,box-shadow .3s;color:#1e293b;word-wrap:break-word;overflow-wrap:break-word;min-width:0}
 .card>p.sub,.card>.row .sub,.card>.text-center .sub{color:#64748b}
 .card>p.desc,.card>.row p.desc{color:#475569}
-.card.clickable:hover{transform:scale(1.02);cursor:pointer;box-shadow:0 6px 22px rgba(14,165,233,.22)}
+.card.clickable{cursor:pointer}
+.card.clickable:hover{transform:scale(1.02);box-shadow:0 6px 22px rgba(14,165,233,.22)}
+.card.clickable:active,.subject-card:active{transform:scale(.98);opacity:.9}
 .btn-fire{background:linear-gradient(135deg,#0284c7,#0ea5e9,#38bdf8);color:#ffffff;font-weight:700;border:none;cursor:pointer;border-radius:12px;padding:14px 20px;font-size:1.05rem;font-family:'Fredoka','Cinzel',Georgia,serif;letter-spacing:.02em;transition:all .3s;width:100%;display:block;min-height:48px;box-shadow:0 4px 14px rgba(14,165,233,.32)}
 .btn-fire:hover{background:linear-gradient(135deg,#0ea5e9,#38bdf8,#7dd3fc);transform:translateY(-2px);box-shadow:0 8px 22px rgba(14,165,233,.45)}
 .btn-stone{background:linear-gradient(135deg,#e0f2fe,#bae6fd);border:1px solid #7dd3fc;color:#0c4a6e;cursor:pointer;border-radius:10px;padding:12px 16px;font-size:.9rem;font-family:'Fredoka','Cinzel',Georgia,serif;font-weight:600;transition:all .3s;width:100%;display:block;min-height:44px}
@@ -218,10 +220,10 @@ footer{position:relative;z-index:10;text-align:center;padding:24px;font-size:.7r
 <div class="container" id="app"></div>
 <div id="toast-area"></div>
 <footer>Le Royaume des Nombres &#8212; Inspir&#233; du concours Kangourou des Math&#233;matiques</footer>
-<script src="themes.js?v=20260602d"></script>
+<script src="themes.js?v=20260602e"></script>
 <script src="exercises.js?v=20260426l"></script>
 <script src="exercises_extra.js?v=20260426l"></script>
-<script src="game.js?v=20260602d"></script>
-<script src="whisper.js?v=20260602d"></script>
+<script src="game.js?v=20260602e"></script>
+<script src="whisper.js?v=20260602e"></script>
 </body>
 </html>
