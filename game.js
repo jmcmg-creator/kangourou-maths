@@ -556,6 +556,99 @@ function _stopEmbers(){if(_emberID){clearInterval(_emberID);_emberID=null}}
 _startEmbers();
 document.addEventListener('visibilitychange',()=>{document.hidden?_stopEmbers():_startEmbers()});
 
+/* ════════ GARDE-FOUS SÉCURITÉ ENFANTS ════════
+   Application pour enfants : on protège les actions sensibles derrière un
+   portail parental, on filtre les prénoms, et on demande consentement avant
+   d'utiliser le micro. Conformité Apple Kids / RGPD-K (basique).
+*/
+
+// Petite liste française minimaliste (les principales racines insultantes).
+// Filtrage souple : si une racine apparaît dans le prénom, on refuse.
+const _PROFANITY=['merde','putain','con','conne','salop','encule','pute','bite','couille','chiant','cul','enfoir','niqu','batard','enculer','enfoiré','pd','pédé','tarlouze','tafiole','nique'];
+function isCleanName(name){
+  if(!name) return true;
+  const norm=String(name).toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'');
+  return !_PROFANITY.some(w=>norm.includes(w));
+}
+
+// Portail parental : "Quel est le résultat de 7 × 8 ?" — sélection à 4 choix.
+// Apple Kids exige un test que les jeunes enfants ne peuvent pas résoudre.
+// On utilise une multiplication à 2 chiffres et un compte à rebours visuel.
+let _parentalPending=null;
+function parentalGate(onPass,onCancel){
+  // Si déjà passé dans les 15 dernières minutes, on laisse passer (UX).
+  try{
+    const last=parseInt(localStorage.getItem('royaume_parental_ok')||'0',10);
+    if(Date.now()-last<15*60*1000){onPass&&onPass();return}
+  }catch(e){}
+  const a=7+Math.floor(Math.random()*8); // 7-14
+  const b=6+Math.floor(Math.random()*8); // 6-13
+  const answer=a*b;
+  const choices=new Set([answer]);
+  while(choices.size<4){
+    const off=(Math.random()<.5?-1:1)*(2+Math.floor(Math.random()*15));
+    const v=answer+off;
+    if(v>0) choices.add(v);
+  }
+  const arr=[...choices].sort(()=>Math.random()-.5);
+  _parentalPending={onPass,onCancel,answer};
+  const overlay=document.createElement('div');
+  overlay.id='parentalGate';
+  overlay.style.cssText='position:fixed;inset:0;background:rgba(15,23,42,.88);backdrop-filter:blur(6px);z-index:9999;display:flex;align-items:center;justify-content:center;padding:20px;animation:fadeIn .25s ease-out';
+  overlay.innerHTML=`
+    <div style="background:#fff;border-radius:18px;padding:24px;max-width:380px;width:100%;box-shadow:0 12px 48px rgba(0,0,0,.4);text-align:center">
+      <div style="font-size:2.5rem;margin-bottom:8px">\u{1F510}</div>
+      <h2 class="title" style="color:#0c4a6e;font-size:1.2rem;margin-bottom:6px">Espace adulte</h2>
+      <p class="sub" style="margin-bottom:14px">Pour continuer, merci de résoudre cette opération :</p>
+      <p style="font-size:1.7rem;font-weight:700;color:#0c4a6e;font-family:'Fredoka','Cinzel',Georgia,serif;margin-bottom:14px">${a} × ${b} = ?</p>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:14px">
+        ${arr.map(c=>`<button class="choice-btn" data-val="${c}" style="min-height:48px;text-align:center;font-weight:700;font-size:1.1rem">${c}</button>`).join('')}
+      </div>
+      <button class="btn-stone" data-cancel="1" style="font-size:.85rem">Annuler</button>
+      <p class="sub" style="font-size:.7rem;margin-top:10px;color:#94a3b8">Ce contrôle empêche les enfants d'accéder seuls aux réglages.</p>
+    </div>`;
+  document.body.appendChild(overlay);
+  overlay.addEventListener('click',function(e){
+    const t=e.target;
+    if(t.dataset&&t.dataset.cancel){
+      _parentalPending=null;overlay.remove();
+      onCancel&&onCancel();
+      return;
+    }
+    if(t.dataset&&t.dataset.val){
+      const v=parseInt(t.dataset.val,10);
+      if(v===answer){
+        try{localStorage.setItem('royaume_parental_ok',String(Date.now()))}catch(e){}
+        _parentalPending=null;overlay.remove();
+        onPass&&onPass();
+      }else{
+        t.classList.add('wrong');
+        t.disabled=true;
+        const remaining=Array.from(overlay.querySelectorAll('button[data-val]')).filter(b=>!b.disabled);
+        if(remaining.length===0){
+          // Toutes mauvaises : on ferme, l'adulte réessaiera plus tard.
+          _parentalPending=null;overlay.remove();
+          onCancel&&onCancel();
+        }
+      }
+    }
+  });
+}
+
+// Consentement micro 1ʳᵉ utilisation (RGPD-K).
+function ensureMicConsent(onYes,onNo){
+  try{
+    if(localStorage.getItem('royaume_mic_consent')==='1'){onYes&&onYes();return}
+  }catch(e){}
+  const ok=window.confirm("Le micro va s'allumer pour écouter la récitation.\n\n• Le son reste 100% sur ton appareil (rien n'est envoyé sur Internet en mode Whisper).\n• Tu peux arrêter à tout moment.\n\nAutoriser l'utilisation du micro ?");
+  if(ok){
+    try{localStorage.setItem('royaume_mic_consent','1')}catch(e){}
+    onYes&&onYes();
+  }else{
+    onNo&&onNo();
+  }
+}
+
 /* ════════ NAVIGATION ════════
    Pile d'historique : chaque navigate() push une frame ; goBack() pop.
    La flèche du header devient un vrai bouton "retour" indépendant de
@@ -808,7 +901,7 @@ function renderHome(){
     </div>
     <div class="btn-row mt-4">
       <button class="btn-stone" onclick="navigate('royaume')">\u2728 Vue d'ensemble</button>
-      <button class="btn-stone" onclick="navigate('parent')">\u{1F464} Espace Parent</button>
+      <button class="btn-stone" onclick="parentalGate(function(){navigate('parent')})">\u{1F510} Espace Parent</button>
     </div>
     <button class="btn-stone mt-3" style="width:100%;font-size:.85rem" onclick="navigate('themePicker')">\u{1F3A8} Choisir un th\u00e8me (${esc(getActiveTheme().name)})</button>
     <button class="btn-stone mt-2" style="width:100%;font-size:.85rem" onclick="navigate('profilePicker')">\u{1F504} Changer d'utilisateur</button>
@@ -856,6 +949,10 @@ async function setName(){
   const raw=$('nameInp').value||'';
   const v=raw.replace(/[<>"'`\\\/]/g,'').replace(/\s+/g,' ').trim().slice(0,20);
   if(v.length<1){alert('Entre ton pr\u00e9nom');return}
+  if(typeof isCleanName==='function'&&!isCleanName(v)){
+    alert('Ce prénom contient un mot interdit. Choisis-en un autre.');
+    return;
+  }
   app.innerHTML='<div class="card text-center" style="margin-top:60px"><div class="dragon-emoji float">\u{1F50D}</div><h2 class="title">Préparation de ton Royaume...</h2></div>';
   const dict=loadProfilesDict();
   // Lookup insensible à la casse pour éviter "Joseph" / "joseph" en doublon.
@@ -930,8 +1027,10 @@ async function switchProfile(name){
 }
 
 function addNewProfile(){
-  profile=newProfile();
-  navigate('nameAsk');
+  parentalGate(function(){
+    profile=newProfile();
+    navigate('nameAsk');
+  });
 }
 
 function deleteProfile(name){
@@ -1130,6 +1229,10 @@ function normalizeForCompare(s){
 function startOralAnswer(){
   const ex=state.exercises[state.idx];
   if(!ex||!ex.oral||state.selected!==null) return;
+  if(typeof ensureMicConsent==='function'&&!localStorage.getItem('royaume_mic_consent')){
+    ensureMicConsent(function(){startOralAnswer()},function(){});
+    return;
+  }
   const live=document.getElementById('oralLive');
   const btn=document.getElementById('micBtn');
   if(live){live.style.display='block';live.textContent='\u{1F3A4} Parle maintenant…'}
@@ -1377,7 +1480,7 @@ function renderResults(){
     <button class="btn-stone" onclick="navigate('royaume')">Mon Royaume</button>
     <button class="btn-stone" onclick="navigate('home')">Accueil</button>
   </div>
-  <button class="parent-btn mt-4" onclick="navigate('parent')" style="width:100%">\u{1F464} Recap pour Papa/Maman</button>`;
+  <button class="parent-btn mt-4" onclick="parentalGate(function(){navigate('parent')})" style="width:100%">\u{1F510} Recap pour Papa/Maman</button>`;
 }
 
 /* ════════ MON ROYAUME ════════ */
@@ -1487,7 +1590,11 @@ function copySyncLink(){
     prompt('Copie ce lien et ouvre-le sur l\'autre appareil :',link);
   });
 }
-async function shareSyncLink(){
+function shareSyncLink(){
+  // Gate parental : le lien permet de transférer le profil sur un autre appareil.
+  parentalGate(function(){_doShareSyncLink()});
+}
+async function _doShareSyncLink(){
   const link=getSyncLink();
   if(navigator.share){
     try{await navigator.share({title:'Mon Royaume des Nombres',text:'Ouvre ce lien pour récupérer mon Royaume',url:link});}catch(e){}
@@ -1505,6 +1612,9 @@ function exportData(){
   URL.revokeObjectURL(url);
 }
 function resetData(){
+  parentalGate(function(){ _doResetDataInner(); });
+}
+function _doResetDataInner(){
   if(!confirm('R\u00e9initialiser TOUTES les donn\u00e9es de '+profile.name+' ? Irr\u00e9versible.')) return;
   // Annule un push cloud en attente sur l'ancien profil.
   if(_syncTimer){clearTimeout(_syncTimer);_syncTimer=null}
@@ -1565,7 +1675,31 @@ const FABLES=[
     morale:"L'enfant joue, ignorant la peine ; la mère l'aime jusqu'à la fin.",moraleLabel:"Thème"},
   {id:"hugo-sentiers",title:"Sentiers où l'herbe se balance",icon:"\u{1F343}",dur:40,author:"Victor Hugo",recueil:"Les Contemplations, 1856",
     text:"Sentiers où l'herbe se balance, vallons, coteaux, bois chevelus, pourquoi ce deuil et ce silence ? \u2014 Celui qui venait ne vient plus. Pourquoi personne à ta fenêtre, et pourquoi ton jardin sans fleurs, ô maison ? où donc est ton maître ? \u2014 Je ne sais pas, il est ailleurs.",
-    morale:"L'absence de l'être aimé (Léopoldine) vide la nature de ses couleurs.",moraleLabel:"Thème"}
+    morale:"L'absence de l'être aimé (Léopoldine) vide la nature de ses couleurs.",moraleLabel:"Thème"},
+  {id:"hugo-printemps",title:"Printemps",icon:"\u{1F33C}",dur:55,author:"Victor Hugo",recueil:"Toute la lyre, posthume",
+    text:"Voici donc les longs jours, lumière, amour, délire ! Voici le printemps ! mars, avril au doux sourire, mai fleuri, juin brûlant, tous les beaux mois amis ! Les peupliers, au bord des fleuves endormis, se courbent mollement comme de grandes palmes ; l'oiseau palpite au fond des bois tièdes et calmes ; il semble que tout rit, et que les arbres verts sont joyeux d'être ensemble et se disent des vers. Le jour naît couronné d'une aube fraîche et tendre ; le soir est plein d'amour ; la nuit, on croit entendre, à travers l'ombre immense et sous le ciel béni, quelque chose d'heureux chanter dans l'infini.",
+    morale:"Le printemps fait chanter la nature et le cœur des hommes.",moraleLabel:"Thème"},
+  {id:"hugo-les-mots",title:"Les Mots (Réponse à un acte d'accusation)",icon:"\u{1F4DD}",dur:60,author:"Victor Hugo",recueil:"Les Contemplations, 1856",
+    text:"Guerre à la rhétorique et paix à la syntaxe ! Et je n'ignorais pas que la main qui dégage le vrai du faux et tord ce vil chanvre, l'usage, et qui blanchit la toile et purge le lexique, c'est la main du penseur, c'est la main du moqueur. J'ai dit aux mots : Soyez république ! soyez la fourmilière immense, et travaillez ! Croyez, aimez, vivez ! J'ai mis tout en branle, et j'ai, sur Vaugelas, lâché la grammaire en révolution. Et déchirant du roi le pourpre vain trésor, j'ai jeté le bonnet rouge au vieux dictionnaire. Plus de mot sénateur ! plus de mot roturier !",
+    morale:"Hugo a libéré la langue française et donné les mêmes droits à tous les mots.",moraleLabel:"Thème"},
+  {id:"hugo-aux-feuillantines",title:"Aux Feuillantines",icon:"\u{1F4DA}",dur:55,author:"Victor Hugo",recueil:"Les Rayons et les Ombres, 1840",
+    text:"Mes deux frères et moi, nous étions tout enfants. Notre mère disait : Jouez, mais je défends qu'on marche dans les fleurs, qu'on monte aux échelles. Abel était l'aîné, j'étais le plus petit. Nous mangions notre pain de si bon appétit, que les femmes riaient quand nous passions près d'elles. Nous montions tous les trois sur de hauts margelles ; tout nous était bonheur, jeux, sable, gazons verts ; nous regardions ramper des bêtes inconnues ; les feuilles nous parlaient comme des âmes nues ; les arbres frémissaient pleins de chants et de vers.",
+    morale:"Souvenir tendre de l'enfance heureuse au couvent des Feuillantines à Paris.",moraleLabel:"Thème"},
+  {id:"hugo-booz-endormi",title:"Booz endormi (extrait)",icon:"\u{1F31C}",dur:50,author:"Victor Hugo",recueil:"La Légende des siècles, 1859",
+    text:"Booz s'était couché de fatigue accablé ; il avait tout le jour travaillé dans son aire ; puis avait fait son lit à sa place ordinaire ; Booz dormait auprès des boisseaux pleins de blé. Ce vieillard possédait des champs de blés et d'orge ; il était, quoique riche, à la justice enclin ; il n'avait pas de fange en l'eau de son moulin ; il n'avait pas d'enfer dans le feu de sa forge. Sa barbe était d'argent comme un ruisseau d'avril. Tandis qu'il sommeillait, Ruth, une Moabite, s'était couchée aux pieds de Booz, le sein nu, espérant on ne sait quel rayon inconnu, quand viendrait du réveil la lumière subite.",
+    morale:"Booz, vieil homme juste, accueille la jeune Ruth : un songe biblique sur la bonté.",moraleLabel:"Thème"},
+  {id:"hugo-saison-semailles",title:"Saison des semailles, le soir",icon:"\u{1F33E}",dur:45,author:"Victor Hugo",recueil:"Les Chansons des rues et des bois, 1865",
+    text:"C'est le moment crépusculaire. J'admire, assis sous un portail, ce reste de jour dont s'éclaire la dernière heure du travail. Dans les terres, de nuit baignées, je contemple, ému, les haillons d'un vieillard qui jette à poignées la moisson future aux sillons. Sa haute silhouette noire domine les profonds labours. On sent à quel point il doit croire à la fuite utile des jours. Il marche dans la plaine immense, va, vient, lance la graine au loin, rouvre sa main, et recommence, et je médite, obscur témoin, pendant que, déployant ses voiles, l'ombre, où se mêle une rumeur, semble élargir jusqu'aux étoiles le geste auguste du semeur.",
+    morale:"Le semeur, modeste et patient, accomplit un geste qui touche les étoiles.",moraleLabel:"Thème"},
+  {id:"hugo-oceano-nox",title:"Oceano Nox",icon:"\u{1F30A}",dur:55,author:"Victor Hugo",recueil:"Les Rayons et les Ombres, 1840",
+    text:"Oh ! combien de marins, combien de capitaines qui sont partis joyeux pour des courses lointaines, dans ce morne horizon se sont évanouis ! Combien ont disparu, dure et triste fortune ! Dans une mer sans fond, par une nuit sans lune, sous l'aveugle océan à jamais enfouis ! Combien de patrons morts avec leurs équipages ! L'ouragan de leur vie a pris toutes les pages, et d'un souffle il a tout dispersé sur les flots. Nul ne saura leur fin dans l'abîme plongée. Chaque vague en passant d'un butin s'est chargée ; l'une a saisi l'esquif, l'autre les matelots.",
+    morale:"Hommage aux marins disparus en mer, oubliés mais jamais effacés.",moraleLabel:"Thème"},
+  {id:"hugo-le-mendiant",title:"Le Mendiant",icon:"\u{1F49B}",dur:45,author:"Victor Hugo",recueil:"Les Contemplations, 1856",
+    text:"Un pauvre homme passait dans le givre et le vent. Je cognai sur ma vitre ; il s'arrêta devant ma porte, que j'ouvris d'une façon civile. Les ânes revenaient du marché de la ville, portant les paysans accroupis sur leurs bâts. C'était le vieux qui vit dans une niche au bas de la montée, et rêve, attendant, solitaire, un rayon du ciel triste, un liard de la terre, tendant les mains pour l'homme et les joignant pour Dieu. Je lui criai : Venez vous réchauffer un peu. Comment vous nommez-vous ? Il me dit : Je me nomme le pauvre. Je lui pris la main : Entrez, brave homme.",
+    morale:"L'humanité du poète : accueillir le pauvre comme un frère.",moraleLabel:"Thème"},
+  {id:"hugo-mors",title:"Mors",icon:"\u{1F54A}",dur:40,author:"Victor Hugo",recueil:"Les Contemplations, 1856",
+    text:"Je vis cette faucheuse. Elle était dans son champ. Elle allait à grands pas moissonnant et fauchant, noir squelette laissant passer le crépuscule. Dans l'ombre où l'on dirait que tout tremble et recule, l'homme suivait des yeux les lueurs de sa faulx. Et les triomphateurs sous les arcs triomphaux tombaient ; elle changeait en désert Babylone, le trône en l'échafaud et l'échafaud en trône, les roses en fumier, les enfants en oiseaux, l'or en cendre, et les yeux des mères en ruisseaux. Et les femmes criaient : Rends-nous ce petit être. Pour le faire mourir, pourquoi l'avoir fait naître ?",
+    morale:"Hugo, après la mort de Léopoldine, voit la Mort comme une moissonneuse universelle.",moraleLabel:"Thème"}
 ];
 
 /* ════════ TTS NATUREL ════════
@@ -2015,6 +2149,13 @@ function togglePoesieRec(){
   const live=document.getElementById('recLive');
   const res=document.getElementById('recResult');
   if(!btn||!live||!res) return;
+  // Consentement micro 1ère fois (RGPD-K).
+  if(!window._poesieRecording&&typeof ensureMicConsent==='function'){
+    if(!localStorage.getItem('royaume_mic_consent')){
+      ensureMicConsent(function(){togglePoesieRec()},function(){});
+      return;
+    }
+  }
   if(window._poesieRecording){
     if(window._poesieWhisperPending||window._poesieWhisperSession){
       // Whisper en cours (pending = start() pas encore r\u00e9solu, OU session active).
