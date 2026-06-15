@@ -629,6 +629,7 @@ function render(){
     case 'poesieHome': renderPoesieHome(); break;
     case 'poesieFable': renderPoesieFable(); break;
     case 'addPoem': renderAddPoem(); break;
+    case 'addExercise': renderAddExercise(); break;
   }
   updateFooter();
 }
@@ -975,10 +976,12 @@ function pickExercises(mode,lvId){
   const lv=LEVELS.find(l=>l.id===lvId);
   // Inclure les exercices AI générés (persistés dans le profil)
   const aiPool=(profile.aiExercises||[]).filter(e=>e.lv===lvId);
+  // Exercices personnalisés ajoutés par le parent (synchronisés cloud).
+  const customPool=(profile.customExercises||[]).filter(e=>e.lv===lvId);
   // Toujours essayer le pool statique : tout niveau présent dans
   // exercises.js / exercises_extra.js a des exos prêts à l'emploi.
   const staticPool=EX.filter(e=>e.lv===lvId);
-  const pool=staticPool.concat(aiPool);
+  const pool=staticPool.concat(aiPool).concat(customPool);
   if(mode==='progression'){
     return shuffle(EX.filter(e=>e.lv!=='cp')).sort((a,b)=>a.diff-b.diff).slice(0,10);
   }
@@ -1425,6 +1428,25 @@ function renderParent(){
       ${list.length>0?`<div style="margin-top:12px">${items}</div>`:'<p class="sub" style="margin-top:10px;font-style:italic">Aucune poésie ajoutée pour le moment.</p>'}
     </div>`;
   })()}
+  ${(function(){
+    const list=profile.customExercises||[];
+    const items=list.map(ex=>'<div class="row-between" style="padding:10px 0;border-top:1px solid rgba(255,255,255,0.06)">'
+      +'<div class="flex-1" style="min-width:0">'
+        +'<div style="color:#faf5ff;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+esc(ex.q||'(sans titre)')+'</div>'
+        +'<div class="sub" style="margin-top:2px">'+esc(ex.lv||'?')+' · '+esc(ex.cat||'?')+'</div>'
+      +'</div>'
+      +'<div class="row gap-2">'
+        +'<button class="btn-stone btn-small" onclick="editCustomExercise(\''+ex.id+'\')">✏️</button>'
+        +'<button class="btn-stone btn-small" onclick="deleteCustomExercise(\''+ex.id+'\')" style="background:rgba(239,68,68,0.15);border-color:rgba(239,68,68,0.3);color:#fca5a5">🗑️</button>'
+      +'</div>'
+    +'</div>').join('');
+    return '<div class="card mb-4" style="border-color:#34d399">'
+      +'<h3 class="fredoka" style="font-size:.85rem;color:#34d399;margin-bottom:8px;letter-spacing:.1em;text-transform:uppercase">📚 Tes exercices personnalisés</h3>'
+      +'<p style="color:#faf5ff;font-size:.8rem;margin-bottom:10px">Ajoute tes propres questions à choix multiples (géo, maths, etc.). Elles s\'intègrent au pool de '+esc(profile.name)+' et se synchronisent sur tous tes appareils.</p>'
+      +'<button class="btn-fire btn-small" onclick="state.editingExerciseId=null;navigate(\'addExercise\')">➕ Ajouter un exercice</button>'
+      +(list.length>0?'<div style="margin-top:12px">'+items+'</div>':'<p class="sub" style="margin-top:10px;font-style:italic">Aucun exercice personnalisé pour le moment.</p>')
+    +'</div>';
+  })()}
   <div class="card mb-4" style="border-color:rgba(255,255,255,0.08)"><h3 class="fredoka" style="font-size:.85rem;color:#8b7ec8;margin-bottom:8px">Donn\u00e9es</h3>
   <button class="btn-stone btn-small" onclick="exportData()">\u{1F4E4} Exporter (JSON)</button>
   <button class="btn-stone btn-small" onclick="resetData()" style="margin-top:8px;background:rgba(239,68,68,0.15);border-color:rgba(239,68,68,0.3);color:#fca5a5">\u{1F5D1}\uFE0F R\u00e9initialiser</button></div>
@@ -1678,6 +1700,79 @@ function saveCustomPoem(){
 }
 
 function editCustomPoem(id){state.editingPoemId=id;navigate('addPoem');}
+
+/* ════════ EXERCICES PERSONNALISÉS (ajoutés par le parent) ════════ */
+function renderAddExercise(){
+  const editing=state.editingExerciseId?((profile.customExercises||[]).find(e=>e.id===state.editingExerciseId)):null;
+  const cur=editing||{lv:'geo-cm2',cat:'',diff:2,q:'',ch:['','','',''],ans:0,se:''};
+  const lvOptions=LEVELS.map(lv=>'<option value="'+esc(lv.id)+'"'+(cur.lv===lv.id?' selected':'')+'>'+esc(lv.name)+' — '+esc(lv.sub||'')+'</option>').join('');
+  app.innerHTML='<div class="text-center py-6 fade-in">'
+    +'<div style="font-size:3rem">\u{1F4DA}</div>'
+    +'<h2 class="title" style="color:#34d399;font-size:1.5rem">'+(editing?'Modifier l\'exercice':'Ajouter un exercice')+'</h2>'
+    +'<p class="sub">Question à choix multiples qui s\'ajoute au pool de '+esc(profile.name)+'</p>'
+  +'</div>'
+  +'<div class="card mb-4">'
+    +'<label class="sub" style="display:block;margin-bottom:6px;font-weight:600">Niveau / matière</label>'
+    +'<select class="name-prompt" id="exLv">'+lvOptions+'</select>'
+    +'<label class="sub" style="display:block;margin:14px 0 6px;font-weight:600">Catégorie</label>'
+    +'<input class="name-prompt" id="exCat" placeholder="Ex. Capitales du monde" maxlength="60" value="'+esc(cur.cat||'')+'">'
+    +'<label class="sub" style="display:block;margin:14px 0 6px;font-weight:600">Difficulté (1 facile → 5 difficile)</label>'
+    +'<select class="name-prompt" id="exDiff">'+[1,2,3,4,5].map(d=>'<option value="'+d+'"'+(cur.diff===d?' selected':'')+'>'+d+'</option>').join('')+'</select>'
+    +'<label class="sub" style="display:block;margin:14px 0 6px;font-weight:600">Question</label>'
+    +'<textarea id="exQ" rows="3" style="width:100%;padding:14px;background:rgba(255,255,255,0.04);border:1px solid var(--border-subtle);border-radius:12px;color:var(--text-bright);font-family:inherit;font-size:1rem;line-height:1.5;resize:vertical">'+esc(cur.q||'')+'</textarea>'
+    +'<label class="sub" style="display:block;margin:14px 0 6px;font-weight:600">Les 4 choix (coche la bonne réponse)</label>'
+    +[0,1,2,3].map(i=>'<div class="row gap-2" style="margin-bottom:6px;align-items:center">'
+      +'<input type="radio" name="exAns" value="'+i+'"'+(cur.ans===i?' checked':'')+' style="width:20px;height:20px;accent-color:#34d399;flex-shrink:0">'
+      +'<input class="name-prompt" id="exCh'+i+'" style="margin:0;flex:1" placeholder="Choix '+String.fromCharCode(65+i)+'" maxlength="120" value="'+esc((cur.ch||[])[i]||'')+'">'
+    +'</div>').join('')
+    +'<label class="sub" style="display:block;margin:14px 0 6px;font-weight:600">Explication (affichée après la réponse)</label>'
+    +'<textarea id="exSe" rows="2" style="width:100%;padding:14px;background:rgba(255,255,255,0.04);border:1px solid var(--border-subtle);border-radius:12px;color:var(--text-bright);font-family:inherit;font-size:1rem;line-height:1.5;resize:vertical">'+esc(cur.se||'')+'</textarea>'
+  +'</div>'
+  +'<div class="btn-row">'
+    +'<button class="btn-fire" onclick="saveCustomExercise()">'+(editing?'\u{1F4BE} Mettre à jour':'➕ Ajouter à mes exercices')+'</button>'
+    +'<button class="btn-stone" onclick="cancelAddExercise()">Annuler</button>'
+  +'</div>';
+}
+
+function cancelAddExercise(){state.editingExerciseId=null;navigate('parent');}
+
+function saveCustomExercise(){
+  const lv=$('exLv').value;
+  const cat=$('exCat').value.trim().slice(0,60);
+  const diff=parseInt($('exDiff').value,10)||2;
+  const q=$('exQ').value.trim();
+  const ch=[$('exCh0').value.trim(),$('exCh1').value.trim(),$('exCh2').value.trim(),$('exCh3').value.trim()];
+  const ansEl=document.querySelector('input[name="exAns"]:checked');
+  const ans=ansEl?parseInt(ansEl.value,10):0;
+  const se=$('exSe').value.trim();
+  if(!cat){alert('Donne une catégorie à l\'exercice (ex. « Capitales »).');return}
+  if(q.length<5){alert('La question est trop courte.');return}
+  if(ch.some(c=>!c)){alert('Remplis les 4 choix de réponse.');return}
+  if(typeof isCleanName==='function'&&!isCleanName(q+' '+ch.join(' ')+' '+se)){alert('Ton exercice contient un mot interdit.');return}
+  if(!profile.customExercises) profile.customExercises=[];
+  if(state.editingExerciseId){
+    const e=profile.customExercises.find(x=>x.id===state.editingExerciseId);
+    if(e){e.lv=lv;e.cat=cat;e.diff=diff;e.q=q;e.ch=ch;e.ans=ans;e.se=se;e.updatedAt=today()}
+    state.editingExerciseId=null;
+  }else{
+    const id='cex-'+Date.now().toString(36)+Math.random().toString(36).slice(2,5);
+    profile.customExercises.push({id,lv,cat,diff,q,ch,ans,se,sk:cat,custom:true,addedAt:today()});
+  }
+  saveProfile();
+  navigate('parent');
+}
+
+function editCustomExercise(id){state.editingExerciseId=id;navigate('addExercise');}
+
+function deleteCustomExercise(id){
+  const ex=(profile.customExercises||[]).find(x=>x.id===id);
+  if(!ex) return;
+  if(!confirm('Supprimer cet exercice ?')) return;
+  profile.customExercises=profile.customExercises.filter(x=>x.id!==id);
+  saveProfile();
+  navigate('parent');
+}
+
 
 function deleteCustomPoem(id){
   const p=(profile.customPoems||[]).find(x=>x.id===id);
