@@ -1,0 +1,32 @@
+# Dependabot natif GitHub : PR auto pour MAJ des deps vulnérables ou périmées.
+# Pas besoin de secret, ça tourne directement avec GITHUB_TOKEN.
+
+version: 2
+updates:
+  # Dépendances npm (pour le script verify-questions.mjs et futur Capacitor)
+  - package-ecosystem: 'npm'
+    directory: '/'
+    schedule:
+      interval: 'weekly'
+      day: 'monday'
+      time: '07:00'
+      timezone: 'Europe/Paris'
+    open-pull-requests-limit: 5
+    labels:
+      - 'deps'
+    groups:
+      # Regroupe les MAJ patch/minor en une seule PR pour réduire le bruit.
+      patches:
+        update-types: ['patch', 'minor']
+
+  # Actions GitHub utilisées dans les workflows
+  - package-ecosystem: 'github-actions'
+    directory: '/'
+    schedule:
+      interval: 'weekly'
+      day: 'monday'
+      time: '07:00'
+      timezone: 'Europe/Paris'
+    open-pull-requests-limit: 3
+    labels:
+      - 'ci'

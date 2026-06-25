@@ -1,0 +1,52 @@
+name: Vérif des liens (lychee)
+
+# Scanne tous les liens HTTP du repo (HTML, JS, MD) avec lychee.
+# Détecte les liens 404, redirections cassées, domaines morts.
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  schedule:
+    - cron: '0 5 * * 1' # tous les lundis 5h UTC
+
+jobs:
+  links:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      issues: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Vérification des liens
+        uses: lycheeverse/lychee-action@v2
+        with:
+          # On scanne HTML, JS, MD. On ignore le worker (pas d'endpoint public en GET).
+          args: >-
+            --verbose
+            --no-progress
+            --max-concurrency 8
+            --timeout 20
+            --retry-wait-time 2
+            --max-retries 2
+            --accept 200,204,301,302,403
+            --exclude-mail
+            --exclude-path node_modules
+            --exclude-path .git
+            --exclude 'royaume-api\.square-paris75\.workers\.dev'
+            --exclude 'huggingface\.co/Xenova'
+            './**/*.html'
+            './**/*.js'
+            './**/*.md'
+            './**/*.json'
+          fail: true
+          format: markdown
+          output: ./lychee-report.md
+
+      - name: Upload report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: lychee-report
+          path: lychee-report.md

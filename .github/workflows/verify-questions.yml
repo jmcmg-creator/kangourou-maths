@@ -1,0 +1,58 @@
+name: Vérif factuelle des questions (Claude)
+
+# Agent IA qui relit chaque question + ses 4 choix + l'index de la bonne réponse
+# et vérifie que la réponse marquée est bien factuellement correcte.
+# Coût : ~1 ¢ par question avec Sonnet 4.5 (~7 € pour 720 questions). On limite
+# donc l'exécution aux PR qui touchent les exercices, plus un run hebdomadaire.
+
+on:
+  pull_request:
+    paths:
+      - 'exercises.js'
+      - 'exercises_extra.js'
+      - 'scripts/verify-questions.mjs'
+  schedule:
+    - cron: '0 4 * * 1' # tous les lundis 4h UTC
+  workflow_dispatch:
+    inputs:
+      limit:
+        description: 'Nombre max de questions à vérifier (vide = toutes)'
+        required: false
+        default: ''
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: read
+      pull-requests: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install
+        run: npm install @anthropic-ai/sdk@latest
+
+      - name: Vérification
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          LIMIT: ${{ github.event.inputs.limit }}
+          ONLY_CHANGED: ${{ github.event_name == 'pull_request' && 'true' || 'false' }}
+        run: node scripts/verify-questions.mjs
+
+      - name: Upload report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: verify-report
+          path: verify-report.md
+
+      - name: Commenter la PR
+        if: github.event_name == 'pull_request' && always()
+        uses: marocchino/sticky-pull-request-comment@v2
+        with:
+          path: verify-report.md

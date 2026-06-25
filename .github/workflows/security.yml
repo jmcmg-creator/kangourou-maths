@@ -1,0 +1,75 @@
+name: Audit sécurité
+
+# Combine 4 scanners open-source qui couvrent les principales menaces :
+#   1. gitleaks  : secrets / clés API commitées par erreur
+#   2. semgrep   : patterns OWASP (XSS, injection, eval, etc.)
+#   3. osv-scanner : vulnérabilités CVE dans les dépendances
+#   4. codeql    : analyse statique sémantique (natif GitHub)
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  schedule:
+    - cron: '0 6 * * 1' # tous les lundis 6h UTC
+
+permissions:
+  contents: read
+  security-events: write
+  pull-requests: write
+
+jobs:
+  secrets:
+    name: 🔑 gitleaks (secrets)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with: { fetch-depth: 0 }
+      - uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  semgrep:
+    name: 🧠 semgrep (OWASP)
+    runs-on: ubuntu-latest
+    container:
+      image: returntocorp/semgrep
+    steps:
+      - uses: actions/checkout@v4
+      - run: |
+          semgrep ci \
+            --config p/owasp-top-ten \
+            --config p/javascript \
+            --config p/xss \
+            --config p/security-audit \
+            --error \
+            --severity ERROR \
+            --severity WARNING
+
+  osv:
+    name: 🐛 osv-scanner (CVE dépendances)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: google/osv-scanner-action/osv-scanner-action@v2.0.2
+        with:
+          scan-args: |-
+            --recursive
+            --skip-git
+            ./
+
+  codeql:
+    name: 🔬 CodeQL (analyse statique)
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        language: [javascript]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: github/codeql-action/init@v3
+        with:
+          languages: ${{ matrix.language }}
+          queries: security-and-quality
+      - uses: github/codeql-action/analyze@v3
+        with:
+          category: '/language:${{ matrix.language }}'
