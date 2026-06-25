@@ -1,0 +1,27 @@
+{
+  "name": "Le Royaume des Savoirs",
+  "short_name": "Royaume",
+  "description": "Plateforme éducative magique pour enfants du CP au CM2 — maths, culture, sciences, poésies. Marche hors-ligne.",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#0f0a2e",
+  "theme_color": "#0f0a2e",
+  "lang": "fr-FR",
+  "categories": ["education", "kids"],
+  "icons": [
+    {
+      "src": "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 192 192'><rect width='192' height='192' fill='%230f0a2e'/><text x='96' y='150' font-size='150' text-anchor='middle' dominant-baseline='auto'>🏰</text></svg>",
+      "sizes": "192x192",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    },
+    {
+      "src": "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'><rect width='512' height='512' fill='%230f0a2e'/><text x='256' y='400' font-size='400' text-anchor='middle' dominant-baseline='auto'>🏰</text></svg>",
+      "sizes": "512x512",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
