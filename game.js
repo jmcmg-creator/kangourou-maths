@@ -73,7 +73,9 @@ const SUBJECTS=[
 ];
 
 // Aplatir tous les niveaux pour rétrocompat
-const LEVELS=SUBJECTS.flatMap(s=>s.levels);
+// Certains sujets (Poésies) n'ont pas de levels — le "||[]" empêche undefined
+// de s'infiltrer dans LEVELS et de faire planter tout LEVELS.find(...).
+const LEVELS=SUBJECTS.flatMap(s=>s.levels||[]);
 
 function getSubjectForLevel(lvId){
   for(const s of SUBJECTS) if(s.levels.find(l=>l.id===lvId)) return s;
