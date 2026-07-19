@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="theme-color" content="#0f0a2e">
+<title>Royaume des Savoirs</title>
+<style>
+/* Safe areas iOS : le contenu ne passe pas sous l'encoche ni sous
+   l'indicateur home. Complète les styles existants de la web app. */
+html, body { margin: 0; padding: 0; background: #0f0a2e; }
+body {
+  padding-top: env(safe-area-inset-top);
+  padding-bottom: env(safe-area-inset-bottom);
+  padding-left: env(safe-area-inset-left);
+  padding-right: env(safe-area-inset-right);
+  overscroll-behavior-y: contain;
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+}
+#ios-boot-splash {
+  position: fixed; inset: 0; z-index: 9999;
+  background: #0f0a2e;
+  display: flex; align-items: center; justify-content: center;
+  color: #fbbf24; font-family: -apple-system, sans-serif; font-size: 20px;
+  transition: opacity .3s ease-out;
+}
+</style>
+</head>
+<body>
+
+<div id="ios-boot-splash">🏰 Royaume des Savoirs</div>
+
+<!-- 1. Bootstrap TypeScript (crée window.Bridge) -->
+<script type="module" src="/src/bootstrap.ts"></script>
+
+<!-- 2. Shim iOS : remplace localStorage/fetch de game.js par window.Bridge -->
+<script src="/shim/ios-shim.js"></script>
+
+<!-- 3. La web app existante, copiée dans static/ par sync-www.mjs.
+     game.js démarre normalement — le shim a déjà pré-branché ce dont il
+     a besoin. -->
+<script>
+(async function boot() {
+  // Attend que window.Bridge soit prêt avant d'insérer la web app.
+  const maxWait = 5000, start = Date.now();
+  while (!window.Bridge && (Date.now() - start) < maxWait) {
+    await new Promise(r => setTimeout(r, 50));
+  }
+  if (window.Bridge && window.Bridge.ready) {
+    try { await window.Bridge.ready; } catch (e) { /* ignore */ }
+  }
+  // Insère les scripts de la web app dans l'ordre.
+  const load = (src) => new Promise((res, rej) => {
+    const s = document.createElement('script');
+    s.src = src; s.onload = res; s.onerror = rej;
+    document.body.appendChild(s);
+  });
+  try {
+    await load('/static/exercises.js?v=native');
+    await load('/static/exercises_extra.js?v=native');
+    await load('/static/game.js?v=native');
+    // Retire le splash une fois game.js chargé.
+    const sp = document.getElementById('ios-boot-splash');
+    if (sp) { sp.style.opacity = '0'; setTimeout(() => sp.remove(), 300); }
+  } catch (e) {
+    document.getElementById('ios-boot-splash').textContent = "Erreur au démarrage. Réouvre l'application.";
+  }
+})();
+</script>
+
+</body>
+</html>

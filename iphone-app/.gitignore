@@ -1,0 +1,28 @@
+node_modules/
+dist/
+.env
+.env.local
+.env.*.local
+coverage/
+*.log
+.DS_Store
+
+# Capacitor iOS — le projet ios/ EST commit après cap add ios pour permettre
+# builds reproductibles, mais on ignore les artefacts locaux Xcode.
+ios/App/Pods/
+ios/App/build/
+ios/App/DerivedData/
+ios/App/App.xcworkspace/xcuserdata/
+ios/App/App.xcodeproj/xcuserdata/
+ios/App/App.xcodeproj/project.xcworkspace/xcuserdata/
+ios/App/Podfile.lock
+
+# Contenu synchronisé depuis la web app (généré par sync-www)
+www/static/index.html
+www/static/game.js
+www/static/exercises.js
+www/static/exercises_extra.js
+www/static/lecons/
+www/static/audio/
+www/static/manifest.json
+www/static/sw.js
