@@ -14,8 +14,8 @@ export class NetworkService {
   private detachNative: (() => void) | null = null;
 
   async init(): Promise<void> {
-    const isNative = typeof (globalThis as { Capacitor?: { isNativePlatform: () => boolean } }).Capacitor?.isNativePlatform === 'function' &&
-      (globalThis as { Capacitor: { isNativePlatform: () => boolean } }).Capacitor.isNativePlatform();
+    const isNative = typeof globalThis.Capacitor?.isNativePlatform === 'function' &&
+      globalThis.Capacitor.isNativePlatform();
 
     if (isNative) {
       const { Network } = await import('@capacitor/network');

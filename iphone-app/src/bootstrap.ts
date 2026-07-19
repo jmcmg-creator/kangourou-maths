@@ -18,6 +18,7 @@ import { SyncEngine, HttpTransport } from './sync/engine.js';
 import { Analytics, NoopProvider } from './analytics/analytics.js';
 import { haptic, setHapticsEnabled } from './native/haptics.js';
 import { secureGet, secureSet } from './native/keychain.js';
+import { installIosShim } from './shim/ios-shim.js';
 
 interface BridgeAPI {
   storage: {
@@ -50,8 +51,7 @@ declare global {
 }
 
 async function openDb(): Promise<Database> {
-  const g = globalThis as { Capacitor?: { isNativePlatform: () => boolean } };
-  if (g.Capacitor?.isNativePlatform?.()) {
+  if (globalThis.Capacitor?.isNativePlatform?.()) {
     return openNativeDatabase('royaume_savoirs');
   }
   // Dev navigateur & tests : mémoire (les données ne survivent pas au rechargement,
@@ -59,7 +59,7 @@ async function openDb(): Promise<Database> {
   return new MemoryDatabase();
 }
 
-const apiBase = (import.meta as { env: Record<string, string> }).env.VITE_API_BASE ?? 'https://royaume-api.square-paris75.workers.dev';
+const apiBase = import.meta.env.VITE_API_BASE ?? 'https://royaume-api.square-paris75.workers.dev';
 
 let readyResolve!: () => void;
 const ready = new Promise<void>(r => { readyResolve = r; });
@@ -154,10 +154,15 @@ const ready = new Promise<void>(r => { readyResolve = r; });
   const consent = await storage.get('analytics_consent');
   analytics.setConsent(consent === '1');
 
+  // Installe le shim iOS AVANT de signaler ready. Sur iOS, il redirige
+  // localStorage vers SQLite ; sur web, il est no-op.
+  await installIosShim(bridge);
+
   // Force une première tentative de sync si en ligne
   if (network.isOnline()) syncEngine.scheduleTick();
 
-  // Marque bridge prêt pour que game.js démarre après (voir ios-shim.js)
+  // Marque bridge prêt : le boot script de index.html peut maintenant charger
+  // exercises.js + game.js en toute sécurité (le shim est en place).
   readyResolve();
 
   // Trace un événement de démarrage (no-op sans consentement)

@@ -4,10 +4,8 @@
  * Réservé aux secrets : PIN hashé + sel, jetons de sync.
  */
 
-const g = globalThis as { Capacitor?: { isNativePlatform: () => boolean } };
-
 async function backend() {
-  if (g.Capacitor?.isNativePlatform?.()) {
+  if (globalThis.Capacitor?.isNativePlatform?.()) {
     const { Preferences } = await import('@capacitor/preferences');
     return Preferences;
   }

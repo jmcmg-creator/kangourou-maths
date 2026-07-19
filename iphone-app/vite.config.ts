@@ -1,9 +1,12 @@
 import { defineConfig } from 'vite';
 import { resolve } from 'node:path';
 
-// La build Vite produit `dist/` que Capacitor emballe dans l'app iOS.
-// Le script sync-www copie d'abord la web app dans www/static ; Vite fusionne
-// ensuite tout dans dist/.
+// Structure Capacitor-friendly :
+//  - root = www/  (l'entrée est www/index.html)
+//  - publicDir = static (résolu www/static/, copié tel quel à la build)
+//  - build sort dans ../dist (à la racine de iphone-app), attendu par
+//    capacitor.config.ts (webDir: 'dist')
+//  - fs.allow permet d'importer ../src/bootstrap.ts depuis www/index.html
 export default defineConfig({
   root: 'www',
   publicDir: 'static',
@@ -11,12 +14,7 @@ export default defineConfig({
     outDir: '../dist',
     emptyOutDir: true,
     target: 'es2020',
-    sourcemap: false,
-    rollupOptions: {
-      input: {
-        main: resolve(__dirname, 'www/index.html')
-      }
-    }
+    sourcemap: false
   },
   resolve: {
     alias: {
@@ -25,6 +23,9 @@ export default defineConfig({
   },
   server: {
     port: 5174,
-    strictPort: false
+    strictPort: false,
+    fs: {
+      allow: ['..']
+    }
   }
 });

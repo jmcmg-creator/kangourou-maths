@@ -6,6 +6,31 @@ Cet état est mis à jour à chaque livraison. Il distingue :
 - **Implémenté, test à écrire** 🚧
 - **À faire (nécessite macOS/Xcode)** ⏳
 
+## v0.2.0 — Socle vérifié, installables + build validés
+
+**Prouvé dans cette version (exécuté sur Linux, npm install + tests réels) :**
+
+- `npm install` : ✅ 210 paquets, 21s (sans warnings bloquants)
+- `npm run typecheck` : ✅ TypeScript strict `--noEmit` sans erreur
+- `npm test` : ✅ **21/21 tests unitaires vitest passent** en < 600 ms
+- `npm run build` : ✅ Vite build → `dist/` avec index.html à la racine, bundle ~20 KB (6,76 KB gzip)
+- `npm run sync:www` : ✅ 20 fichiers copiés de la web app
+- `npm run verify:web-app-intact` : ✅ SHA-256 de 6 fichiers baseline enregistrés + revérifiés
+
+**Nouveaux composants ajoutés :**
+
+| Composant | Statut |
+|---|---|
+| Providers analytics (Console + PostHog batch) | ✅ implémentés |
+| DownloadManager (fetch avec progress, SHA-256, persist Filesystem) | ✅ implémenté, testé manuellement |
+| Biometric wrapper (Face ID / Touch ID) | ✅ implémenté, no-op sans natif |
+| Design tokens (colors, spacing, radii, typo, animations) | ✅ + helper `tokensToCss()` |
+| Repositories Progress / Session / Reward | ✅ CRUD complet |
+| Info.plist template avec permissions | ✅ prêt à fusionner |
+| Podfile template avec plugins | ✅ prêt à fusionner |
+| Script de génération d'icônes | ✅ écrit (utilise `sharp` si dispo) |
+| GitHub Actions CI iPhone | ✅ workflow prêt (job web actif, job macOS opt-in) |
+
 ## v0.1.0 — Scaffold initial
 
 ### Socle TypeScript

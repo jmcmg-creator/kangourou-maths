@@ -8,8 +8,6 @@
 <meta name="theme-color" content="#0f0a2e">
 <title>Royaume des Savoirs</title>
 <style>
-/* Safe areas iOS : le contenu ne passe pas sous l'encoche ni sous
-   l'indicateur home. Complète les styles existants de la web app. */
 html, body { margin: 0; padding: 0; background: #0f0a2e; }
 body {
   padding-top: env(safe-area-inset-top);
@@ -22,29 +20,37 @@ body {
 }
 #ios-boot-splash {
   position: fixed; inset: 0; z-index: 9999;
-  background: #0f0a2e;
-  display: flex; align-items: center; justify-content: center;
-  color: #fbbf24; font-family: -apple-system, sans-serif; font-size: 20px;
+  background: linear-gradient(180deg, #0f0a2e 0%, #1a1145 100%);
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  color: #fbbf24; font-family: -apple-system, sans-serif;
   transition: opacity .3s ease-out;
 }
+#ios-boot-splash .logo { font-size: 72px; margin-bottom: 16px; }
+#ios-boot-splash .title { font-size: 20px; font-weight: 700; letter-spacing: 0.02em; }
+#ios-boot-splash .dots { margin-top: 20px; display: flex; gap: 8px; }
+#ios-boot-splash .dot { width: 8px; height: 8px; border-radius: 50%; background: #fbbf24; opacity: .3; animation: pulse 1.4s ease-in-out infinite; }
+#ios-boot-splash .dot:nth-child(2) { animation-delay: 0.2s; }
+#ios-boot-splash .dot:nth-child(3) { animation-delay: 0.4s; }
+@keyframes pulse { 0%, 100% { opacity: .3; } 50% { opacity: 1; } }
 </style>
 </head>
 <body>
 
-<div id="ios-boot-splash">🏰 Royaume des Savoirs</div>
+<div id="ios-boot-splash">
+  <div class="logo">🏰</div>
+  <div class="title">Royaume des Savoirs</div>
+  <div class="dots"><div class="dot"></div><div class="dot"></div><div class="dot"></div></div>
+</div>
 
-<!-- 1. Bootstrap TypeScript (crée window.Bridge) -->
-<script type="module" src="/src/bootstrap.ts"></script>
+<!-- 1. Bootstrap TypeScript : crée window.Bridge ET installe le shim iOS
+     (qui redirige localStorage vers SQLite) AVANT de signaler ready. -->
+<script type="module" src="../src/bootstrap.ts"></script>
 
-<!-- 2. Shim iOS : remplace localStorage/fetch de game.js par window.Bridge -->
-<script src="/shim/ios-shim.js"></script>
-
-<!-- 3. La web app existante, copiée dans static/ par sync-www.mjs.
-     game.js démarre normalement — le shim a déjà pré-branché ce dont il
-     a besoin. -->
+<!-- 2. La web app existante (copiée dans static/ par sync-www.mjs).
+     Le boot séquentiel ci-dessous attend window.Bridge.ready avant de
+     charger exercises.js + game.js — garantit que le shim est en place. -->
 <script>
 (async function boot() {
-  // Attend que window.Bridge soit prêt avant d'insérer la web app.
   const maxWait = 5000, start = Date.now();
   while (!window.Bridge && (Date.now() - start) < maxWait) {
     await new Promise(r => setTimeout(r, 50));
@@ -52,21 +58,20 @@ body {
   if (window.Bridge && window.Bridge.ready) {
     try { await window.Bridge.ready; } catch (e) { /* ignore */ }
   }
-  // Insère les scripts de la web app dans l'ordre.
   const load = (src) => new Promise((res, rej) => {
     const s = document.createElement('script');
     s.src = src; s.onload = res; s.onerror = rej;
     document.body.appendChild(s);
   });
   try {
-    await load('/static/exercises.js?v=native');
-    await load('/static/exercises_extra.js?v=native');
-    await load('/static/game.js?v=native');
-    // Retire le splash une fois game.js chargé.
+    await load('/exercises.js?v=native');
+    await load('/exercises_extra.js?v=native');
+    await load('/game.js?v=native');
     const sp = document.getElementById('ios-boot-splash');
     if (sp) { sp.style.opacity = '0'; setTimeout(() => sp.remove(), 300); }
   } catch (e) {
-    document.getElementById('ios-boot-splash').textContent = "Erreur au démarrage. Réouvre l'application.";
+    const sp = document.getElementById('ios-boot-splash');
+    if (sp) sp.innerHTML = '<div style="color:#f87171;text-align:center;padding:0 24px">❌ Erreur au démarrage.<br>Réouvre l\'application.</div>';
   }
 })();
 </script>

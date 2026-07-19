@@ -13,8 +13,7 @@ export function setHapticsEnabled(v: boolean): void {
 
 export async function haptic(style: HapticStyle = 'light'): Promise<void> {
   if (!enabled) return;
-  const g = globalThis as { Capacitor?: { isNativePlatform: () => boolean } };
-  if (!g.Capacitor?.isNativePlatform?.()) return;
+  if (!globalThis.Capacitor?.isNativePlatform?.()) return;
   try {
     const { Haptics, ImpactStyle, NotificationType } = await import('@capacitor/haptics');
     switch (style) {

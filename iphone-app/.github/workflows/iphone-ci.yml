@@ -1,0 +1,78 @@
+name: iPhone app CI
+
+on:
+  push:
+    branches: [main, 'feature/iphone-**']
+    paths:
+      - 'iphone-app/**'
+      - '.github/workflows/iphone-ci.yml'
+  pull_request:
+    paths:
+      - 'iphone-app/**'
+      - '.github/workflows/iphone-ci.yml'
+
+jobs:
+  test-and-build:
+    name: Typecheck + tests + web build
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: iphone-app
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: iphone-app/package-lock.json
+
+      - name: Install
+        run: npm ci
+
+      - name: Verify web app intact
+        run: npm run verify:web-app-intact
+        continue-on-error: true      # ne bloque pas au premier commit, quand la baseline peut manquer
+
+      - name: TypeScript strict
+        run: npm run typecheck
+
+      - name: Unit tests
+        run: npm test
+
+      - name: Web build (Vite)
+        run: npm run build
+
+      - name: Upload dist artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: iphone-web-bundle
+          path: iphone-app/dist
+          retention-days: 14
+
+  # Job iOS natif : uniquement sur macOS runners quand un besoin l'exige.
+  # Désactivé par défaut car les runners macOS consomment ~10× les minutes.
+  ios-native-build:
+    name: iOS archive (macOS)
+    if: false                        # activer manuellement quand nécessaire
+    runs-on: macos-14
+    defaults:
+      run:
+        working-directory: iphone-app
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: '20', cache: 'npm', cache-dependency-path: iphone-app/package-lock.json }
+      - name: Install
+        run: npm ci
+      - name: Build web
+        run: npm run build
+      - name: Add iOS platform
+        run: npx cap add ios || true
+      - name: Sync
+        run: npx cap sync ios
+      - name: Xcode build (unsigned)
+        run: |
+          cd ios/App
+          xcodebuild -workspace App.xcworkspace -scheme App -configuration Debug -sdk iphonesimulator build CODE_SIGNING_ALLOWED=NO

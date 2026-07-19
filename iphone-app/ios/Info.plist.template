@@ -1,0 +1,79 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Template Info.plist à FUSIONNER avec celui généré par `npx cap add ios`
+  dans ios/App/App/Info.plist. Contient les clés indispensables pour :
+  - permissions micro + speech (récitation de poésies)
+  - déclaration non-cryptage (export EAR)
+  - orientation portrait uniquement (paysage réactivable au besoin)
+  - background modes (aucun en v1 — la sync se fait en avant-plan)
+
+  Marche à suivre : après cap add ios, ouvrir ios/App/App/Info.plist et
+  fusionner MANUELLEMENT les clés ci-dessous (Xcode conserve son propre
+  format via l'éditeur Property List).
+-->
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+
+  <!-- ═══ Permissions ═══ -->
+  <key>NSMicrophoneUsageDescription</key>
+  <string>Le micro sert à écouter tes poésies quand tu les récites. Rien n'est enregistré.</string>
+
+  <key>NSSpeechRecognitionUsageDescription</key>
+  <string>La reconnaissance vocale vérifie ta récitation, uniquement sur ton iPhone.</string>
+
+  <!-- Uniquement si notifications parent activées un jour -->
+  <key>NSUserNotificationsUsageDescription</key>
+  <string>Les notifications servent à rappeler doucement les moments d'apprentissage choisis par le parent.</string>
+
+  <!-- ═══ Encryption Export Compliance ═══ -->
+  <key>ITSAppUsesNonExemptEncryption</key>
+  <false/>
+
+  <!-- ═══ Orientations ═══ -->
+  <key>UISupportedInterfaceOrientations</key>
+  <array>
+    <string>UIInterfaceOrientationPortrait</string>
+  </array>
+  <key>UISupportedInterfaceOrientations~ipad</key>
+  <array>
+    <string>UIInterfaceOrientationPortrait</string>
+    <string>UIInterfaceOrientationPortraitUpsideDown</string>
+    <string>UIInterfaceOrientationLandscapeLeft</string>
+    <string>UIInterfaceOrientationLandscapeRight</string>
+  </array>
+
+  <!-- ═══ UI ═══ -->
+  <key>UIStatusBarStyle</key>
+  <string>UIStatusBarStyleLightContent</string>
+  <key>UIViewControllerBasedStatusBarAppearance</key>
+  <false/>
+  <key>UILaunchStoryboardName</key>
+  <string>LaunchScreen</string>
+
+  <!-- ═══ Capabilities de fond (aucune en v1) ═══ -->
+  <key>UIBackgroundModes</key>
+  <array>
+    <!-- Pas de background mode en v1. La sync se fait en avant-plan.
+         À ajouter plus tard : <string>fetch</string> pour BGTaskScheduler. -->
+  </array>
+
+  <!-- ═══ Localisation ═══ -->
+  <key>CFBundleLocalizations</key>
+  <array>
+    <string>fr</string>
+    <string>en</string>
+  </array>
+  <key>CFBundleDevelopmentRegion</key>
+  <string>fr</string>
+
+  <!-- ═══ Sécurité navigateur ═══ -->
+  <!-- App-Bound Domains : renforce la sécurité en limitant les domaines
+       que la WebView peut charger. On liste ici uniquement l'API worker. -->
+  <key>WKAppBoundDomains</key>
+  <array>
+    <string>royaume-api.square-paris75.workers.dev</string>
+  </array>
+
+</dict>
+</plist>
