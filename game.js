@@ -733,6 +733,18 @@ function renderHome(){
         <div class="kingdom-enter" style="color:#22d3ee">\u2794</div>
       </div>
     </div>
+    <div class="kingdom-gate fade-in" style="animation-delay:1.05s;--k-color:#60a5fa" onclick="location.href='lecons/ingenieur.html'">
+      <div class="kingdom-glow" style="background:radial-gradient(ellipse at 30% 50%,rgba(96,165,250,0.12),transparent 70%)"></div>
+      <div class="kingdom-border-glow" style="--k-color:#60a5fa"></div>
+      <div class="kingdom-inner">
+        <div class="kingdom-mascot">\u{1F527}</div>
+        <div class="kingdom-info">
+          <h3 class="kingdom-name" style="color:#60a5fa">Royaume de l'Ing\u00e9nieur</h3>
+          <p class="kingdom-stage">20 machines du quotidien d\u00e9mont\u00e9es et expliqu\u00e9es</p>
+        </div>
+        <div class="kingdom-enter" style="color:#60a5fa">\u2794</div>
+      </div>
+    </div>
     <div class="subject-card fade-in" style="border-color:#fbbf24;background:rgba(251,191,36,0.06)" onclick="navigate('fichesHome')">
       <div class="subject-emoji bounce">\u{1F4D6}</div>
       <div class="subject-info">
