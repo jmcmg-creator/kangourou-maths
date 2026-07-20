@@ -18,11 +18,5 @@ ios/App/App.xcodeproj/project.xcworkspace/xcuserdata/
 ios/App/Podfile.lock
 
 # Contenu synchronisé depuis la web app (généré par sync-www)
-www/static/index.html
-www/static/game.js
-www/static/exercises.js
-www/static/exercises_extra.js
-www/static/lecons/
-www/static/audio/
-www/static/manifest.json
-www/static/sw.js
+www/static/
+www/index.html
