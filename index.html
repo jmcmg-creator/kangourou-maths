@@ -149,8 +149,10 @@ header h1{
 
 /* ══ CARDS ══ */
 .card{
-  background:var(--bg-card);
-  backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);
+  /* Fond solide sombre : garanti sur toutes les WebViews (iOS inclus).
+     Le backdrop-filter est gardé en no-op cosmétique sur navigateurs
+     qui le supportent, mais ne change rien visuellement ici. */
+  background:var(--bg-card-solid);
   border:1px solid var(--border-subtle);
   box-shadow:var(--shadow-card);
   border-radius:var(--radius-lg);padding:20px;margin-bottom:16px;
@@ -660,7 +662,7 @@ footer{
 
 <script src="exercises.js?v=13"></script>
 <script src="exercises_extra.js?v=3"></script>
-<script src="game.js?v=22"></script>
+<script src="game.js?v=23"></script>
 <script>
 // Service Worker : enregistré uniquement en HTTPS / localhost (sinon le navigateur refuse).
 if ('serviceWorker' in navigator && (location.protocol === 'https:' || location.hostname === 'localhost' || location.hostname === '127.0.0.1')) {
