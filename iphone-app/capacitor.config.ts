@@ -13,10 +13,18 @@ const config: CapacitorConfig = {
   },
   server: {
     androidScheme: 'https',
-    iosScheme: 'app',
+    // Scheme par défaut « capacitor:// » : le plus éprouvé côté WebKit
+    // (contexte sécurisé → crypto.subtle et autres APIs disponibles).
     cleartext: false
   },
   plugins: {
+    // Les requêtes fetch() passent par la couche native iOS : plus de blocage
+    // CORS depuis la WebView (le worker Cloudflare n'autorise que l'origine
+    // https://jmcmg-creator.github.io — sync profil, fiches et génération IA
+    // échouaient donc systématiquement dans l'app).
+    CapacitorHttp: {
+      enabled: true
+    },
     SplashScreen: {
       launchShowDuration: 800,
       backgroundColor: '#0f0a2e',

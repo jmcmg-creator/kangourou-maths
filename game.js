@@ -374,11 +374,51 @@ const API_BASE="https://royaume-api.square-paris75.workers.dev";
 // AID déterministe : SHA-256 du prénom normalisé -> 32 hex.
 // « Joseph » donne le MÊME AID sur tous les appareils, donc son profil se
 // retrouve automatiquement dans le cloud — sans lien de transfert.
+// SHA-256 pur JS : secours quand crypto.subtle est absent (WebView iOS sur
+// scheme personnalisé, ou page servie en http non-localhost). Donne exactement
+// le même hash que crypto.subtle — l'AID reste identique sur tous les appareils.
+function _sha256Fallback(bytes){
+  const K=[0x428a2f98,0x71374491,0xb5c0fbcf,0xe9b5dba5,0x3956c25b,0x59f111f1,0x923f82a4,0xab1c5ed5,0xd807aa98,0x12835b01,0x243185be,0x550c7dc3,0x72be5d74,0x80deb1fe,0x9bdc06a7,0xc19bf174,0xe49b69c1,0xefbe4786,0x0fc19dc6,0x240ca1cc,0x2de92c6f,0x4a7484aa,0x5cb0a9dc,0x76f988da,0x983e5152,0xa831c66d,0xb00327c8,0xbf597fc7,0xc6e00bf3,0xd5a79147,0x06ca6351,0x14292967,0x27b70a85,0x2e1b2138,0x4d2c6dfc,0x53380d13,0x650a7354,0x766a0abb,0x81c2c92e,0x92722c85,0xa2bfe8a1,0xa81a664b,0xc24b8b70,0xc76c51a3,0xd192e819,0xd6990624,0xf40e3585,0x106aa070,0x19a4c116,0x1e376c08,0x2748774c,0x34b0bcb5,0x391c0cb3,0x4ed8aa4a,0x5b9cca4f,0x682e6ff3,0x748f82ee,0x78a5636f,0x84c87814,0x8cc70208,0x90befffa,0xa4506ceb,0xbef9a3f7,0xc67178f2];
+  let H=[0x6a09e667,0xbb67ae85,0x3c6ef372,0xa54ff53a,0x510e527f,0x9b05688c,0x1f83d9ab,0x5be0cd19];
+  const l=bytes.length,bitLen=l*8;
+  const withPad=((l+8)>>6<<6)+64;
+  const m=new Uint8Array(withPad);m.set(bytes);m[l]=0x80;
+  const dv=new DataView(m.buffer);
+  dv.setUint32(withPad-4,bitLen>>>0);dv.setUint32(withPad-8,Math.floor(bitLen/0x100000000));
+  const w=new Int32Array(64);
+  const rr=(x,n)=>(x>>>n)|(x<<(32-n));
+  for(let off=0;off<withPad;off+=64){
+    for(let i=0;i<16;i++)w[i]=dv.getInt32(off+i*4);
+    for(let i=16;i<64;i++){
+      const s0=rr(w[i-15],7)^rr(w[i-15],18)^(w[i-15]>>>3);
+      const s1=rr(w[i-2],17)^rr(w[i-2],19)^(w[i-2]>>>10);
+      w[i]=(w[i-16]+s0+w[i-7]+s1)|0;
+    }
+    let [a,b,c,d,e,f,g,h]=H;
+    for(let i=0;i<64;i++){
+      const S1=rr(e,6)^rr(e,11)^rr(e,25);
+      const ch=(e&f)^(~e&g);
+      const t1=(h+S1+ch+K[i]+w[i])|0;
+      const S0=rr(a,2)^rr(a,13)^rr(a,22);
+      const mj=(a&b)^(a&c)^(b&c);
+      const t2=(S0+mj)|0;
+      h=g;g=f;f=e;e=(d+t1)|0;d=c;c=b;b=a;a=(t1+t2)|0;
+    }
+    H=[(H[0]+a)|0,(H[1]+b)|0,(H[2]+c)|0,(H[3]+d)|0,(H[4]+e)|0,(H[5]+f)|0,(H[6]+g)|0,(H[7]+h)|0];
+  }
+  return new Uint8Array(H.flatMap(x=>[(x>>>24)&255,(x>>>16)&255,(x>>>8)&255,x&255]));
+}
+async function sha256Bytes(bytes){
+  if(globalThis.crypto&&crypto.subtle&&crypto.subtle.digest){
+    try{return new Uint8Array(await crypto.subtle.digest('SHA-256',bytes));}catch(e){}
+  }
+  return _sha256Fallback(bytes);
+}
 async function aidFromName(name){
   const norm=String(name||'').toLowerCase().trim().replace(/\s+/g,'');
   if(!norm) return '';
-  const buf=await crypto.subtle.digest('SHA-256',new TextEncoder().encode('royaume:'+norm));
-  return Array.from(new Uint8Array(buf)).map(b=>b.toString(16).padStart(2,'0')).join('').slice(0,32);
+  const buf=await sha256Bytes(new TextEncoder().encode('royaume:'+norm));
+  return Array.from(buf).map(b=>b.toString(16).padStart(2,'0')).join('').slice(0,32);
 }
 // Garantit que profile.aid est renseigné (dérivé du nom si absent).
 async function ensureAid(){
@@ -389,7 +429,11 @@ async function ensureAid(){
 async function fetchProfileByAid(aid){
   if(!aid||!/^[a-f0-9]{32}$/.test(aid)) return null;
   try{
-    const r=await fetch(API_BASE+'/profile/'+aid);
+    // Timeout 6s : sans ça, un réseau lent/muet bloque l'écran
+    // « Recherche de ton Royaume… » indéfiniment.
+    const ctl=(typeof AbortController!=='undefined')?new AbortController():null;
+    if(ctl)setTimeout(()=>ctl.abort(),6000);
+    const r=await fetch(API_BASE+'/profile/'+aid,ctl?{signal:ctl.signal}:{});
     if(!r.ok) return null;
     const txt=await r.text();
     if(txt==='null'||!txt) return null;
@@ -997,7 +1041,17 @@ function pickExercises(mode,lvId){
   const staticPool=EX.filter(e=>e.lv===lvId);
   const pool=staticPool.concat(aiPool).concat(customPool);
   if(mode==='progression'){
-    return shuffle(EX.filter(e=>e.lv!=='cp')).sort((a,b)=>a.diff-b.diff).slice(0,10);
+    // Quête du Dragon : difficulté croissante, mais UNIQUEMENT dans le
+    // royaume en cours (avant : EX entier → des questions d'hébreu ou de
+    // biologie apparaissaient au milieu d'une quête de maths ou de géo).
+    const rid=getRoyaumeId(lvId);
+    const subjLevels=((SUBJECTS.find(s=>s.id===rid)||{}).levels||[]).map(l=>l.id);
+    let base=pool.concat(EX.filter(e=>subjLevels.includes(e.lv)&&e.lv!==lvId&&e.lv!=='cp'));
+    // Dédoublonne (le pool du niveau courant est déjà inclus via `pool`)
+    const seenIds=new Set();
+    base=base.filter(e=>{if(seenIds.has(e.id))return false;seenIds.add(e.id);return true});
+    if(base.length===0)base=pool;
+    return shuffle(base).sort((a,b)=>a.diff-b.diff).slice(0,10);
   }
   if(mode==='adaptive'){
     // Priorise les exercices rat\u00e9s ou jamais vus
@@ -1124,28 +1178,52 @@ function selectAnswer(i){
 function showExplanation(ex,correct){
   const el=$('explanation');
   if(!el) return;
-  const methodeHTML=ex.methode.map(m=>`<div class="pedago-step">${m}</div>`).join('');
-  const gainHTML=correct?`<span class="xp-gain">+${Math.round(ex.diff*10*(state.streak>=10?3:state.streak>=5?2:state.streak>=3?1.5:1))} XP</span> <span class="crystal-gain">\u{1F48E} +${ex.diff*2}</span>`:'';
+  // Beaucoup d'exercices (sciences, culture, g\u00e9o, IA\u2026) n'ont pas tous les
+  // champs p\u00e9dagogiques : on s\u00e9curise tout (avant, ex.methode.map crashait
+  // et l'\u00e9cran restait bloqu\u00e9 sans bouton \u00ab Suivant \u00bb).
+  const methode=Array.isArray(ex.methode)?ex.methode:[];
+  const methodeHTML=methode.map(m=>`<div class="pedago-step">${m}</div>`).join('');
+  const mult=state.streak>=10?3:state.streak>=5?2:state.streak>=3?1.5:1;
+  const gainHTML=correct?`<span class="xp-gain">+${Math.round(ex.diff*10*mult)} XP</span> <span class="crystal-gain">\u{1F48E} +${ex.diff*2}</span>`:'';
+  const rid=getRoyaumeId(state.level);
+  const isMaths=rid==='maths';
+  // MATHS + bonne r\u00e9ponse : pas besoin de fiche \u00e0 retenir, on encha\u00eene
+  // tout seul apr\u00e8s un bref feedback.
+  if(isMaths&&correct){
+    el.innerHTML=`<div class="card fade-in mt-6">
+      <div class="row gap-2"><span style="font-size:1.5rem">\u2705</span>
+      <h4 class="fredoka" style="font-size:1.1rem;font-weight:700;color:#22c55e;margin:0">Excellent !</h4>
+      ${gainHTML}</div>
+    </div>`;
+    const atIdx=state.idx;
+    setTimeout(()=>{
+      if(state.screen==='game'&&state.idx===atIdx&&state.selected!==null&&!state.gameOver)nextQuestion();
+    },1200);
+    return;
+  }
+  // Savoirs (culture, sciences, g\u00e9o\u2026) ou mauvaise r\u00e9ponse : d\u00e9tail de la
+  // r\u00e9ponse + \u00ab \u00c0 retenir \u00bb mis en avant, puis bouton Suivant.
+  const hasDetail=methode.length>0||ex.exemple;
   el.innerHTML=`<div class="card fade-in mt-6">
     <div class="row gap-2 mb-2"><span style="font-size:1.5rem">${correct?'\u2705':'\u274C'}</span>
-    <h4 class="fredoka" style="font-size:1.1rem;font-weight:700;color:${correct?'#22c55e':'#ef4444'};margin:0">${correct?'Excellent, sorci\u00e8re !':'Pas cette fois\u2026'}</h4>
+    <h4 class="fredoka" style="font-size:1.1rem;font-weight:700;color:${correct?'#22c55e':'#ef4444'};margin:0">${correct?'Excellent !':'Pas cette fois\u2026'}</h4>
     ${gainHTML}</div>
-    <p style="color:#faf5ff;margin-bottom:12px;line-height:1.6;font-weight:600">${ex.se}</p>
-    ${!correct?`<div class="error-box"><p style="font-size:.9rem;margin:0"><span class="error-label">\u{1F914} L'erreur probable : </span><span style="color:#faf5ff">${ex.pourquoi}</span></p></div>`:''}
-    <a class="detail-link mt-3" style="display:inline-block;margin-top:10px" onclick="toggleDetail()">${state.detailOpen?'Masquer':'Voir'} la m\u00e9thode pas \u00e0 pas \u2192</a>
+    ${ex.se?`<p style="color:#faf5ff;margin-bottom:12px;line-height:1.6;font-weight:600">${ex.se}</p>`:''}
+    ${!correct&&ex.pourquoi?`<div class="error-box"><p style="font-size:.9rem;margin:0"><span class="error-label">\u{1F914} L'erreur probable : </span><span style="color:#faf5ff">${ex.pourquoi}</span></p></div>`:''}
+    ${ex.regle?`<div class="tip-box"><p style="font-size:.9rem;margin:0"><span class="tip-label">\u{1F4A1} \u00c0 retenir : </span><span class="tip-text">${ex.regle}</span></p></div>`:''}
+    ${hasDetail?`<a class="detail-link mt-3" style="display:inline-block;margin-top:10px" onclick="toggleDetail()">${state.detailOpen?'Masquer':'Voir'} la m\u00e9thode pas \u00e0 pas \u2192</a>
     <div id="detailPanel" class="${state.detailOpen?'':'hidden'}">
-      <div class="pedago-box">
+      ${methode.length?`<div class="pedago-box">
         <div class="pedago-title">\u{1F4D0} M\u00e9thode du prof</div>
         ${methodeHTML}
-      </div>
-      <div class="tip-box">
-        <p style="font-size:.9rem;margin:0"><span class="tip-label">\u{1F4A1} \u00c0 retenir : </span><span class="tip-text">${ex.regle}</span></p>
-      </div>
+      </div>`:''}
       ${ex.exemple?`<div class="pedago-box" style="background:rgba(59,130,246,.08);border-color:rgba(59,130,246,.2)"><div class="pedago-title" style="color:#93c5fd">\u{1F4DA} Exemple similaire</div><p style="color:#faf5ff;font-size:.9rem">${ex.exemple}</p></div>`:''}
-      <p style="font-size:.75rem;color:#8b7ec8;margin-top:8px">Comp\u00e9tence : ${ex.sk}</p>
-    </div>
-    <button class="btn-fire mt-6" onclick="nextQuestion()">Question suivante \u2192</button>
+      ${ex.sk?`<p style="font-size:.75rem;color:#8b7ec8;margin-top:8px">Comp\u00e9tence : ${ex.sk}</p>`:''}
+    </div>`:''}
+    <button class="btn-fire mt-6" onclick="nextQuestion()">${correct?'Suivant \u2192':'Question suivante \u2192'}</button>
   </div>`;
+  const btn=el.querySelector('.btn-fire');
+  if(btn)setTimeout(()=>{try{btn.scrollIntoView({behavior:'smooth',block:'nearest'})}catch(e){}},80);
 }
 function toggleDetail(){state.detailOpen=!state.detailOpen;const p=$('detailPanel');if(p)p.classList.toggle('hidden');const a=document.querySelector('.detail-link');if(a)a.textContent=(state.detailOpen?'Masquer':'Voir')+' la m\u00e9thode pas \u00e0 pas \u2192'}
 
@@ -1937,7 +2015,9 @@ function renderFichesHome(){
 }
 function renderFichesSubject(){
   const s=SUBJECTS.find(x=>x.id===state.subjectId)||SUBJECTS[0];
-  const visibleLevels=s.levels.filter(l=>!l.secret||profile.name.toLowerCase()==='joseph');
+  // Les Poésies n'ont pas de niveaux de fiches : on renvoie vers leur royaume.
+  if(s.isPoetry){navigate('poesieHome');return}
+  const visibleLevels=(s.levels||[]).filter(l=>!l.secret||profile.name.toLowerCase()==='joseph');
   app.innerHTML=`<div class="text-center py-6 fade-in">
     <div style="font-size:3rem">${s.icon}</div>
     <h2 class="title" style="color:${s.color};font-size:1.5rem">${s.name}</h2>
