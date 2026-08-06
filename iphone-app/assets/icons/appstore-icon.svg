@@ -1,0 +1,168 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="1024" height="1024" viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <!-- Ciel nocturne : dégradé radial habité -->
+    <radialGradient id="sky" cx="50%" cy="38%" r="85%">
+      <stop offset="0%" stop-color="#3d2d8f"/>
+      <stop offset="45%" stop-color="#251a66"/>
+      <stop offset="100%" stop-color="#0f0a2e"/>
+    </radialGradient>
+    <!-- Or : champagne vers cuivre -->
+    <linearGradient id="gold" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#ffe9a3"/>
+      <stop offset="45%" stop-color="#ffd76a"/>
+      <stop offset="100%" stop-color="#e0a83c"/>
+    </linearGradient>
+    <linearGradient id="goldDeep" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#ffd76a"/>
+      <stop offset="100%" stop-color="#c8912e"/>
+    </linearGradient>
+    <!-- Pages du livre -->
+    <linearGradient id="pageL" x1="0" y1="0" x2="1" y2="0.25">
+      <stop offset="0%" stop-color="#fdf6e3"/>
+      <stop offset="100%" stop-color="#e8dcc0"/>
+    </linearGradient>
+    <linearGradient id="pageR" x1="1" y1="0" x2="0" y2="0.25">
+      <stop offset="0%" stop-color="#fdf6e3"/>
+      <stop offset="100%" stop-color="#e8dcc0"/>
+    </linearGradient>
+    <!-- Halo derrière le château -->
+    <radialGradient id="halo" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#ffd76a" stop-opacity="0.38"/>
+      <stop offset="60%" stop-color="#ffd76a" stop-opacity="0.12"/>
+      <stop offset="100%" stop-color="#ffd76a" stop-opacity="0"/>
+    </radialGradient>
+    <!-- Lune -->
+    <radialGradient id="moon" cx="38%" cy="35%" r="80%">
+      <stop offset="0%" stop-color="#fffbe9"/>
+      <stop offset="100%" stop-color="#f0e2b6"/>
+    </radialGradient>
+  </defs>
+
+  <!-- Fond -->
+  <rect width="1024" height="1024" fill="url(#sky)"/>
+
+  <!-- Constellation : rangées patientes d'étoiles -->
+  <g fill="#fdf6e3">
+    <circle cx="122" cy="128" r="5"/>
+    <circle cx="316" cy="88"  r="3.5"/>
+    <circle cx="508" cy="64"  r="4.5"/>
+    <circle cx="700" cy="92"  r="3.5"/>
+    <circle cx="898" cy="132" r="5"/>
+    <circle cx="94"  cy="304" r="3.5"/>
+    <circle cx="222" cy="212" r="3"/>
+    <circle cx="806" cy="214" r="3"/>
+    <circle cx="930" cy="308" r="3.5"/>
+    <circle cx="152" cy="470" r="3"/>
+    <circle cx="874" cy="472" r="3"/>
+  </g>
+  <!-- Étoiles à 4 branches (éclats) -->
+  <g fill="#ffe9a3">
+    <path d="M 240 140 l 7 18 l 18 7 l -18 7 l -7 18 l -7 -18 l -18 -7 l 18 -7 z"/>
+    <path d="M 780 128 l 6 15 l 15 6 l -15 6 l -6 15 l -6 -15 l -15 -6 l 15 -6 z"/>
+    <path d="M 116 396 l 5 13 l 13 5 l -13 5 l -5 13 l -5 -13 l -13 -5 l 13 -5 z"/>
+    <path d="M 904 394 l 5 13 l 13 5 l -13 5 l -5 13 l -5 -13 l -13 -5 l 13 -5 z"/>
+  </g>
+
+  <!-- Lune croissante (vrai croissant, découpe en arc) -->
+  <path d="M 833.1 144.2 A 52 52 0 1 0 883.9 220.4 A 46 46 0 0 1 833.1 144.2 Z" fill="url(#moon)"/>
+
+  <!-- Halo doré derrière le château -->
+  <ellipse cx="512" cy="520" rx="380" ry="330" fill="url(#halo)"/>
+
+  <!-- ============ CHÂTEAU ============ -->
+  <g>
+    <!-- Tour gauche -->
+    <g>
+      <rect x="306" y="452" width="112" height="270" fill="url(#goldDeep)"/>
+      <!-- créneaux -->
+      <path d="M 306 452 v -34 h 26 v 18 h 30 v -18 h 30 v 18 h 26 v 34 z" fill="url(#goldDeep)" transform="translate(0,0)"/>
+      <!-- toit conique -->
+      <path d="M 292 418 L 362 306 L 432 418 Z" fill="url(#gold)"/>
+      <!-- fenêtre -->
+      <path d="M 342 560 a 20 20 0 0 1 40 0 v 58 h -40 z" fill="#251a66"/>
+      <!-- étendard -->
+      <rect x="359" y="236" width="6" height="76" fill="#e0a83c"/>
+      <path d="M 365 240 l 54 16 l -54 16 z" fill="#ffd76a"/>
+    </g>
+
+    <!-- Tour droite -->
+    <g>
+      <rect x="606" y="452" width="112" height="270" fill="url(#goldDeep)"/>
+      <path d="M 606 452 v -34 h 26 v 18 h 30 v -18 h 30 v 18 h 26 v 34 z" fill="url(#goldDeep)"/>
+      <path d="M 592 418 L 662 306 L 732 418 Z" fill="url(#gold)"/>
+      <path d="M 642 560 a 20 20 0 0 1 40 0 v 58 h -40 z" fill="#251a66"/>
+      <rect x="659" y="236" width="6" height="76" fill="#e0a83c"/>
+      <path d="M 665 240 l 54 16 l -54 16 z" fill="#ffd76a"/>
+    </g>
+
+    <!-- Donjon central -->
+    <g>
+      <rect x="428" y="384" width="168" height="338" fill="url(#gold)"/>
+      <!-- créneaux du donjon -->
+      <path d="M 428 384 v -40 h 30 v 20 h 34 v -20 h 40 v 20 h 34 v -20 h 30 v 40 z" fill="url(#gold)"/>
+      <!-- toit central -->
+      <path d="M 412 344 L 512 196 L 612 344 Z" fill="url(#gold)"/>
+      <!-- étendard central -->
+      <rect x="508" y="106" width="8" height="96" fill="#e0a83c"/>
+      <path d="M 516 112 l 70 20 l -70 20 z" fill="#ffd76a"/>
+      <!-- porte -->
+      <path d="M 470 600 a 42 42 0 0 1 84 0 v 122 h -84 z" fill="#251a66"/>
+      <!-- étoile au-dessus de la porte -->
+      <path d="M 512 436 l 12 30 l 30 12 l -30 12 l -12 30 l -12 -30 l -30 -12 l 30 -12 z" fill="#251a66"/>
+    </g>
+
+    <!-- Courtines reliant les tours -->
+    <rect x="418" y="600" width="30" height="122" fill="url(#goldDeep)"/>
+    <rect x="576" y="600" width="30" height="122" fill="url(#goldDeep)"/>
+  </g>
+
+  <!-- ============ LIVRE OUVERT ============ -->
+  <g>
+    <!-- Couverture (reliure) -->
+    <path d="M 512 738
+             C 400 668, 240 664, 118 700
+             L 118 852
+             C 240 816, 400 820, 512 890
+             C 624 820, 784 816, 906 852
+             L 906 700
+             C 784 664, 624 668, 512 738 Z"
+          fill="url(#goldDeep)"/>
+    <!-- Page gauche -->
+    <path d="M 512 752
+             C 408 688, 260 682, 150 714
+             L 150 830
+             C 260 798, 408 804, 512 862 Z"
+          fill="url(#pageL)"/>
+    <!-- Page droite -->
+    <path d="M 512 752
+             C 616 688, 764 682, 874 714
+             L 874 830
+             C 764 798, 616 804, 512 862 Z"
+          fill="url(#pageR)"/>
+    <!-- Lignes d'écriture, page gauche -->
+    <g stroke="#c9b98e" stroke-width="7" stroke-linecap="round" fill="none">
+      <path d="M 200 742 C 300 718, 400 722, 470 758"/>
+      <path d="M 200 776 C 300 752, 400 756, 470 792"/>
+      <path d="M 200 810 C 290 788, 390 792, 470 826"/>
+    </g>
+    <!-- Lignes d'écriture, page droite -->
+    <g stroke="#c9b98e" stroke-width="7" stroke-linecap="round" fill="none">
+      <path d="M 824 742 C 724 718, 624 722, 554 758"/>
+      <path d="M 824 776 C 724 752, 624 756, 554 792"/>
+      <path d="M 824 810 C 734 788, 634 792, 554 826"/>
+    </g>
+    <!-- Tranche centrale -->
+    <path d="M 505 748 h 14 v 118 h -14 z" fill="#e0a83c"/>
+  </g>
+
+  <!-- Poussière d'étoiles montant du livre -->
+  <g fill="#ffe9a3">
+    <circle cx="270" cy="636" r="6"/>
+    <circle cx="330" cy="586" r="4"/>
+    <circle cx="754" cy="636" r="6"/>
+    <circle cx="694" cy="586" r="4"/>
+    <path d="M 216 560 l 6 15 l 15 6 l -15 6 l -6 15 l -6 -15 l -15 -6 l 15 -6 z"/>
+    <path d="M 808 560 l 6 15 l 15 6 l -15 6 l -6 15 l -6 -15 l -15 -6 l 15 -6 z"/>
+  </g>
+</svg>
