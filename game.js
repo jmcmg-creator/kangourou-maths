@@ -605,6 +605,7 @@ $('headerHome').onclick=()=>navigate('home');
 function navigate(screen,data){
   if(state.timerID){clearInterval(state.timerID);state.timerID=null}
   if(state.autoNextID){clearTimeout(state.autoNextID);state.autoNextID=null}
+  if(state.battlePollID){clearTimeout(state.battlePollID);state.battlePollID=null}
   state.screen=screen;
   if(data) Object.assign(state,data);
   backArrow.classList.toggle('hidden',screen==='home');
@@ -619,6 +620,8 @@ function render(){
     case 'mode': renderMode(); break;
     case 'game': renderGame(); break;
     case 'results': renderResults(); break;
+    case 'battleHome': renderBattleHome(); break;
+    case 'battleResults': renderBattleResults(); break;
     case 'royaume': renderRoyaume(); break;
     case 'parent': renderParent(); break;
     case 'nameAsk': renderNameAsk(); break;
@@ -745,6 +748,14 @@ function renderHome(){
         </div>
         <div class="kingdom-enter" style="color:#60a5fa">\u2794</div>
       </div>
+    </div>
+    <div class="subject-card fade-in" style="border-color:#f472b6;background:rgba(244,114,182,0.07)" onclick="navigate('battleHome')">
+      <div class="subject-emoji bounce">\u2694\ufe0f</div>
+      <div class="subject-info">
+        <h3 class="subject-name" style="color:#f472b6">Battle des Amis</h3>
+        <p class="subject-desc">D\u00e9fie un copain avec un code \u2014 m\u00eames questions, qui gagne ?</p>
+      </div>
+      <div class="arrow">\u2192</div>
     </div>
     <div class="subject-card fade-in" style="border-color:#fbbf24;background:rgba(251,191,36,0.06)" onclick="navigate('fichesHome')">
       <div class="subject-emoji bounce">\u{1F4D6}</div>
@@ -1048,6 +1059,7 @@ async function startGame(mode){
       return;
     }
   }
+  state.battleCode=null; // partie normale : ne jamais soumettre à une battle quittée en route
   state.mode=mode;state.exercises=exercises;state.idx=0;state.selected=null;state.score=0;state.streak=0;state.maxStreak=0;state.results=[];state.timer=60;state.gameOver=false;state.startTime=Date.now();state.detailOpen=false;state.sessionXP=0;state.sessionCristaux=0;
   if(state.level&&state.level!=='cp') maybeAutoGenerate(state.level);
   navigate('game');
@@ -1287,6 +1299,14 @@ function finishGame(abandoned){
       if(q.progress>=q.target){q.done=true;profile.cristaux+=q.reward;d.questDone=true;d.questReward=q.reward}
     }
     saveProfile();
+  }
+  // Partie jouée dans le cadre d'une battle : on envoie le résultat au
+  // document partagé puis on affiche l'écran de comparaison.
+  // Une battle abandonnée n'est PAS soumise (pas de score fantôme).
+  if(state.battleCode){
+    const code=state.battleCode;
+    state.battleCode=null;
+    if(!abandoned&&state.results.length>0){submitBattleResult(code,d);return}
   }
   navigate('results');
 }
@@ -2087,6 +2107,300 @@ function renderFichesView(){
     <button class="btn-stone" onclick="loadFiche(state.ficheTopic.id,state.ficheTopic.title)">\u{1F504} R\u00e9g\u00e9n\u00e9rer</button>
     <button class="btn-stone" onclick="navigate('fichesTopics')">\u2190 Autres th\u00e8mes</button>
   </div>`;
+}
+
+/* \u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550 BATTLE DES AMIS \u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550
+   Deux joueurs (ou plus) jouent EXACTEMENT les m\u00eames questions, chacun sur
+   son appareil, reli\u00e9s par un code court kid-friendly (ex. POTION-37).
+   Le document de battle est stock\u00e9 c\u00f4t\u00e9 Worker sous une cl\u00e9 d\u00e9riv\u00e9e du
+   code (sha256 'battle:'+code \u2192 32 hex), via les endpoints /profile
+   existants \u2014 aucun changement backend n\u00e9cessaire.
+   Jeu asynchrone fa\u00e7on Wordle : pas besoin d'\u00eatre connect\u00e9s en m\u00eame temps.
+*/
+const BATTLE_WORDS=['DRAGON','POTION','ETOILE','LICORNE','GRIFFON','CRISTAL','PHENIX','TONNERRE','COMETE','SORCIER','PLUME','LUTIN','ORAGE','SAPHIR','RUBIS','MERLIN','PEGASE','YETI','KRAKEN','NINJA'];
+
+function normalizeBattleCode(raw){
+  const s=String(raw||'').toUpperCase().replace(/[^A-Z0-9]/g,'');
+  const m=s.match(/^([A-Z]+)(\d{2})$/);
+  return m?m[1]+'-'+m[2]:s;
+}
+function randomBattleCode(){
+  const w=BATTLE_WORDS[Math.floor(Math.random()*BATTLE_WORDS.length)];
+  const n=String(Math.floor(Math.random()*100)).padStart(2,'0');
+  return w+'-'+n;
+}
+async function battleAid(code){
+  const buf=await crypto.subtle.digest('SHA-256',new TextEncoder().encode('battle:'+normalizeBattleCode(code)));
+  return Array.from(new Uint8Array(buf)).map(b=>b.toString(16).padStart(2,'0')).join('').slice(0,32);
+}
+async function fetchBattle(code){
+  return await fetchProfileByAid(await battleAid(code));
+}
+async function pushBattle(battle){
+  const aid=await battleAid(battle.code);
+  await fetch(API_BASE+'/profile/'+aid,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(battle)});
+}
+
+// \u2500\u2500 Cr\u00e9ation \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
+async function createBattle(lvId,count){
+  const lv=LEVELS.find(l=>l.id===lvId);
+  if(!lv){alert('Choisis d\'abord un niveau.');return}
+  const pool=EX.filter(e=>e.lv===lvId&&isPlayableEx(e));
+  if(pool.length<count){alert('Pas assez de questions pour ce niveau ('+pool.length+' dispo). Choisis un autre niveau ou 5 questions.');return}
+  app.innerHTML='<div class="card text-center" style="margin-top:60px"><div class="dragon-emoji float">\u2694\ufe0f</div><h2 class="title">Pr\u00e9paration de la battle\u2026</h2></div>';
+  // Code unique : on retire si une battle existe d\u00e9j\u00e0 sous ce code.
+  let code=randomBattleCode();
+  for(let tries=0;tries<5;tries++){
+    const existing=await fetchBattle(code);
+    if(!existing||!existing.battle) break;
+    code=randomBattleCode();
+  }
+  const exIds=shuffle(pool).slice(0,count).map(e=>e.id);
+  const battle={battle:true,code,createdAt:new Date().toISOString(),level:lvId,lvName:(lv.name+' \u2014 '+(lv.sub||'')),count,exIds,hostName:profile.name,players:{}};
+  try{await pushBattle(battle)}catch(e){alert('\ud83c\udf10 Impossible de cr\u00e9er la battle (connexion ?). R\u00e9essaie.');navigate('battleHome');return}
+  // M\u00e9morise dans l'historique local (r\u00e9sultats compl\u00e9t\u00e9s plus tard).
+  if(!profile.battleHistory)profile.battleHistory=[];
+  profile.battleHistory.unshift({code,date:battle.createdAt,level:lvId,lvName:battle.lvName,count});
+  profile.battleHistory=profile.battleHistory.slice(0,50);
+  saveProfile();
+  navigate('battleResults',{battleViewCode:code});
+}
+
+// \u2500\u2500 Rejoindre \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
+async function joinBattle(rawCode){
+  const code=normalizeBattleCode(rawCode);
+  if(!code||code.length<4){alert('Entre le code de la battle (ex. POTION-37).');return}
+  app.innerHTML='<div class="card text-center" style="margin-top:60px"><div class="dragon-emoji float">\ud83d\udd0e</div><h2 class="title">Recherche de la battle\u2026</h2></div>';
+  const battle=await fetchBattle(code);
+  if(!battle||!battle.battle){alert('Aucune battle trouv\u00e9e avec le code \u00ab\u00a0'+esc(code)+'\u00a0\u00bb. V\u00e9rifie le code avec ton copain.');navigate('battleHome');return}
+  if(!profile.battleHistory)profile.battleHistory=[];
+  if(!profile.battleHistory.some(h=>h.code===code)){
+    profile.battleHistory.unshift({code,date:battle.createdAt,level:battle.level,lvName:battle.lvName,count:battle.count});
+    profile.battleHistory=profile.battleHistory.slice(0,50);
+    saveProfile();
+  }
+  navigate('battleResults',{battleViewCode:code});
+}
+
+// \u2500\u2500 Jouer \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
+function startBattleGame(battle){
+  // R\u00e9sout les questions par id \u2014 les deux appareils ont le m\u00eame pool statique.
+  const byId={};EX.forEach(e=>{byId[e.id]=e});
+  const exercises=battle.exIds.map(id=>byId[id]).filter(e=>isPlayableEx(e));
+  if(exercises.length===0){alert('Questions introuvables \u2014 vos versions de l\'app diff\u00e8rent. Mettez \u00e0 jour puis recr\u00e9ez une battle.');return}
+  state.battleCode=battle.code;
+  state.level=battle.level;
+  state.mode='battle';
+  state.exercises=exercises;state.idx=0;state.selected=null;state.score=0;state.streak=0;state.maxStreak=0;state.results=[];state.timer=60;state.gameOver=false;state.startTime=Date.now();state.detailOpen=false;state.sessionXP=0;state.sessionCristaux=0;
+  navigate('game');
+}
+
+// \u2500\u2500 Soumission du r\u00e9sultat (read-merge-write) \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
+async function submitBattleResult(code,gameData){
+  app.innerHTML='<div class="card text-center" style="margin-top:60px"><div class="dragon-emoji float">\ud83d\udce1</div><h2 class="title">Envoi de ton score\u2026</h2></div>';
+  try{
+    const battle=await fetchBattle(code);
+    if(battle&&battle.battle){
+      battle.players=battle.players||{};
+      battle.players[profile.name]={
+        name:profile.name,
+        answers:state.results.map((r,i)=>({i,choice:r.choice,ok:!!r.correct})),
+        score:gameData.score,total:gameData.total,maxStreak:gameData.maxStreak,
+        duration:gameData.duration,finishedAt:new Date().toISOString()
+      };
+      await pushBattle(battle);
+    }
+  }catch(e){console.warn('battle submit failed',e)}
+  navigate('battleResults',{battleViewCode:code});
+}
+
+// \u2500\u2500 \u00c9cran d'accueil Battle : cr\u00e9er / rejoindre / ligue \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
+function renderBattleHome(){
+  const lastLv=state.level&&LEVELS.find(l=>l.id===state.level)?state.level:(LEVELS[1]&&LEVELS[1].id);
+  const lvOptions=SUBJECTS.map(s=>
+    '<optgroup label="'+esc(s.name)+'">'
+    +(s.levels||[]).filter(l=>!l.secret).map(l=>'<option value="'+esc(l.id)+'"'+(l.id===lastLv?' selected':'')+'>'+esc(l.name)+' \u2014 '+esc(l.sub||'')+'</option>').join('')
+    +'</optgroup>').join('');
+  // Ligue des amis : agr\u00e9g\u00e9e depuis l'historique local r\u00e9gl\u00e9 (settled).
+  const league=computeLeague();
+  const leagueHTML=league.rows.length===0
+    ?'<p class="sub" style="font-style:italic">Joue ta premi\u00e8re battle pour lancer la ligue !</p>'
+    :'<div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:.9rem">'
+      +'<tr style="color:#8b7ec8;font-size:.75rem;text-transform:uppercase;letter-spacing:.05em"><td style="padding:6px 4px">#</td><td>Joueur</td><td style="text-align:center">V</td><td style="text-align:center">N</td><td style="text-align:center">D</td><td style="text-align:right">Pts</td></tr>'
+      +league.rows.map((r,i)=>{
+        const medal=i===0?'\ud83e\udd47':i===1?'\ud83e\udd48':i===2?'\ud83e\udd49':(i+1);
+        const me=r.name===profile.name;
+        return '<tr style="border-top:1px solid rgba(255,255,255,0.07);'+(me?'color:#fbbf24;font-weight:700':'color:#faf5ff')+'"><td style="padding:8px 4px">'+medal+'</td><td>'+esc(r.name)+(me?' (toi)':'')+'</td><td style="text-align:center;color:#34d399">'+r.wins+'</td><td style="text-align:center;color:#8b7ec8">'+r.draws+'</td><td style="text-align:center;color:#f87171">'+r.losses+'</td><td style="text-align:right;font-weight:700">'+r.points+'</td></tr>';
+      }).join('')
+      +'</table></div><p class="sub" style="font-size:.7rem;margin-top:6px">Victoire = 3 pts \u00b7 \u00c9galit\u00e9 = 1 pt \u00b7 Bas\u00e9 sur tes battles termin\u00e9es</p>';
+  const history=(profile.battleHistory||[]).slice(0,8);
+  const historyHTML=history.length===0?'' :
+    '<div class="card mb-4"><h3 class="fredoka" style="font-size:.85rem;color:#8b7ec8;margin-bottom:10px;letter-spacing:.1em;text-transform:uppercase">\ud83d\udd50 Battles r\u00e9centes</h3>'
+    +history.map(h=>{
+      const settled=h.settled&&h.opps&&h.opps.length>0;
+      const badge=settled?(h.won===true?'<span style="color:#34d399;font-weight:700">Gagn\u00e9e \ud83c\udfc6</span>':h.won===false?'<span style="color:#f87171;font-weight:700">Perdue</span>':'<span style="color:#8b7ec8;font-weight:700">\u00c9galit\u00e9</span>'):'<span style="color:#fbbf24">En cours\u2026</span>';
+      return '<div class="row-between" style="padding:8px 0;border-top:1px solid rgba(255,255,255,0.06)"><div class="flex-1" style="min-width:0"><div style="color:#faf5ff;font-weight:600">'+esc(h.code)+'</div><div class="sub" style="font-size:.75rem">'+esc(h.lvName||h.level||'')+'</div></div><div class="row gap-2">'+badge+'<button class="btn-stone btn-small" onclick="navigate(\'battleResults\',{battleViewCode:\''+esc(h.code)+'\'})">Voir</button></div></div>';
+    }).join('')+'</div>';
+  app.innerHTML='<div class="text-center py-6 fade-in">'
+    +'<div style="font-size:3.5rem">\u2694\ufe0f</div>'
+    +'<h2 class="title" style="color:#f472b6;font-size:1.6rem">Battle des Amis</h2>'
+    +'<p class="sub">M\u00eames questions, chacun son appareil. Qui sera le champion ?</p>'
+  +'</div>'
+  +'<div class="card mb-4" style="border-color:#f472b6">'
+    +'<h3 class="fredoka" style="font-size:.85rem;color:#f472b6;margin-bottom:10px;letter-spacing:.1em;text-transform:uppercase">\ud83c\udfaf Cr\u00e9er une battle</h3>'
+    +'<label class="sub" style="display:block;margin-bottom:4px">Niveau / mati\u00e8re</label>'
+    +'<select class="name-prompt" id="battleLv">'+lvOptions+'</select>'
+    +'<label class="sub" style="display:block;margin:12px 0 4px">Nombre de questions</label>'
+    +'<div class="row gap-2">'
+      +'<button class="btn-stone" style="flex:1" id="battleCount5" onclick="_setBattleCount(5)">\u26a1 \u00c9clair \u2014 5</button>'
+      +'<button class="btn-stone" style="flex:1" id="battleCount10" onclick="_setBattleCount(10)">\ud83c\udff0 Classique \u2014 10</button>'
+    +'</div>'
+    +'<button class="btn-fire mt-4" onclick="createBattle(document.getElementById(\'battleLv\').value,window._battleCount||5)">\u2694\ufe0f Cr\u00e9er et obtenir le code</button>'
+  +'</div>'
+  +'<div class="card mb-4" style="border-color:#60a5fa">'
+    +'<h3 class="fredoka" style="font-size:.85rem;color:#60a5fa;margin-bottom:10px;letter-spacing:.1em;text-transform:uppercase">\ud83d\udd11 Rejoindre avec un code</h3>'
+    +'<input class="name-prompt" id="battleCodeInp" placeholder="Ex. POTION-37" maxlength="12" autocapitalize="characters" style="text-transform:uppercase;text-align:center;font-size:1.2rem;letter-spacing:.15em">'
+    +'<button class="btn-fire mt-3" onclick="joinBattle(document.getElementById(\'battleCodeInp\').value)">\ud83d\ude80 Rejoindre la battle</button>'
+  +'</div>'
+  +'<div class="card mb-4" style="border-color:#fbbf24">'
+    +'<h3 class="fredoka" style="font-size:.85rem;color:#fbbf24;margin-bottom:10px;letter-spacing:.1em;text-transform:uppercase">\ud83c\udfc6 Ligue des amis</h3>'
+    +leagueHTML
+  +'</div>'
+  +historyHTML
+  +'<button class="btn-stone" onclick="navigate(\'home\')">\u2190 Retour</button>';
+  setTimeout(()=>_setBattleCount(window._battleCount||5),30);
+}
+function _setBattleCount(n){
+  window._battleCount=n;
+  const b5=document.getElementById('battleCount5'),b10=document.getElementById('battleCount10');
+  const on='background:linear-gradient(135deg,#f472b6,#db2777);color:#fff;border-color:#db2777';
+  if(b5)b5.style.cssText='flex:1;'+(n===5?on:'');
+  if(b10)b10.style.cssText='flex:1;'+(n===10?on:'');
+}
+
+// \u2500\u2500 Ligue : agr\u00e9gation de l'historique r\u00e9gl\u00e9 \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
+function computeLeague(){
+  const tally={};
+  function slot(name){if(!tally[name])tally[name]={name,wins:0,draws:0,losses:0,points:0};return tally[name]}
+  for(const h of (profile.battleHistory||[])){
+    if(!h.settled||!h.opps||h.opps.length===0||!h.me) continue;
+    const myScore=h.me.score;
+    for(const o of h.opps){
+      const me=slot(profile.name),op=slot(o.name);
+      if(myScore>o.score){me.wins++;me.points+=3;op.losses++}
+      else if(myScore<o.score){me.losses++;op.wins++;op.points+=3}
+      else{me.draws++;me.points+=1;op.draws++;op.points+=1}
+    }
+  }
+  const rows=Object.values(tally).sort((a,b)=>b.points-a.points||b.wins-a.wins);
+  return {rows};
+}
+
+// \u2500\u2500 \u00c9cran r\u00e9sultats / lobby / attente \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
+async function renderBattleResults(){
+  const code=state.battleViewCode;
+  if(!code){navigate('battleHome');return}
+  app.innerHTML='<div class="card text-center" style="margin-top:60px"><div class="dragon-emoji float">\u2694\ufe0f</div><h2 class="title">Chargement de la battle\u2026</h2></div>';
+  const battle=await fetchBattle(code);
+  if(state.screen!=='battleResults'||state.battleViewCode!==code) return; // parti ailleurs pendant le fetch
+  if(!battle||!battle.battle){
+    app.innerHTML='<div class="card text-center" style="margin-top:60px"><div style="font-size:3rem">\ud83c\udf2b\ufe0f</div><h2 class="title">Battle introuvable</h2><p class="sub">Le code \u00ab\u00a0'+esc(code)+'\u00a0\u00bb n\'existe pas (ou plus).</p><button class="btn-stone mt-4" onclick="navigate(\'battleHome\')">\u2190 Retour</button></div>';
+    return;
+  }
+  const players=Object.values(battle.players||{}).sort((a,b)=>(a.finishedAt||'').localeCompare(b.finishedAt||''));
+  const me=battle.players&&battle.players[profile.name];
+  const byId={};EX.forEach(e=>{byId[e.id]=e});
+  // Met \u00e0 jour l'historique local (pour la ligue) d\u00e8s qu'il y a 2 joueurs et que j'ai jou\u00e9.
+  if(me&&players.length>=2){
+    const h=(profile.battleHistory||[]).find(x=>x.code===battle.code);
+    if(h){
+      h.me={score:me.score};
+      h.opps=players.filter(p=>p.name!==profile.name).map(p=>({name:p.name,score:p.score}));
+      const best=Math.max(...h.opps.map(o=>o.score));
+      h.won=me.score>best?true:me.score<best?false:null;
+      h.settled=true;
+      saveProfile();
+    }
+  }
+  // Bandeau vainqueur (si \u22652 joueurs ont fini)
+  let bannerHTML='';
+  if(players.length>=2){
+    const sorted=[...players].sort((a,b)=>b.score-a.score||a.duration-b.duration);
+    const top=sorted[0];
+    const tie=sorted.length>1&&sorted[1].score===top.score&&sorted[1].duration===top.duration;
+    bannerHTML=tie
+      ?'<div class="card mb-4 text-center" style="border-color:#8b7ec8"><div style="font-size:2.5rem">\ud83e\udd1d</div><h3 class="title" style="font-size:1.3rem">\u00c9galit\u00e9 parfaite !</h3></div>'
+      :'<div class="card mb-4 text-center glow-anim" style="border-color:#fbbf24"><div style="font-size:2.8rem">\ud83d\udc51</div><h3 class="title" style="color:#fbbf24;font-size:1.4rem">'+esc(top.name)+' remporte la battle !</h3><p class="sub">'+top.score+'/'+top.total+' en '+top.duration+'s</p></div>';
+  }
+  // Cartes scores par joueur
+  const scoreCards=players.map(p=>{
+    const isMe=p.name===profile.name;
+    return '<div class="stat-card" style="'+(isMe?'border:1px solid rgba(251,191,36,.4)':'')+'"><div class="stat-val" style="color:'+(isMe?'#fbbf24':'#c4b5fd')+'">'+p.score+'/'+p.total+'</div><div class="stat-label">'+esc(p.name)+(isMe?' (toi)':'')+'<br>\u23f1 '+p.duration+'s \u00b7 \ud83d\udd25 '+p.maxStreak+'</div></div>';
+  }).join('');
+  // Grille question par question
+  let gridHTML='';
+  if(players.length>=1){
+    const shown=players.slice(0,4); // max 4 colonnes pour rester lisible
+    gridHTML='<div class="card mb-4"><h3 class="fredoka" style="font-size:.85rem;color:#8b7ec8;margin-bottom:10px;letter-spacing:.1em;text-transform:uppercase">\ud83d\udccb Question par question</h3>'
+      +'<div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:.85rem">'
+      +'<tr style="color:#8b7ec8;font-size:.72rem"><td style="padding:6px 4px">Question</td>'+shown.map(p=>'<td style="text-align:center;padding:6px 2px;max-width:70px;overflow:hidden;text-overflow:ellipsis">'+esc(p.name)+'</td>').join('')+'</tr>'
+      +battle.exIds.map((id,qi)=>{
+        const ex=byId[id];
+        const qTxt=ex?String(ex.q).slice(0,60)+(String(ex.q).length>60?'\u2026':''):('Question '+(qi+1));
+        return '<tr style="border-top:1px solid rgba(255,255,255,0.07)"><td style="padding:8px 4px;color:#faf5ff;line-height:1.4">'+(qi+1)+'. '+esc(qTxt)+'</td>'
+          +shown.map(p=>{
+            const a=(p.answers||[]).find(x=>x.i===qi);
+            const mark=!a?'<span style="color:#3f3768">\u2014</span>':a.ok?'<span style="color:#34d399;font-size:1.1rem">\u2705</span>':'<span style="color:#f87171;font-size:1.1rem">\u274c</span>';
+            return '<td style="text-align:center">'+mark+'</td>';
+          }).join('')+'</tr>';
+      }).join('')
+      +'</table></div></div>';
+  }
+  // Actions selon mon statut
+  let actionsHTML='';
+  if(!me){
+    actionsHTML='<button class="btn-fire mb-2" onclick="_startBattleFromView()">\u2694\ufe0f Jouer mes '+battle.count+' questions !</button>';
+  }else if(players.length<2){
+    actionsHTML='<div class="card mb-4 text-center" style="border-color:#60a5fa"><div style="font-size:2rem">\u23f3</div><p style="color:#faf5ff;font-weight:600;margin:8px 0">En attente d\'un adversaire\u2026</p><p class="sub">Partage le code ci-dessus \u2014 la page se met \u00e0 jour toute seule.</p></div>';
+  }
+  if(me){
+    actionsHTML+='<button class="btn-stone mb-2" onclick="createBattle(\''+esc(battle.level)+'\','+battle.count+')">\ud83d\udd04 Revanche (nouvelles questions)</button>';
+  }
+  app.innerHTML='<div class="text-center py-4 fade-in">'
+    +'<div style="font-size:2.5rem">\u2694\ufe0f</div>'
+    +'<h2 class="title" style="color:#f472b6;font-size:1.4rem">Battle '+esc(battle.code)+'</h2>'
+    +'<p class="sub">'+esc(battle.lvName||'')+' \u00b7 '+battle.count+' questions</p>'
+    +'<div class="card mt-3" style="border-color:#f472b6;padding:14px">'
+      +'<p class="sub" style="margin-bottom:6px">Code \u00e0 partager avec tes copains :</p>'
+      +'<p style="font-size:1.8rem;font-weight:800;letter-spacing:.2em;color:#fbbf24;font-family:Fredoka,sans-serif">'+esc(battle.code)+'</p>'
+      +'<button class="btn-stone btn-small mt-2" onclick="_copyBattleCode(\''+esc(battle.code)+'\')">\ud83d\udccb Copier le code</button>'
+      +(navigator.share?'<button class="btn-stone btn-small mt-2" style="margin-left:8px" onclick="_shareBattleCode(\''+esc(battle.code)+'\')">\ud83d\udcf2 Partager</button>':'')
+    +'</div>'
+  +'</div>'
+  +bannerHTML
+  +(players.length>0?'<div class="card mb-4"><div class="stats-grid">'+scoreCards+'</div></div>':'')
+  +gridHTML
+  +actionsHTML
+  +'<button class="btn-stone" onclick="navigate(\'battleHome\')">\u2190 Battles</button>';
+  window._battleView=battle;
+  // Auto-poll tant qu'on attend un adversaire (ou que je n'ai pas jou\u00e9 et
+  // que je veux voir arriver les scores) \u2014 toutes les 6 s, arr\u00eat\u00e9 par navigate().
+  if(players.length<2||!me){
+    state.battlePollID=setTimeout(()=>{state.battlePollID=null;if(state.screen==='battleResults')renderBattleResults()},6000);
+  }
+}
+function _startBattleFromView(){
+  const b=window._battleView;
+  if(b&&b.battle) startBattleGame(b);
+}
+function _copyBattleCode(code){
+  const txt='Rejoins ma battle sur Le Royaume des Savoirs ! Code : '+code;
+  if(navigator.clipboard&&navigator.clipboard.writeText){
+    navigator.clipboard.writeText(txt).then(()=>alert('\u2705 Code copi\u00e9 ! Envoie-le \u00e0 ton copain.')).catch(()=>prompt('Copie ce code :',code));
+  }else{prompt('Copie ce code :',code)}
+}
+async function _shareBattleCode(code){
+  try{await navigator.share({title:'Battle \u2014 Le Royaume des Savoirs',text:'D\u00e9fie-moi ! Ouvre l\'app et entre le code : '+code})}catch(e){}
 }
 
 render();
