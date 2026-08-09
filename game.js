@@ -604,6 +604,7 @@ function ensureMicConsent(onYes,onNo){
 $('headerHome').onclick=()=>navigate('home');
 function navigate(screen,data){
   if(state.timerID){clearInterval(state.timerID);state.timerID=null}
+  if(state.autoNextID){clearTimeout(state.autoNextID);state.autoNextID=null}
   state.screen=screen;
   if(data) Object.assign(state,data);
   backArrow.classList.toggle('hidden',screen==='home');
@@ -986,6 +987,13 @@ async function reqGen(lvId,n){
 }
 
 /* ════════ ROTATION INTELLIGENTE ════════ */
+// Un exercice n'est jouable que s'il est un vrai QCM à 4 choix.
+// Les exos "oraux" (micro) n'ont pas de `ch` et il n'y a pas d'UI micro
+// dans cette version : les inclure gelait la partie (renderGame plantait
+// sur ex.ch.map). On les écarte de TOUS les modes.
+function isPlayableEx(e){
+  return e&&Array.isArray(e.ch)&&e.ch.length===4&&typeof e.ans==='number'&&!e.oral;
+}
 function pickExercises(mode,lvId){
   const lv=LEVELS.find(l=>l.id===lvId);
   // Inclure les exercices AI générés (persistés dans le profil)
@@ -995,9 +1003,9 @@ function pickExercises(mode,lvId){
   // Toujours essayer le pool statique : tout niveau présent dans
   // exercises.js / exercises_extra.js a des exos prêts à l'emploi.
   const staticPool=EX.filter(e=>e.lv===lvId);
-  const pool=staticPool.concat(aiPool).concat(customPool);
+  const pool=staticPool.concat(aiPool).concat(customPool).filter(isPlayableEx);
   if(mode==='progression'){
-    return shuffle(EX.filter(e=>e.lv!=='cp')).sort((a,b)=>a.diff-b.diff).slice(0,10);
+    return shuffle(EX.filter(e=>e.lv!=='cp'&&isPlayableEx(e))).sort((a,b)=>a.diff-b.diff).slice(0,10);
   }
   if(mode==='adaptive'){
     // Priorise les exercices rat\u00e9s ou jamais vus
@@ -1047,7 +1055,14 @@ async function startGame(mode){
 
 /* ════════ GAME SCREEN ════════ */
 function renderGame(){
-  const ex=state.exercises[state.idx];
+  let ex=state.exercises[state.idx];
+  if(!ex) return finishGame();
+  // Défense en profondeur : si un exo invalide s'est glissé dans la partie
+  // (vieille sauvegarde, exo IA malformé), on le saute au lieu de geler.
+  while(ex&&!isPlayableEx(ex)){
+    state.exercises.splice(state.idx,1);
+    ex=state.exercises[state.idx];
+  }
   if(!ex) return finishGame();
   const total=state.exercises.length;
   const pct=(state.idx/total)*100;
@@ -1119,37 +1134,58 @@ function selectAnswer(i){
   }
   renderGame();
   showExplanation(ex,correct);
+  // Bonne réponse → passage automatique à la question suivante.
+  // Mauvaise réponse → l'enfant lit l'explication et clique « Suivant ».
+  if(correct){
+    if(state.autoNextID)clearTimeout(state.autoNextID);
+    state.autoNextID=setTimeout(()=>{
+      state.autoNextID=null;
+      if(state.screen==='game'&&state.selected!==null) nextQuestion();
+    },1600);
+  }
 }
 
 function showExplanation(ex,correct){
   const el=$('explanation');
   if(!el) return;
-  const methodeHTML=ex.methode.map(m=>`<div class="pedago-step">${m}</div>`).join('');
+  // Tous les champs p\u00e9dagogiques sont OPTIONNELS : 717 exos sur 977 n'ont
+  // pas de `methode`, beaucoup n'ont pas `pourquoi`/`regle`. Avant, l'acc\u00e8s
+  // direct ex.methode.map plantait ici \u2192 plus de bouton Suivant \u2192 partie
+  // gel\u00e9e sur tous les royaumes non-maths, chrono et progression compris.
+  const hasMethode=Array.isArray(ex.methode)&&ex.methode.length>0;
+  const hasDetail=hasMethode||ex.regle||ex.exemple;
+  const methodeHTML=hasMethode?ex.methode.map(m=>`<div class="pedago-step">${m}</div>`).join(''):'';
   const gainHTML=correct?`<span class="xp-gain">+${Math.round(ex.diff*10*(state.streak>=10?3:state.streak>=5?2:state.streak>=3?1.5:1))} XP</span> <span class="crystal-gain">\u{1F48E} +${ex.diff*2}</span>`:'';
+  const isLast=state.gameOver||state.idx>=state.exercises.length-1;
+  // Bonne r\u00e9ponse : passage auto (message discret). Mauvaise : bouton Suivant.
+  const footerHTML=correct
+    ?`<p class="sub" style="margin-top:16px;color:#8b7ec8;font-style:italic">${isLast?'R\u00e9sultats dans un instant\u2026':'Question suivante dans un instant\u2026'}</p>`
+    :`<button class="btn-fire mt-6" onclick="nextQuestion()">${isLast?'Voir mes r\u00e9sultats \u2192':'Question suivante \u2192'}</button>`;
   el.innerHTML=`<div class="card fade-in mt-6">
     <div class="row gap-2 mb-2"><span style="font-size:1.5rem">${correct?'\u2705':'\u274C'}</span>
-    <h4 class="fredoka" style="font-size:1.1rem;font-weight:700;color:${correct?'#22c55e':'#ef4444'};margin:0">${correct?'Excellent, sorci\u00e8re !':'Pas cette fois\u2026'}</h4>
+    <h4 class="fredoka" style="font-size:1.1rem;font-weight:700;color:${correct?'#22c55e':'#ef4444'};margin:0">${correct?'Excellent !':'Pas cette fois\u2026'}</h4>
     ${gainHTML}</div>
-    <p style="color:#faf5ff;margin-bottom:12px;line-height:1.6;font-weight:600">${ex.se}</p>
-    ${!correct?`<div class="error-box"><p style="font-size:.9rem;margin:0"><span class="error-label">\u{1F914} L'erreur probable : </span><span style="color:#faf5ff">${ex.pourquoi}</span></p></div>`:''}
-    <a class="detail-link mt-3" style="display:inline-block;margin-top:10px" onclick="toggleDetail()">${state.detailOpen?'Masquer':'Voir'} la m\u00e9thode pas \u00e0 pas \u2192</a>
+    ${ex.se?`<p style="color:#faf5ff;margin-bottom:12px;line-height:1.6;font-weight:600">${ex.se}</p>`:''}
+    ${!correct&&ex.pourquoi?`<div class="error-box"><p style="font-size:.9rem;margin:0"><span class="error-label">\u{1F914} L'erreur probable : </span><span style="color:#faf5ff">${ex.pourquoi}</span></p></div>`:''}
+    ${hasDetail?`<a class="detail-link mt-3" style="display:inline-block;margin-top:10px" onclick="toggleDetail()">${state.detailOpen?'Masquer':'Voir'} la m\u00e9thode pas \u00e0 pas \u2192</a>
     <div id="detailPanel" class="${state.detailOpen?'':'hidden'}">
-      <div class="pedago-box">
+      ${hasMethode?`<div class="pedago-box">
         <div class="pedago-title">\u{1F4D0} M\u00e9thode du prof</div>
         ${methodeHTML}
-      </div>
-      <div class="tip-box">
+      </div>`:''}
+      ${ex.regle?`<div class="tip-box">
         <p style="font-size:.9rem;margin:0"><span class="tip-label">\u{1F4A1} \u00c0 retenir : </span><span class="tip-text">${ex.regle}</span></p>
-      </div>
+      </div>`:''}
       ${ex.exemple?`<div class="pedago-box" style="background:rgba(59,130,246,.08);border-color:rgba(59,130,246,.2)"><div class="pedago-title" style="color:#93c5fd">\u{1F4DA} Exemple similaire</div><p style="color:#faf5ff;font-size:.9rem">${ex.exemple}</p></div>`:''}
-      <p style="font-size:.75rem;color:#8b7ec8;margin-top:8px">Comp\u00e9tence : ${ex.sk}</p>
-    </div>
-    <button class="btn-fire mt-6" onclick="nextQuestion()">Question suivante \u2192</button>
+      ${ex.sk?`<p style="font-size:.75rem;color:#8b7ec8;margin-top:8px">Comp\u00e9tence : ${ex.sk}</p>`:''}
+    </div>`:''}
+    ${footerHTML}
   </div>`;
 }
 function toggleDetail(){state.detailOpen=!state.detailOpen;const p=$('detailPanel');if(p)p.classList.toggle('hidden');const a=document.querySelector('.detail-link');if(a)a.textContent=(state.detailOpen?'Masquer':'Voir')+' la m\u00e9thode pas \u00e0 pas \u2192'}
 
 function nextQuestion(){
+  if(state.autoNextID){clearTimeout(state.autoNextID);state.autoNextID=null}
   if(state.gameOver||state.idx>=state.exercises.length-1) return finishGame();
   state.idx++;state.selected=null;state.timer=60;state.detailOpen=false;
   navigate('game');
@@ -1158,6 +1194,7 @@ function nextQuestion(){
 /* ════════ FINISH + PERSIST ════════ */
 function finishGame(abandoned){
   if(state.timerID){clearInterval(state.timerID);state.timerID=null}
+  if(state.autoNextID){clearTimeout(state.autoNextID);state.autoNextID=null}
   const total=abandoned?state.idx:state.results.length;
   const duration=Math.round((Date.now()-state.startTime)/1000);
   const d={score:state.score,total,maxStreak:state.maxStreak,results:state.results,mode:state.mode,abandoned:!!abandoned,duration,date:new Date().toISOString(),level:state.level,xp:state.sessionXP,cristaux:state.sessionCristaux};
