@@ -668,7 +668,17 @@ function renderHome(){
     navigate(Object.keys(loadProfilesDict()).length>0?'profilePicker':'nameAsk');
     return;
   }
+  // Lien de battle reçu (?battle=CODE via WhatsApp/QR) : on rejoint direct,
+  // maintenant qu'un profil est actif.
+  let _pb=null;
+  try{_pb=localStorage.getItem('royaume_pending_battle')}catch(e){}
+  if(_pb){
+    try{localStorage.removeItem('royaume_pending_battle')}catch(e){}
+    joinBattle(_pb);
+    return;
+  }
   checkDailyQuest();
+  checkBattleInvites(); // bannière "X te défie !" si un ami a lancé un défi
   // Total des XP de tous les royaumes
   const totalXp=Object.values(profile.royaumes||{}).reduce((s,r)=>s+(r.xp||0),0)+(profile.xp||0);
   const totalCristaux=Object.values(profile.royaumes||{}).reduce((s,r)=>s+(r.cristaux||0),0)+(profile.cristaux||0);
@@ -960,6 +970,18 @@ function updateFooter(){
 
 // Au démarrage : traiter un éventuel lien ?sync=AID entrant.
 processIncomingSyncLink();
+
+// Lien battle (?battle=CODE) : on stocke le code, renderHome le consommera
+// dès qu'un profil est actif (gère aussi le 1er lancement sans profil).
+(function(){
+  try{
+    const params=new URLSearchParams(window.location.search);
+    const b=params.get('battle');
+    if(!b) return;
+    window.history.replaceState({},'',window.location.pathname);
+    localStorage.setItem('royaume_pending_battle',b);
+  }catch(e){}
+})();
 
 /* ════════ MODE SELECT ════════ */
 function renderMode(){
@@ -2140,9 +2162,95 @@ async function pushBattle(battle){
   const aid=await battleAid(battle.code);
   await fetch(API_BASE+'/profile/'+aid,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(battle)});
 }
+// Lien magique : un tap dessus ouvre l'app directement dans la battle.
+function battleLink(code){
+  return window.location.origin+window.location.pathname+'?battle='+encodeURIComponent(normalizeBattleCode(code));
+}
+// QR affiché à l'écran : le copain scanne avec l'appareil photo natif
+// (iPhone/Android ouvrent l'URL détectée) → aucun code à taper.
+function renderBattleQRInto(elId,code){
+  const el=document.getElementById(elId);
+  if(!el||typeof window.qrcode!=='function') return;
+  try{
+    const qr=window.qrcode(0,'M');
+    qr.addData(battleLink(code));
+    qr.make();
+    const n=qr.getModuleCount(),quiet=3,sz=n+quiet*2;
+    let rects='';
+    for(let r=0;r<n;r++)for(let c=0;c<n;c++)if(qr.isDark(r,c))rects+='<rect x="'+(c+quiet)+'" y="'+(r+quiet)+'" width="1" height="1"/>';
+    el.innerHTML='<svg viewBox="0 0 '+sz+' '+sz+'" style="width:170px;height:170px;background:#fff;border-radius:12px;display:block;margin:10px auto 0" shape-rendering="crispEdges"><g fill="#0f0a2e">'+rects+'</g></svg>'
+      +'<p class="sub" style="font-size:.72rem;margin-top:6px">📷 Ton copain le scanne avec son appareil photo</p>';
+  }catch(e){console.warn('qr fail',e)}
+}
+
+// ── Boîte à défis (invitations entre amis) ────────────────────────────
+// Chaque joueur a une "boîte" stockée sous une clé dérivée de son prénom.
+// Un ami y dépose un défi ; le destinataire la consulte à l'ouverture.
+async function mailboxAid(name){
+  const norm=String(name||'').toLowerCase().trim().replace(/\s+/g,'');
+  const buf=await crypto.subtle.digest('SHA-256',new TextEncoder().encode('royaume-mailbox:'+norm));
+  return Array.from(new Uint8Array(buf)).map(b=>b.toString(16).padStart(2,'0')).join('').slice(0,32);
+}
+async function sendBattleInvite(friendName,battle){
+  try{
+    const aid=await mailboxAid(friendName);
+    let box=await fetchProfileByAid(aid);
+    if(!box||!box.mailbox) box={mailbox:true,invites:[]};
+    box.invites=(box.invites||[]).filter(i=>i.code!==battle.code).slice(-9);
+    box.invites.push({code:battle.code,from:profile.name,lvName:battle.lvName,count:battle.count,at:new Date().toISOString()});
+    await fetch(API_BASE+'/profile/'+aid,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(box)});
+    return true;
+  }catch(e){console.warn('invite fail',e);return false}
+}
+// Bannière "X te défie !" sur l'accueil (fire-and-forget, jamais bloquant).
+async function checkBattleInvites(){
+  if(!profile.name) return;
+  try{
+    const aid=await mailboxAid(profile.name);
+    const box=await fetchProfileByAid(aid);
+    if(!box||!box.mailbox||!Array.isArray(box.invites)||box.invites.length===0) return;
+    if(state.screen!=='home') return; // l'utilisateur a déjà navigué ailleurs
+    const played=new Set((profile.battleHistory||[]).map(h=>h.code));
+    const dismissed=new Set(profile.dismissedInvites||[]);
+    const weekAgo=Date.now()-7*24*3600*1000;
+    const fresh=box.invites.filter(i=>i&&i.code&&!played.has(i.code)&&!dismissed.has(i.code)&&(new Date(i.at||0).getTime()>weekAgo));
+    if(fresh.length===0) return;
+    const inv=fresh[fresh.length-1]; // le plus récent
+    const holder=document.createElement('div');
+    holder.innerHTML='<div class="card fade-in glow-anim" id="inviteBanner" style="border-color:#f472b6;background:rgba(244,114,182,0.1)">'
+      +'<div class="row" style="gap:12px">'
+        +'<div style="font-size:2.2rem">⚔️</div>'
+        +'<div class="flex-1"><h3 class="card-title" style="color:#f472b6">'+esc(inv.from)+' te défie !</h3>'
+        +'<p class="sub">'+esc(inv.lvName||'')+' · '+(inv.count||'?')+' questions'+(fresh.length>1?' · +'+(fresh.length-1)+' autre(s) défi(s)':'')+'</p></div>'
+      +'</div>'
+      +'<div class="btn-row mt-3">'
+        +'<button class="btn-fire" onclick="joinBattle(\''+esc(inv.code)+'\')">🔥 Relever le défi</button>'
+        +'<button class="btn-stone" onclick="dismissInvite(\''+esc(inv.code)+'\')">Plus tard</button>'
+      +'</div>'
+    +'</div>';
+    const first=app.firstElementChild;
+    if(first) app.insertBefore(holder.firstElementChild,first);
+  }catch(e){}
+}
+function dismissInvite(code){
+  if(!profile.dismissedInvites)profile.dismissedInvites=[];
+  if(!profile.dismissedInvites.includes(code))profile.dismissedInvites.push(code);
+  profile.dismissedInvites=profile.dismissedInvites.slice(-30);
+  saveProfile();
+  const b=document.getElementById('inviteBanner');
+  if(b)b.remove();
+}
+// Défi 1-tap depuis la liste d'amis : crée la battle avec le niveau/quantité
+// sélectionnés dans le formulaire, et dépose l'invitation chez l'ami.
+function challengeFriend(name){
+  const lvSel=document.getElementById('battleLv');
+  const lvId=lvSel?lvSel.value:null;
+  createBattle(lvId,window._battleCount||5,name);
+}
 
 // \u2500\u2500 Cr\u00e9ation \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
-async function createBattle(lvId,count){
+// inviteName (optionnel) : d\u00e9pose aussi un d\u00e9fi dans la bo\u00eete de cet ami.
+async function createBattle(lvId,count,inviteName){
   const lv=LEVELS.find(l=>l.id===lvId);
   if(!lv){alert('Choisis d\'abord un niveau.');return}
   const pool=EX.filter(e=>e.lv===lvId&&isPlayableEx(e));
@@ -2163,6 +2271,10 @@ async function createBattle(lvId,count){
   profile.battleHistory.unshift({code,date:battle.createdAt,level:lvId,lvName:battle.lvName,count});
   profile.battleHistory=profile.battleHistory.slice(0,50);
   saveProfile();
+  if(inviteName){
+    const ok=await sendBattleInvite(inviteName,battle);
+    if(ok) alert('\u2694\ufe0f D\u00e9fi envoy\u00e9 \u00e0 '+inviteName+' ! Il/elle le verra en ouvrant son app.');
+  }
   navigate('battleResults',{battleViewCode:code});
 }
 
@@ -2257,8 +2369,27 @@ function renderBattleHome(){
     +'</div>'
     +'<button class="btn-fire mt-4" onclick="createBattle(document.getElementById(\'battleLv\').value,window._battleCount||5)">\u2694\ufe0f Cr\u00e9er et obtenir le code</button>'
   +'</div>'
+  +(function(){
+    const friends=Object.values(profile.friends||{}).sort((a,b)=>(b.lastBattle||'').localeCompare(a.lastBattle||''));
+    if(friends.length===0) return '';
+    const settled=(profile.battleHistory||[]).filter(h=>h.settled&&h.opps);
+    return '<div class="card mb-4" style="border-color:#34d399">'
+      +'<h3 class="fredoka" style="font-size:.85rem;color:#34d399;margin-bottom:4px;letter-spacing:.1em;text-transform:uppercase">\ud83d\udc65 Tes amis</h3>'
+      +'<p class="sub" style="font-size:.75rem;margin-bottom:8px">D\u00e9fie-les en 1 clic \u2014 ils verront ton d\u00e9fi en ouvrant leur app (niveau et nb de questions choisis ci-dessus).</p>'
+      +friends.slice(0,8).map(f=>{
+        let w=0,l=0;
+        for(const h of settled){const o=(h.opps||[]).find(x=>x.name===f.name);if(o&&h.me){if(h.me.score>o.score)w++;else if(h.me.score<o.score)l++}}
+        return '<div class="row-between" style="padding:8px 0;border-top:1px solid rgba(255,255,255,0.06)">'
+          +'<div class="flex-1" style="min-width:0"><span style="color:#faf5ff;font-weight:600">'+esc(f.name)+'</span>'
+          +' <span class="sub" style="font-size:.72rem">'+w+'V \u2013 '+l+'D contre toi</span></div>'
+          +'<button class="btn-stone btn-small" onclick="challengeFriend(\''+esc(f.name)+'\')">\u2694\ufe0f D\u00e9fier</button>'
+        +'</div>';
+      }).join('')
+    +'</div>';
+  })()
   +'<div class="card mb-4" style="border-color:#60a5fa">'
     +'<h3 class="fredoka" style="font-size:.85rem;color:#60a5fa;margin-bottom:10px;letter-spacing:.1em;text-transform:uppercase">\ud83d\udd11 Rejoindre avec un code</h3>'
+    +'<p class="sub" style="font-size:.75rem;margin-bottom:8px">Ton copain t\'a envoy\u00e9 un lien ? Clique dessus, c\'est tout. Sinon entre son code :</p>'
     +'<input class="name-prompt" id="battleCodeInp" placeholder="Ex. POTION-37" maxlength="12" autocapitalize="characters" style="text-transform:uppercase;text-align:center;font-size:1.2rem;letter-spacing:.15em">'
     +'<button class="btn-fire mt-3" onclick="joinBattle(document.getElementById(\'battleCodeInp\').value)">\ud83d\ude80 Rejoindre la battle</button>'
   +'</div>'
@@ -2319,8 +2450,15 @@ async function renderBattleResults(){
       const best=Math.max(...h.opps.map(o=>o.score));
       h.won=me.score>best?true:me.score<best?false:null;
       h.settled=true;
-      saveProfile();
     }
+    // Les adversaires deviennent des "amis" → défi 1-tap la prochaine fois.
+    // (le nombre de battles par ami est déduit de battleHistory à l'affichage)
+    if(!profile.friends)profile.friends={};
+    for(const p of players){
+      if(p.name===profile.name) continue;
+      profile.friends[p.name]={name:p.name,lastBattle:battle.createdAt};
+    }
+    saveProfile();
   }
   // Bandeau vainqueur (si \u22652 joueurs ont fini)
   let bannerHTML='';
@@ -2371,10 +2509,14 @@ async function renderBattleResults(){
     +'<h2 class="title" style="color:#f472b6;font-size:1.4rem">Battle '+esc(battle.code)+'</h2>'
     +'<p class="sub">'+esc(battle.lvName||'')+' \u00b7 '+battle.count+' questions</p>'
     +'<div class="card mt-3" style="border-color:#f472b6;padding:14px">'
-      +'<p class="sub" style="margin-bottom:6px">Code \u00e0 partager avec tes copains :</p>'
-      +'<p style="font-size:1.8rem;font-weight:800;letter-spacing:.2em;color:#fbbf24;font-family:Fredoka,sans-serif">'+esc(battle.code)+'</p>'
-      +'<button class="btn-stone btn-small mt-2" onclick="_copyBattleCode(\''+esc(battle.code)+'\')">\ud83d\udccb Copier le code</button>'
-      +(navigator.share?'<button class="btn-stone btn-small mt-2" style="margin-left:8px" onclick="_shareBattleCode(\''+esc(battle.code)+'\')">\ud83d\udcf2 Partager</button>':'')
+      +(navigator.share
+        ?'<button class="btn-fire mb-2" onclick="_shareBattleCode(\''+esc(battle.code)+'\')">\ud83d\udcf2 Envoyer le d\u00e9fi (WhatsApp, SMS\u2026)</button>'
+        :'<button class="btn-fire mb-2" onclick="_copyBattleCode(\''+esc(battle.code)+'\')">\ud83d\udd17 Copier le lien du d\u00e9fi</button>')
+      +'<div id="battleQR"></div>'
+      +'<div class="divider" style="margin:12px 0"></div>'
+      +'<p class="sub" style="font-size:.75rem;margin-bottom:2px">Ou avec le code, dans \u00ab Rejoindre \u00bb :</p>'
+      +'<p style="font-size:1.5rem;font-weight:800;letter-spacing:.18em;color:#fbbf24;font-family:Fredoka,sans-serif">'+esc(battle.code)
+      +' <button class="btn-stone btn-small" style="vertical-align:middle" onclick="_copyBattleCode(\''+esc(battle.code)+'\')">\ud83d\udccb</button></p>'
     +'</div>'
   +'</div>'
   +bannerHTML
@@ -2383,6 +2525,7 @@ async function renderBattleResults(){
   +actionsHTML
   +'<button class="btn-stone" onclick="navigate(\'battleHome\')">\u2190 Battles</button>';
   window._battleView=battle;
+  renderBattleQRInto('battleQR',battle.code);
   // Auto-poll tant qu'on attend un adversaire (ou que je n'ai pas jou\u00e9 et
   // que je veux voir arriver les scores) \u2014 toutes les 6 s, arr\u00eat\u00e9 par navigate().
   if(players.length<2||!me){
@@ -2394,13 +2537,19 @@ function _startBattleFromView(){
   if(b&&b.battle) startBattleGame(b);
 }
 function _copyBattleCode(code){
-  const txt='Rejoins ma battle sur Le Royaume des Savoirs ! Code : '+code;
+  const txt='\u2694\ufe0f Je te d\u00e9fie sur Le Royaume des Savoirs ! Clique : '+battleLink(code)+' (ou entre le code '+code+')';
   if(navigator.clipboard&&navigator.clipboard.writeText){
-    navigator.clipboard.writeText(txt).then(()=>alert('\u2705 Code copi\u00e9 ! Envoie-le \u00e0 ton copain.')).catch(()=>prompt('Copie ce code :',code));
-  }else{prompt('Copie ce code :',code)}
+    navigator.clipboard.writeText(txt).then(()=>alert('\u2705 Lien copi\u00e9 ! Envoie-le \u00e0 ton copain \u2014 un clic et il est dans la battle.')).catch(()=>prompt('Copie ce lien :',battleLink(code)));
+  }else{prompt('Copie ce lien :',battleLink(code))}
 }
 async function _shareBattleCode(code){
-  try{await navigator.share({title:'Battle \u2014 Le Royaume des Savoirs',text:'D\u00e9fie-moi ! Ouvre l\'app et entre le code : '+code})}catch(e){}
+  try{
+    await navigator.share({
+      title:'Battle \u2014 Le Royaume des Savoirs',
+      text:'\u2694\ufe0f Je te d\u00e9fie ! Un clic et c\'est parti (ou code '+code+')',
+      url:battleLink(code)
+    });
+  }catch(e){}
 }
 
 render();
