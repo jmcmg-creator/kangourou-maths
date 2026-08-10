@@ -397,18 +397,82 @@ async function fetchProfileByAid(aid){
   }catch(e){return null}
 }
 
+// Fusionne deux profils SANS JAMAIS perdre de progression : max sur les
+// compteurs, union sur les listes, champ à champ sur les stats. C'est la
+// réponse au bug « Judith avait 8000 XP, elle se logue ailleurs et n'en a
+// plus que 3000 » : avant, un vieux profil pouvait en écraser un récent.
+function mergeProfiles(a,b){
+  if(!a||!a.name) return b;
+  if(!b||!b.name) return a;
+  const out=migrate(Object.assign({},a));
+  const mx=(k)=>{out[k]=Math.max(Number(a[k])||0,Number(b[k])||0)};
+  ['totalGames','totalQuestions','totalCorrect','bestStreak','xp','cristaux'].forEach(mx);
+  // Sessions : union dédupliquée (par date+mode+score), les 100 dernières.
+  const seen=new Set();
+  out.sessions=[...(a.sessions||[]),...(b.sessions||[])].filter(s=>{
+    const k=(s&&s.date||'')+'|'+(s&&s.mode||'')+'|'+(s&&s.score||0)+'|'+(s&&s.total||0);
+    if(seen.has(k))return false;seen.add(k);return true;
+  }).sort((x,y)=>String(x.date||'').localeCompare(String(y.date||''))).slice(-100);
+  const uni=(k)=>{out[k]=Array.from(new Set([...(a[k]||[]),...(b[k]||[])]))};
+  ['playDays','unlockedBadges','dragonnets','dismissedInvites'].forEach(uni);
+  // Royaumes : champ à champ, on garde le meilleur de chaque compteur.
+  out.royaumes={};
+  for(const rid of new Set([...Object.keys(a.royaumes||{}),...Object.keys(b.royaumes||{})])){
+    const ra=(a.royaumes||{})[rid]||{},rb=(b.royaumes||{})[rid]||{};
+    out.royaumes[rid]={};
+    for(const f of new Set([...Object.keys(ra),...Object.keys(rb)])){
+      if(f==='companions'){out.royaumes[rid][f]=Array.from(new Set([...(ra[f]||[]),...(rb[f]||[])]))}
+      else out.royaumes[rid][f]=Math.max(Number(ra[f])||0,Number(rb[f])||0);
+    }
+  }
+  // Stats par catégorie / exercice / poésie : max champ à champ.
+  const mergeStats=(sa,sb)=>{
+    const o={};
+    for(const k of new Set([...Object.keys(sa||{}),...Object.keys(sb||{})])){
+      const va=(sa||{})[k]||{},vb=(sb||{})[k]||{};
+      o[k]={};
+      for(const f of new Set([...Object.keys(va),...Object.keys(vb)])){
+        o[k][f]=(typeof va[f]==='string'||typeof vb[f]==='string')
+          ?(String(va[f]||'')>String(vb[f]||'')?va[f]:vb[f])
+          :Math.max(Number(va[f])||0,Number(vb[f])||0);
+      }
+    }
+    return o;
+  };
+  out.catStats=mergeStats(a.catStats,b.catStats);
+  out.exerciseStats=mergeStats(a.exerciseStats,b.exerciseStats);
+  out.poesieStats=mergeStats(a.poesieStats,b.poesieStats);
+  // Contenus ajoutés par le parent + IA + battles + amis : union par identifiant.
+  const uniById=(k,idf)=>{
+    const m=new Map();
+    for(const it of [...(a[k]||[]),...(b[k]||[])]){
+      if(!it)continue;const id=idf(it);
+      if(!m.has(id)||String(it.updatedAt||it.date||'')>String(m.get(id).updatedAt||m.get(id).date||''))m.set(id,it);
+    }
+    out[k]=Array.from(m.values());
+  };
+  uniById('aiExercises',x=>x.id);out.aiExercises=out.aiExercises.slice(-200);
+  uniById('customPoems',x=>x.id);
+  uniById('customExercises',x=>x.id);
+  uniById('battleHistory',x=>x.code);out.battleHistory=out.battleHistory.sort((x,y)=>String(y.date||'').localeCompare(String(x.date||''))).slice(0,50);
+  out.friends=Object.assign({},a.friends||{},b.friends||{});
+  out.topicsCache=Object.assign({},a.topicsCache||{},b.topicsCache||{});
+  // Quête du jour : la plus récente.
+  out.dailyQuest=(String((b.dailyQuest||{}).date||'')>String((a.dailyQuest||{}).date||''))?b.dailyQuest:a.dailyQuest;
+  return out;
+}
+
 async function syncProfileFromCloud(){
   await ensureAid();
   if(!profile.aid) return null;
   const remote=await fetchProfileByAid(profile.aid);
   if(!remote) return null;
-  if((remote.totalGames||0)>(profile.totalGames||0)){
-    profile=migrate(remote);
-    if(!profile.aid) await ensureAid();
-    _localSave();
-    return 'restored';
-  }
-  return 'local_newer';
+  // FUSION au lieu de remplacement : impossible de perdre des XP.
+  const before=JSON.stringify(profile);
+  profile=mergeProfiles(profile,migrate(remote));
+  if(!profile.aid) await ensureAid();
+  _localSave();
+  return JSON.stringify(profile)!==before?'merged':'same';
 }
 
 async function pushProfileToCloud(){
@@ -874,27 +938,34 @@ async function setName(){
   if(!isCleanName(v)){alert('Ce prénom contient un mot interdit. Choisis-en un autre.');return}
   const aid=await aidFromName(v);
   app.innerHTML='<div class="card text-center fade-in" style="margin-top:60px"><div class="big-icon">🔍</div><h2 class="title">Recherche de ton Royaume…</h2></div>';
-  const remote=await fetchProfileByAid(aid);
   const dict=loadProfilesDict();
-  if(remote&&remote.name){
-    // Profil déjà présent dans le cloud (cet appareil ou un autre).
-    remote.aid=aid;
-    profile=migrate(remote);
-    dict[profile.name]=profile;
-    saveProfilesDict(dict);
-    setActiveName(profile.name);
-  }else if(dict[v]){
-    // Présent en local mais pas dans le cloud → on l'adopte et on le pousse.
-    profile=migrate(dict[v]);
-    profile.aid=aid;
-    saveProfile();
+  // Lookup local insensible à la casse (« Judith » et « judith » = 1 profil).
+  const localKey=Object.keys(dict).find(k=>k.toLowerCase()===v.toLowerCase());
+  const local=localKey?migrate(dict[localKey]):null;
+  // On récupère TOUTES les sources possibles puis on FUSIONNE :
+  //  - le cloud sous la clé dérivée du prénom (standard)
+  //  - le cloud sous l'ancienne clé du profil local si elle diffère
+  //    (anciens profils poussés sous une clé aléatoire → introuvables
+  //     par prénom depuis un autre appareil : on les rapatrie ici)
+  const remoteName=await fetchProfileByAid(aid);
+  let remoteOld=null;
+  if(local&&local.aid&&local.aid!==aid) remoteOld=await fetchProfileByAid(local.aid);
+  let merged=local;
+  if(remoteName&&remoteName.name) merged=mergeProfiles(merged,migrate(remoteName));
+  if(remoteOld&&remoteOld.name) merged=mergeProfiles(merged,migrate(remoteOld));
+  if(merged&&merged.name){
+    profile=merged;
   }else{
-    // Tout nouveau profil.
     profile=newProfile();
     profile.name=v;
-    profile.aid=aid;
-    saveProfile();
   }
+  // Standardise la clé sur le prénom : tous les appareils regarderont ici.
+  profile.aid=aid;
+  if(localKey&&localKey!==profile.name) delete dict[localKey];
+  dict[profile.name]=profile;
+  saveProfilesDict(dict);
+  setActiveName(profile.name);
+  saveProfile(); // pousse la version fusionnée au cloud (debounced)
   navigate('home');
 }
 
@@ -939,19 +1010,23 @@ function renderProfilePicker(){
 
 async function switchProfile(name){
   profile=loadProfileByName(name);
-  if(!profile.aid) profile.aid=await aidFromName(profile.name||name);
+  const nameAid=await aidFromName(profile.name||name);
+  const oldAid=(profile.aid&&profile.aid!==nameAid)?profile.aid:null;
+  profile.aid=nameAid; // clé standard : celle que tous les appareils calculent
   setActiveName(profile.name);
   navigate('home');
-  // Sync cloud en arrière-plan : restaure si le cloud est plus avancé,
-  // sinon met le cloud à jour si la version locale est plus avancée.
+  // Sync cloud en arrière-plan : FUSION (plus jamais d'écrasement), en
+  // rapatriant aussi l'éventuelle ancienne clé aléatoire du profil.
   setTimeout(async()=>{
-    const result=await syncProfileFromCloud();
-    if(result==='restored'){
-      _localSave();
-      if(state.screen==='home') render();
-    }else if(result==='local_newer'){
-      pushProfileToCloud();
-    }
+    try{
+      if(oldAid){
+        const old=await fetchProfileByAid(oldAid);
+        if(old&&old.name){profile=mergeProfiles(profile,migrate(old));profile.aid=nameAid;_localSave()}
+      }
+      const result=await syncProfileFromCloud();
+      if(result==='merged'&&state.screen==='home') render();
+      pushProfileToCloud(); // le cloud reçoit toujours la meilleure version
+    }catch(e){}
   },50);
 }
 
