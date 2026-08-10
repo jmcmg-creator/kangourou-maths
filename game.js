@@ -678,7 +678,8 @@ function renderHome(){
     return;
   }
   checkDailyQuest();
-  checkBattleInvites(); // bannière "X te défie !" si un ami a lancé un défi
+  checkBattleInvites();   // bannière "X te défie !" si un ami a lancé un défi
+  checkFinishedBattles(); // bannière "🏁 Léa a fini !" si une battle attendue est terminée
   // Total des XP de tous les royaumes
   const totalXp=Object.values(profile.royaumes||{}).reduce((s,r)=>s+(r.xp||0),0)+(profile.xp||0);
   const totalCristaux=Object.values(profile.royaumes||{}).reduce((s,r)=>s+(r.cristaux||0),0)+(profile.cristaux||0);
@@ -2321,9 +2322,60 @@ async function submitBattleResult(code,gameData){
         duration:gameData.duration,finishedAt:new Date().toISOString()
       };
       await pushBattle(battle);
+      // Marque "j'ai jou\u00e9" dans l'historique local : c'est ce qui permet \u00e0
+      // checkFinishedBattles de surveiller cette battle depuis l'accueil.
+      const h=(profile.battleHistory||[]).find(x=>x.code===code);
+      if(h){h.me={score:gameData.score};saveProfile()}
     }
   }catch(e){console.warn('battle submit failed',e)}
   navigate('battleResults',{battleViewCode:code});
+}
+
+// \u2500\u2500 Notice de fin : "L\u00e9a a termin\u00e9 votre battle !" \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
+// Appel\u00e9 sur l'accueil : v\u00e9rifie mes battles jou\u00e9es mais pas encore
+// r\u00e9gl\u00e9es (adversaire pas pass\u00e9 au moment o\u00f9 j'ai quitt\u00e9 l'\u00e9cran).
+// D\u00e8s qu'un adversaire a fini, r\u00e8gle le r\u00e9sultat (ligue \u00e0 jour) et
+// affiche une banni\u00e8re avec le verdict \u2014 sans rouvrir l'\u00e9cran battle.
+async function checkFinishedBattles(){
+  if(!profile.name) return;
+  const twoWeeks=Date.now()-14*24*3600*1000;
+  const waiting=(profile.battleHistory||[]).filter(h=>h.me&&!h.settled&&new Date(h.date||0).getTime()>twoWeeks).slice(0,5);
+  if(waiting.length===0) return;
+  for(const h of waiting){
+    try{
+      const battle=await fetchBattle(h.code);
+      if(!battle||!battle.battle) continue;
+      const players=Object.values(battle.players||{});
+      const me=battle.players&&battle.players[profile.name];
+      if(!me||players.length<2) continue;
+      // R\u00e8gle le r\u00e9sultat localement (la ligue se met \u00e0 jour sans ouvrir l'\u00e9cran).
+      h.me={score:me.score};
+      h.opps=players.filter(p=>p.name!==profile.name).map(p=>({name:p.name,score:p.score}));
+      const best=Math.max(...h.opps.map(o=>o.score));
+      h.won=me.score>best?true:me.score<best?false:null;
+      h.settled=true;
+      if(!profile.friends)profile.friends={};
+      for(const p of players){if(p.name!==profile.name)profile.friends[p.name]={name:p.name,lastBattle:battle.createdAt}}
+      saveProfile();
+      if(state.screen!=='home') return; // l'utilisateur a d\u00e9j\u00e0 navigu\u00e9 ailleurs
+      const opp=h.opps[0];
+      const total=h.count||me.total||'?';
+      const msg=h.won===true?'\ud83c\udfc6 Tu as gagn\u00e9 contre '+esc(opp.name)+' !':h.won===false?'\ud83d\ude2e '+esc(opp.name)+' t\'a battu !':'\ud83e\udd1d \u00c9galit\u00e9 avec '+esc(opp.name)+' !';
+      const holder=document.createElement('div');
+      holder.innerHTML='<div class="card fade-in glow-anim" style="border-color:#fbbf24;background:rgba(251,191,36,0.08)">'
+        +'<div class="row" style="gap:12px"><div style="font-size:2.2rem">\ud83c\udfc1</div>'
+        +'<div class="flex-1"><h3 class="card-title" style="color:#fbbf24">'+msg+'</h3>'
+        +'<p class="sub">Battle '+esc(h.code)+' : toi '+h.me.score+'/'+total+' \u00b7 '+esc(opp.name)+' '+opp.score+'/'+total+(h.opps.length>1?' \u00b7 +'+(h.opps.length-1)+' autre(s) joueur(s)':'')+'</p></div></div>'
+        +'<div class="btn-row mt-3">'
+          +'<button class="btn-fire" onclick="navigate(\'battleResults\',{battleViewCode:\''+esc(h.code)+'\'})">Voir le d\u00e9tail</button>'
+          +'<button class="btn-stone" onclick="createBattle(\''+esc(h.level)+'\','+(h.count||5)+',\''+esc(opp.name)+'\')">\ud83d\udd04 Revanche</button>'
+        +'</div>'
+      +'</div>';
+      const first=app.firstElementChild;
+      if(first) app.insertBefore(holder.firstElementChild,first);
+      return; // une banni\u00e8re \u00e0 la fois \u2014 les autres appara\u00eetront aux prochains passages
+    }catch(e){}
+  }
 }
 
 // \u2500\u2500 \u00c9cran d'accueil Battle : cr\u00e9er / rejoindre / ligue \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
