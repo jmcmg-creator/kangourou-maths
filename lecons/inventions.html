@@ -1,0 +1,605 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>🚀 Les Grandes Inventions</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:#0a0e27;color:#eaf0ff;font-family:'Trebuchet MS','Verdana',sans-serif;min-height:100vh;overflow-x:hidden;line-height:1.6}
+.back-btn{position:fixed;top:16px;left:16px;z-index:100;background:rgba(251,146,60,.15);border:2px solid #fb923c;color:#fdba74;border-radius:30px;padding:8px 18px;font-size:14px;font-weight:700;cursor:pointer;text-decoration:none;font-family:inherit}
+.back-btn:hover{background:rgba(251,146,60,.3)}
+.header{text-align:center;padding:32px 20px 8px;max-width:900px;margin:0 auto}
+.header h1{font-family:Georgia,'Times New Roman',serif;font-size:clamp(26px,5vw,38px);color:#fdba74;letter-spacing:1px;margin:0}
+.header p{color:#8a96c4;font-size:16px;margin-top:8px}
+.container{max-width:900px;margin:0 auto;padding:0 16px 60px}
+.filter-row{display:flex;gap:10px;justify-content:center;margin-top:16px;flex-wrap:wrap}
+.filter-btn{background:transparent;border:2px solid #1c2752;color:#8a96c4;border-radius:30px;padding:8px 18px;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit;transition:all .2s}
+.filter-btn.active{border-color:#fb923c;color:#fdba74;background:rgba(251,146,60,.1)}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:14px;margin-top:20px}
+.tile{background:#121a3a;border:1px solid #1c2752;border-radius:14px;padding:16px 14px;cursor:pointer;transition:all .2s;text-align:center;position:relative}
+.tile:hover{border-color:#fb923c;transform:translateY(-2px);box-shadow:0 8px 20px rgba(251,146,60,.15)}
+.tile-emoji{font-size:36px;display:block;margin-bottom:6px}
+.tile-title{font-size:14px;font-weight:700;color:#eaf0ff;line-height:1.3}
+.tile-era{display:inline-block;margin-top:6px;font-size:11px;color:#fdba74;background:rgba(251,146,60,.1);border:1px solid rgba(251,146,60,.3);border-radius:20px;padding:1px 10px}
+.tile-soir{position:absolute;top:8px;right:8px;font-size:11px;background:rgba(167,139,250,.15);border:1px solid rgba(167,139,250,.4);color:#c4b5fd;border-radius:20px;padding:1px 8px;font-weight:700}
+.detail{display:none}
+.detail.active{display:block}
+.detail-header{text-align:center;padding:24px 20px 8px}
+.detail-emoji{font-size:60px;display:block;margin-bottom:6px}
+.detail-title{font-family:Georgia,serif;font-size:26px;color:#fdba74;margin:0 0 4px}
+.detail-sub{color:#8a96c4;font-size:15px;margin-bottom:8px}
+.detail-era{display:inline-block;font-size:13px;color:#fdba74;background:rgba(251,146,60,.1);border:1px solid rgba(251,146,60,.35);border-radius:20px;padding:2px 14px;margin-bottom:6px}
+.detail-soir{display:inline-block;font-size:13px;color:#c4b5fd;background:rgba(167,139,250,.12);border:1px solid rgba(167,139,250,.4);border-radius:20px;padding:2px 14px;margin-left:8px;font-weight:700}
+.card{background:#121a3a;border:1px solid #1c2752;border-radius:14px;padding:18px 22px;margin-bottom:16px}
+.card h3{font-family:Georgia,serif;font-size:19px;margin:0 0 10px}
+.card p{margin-bottom:8px}
+.card p:last-child{margin-bottom:0}
+.card b{color:#fbbf24}
+.card.probleme{border-left:4px solid #f87171}
+.card.probleme h3{color:#fca5a5}
+.card.idee{border-left:4px solid #fbbf24}
+.card.idee h3{color:#fde68a}
+.card.impact{border-left:4px solid #34d399}
+.card.impact h3{color:#6ee7b7}
+.card.etapes{border-left:4px solid #fb923c}
+.card.etapes h3{color:#fdba74}
+.step{background:#0a0e27;border:1px solid #1c2752;border-radius:12px;padding:14px;margin-bottom:12px}
+.step-num{display:inline-block;background:#fb923c;color:#0a0e27;font-weight:900;border-radius:50%;width:26px;height:26px;text-align:center;line-height:26px;font-size:14px;margin-right:8px}
+.step-title{font-weight:700;color:#fdba74;font-size:16px;vertical-align:middle}
+.step-visu{font-size:clamp(26px,6vw,36px);text-align:center;padding:14px 6px;margin:10px 0;background:linear-gradient(145deg,#0d1230,#121a3a);border:1px dashed rgba(251,146,60,.35);border-radius:12px;letter-spacing:2px;line-height:1.5;word-spacing:4px}
+.step-visu .fl{display:inline-block;animation:flow 2.2s ease-in-out infinite}
+@keyframes flow{0%,100%{transform:translateX(0);opacity:.65}50%{transform:translateX(5px);opacity:1}}
+.step-desc{color:#dbe4ff;font-size:14.5px}
+.savais{background:rgba(251,191,36,.08);border:1px solid rgba(251,191,36,.3);border-radius:12px;padding:14px 18px;margin-bottom:16px;color:#fde68a;font-size:14px}
+.savais b{color:#fbbf24}
+.quiz{background:#121a3a;border:1px solid #1c2752;border-left:4px solid #34d399;border-radius:14px;padding:18px 22px}
+.quiz h3{font-family:Georgia,serif;font-size:18px;color:#6ee7b7;margin-bottom:14px}
+.q-question{font-weight:700;color:#eaf0ff;margin-bottom:10px}
+.q-choices{display:flex;flex-direction:column;gap:6px}
+.q-choice{background:#0a0e27;border:1px solid #1c2752;border-radius:8px;padding:9px 14px;cursor:pointer;font-size:14px;color:#eaf0ff;text-align:left;font-family:inherit}
+.q-choice:hover{border-color:#fb923c}
+.q-choice.correct{background:rgba(52,211,153,.15);border-color:#34d399;color:#a7f3d0}
+.q-choice.wrong{background:rgba(239,68,68,.15);border-color:#ef4444;color:#fca5a5}
+.q-choice:disabled{cursor:default}
+.q-expl{display:none;margin-top:8px;padding:9px 12px;background:rgba(96,165,250,.08);border-left:2px solid #60a5fa;border-radius:6px;font-size:13px;color:#c4b5fd}
+.q-expl.show{display:block}
+.nav-row{display:flex;gap:10px;margin-top:20px;flex-wrap:wrap}
+.btn{background:transparent;border:2px solid #fb923c;color:#eaf0ff;border-radius:30px;padding:10px 20px;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit;transition:all .2s;flex:1;min-width:140px}
+.btn:hover{background:rgba(251,146,60,.15)}
+.btn.primary{background:#fb923c;color:#0a0e27}
+</style>
+</head>
+<body>
+<a href="../index.html" class="back-btn">← Retour</a>
+
+<div id="home">
+  <div class="header">
+    <h1>🚀 Les Grandes Inventions</h1>
+    <p>Deux siècles d'idées géniales : le problème, l'idée, et ce que ça a changé.</p>
+    <div class="filter-row">
+      <button class="filter-btn active" id="fAll" onclick="setFilter('all')">🗓️ Toutes (34)</button>
+      <button class="filter-btn" id="fSoir" onclick="setFilter('soir')">🌙 Une invention par soir (10)</button>
+    </div>
+  </div>
+  <div class="container">
+    <div class="grid" id="grid"></div>
+  </div>
+</div>
+
+<div id="detail" class="detail">
+  <div class="detail-header">
+    <span class="detail-emoji" id="dEmoji"></span>
+    <h1 class="detail-title" id="dTitle"></h1>
+    <p class="detail-sub" id="dSub"></p>
+    <div><span class="detail-era" id="dEra"></span><span class="detail-soir" id="dSoir" style="display:none"></span></div>
+  </div>
+  <div class="container">
+    <div class="card probleme"><h3>🧱 Le problème</h3><p id="dProbleme"></p></div>
+    <div class="card idee"><h3>💡 L'idée géniale</h3><p id="dIdee"></p></div>
+    <div class="card etapes">
+      <h3>👀 Comment ça marche — en images</h3>
+      <div id="dSteps"></div>
+    </div>
+    <div class="card impact"><h3>🌍 Ce que ça a changé</h3><p id="dImpact"></p></div>
+    <div class="savais" id="dSavais"></div>
+    <div class="quiz">
+      <h3>🎯 À toi de jouer !</h3>
+      <div id="dQuiz"></div>
+    </div>
+    <div class="nav-row">
+      <button class="btn" onclick="showHome()">← Toutes les inventions</button>
+      <button class="btn primary" onclick="nextInv()">Invention suivante →</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// Chaque étape = [titre, visuel (schéma emoji mémorisable), explication].
+// ➜ = flux animé. Le visuel se lit de gauche à droite comme une BD.
+const INVENTIONS=[
+{id:"vapeur",emoji:"🚂",annee:"~1825",titre:"La locomotive à vapeur",sous:"Faire avancer des centaines de tonnes… sans cheval",soir:1,
+probleme:"Avant 1825, tout ce qui roule est tiré par des chevaux ou poussé par des humains. Impossible de déplacer des charges énormes sur de longues distances.",
+idee:"Transformer la <b>chaleur en mouvement</b> : le feu chauffe de l'eau, l'eau devient vapeur, la vapeur pousse un piston, le piston fait tourner les roues.",
+impact:"Les trains relient les villes en quelques heures au lieu de plusieurs jours. Les gens, les idées et les marchandises circulent : c'est le début de la révolution industrielle.",
+steps:[
+["Le feu chauffe l'eau","🪵🔥 <span class='fl'>➜</span> 💧🫧 <span class='fl'>➜</span> ♨️","Dans la chaudière, on brûle du charbon. L'eau chauffe jusqu'à bouillir et se transforme en vapeur."],
+["La vapeur pousse fort","♨️♨️♨️ <span class='fl'>➜</span> 🔩⬅️➡️","Enfermée, la vapeur prend 1700 fois plus de place que l'eau ! Elle pousse un piston qui coulisse dans un cylindre, comme une seringue."],
+["Le va-et-vient devient rotation","🔩⬅️➡️ <span class='fl'>➜</span> ⚙️🔄 <span class='fl'>➜</span> 🎡","Une bielle transforme le va-et-vient du piston en rotation des roues — exactement comme tes jambes font tourner le pédalier d'un vélo."],
+["Le train avance","⚙️🔄 <span class='fl'>➜</span> 🚂💨💨 🛤️","Les roues motrices agrippent les rails : des centaines de tonnes se mettent en mouvement. Tchou tchou !"]],
+savais:"<b>Le savais-tu ?</b> La première locomotive de voyageurs (la <i>Locomotion n°1</i> de George Stephenson, 1825) roulait à 24 km/h — moins vite qu'un vélo ! Dix ans plus tard, on dépassait déjà les 100 km/h.",
+quiz:[["Dans une locomotive à vapeur, qu'est-ce qui pousse le piston ?",["Le charbon directement","La vapeur d'eau sous pression","Le vent","Un ressort géant"],1,"Le charbon sert à chauffer l'eau. C'est la vapeur, qui prend 1700 fois plus de place que l'eau liquide, qui pousse le piston."]]},
+
+{id:"photo",emoji:"📷",annee:"~1830",titre:"La photographie",sous:"Emprisonner une image pour toujours",soir:0,
+probleme:"Pour garder le souvenir d'un visage ou d'un paysage, il faut savoir peindre — et poser pendant des heures. La plupart des gens n'ont aucune image d'eux-mêmes.",
+idee:"La <b>lumière peut transformer la matière</b> : certains produits chimiques noircissent quand la lumière les touche. En projetant une image dessus, la lumière « dessine » toute seule.",
+impact:"Chacun peut garder une trace fidèle du réel : famille, voyages, événements, preuves scientifiques. Aujourd'hui, on prend plus de photos en 2 minutes que pendant tout le XIXᵉ siècle.",
+steps:[
+["La lumière entre par un petit trou","🌞 <span class='fl'>➜</span> 📦🕳️ <span class='fl'>➜</span> 🖼️🙃","Dans une boîte noire percée d'un trou (la chambre noire), l'image du dehors se projette à l'envers sur le fond. Ça, on le savait depuis longtemps !"],
+["Une plaque qui réagit à la lumière","🖼️ <span class='fl'>➜</span> 🧪✨","L'idée géniale : placer au fond une plaque couverte de produits chimiques sensibles. Là où la lumière frappe fort, la plaque change ; là où c'est sombre, elle ne change pas."],
+["L'image est révélée et fixée","🧪 <span class='fl'>➜</span> 🛁 <span class='fl'>➜</span> 🖼️😀","On plonge la plaque dans des bains chimiques : l'image apparaît, puis on la « fixe » pour que la lumière ne puisse plus l'effacer. L'instant est emprisonné pour toujours."]],
+savais:"<b>Le savais-tu ?</b> La toute première photo (Nicéphore Niépce, un Français, vers 1827) a demandé <b>plusieurs heures de pose</b>. Ton téléphone fait pareil en 1/1000ᵉ de seconde.",
+quiz:[["Pourquoi la première photo a-t-elle demandé des heures de pose ?",["L'appareil était en panne","Les produits chimiques réagissaient très lentement à la lumière","Il fallait peindre par-dessus","Le photographe était lent"],1,"Les premières plaques étaient très peu sensibles : il fallait accumuler la lumière pendant des heures pour que la réaction chimique dessine l'image."]]},
+
+{id:"telegraphe",emoji:"📡",annee:"~1840",titre:"Le télégraphe",sous:"Un message qui traverse un pays en quelques secondes",soir:0,
+probleme:"Un message voyage à la vitesse… d'un cheval. Une nouvelle importante met des jours à traverser un pays, des semaines à traverser un océan.",
+idee:"L'électricité parcourt un fil <b>quasi instantanément</b>. En allumant et coupant le courant selon un code (court/long : le morse), on épelle des mots à distance.",
+impact:"L'information devient plus rapide que les transports, pour la première fois de l'histoire. Journaux, bourses, gouvernements : le monde entier se met à communiquer en direct.",
+steps:[
+["On appuie sur le manipulateur","👆🔘 <span class='fl'>➜</span> ⚡","À chaque pression, le circuit électrique se ferme et un courant part dans le fil. Pression courte = point, longue = trait."],
+["Le code morse épelle les lettres","•‒ = A&nbsp;&nbsp;&nbsp;‒••• = B&nbsp;&nbsp;&nbsp;📖","Chaque lettre a sa recette de points et de traits. S.O.S = • • • ‒ ‒ ‒ • • • — facile à reconnaître même dans le bruit."],
+["Le courant traverse le pays","⚡ <span class='fl'>➜</span> 🗼〰️🗼〰️🗼 <span class='fl'>➜</span> 🏙️","Le signal file dans le fil de cuivre à une vitesse proche de celle de la lumière, de poteau en poteau."],
+["À l'arrivée, ça clique","⚡ <span class='fl'>➜</span> 🧲 <span class='fl'>➜</span> 🔔✍️","Un électroaimant attire une petite pièce métallique à chaque impulsion : clic-clic. L'opérateur écoute les clics et retraduit en lettres."]],
+savais:"<b>Le savais-tu ?</b> Le premier câble télégraphique sous l'Atlantique (1858) a demandé des navires géants et 4 tentatives. Le premier message de la reine Victoria au président américain a mis 16 heures — mais avant, une lettre mettait 12 jours de bateau !",
+quiz:[["Dans le code morse, comment épelle-t-on S.O.S ?",["3 traits, 3 points, 3 traits","3 points, 3 traits, 3 points","1 point, 1 trait","9 traits"],1,"S = 3 points, O = 3 traits, S = 3 points : • • • ‒ ‒ ‒ • • •. Un rythme simple, reconnaissable même avec beaucoup de parasites."]]},
+
+{id:"ascenseur",emoji:"🛗",annee:"1852",titre:"L'ascenseur sécurisé",sous:"Le frein qui a fait pousser les gratte-ciel",soir:0,
+probleme:"Les monte-charges existent depuis longtemps, mais si la corde casse, la cabine s'écrase. Personne n'ose monter dedans — et donc personne ne construit d'immeubles hauts.",
+idee:"Elisha Otis invente un <b>frein automatique</b> : si la corde casse, des mâchoires s'ouvrent instantanément et bloquent la cabine sur ses rails. La chute devient impossible.",
+impact:"Les étages élevés, autrefois réservés aux courageux, deviennent les plus chics. Les villes se mettent à pousser vers le ciel : sans Otis, pas de gratte-ciel.",
+steps:[
+["Le problème : la corde casse","🪢✂️ <span class='fl'>➜</span> 📦⬇️💥","Avec un monte-charge classique, une corde usée = une chute mortelle. C'est LA peur qui bloque tout."],
+["Le ressort surveille la corde","🪢💪 <span class='fl'>➜</span> 🗜️(ouvert)","Tant que la corde tire, elle comprime un ressort qui garde les mâchoires du frein repliées. La corde tendue = tout va bien."],
+["Corde cassée → frein instantané","🪢✂️ <span class='fl'>➜</span> 🗜️❗ <span class='fl'>➜</span> 📦🛑","Plus de tension → le ressort se détend d'un coup et pousse les mâchoires dans les crans des rails. La cabine se bloque en quelques centimètres."],
+["La démonstration légendaire","🎪 👨🔧✂️🪢 <span class='fl'>➜</span> 😱 <span class='fl'>➜</span> 🛑👏","En 1854, Otis monte dans son ascenseur devant la foule et fait couper la corde à la hache. La cabine s'arrête net. Le public est conquis — l'immeuble moderne est né."]],
+savais:"<b>Le savais-tu ?</b> Avant l'ascenseur, le dernier étage était le moins cher (trop d'escaliers !). Après, c'est devenu le plus cher : le « penthouse » avec la vue.",
+quiz:[["Que se passe-t-il dans un ascenseur Otis si la corde casse ?",["La cabine tombe lentement","Des mâchoires bloquent instantanément la cabine sur ses rails","Un parachute s'ouvre","Il ne se passe rien"],1,"Le ressort n'est plus retenu par la tension de la corde : il pousse aussitôt les mâchoires du frein dans les rails crantés. C'est un système de sécurité passif — il marche même sans électricité."]]},
+
+{id:"telephone",emoji:"☎️",annee:"1876",titre:"Le téléphone",sous:"Ta voix transformée en électricité",soir:0,
+probleme:"Le télégraphe transmet des lettres codées, mais il faut un opérateur formé au morse. Impossible d'entendre la voix de quelqu'un au loin.",
+idee:"Transformer la <b>voix en signal électrique</b> : les vibrations de l'air font vibrer une membrane qui fait varier un courant. À l'autre bout, le courant refait vibrer une membrane qui recrée le son.",
+impact:"Parler à quelqu'un à des centaines de kilomètres comme s'il était à côté. Le téléphone entre dans les maisons et ne les quittera plus jamais.",
+steps:[
+["Ta voix fait vibrer l'air","🗣️ <span class='fl'>➜</span> 〰️〰️〰️","Quand tu parles, tes cordes vocales font vibrer l'air : des ondes sonores invisibles se propagent."],
+["La membrane transforme en électricité","〰️ <span class='fl'>➜</span> 🥁 <span class='fl'>➜</span> ⚡📈","Dans le micro, les ondes frappent une fine membrane qui vibre. Ces vibrations font varier un courant électrique : le courant « copie » exactement la forme de ta voix."],
+["Le signal voyage dans le fil","⚡📈 <span class='fl'>➜</span> 〰️🔌〰️🔌〰️","Le courant qui monte et descend comme ta voix file dans le fil de cuivre, à travers la ville ou le pays."],
+["L'écouteur recrée le son","⚡ <span class='fl'>➜</span> 🧲🥁 <span class='fl'>➜</span> 〰️ <span class='fl'>➜</span> 👂","À l'arrivée, un électroaimant fait vibrer une autre membrane exactement au même rythme. L'air vibre à nouveau : ton ami entend ta voix !"]],
+savais:"<b>Le savais-tu ?</b> La première phrase téléphonique de l'histoire (Graham Bell, 10 mars 1876) : « Monsieur Watson, venez ici, j'ai besoin de vous. » Watson était… dans la pièce d'à côté.",
+quiz:[["Dans un téléphone, que transporte le fil ?",["Du son comprimé","Un courant électrique qui varie comme la voix","De l'air","Des lettres en morse"],1,"Le son ne voyage pas dans le fil : c'est un courant électrique dont les variations copient la forme de l'onde sonore. Il est retransformé en son à l'arrivée."]]},
+
+{id:"ampoule",emoji:"💡",annee:"1879",titre:"L'ampoule et le réseau électrique",sous:"Une invention seule ne suffit pas — il faut tout le système",soir:2,
+probleme:"On s'éclaire à la bougie et au gaz : flammes dangereuses, lumière faible, incendies fréquents. Des lampes électriques existent, mais elles grillent en quelques minutes.",
+idee:"Edison comprend que le vrai défi n'est pas la lampe, c'est <b>tout le système</b> : un filament qui dure (bambou carbonisé, 1200 h !), le vide dans l'ampoule, mais aussi les centrales, les câbles, les compteurs, les interrupteurs…",
+impact:"La nuit recule : on lit, on travaille, on vit après le coucher du soleil, sans risque d'incendie. Le réseau électrique construit pour l'éclairage alimentera ensuite… tout le reste du monde moderne.",
+steps:[
+["Chauffer un fil à blanc","⚡ <span class='fl'>➜</span> 🧵 <span class='fl'>➜</span> 🔥💡","Quand un courant traverse un fil très fin, le fil chauffe tellement qu'il devient incandescent : il émet de la lumière. Problème : à cette température, il brûle en quelques minutes."],
+["Le vide protège le filament","💡➖💨 = 🚫🔥","Génie n°1 : enlever l'air de l'ampoule. Sans oxygène, pas de combustion — le filament peut briller des heures sans brûler. Edison teste 6000 matériaux avant de trouver le bon filament !"],
+["Une centrale pour tout un quartier","🏭⚡ <span class='fl'>➜</span> 🕸️ <span class='fl'>➜</span> 🏠🏠🏠","Génie n°2 : une lampe ne sert à rien sans courant. Edison construit la première centrale (Pearl Street, New York, 1882) et un réseau de câbles vers 400 lampes."],
+["Le système complet","🏭 <span class='fl'>➜</span> 🔌 <span class='fl'>➜</span> ⏱️ <span class='fl'>➜</span> 🎚️ <span class='fl'>➜</span> 💡","Compteurs pour facturer, fusibles pour la sécurité, interrupteurs pour contrôler, douilles à vis pour changer l'ampoule : chaque détail compte. C'est ça, l'ingénierie : penser à TOUT."]],
+savais:"<b>Le savais-tu ?</b> Edison a déposé 1093 brevets dans sa vie. Sa devise : « Le génie, c'est 1% d'inspiration et 99% de transpiration. »",
+quiz:[["Pourquoi enlève-t-on l'air de l'ampoule ?",["Pour qu'elle soit plus légère","Pour que le filament ne brûle pas (pas d'oxygène = pas de combustion)","Pour économiser l'électricité","Pour la rendre transparente"],1,"Sans oxygène, le filament chauffé à blanc ne peut pas brûler : il brille pendant des centaines d'heures au lieu de quelques minutes."]]},
+
+{id:"auto",emoji:"🚗",annee:"1885",titre:"L'automobile",sous:"Une petite usine à explosions sous le capot",soir:0,
+probleme:"Le train va vite, mais seulement là où il y a des rails. Le cheval va partout, mais lentement, et il se fatigue. Comment se déplacer vite, loin, où on veut ?",
+idee:"Miniaturiser le moteur : dans chaque cylindre, une <b>petite explosion contrôlée</b> d'essence pousse un piston, des centaines de fois par minute. Assez compact pour tenir dans une voiture.",
+impact:"Chacun choisit sa route et son horaire. Les villes s'étendent, les campagnes se désenclavent — et un siècle plus tard, il y a plus d'une voiture pour deux humains.",
+steps:[
+["1. Admission : le mélange entre","⬇️🔩 + 💨⛽ <span class='fl'>➜</span> 🛢️","Le piston descend et aspire un mélange d'air et de gouttelettes d'essence dans le cylindre."],
+["2. Compression : on serre fort","⬆️🔩 <span class='fl'>➜</span> 🤏💨","Le piston remonte et comprime le mélange très fort — comme quand tu bouches une pompe à vélo avec le doigt."],
+["3. Explosion : bang utile !","⚡🕯️ <span class='fl'>➜</span> 💥 <span class='fl'>➜</span> ⬇️🔩💪","La bougie fait une étincelle : le mélange explose et pousse violemment le piston vers le bas. C'est le seul temps qui donne de l'énergie !"],
+["4. Échappement, et ça recommence","⬆️🔩 <span class='fl'>➜</span> 💨🌫️ <span class='fl'>➜</span> 🔄⚙️ <span class='fl'>➜</span> 🚗💨","Le piston chasse les gaz brûlés, et le cycle repart — 50 fois par seconde ! Le vilebrequin transforme ces poussées en rotation des roues."]],
+savais:"<b>Le savais-tu ?</b> En 1888, Bertha Benz « emprunte » en secret la voiture de son mari Carl et fait 106 km avec ses deux fils — le premier voyage automobile de l'histoire. En chemin, elle débouche une conduite d'essence avec… son épingle à chapeau.",
+quiz:[["Sur les 4 temps du moteur, combien produisent de l'énergie ?",["Les quatre","Deux","Un seul : l'explosion","Aucun"],2,"Seule l'explosion pousse le piston et produit de l'énergie. Les trois autres temps (admission, compression, échappement) en consomment un peu — l'inertie du moteur les fait tourner « gratuitement »."]]},
+
+{id:"cinema",emoji:"🎥",annee:"1895",titre:"Le cinéma",sous:"24 images fixes par seconde = du mouvement",soir:0,
+probleme:"La photographie fige un instant. Mais comment capturer et rejouer le mouvement — un cheval qui galope, une vague, un sourire qui naît ?",
+idee:"Notre cerveau est « lent » : si on lui montre des images fixes <b>assez vite</b> (plus de 16 par seconde), il les fond en un mouvement fluide. Le cinéma est une illusion d'optique industrialisée.",
+impact:"Les histoires prennent vie à l'écran. Le cinéma devient l'art du XXᵉ siècle, puis engendre la télévision, les jeux vidéo, YouTube… Tout écran animé descend de cette idée.",
+steps:[
+["Photographier en rafale","🐎💨 <span class='fl'>➜</span> 📷📷📷📷📷","Une caméra prend 24 photos par seconde sur une longue pellicule. Chaque image est à peine différente de la précédente."],
+["La pellicule avance par saccades","🎞️ <span class='fl'>➜</span> ⚙️🦷 <span class='fl'>➜</span> 🖼️🖼️🖼️","Détail génial : la pellicule ne défile pas en continu ! Une griffe l'avance image par image, et un obturateur cache l'écran pendant chaque déplacement. Sinon : bouillie floue."],
+["Le cerveau fait le reste","🖼️🖼️🖼️ <span class='fl'>➜</span> 🧠✨ <span class='fl'>➜</span> 🐎💨","Projetées à 24 images/seconde, les photos fixes fusionnent dans notre cerveau : la persistance rétinienne crée l'illusion parfaite du mouvement."]],
+savais:"<b>Le savais-tu ?</b> À la première projection des frères Lumière (Paris, 1895), le film « L'arrivée d'un train en gare » aurait fait sursauter les spectateurs — certains croyaient que le train allait sortir de l'écran !",
+quiz:[["Pourquoi voit-on du mouvement au cinéma ?",["Les images bougent vraiment sur la pellicule","Le cerveau fusionne des images fixes montrées très vite","L'écran vibre","C'est de la magie"],1,"C'est la persistance rétinienne : au-delà d'environ 16 images par seconde, le cerveau ne distingue plus les images séparées et perçoit un mouvement continu."]]},
+
+{id:"avion",emoji:"✈️",annee:"1903",titre:"L'avion motorisé",sous:"L'impossible devient un problème de physique",soir:3,
+probleme:"Depuis des millénaires, l'homme regarde les oiseaux et rêve. Tous ceux qui ont essayé de voler en battant des ailes ont échoué. Voler semble réservé aux oiseaux — et aux fous.",
+idee:"Les frères Wright découpent « voler » en <b>trois problèmes séparés</b> : porter (la portance de l'aile), avancer (l'hélice), et surtout <b>contrôler</b> (gauchissement des ailes). Puis ils résolvent chacun, avec des mesures et des essais.",
+impact:"En 60 ans, on passe de 12 secondes de vol à des jets qui traversent l'Atlantique. Le monde rétrécit : n'importe quel point du globe est à moins de 24 h.",
+steps:[
+["L'aile fend l'air","💨 <span class='fl'>➜</span> 🪽 <span class='fl'>➜</span> ⬆️","La forme bombée de l'aile fait que l'air la pousse vers le haut quand elle avance vite : c'est la portance. Plus on va vite, plus ça porte."],
+["L'hélice tire en avant","🌀🌀 <span class='fl'>➜</span> ✈️ <span class='fl'>➜</span> 💨","L'hélice est une aile qui tourne : elle « visse » dans l'air et tire l'avion en avant. Le moteur à essence, léger et puissant, vient d'être inventé — pile au bon moment."],
+["Le vrai génie : contrôler","🕹️ <span class='fl'>➜</span> 🪽↕️ <span class='fl'>➜</span> ✈️🔄","Les autres pionniers s'écrasaient en tombant sur le côté. Les Wright tordent les ailes (puis inventent les ailerons) pour incliner et redresser l'avion à volonté — comme un oiseau."],
+["12 secondes qui changent tout","🏖️ 💨 <span class='fl'>➜</span> ✈️ <span class='fl'>➜</span> ⏱️12s 📏36m","17 décembre 1903, plage de Kitty Hawk : le Flyer vole 12 secondes sur 36 mètres. Moins que la longueur d'un terrain de basket — mais l'humanité vole."]],
+savais:"<b>Le savais-tu ?</b> Les frères Wright étaient réparateurs de vélos. Ils ont construit une soufflerie dans leur atelier et testé plus de 200 formes d'ailes miniatures avant de choisir la bonne. Mesurer avant de construire : voilà des ingénieurs.",
+quiz:[["Quel problème les frères Wright ont-ils résolu mieux que tous les autres pionniers ?",["Faire un moteur plus gros","Contrôler l'avion en vol (l'incliner et le redresser)","Trouver une plage","Faire des ailes plus grandes"],1,"Porter et avancer, d'autres savaient à peu près. Mais contrôler l'appareil — ne pas basculer au premier coup de vent — c'est ce qui tuait les pionniers. Le gauchissement des ailes a été LA percée."]]},
+
+{id:"radio",emoji:"📻",annee:"~1900",titre:"La radio",sous:"Des messages sans aucun fil, portés par des ondes invisibles",soir:0,
+probleme:"Le télégraphe et le téléphone exigent des fils. Impossible de joindre un navire en mer, un village isolé, ou des milliers de personnes à la fois.",
+idee:"Il existe des <b>ondes électromagnétiques invisibles</b> qui traversent l'air à la vitesse de la lumière (Hertz les a prouvées en 1887). Marconi comprend qu'on peut les utiliser comme facteur : l'émetteur les lance, le récepteur les capte.",
+impact:"L'information devient aérienne : navires sauvés par SOS, informations et musique dans chaque foyer, puis télévision, Wi-Fi, Bluetooth, 4G… Tout le sans-fil moderne descend de là.",
+steps:[
+["L'émetteur fait vibrer l'antenne","🎙️ <span class='fl'>➜</span> ⚡⚡⚡ <span class='fl'>➜</span> 🗼","Un courant électrique oscille très très vite (des millions de fois par seconde) dans l'antenne d'émission."],
+["L'antenne lance des ondes","🗼 <span class='fl'>➜</span> 📶📶📶 <span class='fl'>➜</span> 🌍","Ces oscillations créent des ondes électromagnétiques qui partent dans toutes les directions, à 300 000 km/s. Elles traversent l'air, les murs, la pluie…"],
+["Le son voyage sur l'onde","🎵➕📶 = 📶〰️","On « dessine » le son sur l'onde porteuse en faisant varier sa force (AM) ou sa fréquence (FM) — comme un tapis roulant qui transporte la musique."],
+["Le récepteur trie et écoute","📶📶📶 <span class='fl'>➜</span> 📻🎚️ <span class='fl'>➜</span> 🔊🎵","L'antenne de réception capte des milliers d'ondes mélangées. Le circuit d'accord n'amplifie que la fréquence choisie (ta station !), sépare le son de l'onde, et le haut-parleur le rejoue."]],
+savais:"<b>Le savais-tu ?</b> Lors du naufrage du Titanic (1912), c'est la radio qui a permis d'appeler les secours : le Carpathia a capté le SOS et sauvé 700 personnes. Après ça, la radio est devenue obligatoire sur tous les navires.",
+quiz:[["À quelle vitesse voyagent les ondes radio ?",["À la vitesse du son","À la vitesse de la lumière (300 000 km/s)","À 100 km/h","Elles ne bougent pas"],1,"Les ondes radio sont des ondes électromagnétiques, comme la lumière — elles filent à 300 000 km/s. C'est pour ça qu'une radio en direct n'a quasiment aucun retard."]]},
+
+{id:"frigo",emoji:"❄️",annee:"~1920",titre:"Le réfrigérateur",sous:"« Faire du froid » = déménager la chaleur",soir:4,
+probleme:"Sans froid, la nourriture pourrit en quelques jours. On utilise des caves, du sel, ou des blocs de glace livrés à domicile — chers et vite fondus.",
+idee:"On ne « fabrique » pas du froid : on <b>déplace la chaleur</b>. Un fluide spécial capture la chaleur à l'intérieur de la boîte en s'évaporant, puis la relâche dehors en se condensant. Et il recommence, en boucle.",
+impact:"Conserver la nourriture une semaine change la vie quotidienne, la santé (moins d'intoxications), le commerce mondial (viande, vaccins, chaîne du froid). Un objet banal — et une prouesse de physique.",
+steps:[
+["Le secret : l'évaporation refroidit","💧🖐️ <span class='fl'>➜</span> 💨 <span class='fl'>➜</span> 🥶","Mets de l'eau sur ta main et souffle : ça refroidit ! Un liquide qui s'évapore VOLE de la chaleur autour de lui. Le frigo utilise un fluide qui s'évapore à très basse température."],
+["Dedans : le fluide aspire la chaleur","🧃🌡️ <span class='fl'>➜</span> 🧊🐍 <span class='fl'>➜</span> 💨(fluide)","Dans le serpentin intérieur (l'évaporateur), le fluide s'évapore en absorbant la chaleur de tes aliments. Résultat : l'intérieur refroidit."],
+["Le compresseur muscle le fluide","💨 <span class='fl'>➜</span> 🫀⚙️ <span class='fl'>➜</span> 💨🔥","Le compresseur (le ronronnement du frigo, son seul moteur !) comprime le gaz, ce qui le rend brûlant — plus chaud que l'air de la cuisine."],
+["Dehors : la chaleur s'échappe","💨🔥 <span class='fl'>➜</span> 🐍(grille arrière) <span class='fl'>➜</span> 🌡️🏠 <span class='fl'>➜</span> 🔄","Dans la grille noire à l'arrière, le gaz brûlant cède sa chaleur à la pièce et redevient liquide. Touche la grille : c'est chaud ! C'est la chaleur… de tes yaourts. Puis le cycle recommence."]],
+savais:"<b>Le savais-tu ?</b> Un frigo ne peut PAS refroidir ta cuisine porte ouverte : il rejette derrière lui plus de chaleur qu'il n'en absorbe devant. Porte ouverte, il ferait même… chauffer la pièce !",
+quiz:[["Pourquoi la grille derrière le frigo est-elle chaude ?",["C'est une panne","C'est la chaleur prise à l'intérieur qui est rejetée dehors","Elle chauffe la nourriture","C'est le soleil"],1,"Le frigo est un déménageur de chaleur : il la capture à l'intérieur (évaporation du fluide) et la relâche à l'arrière (condensation). La grille chaude, c'est la preuve que ça marche !"]]},
+
+{id:"helico",emoji:"🚁",annee:"1936",titre:"L'hélicoptère",sous:"Décoller sans piste et rester immobile en plein ciel",soir:0,
+probleme:"Un avion doit rouler vite sur une piste pour décoller, et ne peut jamais s'arrêter en vol. Comment se poser sur un toit, un bateau, une montagne — ou faire du surplace pour secourir quelqu'un ?",
+idee:"Remplacer l'aile fixe par une <b>aile tournante</b> : le rotor. Les pales sont des ailes qui tournent — la portance existe même à l'arrêt. Reste un piège : le couple, qui fait tournoyer la cabine en sens inverse… d'où le petit rotor de queue.",
+impact:"Sauvetages en mer et en montagne, hôpitaux volants, zones inaccessibles : l'hélicoptère va là où rien d'autre ne va, et sauve des milliers de vies chaque année.",
+steps:[
+["Des ailes qui tournent","🪽🔄🔄🔄 <span class='fl'>➜</span> ⬆️⬆️","Chaque pale du rotor est une aile. En tournant vite, elles créent de la portance même si l'appareil est immobile : plus besoin de piste !"],
+["Le piège du couple","🔄(rotor) <span class='fl'>➜</span> 🔃(cabine!) 😵","Action-réaction : si le moteur fait tourner le rotor dans un sens, la cabine veut tourner dans l'autre ! Les premiers prototypes tournoyaient comme des toupies."],
+["Le rotor de queue sauve tout","🚁 + 🌀(queue) <span class='fl'>➜</span> ✅ stable","La petite hélice verticale à l'arrière pousse latéralement pour annuler cette rotation. Le pilote la dose avec les pédales pour pivoter à volonté."],
+["Pencher le rotor pour se déplacer","🚁↔️↕️ 🕹️","Pour avancer, reculer ou aller de côté, on incline légèrement le disque du rotor : la portance tire alors un peu dans cette direction. Surplace, montée, descente : tout se pilote au millimètre."]],
+savais:"<b>Le savais-tu ?</b> Léonard de Vinci avait dessiné une « vis aérienne » vers 1489 — 450 ans avant le premier hélicoptère qui vole vraiment. Il avait l'idée, mais aucun moteur assez léger n'existait.",
+quiz:[["À quoi sert le petit rotor de queue ?",["À faire joli","À empêcher la cabine de tourner en sens inverse du rotor principal","À refroidir le moteur","À faire du vent"],1,"C'est l'action-réaction : le moteur qui fait tourner le grand rotor fait aussi tourner la cabine en sens inverse. Le rotor de queue pousse de côté pour compenser exactement."]]},
+
+{id:"fusee",emoji:"🚀",annee:"1926-1957",titre:"La fusée moderne",sous:"Newton devient spectaculaire",soir:5,
+probleme:"Une hélice s'appuie sur l'air, une roue sur le sol. Mais dans l'espace, il n'y a RIEN sur quoi s'appuyer. Comment avancer dans le vide ?",
+idee:"La 3ᵉ loi de Newton : toute action a une réaction opposée. En <b>éjectant de la matière très vite vers l'arrière</b>, la fusée est poussée vers l'avant — sans s'appuyer sur rien. Comme un ballon qu'on lâche.",
+impact:"L'humanité peut quitter la Terre : satellites, sondes vers les planètes, télescopes spatiaux, humains sur la Lune. Le ciel n'est plus une limite.",
+steps:[
+["L'expérience du ballon","🎈💨 <span class='fl'>➜</span> 🎈➡️","Gonfle un ballon et lâche-le : l'air sort d'un côté, le ballon file de l'autre. Tu viens de comprendre la fusée. C'est exactement le même principe."],
+["Carburant + comburant","⛽ + 🫧(oxygène) <span class='fl'>➜</span> 🔥💥","Dans l'espace, pas d'air, donc pas d'oxygène pour brûler ! La fusée emporte SES DEUX ingrédients : le carburant ET l'oxygène liquide. C'est pour ça qu'elle est si grosse."],
+["La tuyère accélère les gaz","🔥 <span class='fl'>➜</span> ⏳(col étroit) <span class='fl'>➜</span> 💨💨💨 3km/s","La combustion crée des gaz brûlants qui s'échappent par la tuyère en forme de cloche : sa forme les accélère jusqu'à 10 fois la vitesse du son."],
+["Action → réaction → espace","💨⬇️ = 🚀⬆️ <span class='fl'>➜</span> 🌌","Des tonnes de gaz éjectées vers le bas chaque seconde = une poussée gigantesque vers le haut. À 28 000 km/h, l'orbite est atteinte. Newton avait raison depuis 1687 !"]],
+savais:"<b>Le savais-tu ?</b> Quand Robert Goddard a proposé en 1920 qu'une fusée pourrait atteindre la Lune, le New York Times s'est moqué : « une fusée ne peut pas pousser dans le vide ». Le journal a publié ses excuses... en 1969, trois jours avant Apollo 11.",
+quiz:[["Comment une fusée avance-t-elle dans le vide ?",["Elle s'appuie sur l'air","Elle éjecte des gaz très vite vers l'arrière (action-réaction)","Des aimants la tirent","Le vent solaire la pousse"],1,"C'est la 3ᵉ loi de Newton : éjecter de la masse vers l'arrière pousse la fusée vers l'avant. Aucun appui nécessaire — la preuve, ça marche encore mieux dans le vide."]]},
+
+{id:"ordinateur",emoji:"💻",annee:"1945",titre:"L'ordinateur électronique",sous:"Tout faire avec des 0 et des 1",soir:0,
+probleme:"Calculer des trajectoires, des tables, des codes secrets prend des semaines à des équipes entières de calculateurs humains — avec des erreurs.",
+idee:"Toute information (nombre, lettre, image, son) peut s'écrire avec seulement <b>deux symboles : 0 et 1</b>. Et un circuit électrique sait faire ça : courant/pas courant. Des milliers d'interrupteurs qui s'ouvrent et se ferment très vite peuvent donc calculer n'importe quoi.",
+impact:"Le calcul devient des millions de fois plus rapide que l'humain. Science, banques, jeux, films, IA : l'ordinateur devient la machine universelle — celle qui peut simuler toutes les autres.",
+steps:[
+["Tout devient 0 et 1","A=01000001&nbsp;&nbsp;🖼️=0110…&nbsp;&nbsp;🎵=1011…","Lettres, images, sons : tout est converti en suites de 0 et de 1 (des « bits »). 8 bits suffisent pour une lettre, quelques millions pour une photo."],
+["L'interrupteur qui décide","⚡❓ <span class='fl'>➜</span> 🚪ET/OU/NON <span class='fl'>➜</span> 💡0 ou 1","Des portes logiques combinent les bits : « SI ce fil ET ce fil ont du courant, ALORS j'allume la sortie ». Avec juste ET, OU, NON… on fabrique une addition !"],
+["Des milliards de décisions par seconde","🚪🚪🚪🚪 ×1 000 000 000 <span class='fl'>➜</span> 🧮","En enchaînant des millions de portes très vite, la machine additionne, compare, trie, dessine. Chaque opération est bête — c'est la vitesse et le nombre qui font la magie."],
+["Le programme : la recette","📜(instructions) <span class='fl'>➜</span> 💻 <span class='fl'>➜</span> 🎮🎬🤖","Idée décisive : les instructions elles-mêmes sont stockées en 0 et 1 dans la mémoire. Changer de programme = changer de recette, sans toucher la machine. Une seule machine pour tout faire."]],
+savais:"<b>Le savais-tu ?</b> L'ENIAC (1945) pesait 30 tonnes, occupait une salle entière et calculait 5000 additions par seconde. Le téléphone dans ta poche est environ un milliard de fois plus puissant.",
+quiz:[["Avec quels symboles un ordinateur écrit-il TOUTES les informations ?",["Les 26 lettres","0 et 1","Des hiéroglyphes","Des couleurs"],1,"Tout — textes, photos, musiques, vidéos, programmes — est codé en bits : des 0 et des 1, faciles à représenter par courant/pas de courant."]]},
+
+{id:"nucleaire",emoji:"⚛️",annee:"1942-1956",titre:"L'énergie nucléaire",sous:"Une énergie gigantesque dans une matière minuscule",soir:0,
+probleme:"Charbon et pétrole s'épuisent, polluent, et il en faut des trains entiers. Existe-t-il une source d'énergie radicalement plus concentrée ?",
+idee:"Le cœur des atomes cache une énergie colossale (E=mc² !). En cassant des noyaux d'uranium (la <b>fission</b>), on libère chaleur + neutrons qui cassent d'autres noyaux : une <b>réaction en chaîne</b>… que la centrale maîtrise précisément.",
+impact:"Un seul gramme d'uranium libère autant d'énergie qu'une tonne de charbon. Environ 10% de l'électricité mondiale (70% en France) vient de cette maîtrise — avec le défi sérieux des déchets.",
+steps:[
+["Casser un noyau","🎯(neutron) <span class='fl'>➜</span> ⚛️ <span class='fl'>➜</span> 💥 + 🔥 + 🎯🎯","Un neutron percute un noyau d'uranium, qui se casse en deux : ça libère de la chaleur ET 2-3 nouveaux neutrons."],
+["La réaction en chaîne","🎯 <span class='fl'>➜</span> ⚛️💥 <span class='fl'>➜</span> 🎯🎯 <span class='fl'>➜</span> ⚛️💥⚛️💥","Chaque neutron peut casser un autre noyau, qui libère d'autres neutrons… Non contrôlée, c'est une bombe. Tout l'enjeu : la dompter."],
+["Les barres de contrôle domptent","⚛️💥 + 🎛️(barres) <span class='fl'>➜</span> ⚖️ exactement 1","Des barres qui « mangent » les neutrons plongent plus ou moins dans le réacteur : on règle la réaction pour que chaque fission n'en déclenche QU'UNE autre. Ni plus (emballement), ni moins (extinction)."],
+["De la chaleur à la prise","🔥 <span class='fl'>➜</span> 💧♨️ <span class='fl'>➜</span> 🌀(turbine) <span class='fl'>➜</span> ⚡🏠","La suite est classique : la chaleur fait de la vapeur, la vapeur fait tourner une turbine, la turbine entraîne un alternateur. Comme une centrale à charbon — mais sans brûler de charbon."]],
+savais:"<b>Le savais-tu ?</b> Une pastille d'uranium de la taille d'un bonbon contient autant d'énergie qu'une tonne de charbon. C'est la matière la plus concentrée en énergie que l'humanité sache utiliser.",
+quiz:[["À quoi servent les barres de contrôle d'un réacteur ?",["À chauffer l'eau","À absorber des neutrons pour régler la réaction en chaîne","À stocker l'uranium","À faire tourner la turbine"],1,"Elles capturent une partie des neutrons : enfoncées, la réaction ralentit ; relevées, elle accélère. Le but : exactement une fission déclenchée par fission — la maîtrise parfaite."]]},
+
+{id:"tv",emoji:"📺",annee:"1926-1950",titre:"La télévision",sous:"Découper une image, l'envoyer, la reconstruire",soir:0,
+probleme:"La radio transmet le son à des millions de gens. Mais une image, c'est des millions de détails à la fois — comment la faire passer dans une onde ?",
+idee:"<b>Découper l'image en lignes de points</b>, envoyer la luminosité de chaque point l'un après l'autre, très vite, puis reconstruire l'image dans le même ordre à l'arrivée. 25 images complètes par seconde : l'œil n'y voit que du feu.",
+impact:"Le monde entier regarde les mêmes événements en direct : les JO, les premiers pas sur la Lune (600 millions de téléspectateurs !). L'image entre dans chaque salon.",
+steps:[
+["L'image devient des lignes","🖼️ <span class='fl'>➜</span> ➖➖➖➖ ×625","La caméra balaie l'image ligne par ligne, comme tes yeux lisent une page : de gauche à droite, de haut en bas."],
+["Chaque point devient un signal","➖ <span class='fl'>➜</span> ⚪⚫⚪⚪ <span class='fl'>➜</span> 📈⚡","Sur chaque ligne, la luminosité de chaque point est mesurée et convertie en signal électrique : clair = fort, sombre = faible."],
+["Le signal voyage","📈 <span class='fl'>➜</span> 🗼📶 <span class='fl'>➜</span> 🏠📺","Le signal part sur une onde radio (ou un câble). Il contient l'image ligne par ligne, plus le son, plus des tops de synchronisation pour rester bien calé."],
+["L'écran redessine tout","⚡ <span class='fl'>➜</span> 🖊️💡➖➖➖ <span class='fl'>➜</span> 🖼️ ×25/s","Le téléviseur rallume les points dans le même ordre, ligne par ligne, 25 images par seconde. Ton cerveau fusionne tout : l'image vit."]],
+savais:"<b>Le savais-tu ?</b> Sur les vieilles télés mal réglées, on voyait l'image « défiler » : c'étaient les lignes qui perdaient la synchronisation. Et la « neige » de l'écran ? Un mélange de parasites… dont un peu de rayonnement fossile du Big Bang !",
+quiz:[["Comment la télévision envoie-t-elle une image entière ?",["Toute l'image d'un coup","Point par point, ligne par ligne, très vite","En la pliant","Elle envoie une photo par la poste"],1,"L'image est balayée en centaines de lignes, chaque point converti en signal l'un après l'autre. À 25 images/seconde, l'œil perçoit une image continue."]]},
+
+{id:"transistor",emoji:"🔌",annee:"1947",titre:"Le transistor",sous:"L'interrupteur microscopique qui a transformé la civilisation",soir:6,
+probleme:"Les premiers ordinateurs utilisent des tubes à vide : gros comme des ampoules, chauffant énormément, grillant sans cesse. L'ENIAC en avait 17 468 — une panne toutes les deux heures.",
+idee:"Un « sandwich » de silicium qui laisse passer ou bloque le courant selon un petit signal de commande : un <b>interrupteur sans aucune pièce mobile</b>, minuscule, quasi inusable, et qu'on peut miniaturiser presque à l'infini.",
+impact:"L'invention la plus fabriquée de l'histoire humaine : ton smartphone en contient des <b>milliards</b>. Sans transistor : pas d'ordinateur portable, pas d'Internet, pas de smartphone, pas d'IA.",
+steps:[
+["Le problème des tubes","💡×17468 <span class='fl'>➜</span> 🔥😰 <span class='fl'>➜</span> 💥(pannes)","Les tubes à vide font le travail (laisser passer ou non le courant) mais sont gros, fragiles et gourmands. Il faut autre chose."],
+["Le silicium, matériau caméléon","🏖️(sable) <span class='fl'>➜</span> 💎(silicium pur) <span class='fl'>➜</span> ⚡❓","Le silicium est un semi-conducteur : ni vrai conducteur, ni vrai isolant. En y ajoutant des impuretés choisies, on règle exactement comment il conduit. C'est le matériau parfait pour décider."],
+["Une petite tension commande","🎚️(petit signal) <span class='fl'>➜</span> 🚪 <span class='fl'>➜</span> ⚡💪(gros courant)","Le transistor a 3 pattes : un petit signal sur la « grille » ouvre ou ferme le passage d'un courant bien plus fort. Interrupteur ET amplificateur à la fois."],
+["Toujours plus petits","📏 1947 : 1cm <span class='fl'>➜</span> 2024 : 0,000005mm <span class='fl'>➜</span> 📱×10⁹","On a appris à graver des milliards de transistors sur une puce d'un centimètre. Chacun s'ouvre et se ferme des milliards de fois par seconde. Ton téléphone = des milliards d'interrupteurs qui clignotent."]],
+savais:"<b>Le savais-tu ?</b> On fabrique environ 1 000 milliards de milliards de transistors par an — plus que de grains de riz récoltés sur Terre… et chaque transistor coûte moins cher qu'un grain de riz.",
+quiz:[["Qu'est-ce qu'un transistor, au fond ?",["Une petite radio","Un interrupteur électronique microscopique sans pièce mobile","Une batterie","Une antenne"],1,"C'est un interrupteur commandé par un signal électrique : pas de pièce qui bouge, donc minuscule, rapide et quasi inusable. Des milliards ensemble = un processeur."]]},
+
+{id:"solaire",emoji:"☀️",annee:"1954",titre:"La cellule photovoltaïque",sous:"De la lumière à l'électricité, sans rien qui tourne",soir:0,
+probleme:"Toutes les centrales font tourner une turbine (vapeur, eau, vent). Pièces mobiles, usure, entretien. Peut-on faire de l'électricité sans AUCUN mouvement ?",
+idee:"Dans certains matériaux, un grain de lumière (photon) peut <b>arracher un électron</b> et le mettre en mouvement. Une cellule au silicium bien conçue canalise ces électrons : lumière entre, courant sort. C'est tout.",
+impact:"L'électricité arrive là où aucun câble ne va : satellites, refuges, villages isolés — et aujourd'hui des millions de toits. Le soleil envoie sur Terre en 1 heure l'énergie que l'humanité consomme en 1 an.",
+steps:[
+["Un photon frappe le silicium","🌞 <span class='fl'>➜</span> ✨(photon) <span class='fl'>➜</span> 💎(cellule)","La lumière est faite de petits grains d'énergie : les photons. Chacun frappe le cristal de silicium de la cellule."],
+["L'électron est arraché","✨ + ⚛️ <span class='fl'>➜</span> 🔴(électron libre) !","Si le photon a assez d'énergie, il éjecte un électron de son atome. L'électron est libre — mais pour l'instant il irait n'importe où."],
+["La jonction fait le tri","🔴 <span class='fl'>➜</span> ↗️(couche N) / ↘️(couche P)","L'astuce : deux couches de silicium différentes créent un « toboggan électrique » à leur frontière. Les électrons libérés sont tous poussés du même côté. Un seul sens = un courant."],
+["Le courant alimente la maison","🔴🔴🔴 <span class='fl'>➜</span> 🔌 <span class='fl'>➜</span> 💡🏠","Les électrons sortent par le circuit, font leur travail (lampe, frigo, console…) et reviennent par l'autre face. Pas de bruit, pas d'usure, pas de carburant : juste la lumière."]],
+savais:"<b>Le savais-tu ?</b> C'est Albert Einstein qui a expliqué l'effet photoélectrique en 1905 — c'est ça (et pas la relativité !) qui lui a valu le prix Nobel. Les premières cellules servaient à alimenter les satellites, où aucun autre carburant ne durait.",
+quiz:[["Que fait un photon dans une cellule solaire ?",["Il chauffe l'eau","Il arrache un électron qui rejoint un courant","Il fait tourner une mini-turbine","Il se transforme en pile"],1,"Le photon transmet son énergie à un électron du silicium, qui devient libre. La jonction de la cellule pousse tous ces électrons dans le même sens : c'est le courant électrique."]]},
+
+{id:"satellite",emoji:"🛰️",annee:"1957",titre:"Le satellite artificiel",sous:"Tomber autour de la Terre sans jamais toucher le sol",soir:0,
+probleme:"Depuis l'espace, on pourrait relayer des communications, observer la météo, cartographier la planète… Mais comment faire pour qu'un objet RESTE là-haut sans moteur allumé ?",
+idee:"Newton l'avait imaginé : lance une pierre assez fort et sa chute suit la courbure de la Terre — <b>elle tombe en permanence, mais le sol se dérobe en permanence</b>. À 28 000 km/h, on tombe « autour » de la Terre pour toujours.",
+impact:"Météo, GPS, communications, télévision mondiale, observation du climat : plus de 8000 satellites actifs nous rendent des services invisibles chaque seconde.",
+steps:[
+["L'expérience du canon de Newton","💣 <span class='fl'>➜</span> 📉(tombe) … 💣💪 <span class='fl'>➜</span> 📉📉 plus loin","Tire un boulet : il tombe à 1 km. Plus fort : 100 km. Encore plus fort : sa chute suit exactement la rondeur de la Terre… il ne retombe jamais."],
+["La vitesse magique : 28 000 km/h","🚀 <span class='fl'>➜</span> 🛰️💨 8km/s","À environ 8 km par seconde (Paris-Marseille en 1 min 40 !), la courbure de la chute épouse la courbure de la Terre. C'est la vitesse orbitale."],
+["Tomber pour toujours","🛰️⤵️🌍⤴️ <span class='fl'>➜</span> ♾️","Le satellite est bel et bien en chute libre permanente — c'est pour ça que les astronautes « flottent » : ils tombent avec leur vaisseau ! Sans air pour freiner, ça dure des années."],
+["Chaque orbite a son métier","🛰️400km(ISS) 🛰️20000km(GPS) 🛰️36000km(météo/TV)","Plus bas = plus rapide et plus détaillé (photos). Plus haut = plus lent. À 36 000 km pile, le satellite tourne exactement à la vitesse de la Terre : il semble immobile dans le ciel — parfait pour la TV."]],
+savais:"<b>Le savais-tu ?</b> Spoutnik 1 (4 octobre 1957), premier satellite de l'histoire, était une simple boule de métal de 58 cm qui faisait « bip-bip ». Le monde entier pouvait l'écouter à la radio — et le choc a déclenché la course à l'espace.",
+quiz:[["Pourquoi un satellite ne retombe-t-il pas ?",["Il n'y a plus de gravité là-haut","Il tombe en permanence, mais sa vitesse fait que le sol « se dérobe » sous lui","Des moteurs le portent en continu","Il est accroché à un câble"],1,"La gravité agit bel et bien (c'est elle qui le retient !). Mais à 28 000 km/h, la trajectoire de sa chute suit la courbure de la Terre : il tombe autour d'elle, indéfiniment."]]},
+
+{id:"laser",emoji:"🔴",annee:"1960",titre:"Le laser",sous:"Une lumière parfaitement ordonnée",soir:0,
+probleme:"La lumière d'une lampe part dans tous les sens, dans toutes les couleurs mélangées. Impossible de la concentrer précisément ou de l'envoyer très loin sans qu'elle s'étale.",
+idee:"Forcer des milliards d'atomes à émettre leur lumière <b>exactement en même temps, dans la même direction, à la même couleur</b> : une armée de photons parfaitement synchronisés au lieu d'une foule désordonnée.",
+impact:"Chirurgie de l'œil, fibre optique (Internet voyage en laser !), découpe industrielle au micron, lecteurs de code-barres et de Blu-ray, mesure de la distance Terre-Lune au millimètre.",
+steps:[
+["Lampe vs laser","💡➜🌈↗️↘️↖️ &nbsp;&nbsp;VS&nbsp;&nbsp; 🔴➜➖➖➖","Une lampe : toutes les couleurs, toutes les directions. Un laser : UNE couleur, UNE direction, des ondes parfaitement au pas — comme une fanfare qui joue la même note ensemble."],
+["Exciter les atomes","⚡ <span class='fl'>➜</span> ⚛️⤴️ (excités)","On « gonfle » les atomes du milieu laser (cristal, gaz…) avec de l'énergie : leurs électrons montent sur un niveau d'énergie supérieur, comme des ressorts comprimés."],
+["L'émission en cascade","✨ <span class='fl'>➜</span> ⚛️ <span class='fl'>➜</span> ✨✨ <span class='fl'>➜</span> ✨✨✨✨","Le génie (prédit par Einstein en 1917) : un photon qui passe près d'un atome excité le fait émettre un photon JUMEAU — même couleur, même direction, même rythme. 1 devient 2, 2 deviennent 4…"],
+["Les miroirs amplifient","🪞 ✨✨✨✨ 🪞(semi-transparent) <span class='fl'>➜</span> 🔴➖➖➖","Deux miroirs font rebondir la lumière dans le milieu : à chaque passage, l'avalanche de photons jumeaux grossit. Un miroir laisse passer 1% : c'est le faisceau laser qui sort."]],
+savais:"<b>Le savais-tu ?</b> Des miroirs déposés sur la Lune par Apollo réfléchissent des tirs laser depuis la Terre : on mesure ainsi la distance Terre-Lune au millimètre près. Résultat : la Lune s'éloigne de 3,8 cm par an !",
+quiz:[["Qu'est-ce qui rend la lumière laser si spéciale ?",["Elle est plus chaude","Tous ses photons ont la même couleur, la même direction et vibrent ensemble","Elle est radioactive","Elle est plus rapide que la lumière normale"],1,"C'est une lumière « cohérente » : des photons jumeaux parfaitement synchronisés. C'est ça qui permet de la concentrer sur un point minuscule ou de l'envoyer très loin sans qu'elle s'étale."]]},
+
+{id:"robot",emoji:"🤖",annee:"1961",titre:"Le robot industriel",sous:"Répéter le même geste parfait, des millions de fois",soir:0,
+probleme:"Dans les usines, certaines tâches sont dangereuses (soudure, peinture toxique, pièces brûlantes) et d'autres épuisantes à force de répétition. Et l'humain fatigué fait des erreurs.",
+idee:"Un <b>bras articulé programmable</b> : on lui enseigne une séquence de mouvements (point par point), il la répète ensuite au dixième de millimètre près, 24h/24, sans fatigue ni danger.",
+impact:"Les usines produisent plus vite, moins cher et avec moins d'accidents. Plus de 4 millions de robots industriels travaillent aujourd'hui — et les humains se concentrent sur ce que les robots ne savent pas faire.",
+steps:[
+["Un bras comme le tien","💪 = 🦾 (épaule+coude+poignet)","Le robot copie ton bras : des segments rigides reliés par des articulations motorisées. 6 articulations = atteindre n'importe quel point, dans n'importe quelle orientation."],
+["Chaque articulation sait où elle est","🦾📐 <span class='fl'>➜</span> 🧠 « coude à 47,3° »","Dans chaque articulation, un capteur d'angle ultra-précis informe l'ordinateur en permanence. Sans ces capteurs, le robot serait aveugle à ses propres gestes."],
+["On lui apprend le geste","👨🏫🕹️ <span class='fl'>➜</span> 📍📍📍 <span class='fl'>➜</span> 💾","Un opérateur guide le bras aux positions clés et les enregistre. Le programme = la liste de ces points + la vitesse + l'action (souder, saisir, peindre)."],
+["Il répète, parfaitement","💾 <span class='fl'>➜</span> 🦾⚡🔩 ×10000/jour ± 0,1mm","Le robot rejoue la séquence en boucle avec la même précision au 10000ᵉ geste qu'au premier. Soudures identiques, aucune fatigue, zéro doigt en danger."]],
+savais:"<b>Le savais-tu ?</b> Le premier robot industriel, Unimate (1961), travaillait chez General Motors : il sortait des pièces brûlantes d'une machine de moulage — la tâche que les ouvriers détestaient le plus. Il a même présenté un putt de golf à la télé !",
+quiz:[["Comment apprend-on un geste à un robot industriel ?",["Il regarde des vidéos","On le guide aux positions clés qu'il enregistre, puis il les rejoue en boucle","Il essaie au hasard","On lui explique avec des mots"],1,"C'est l'apprentissage par guidage : l'opérateur amène le bras aux points importants, le robot mémorise positions, vitesses et actions, puis répète la séquence indéfiniment."]]},
+
+{id:"internet",emoji:"🌐",annee:"1969-1990",titre:"Internet",sous:"Des milliards de machines qui parlent la même langue",soir:0,
+probleme:"Chaque réseau d'ordinateurs (universités, armée, entreprises) utilise ses propres règles, incompatibles. Et si un câble central casse, tout le réseau tombe.",
+idee:"Deux idées géniales : découper chaque message en <b>petits paquets</b> qui voyagent chacun par le chemin disponible, et une <b>langue commune (TCP/IP)</b> que tout réseau peut parler. Pas de chef d'orchestre : le réseau se débrouille.",
+impact:"Des milliards d'humains et de machines connectés en permanence. Courrier, savoir, commerce, musique, visioconférence : Internet est devenu l'infrastructure de presque tout.",
+steps:[
+["Le message est découpé","📧 <span class='fl'>➜</span> ✂️ <span class='fl'>➜</span> 📦📦📦 (n°1,2,3…)","Ton email ou ta vidéo est découpé en milliers de petits paquets numérotés, chacun portant l'adresse de destination — comme un puzzle envoyé par la poste, pièce par pièce."],
+["Chaque paquet choisit sa route","📦↗️🌉 📦↘️🌉 📦➡️🌉","Les routeurs (les carrefours du réseau) envoient chaque paquet par le chemin le moins encombré. Deux paquets du même message peuvent prendre des routes différentes ! Un câble coupé ? On contourne."],
+["TCP/IP, la langue commune","🖥️🇺🇸 🖥️🇫🇷 🖥️🇯🇵 <span class='fl'>➜</span> 🤝 TCP/IP","Peu importe la machine, le câble, le pays : tout le monde parle le même protocole. C'est comme si tous les bureaux de poste du monde s'étaient mis d'accord sur le format des adresses."],
+["Le puzzle est reconstruit","📦📦📦 <span class='fl'>➜</span> 🧩 <span class='fl'>➜</span> 📧✅","À l'arrivée, les paquets sont remis dans l'ordre grâce à leurs numéros. Un paquet perdu ? Le destinataire le redemande automatiquement. Tout ça en quelques millisecondes."]],
+savais:"<b>Le savais-tu ?</b> Le premier message envoyé sur ARPANET (1969) devait être « LOGIN »… le réseau a planté après deux lettres. Le tout premier message d'Internet fut donc : « LO ».",
+quiz:[["Comment ta vidéo voyage-t-elle sur Internet ?",["En un seul bloc, par un seul câble","Découpée en petits paquets qui prennent chacun le meilleur chemin","Par satellite uniquement","Elle est imprimée puis renvoyée"],1,"Tout est découpé en paquets numérotés et routés indépendamment. C'est ce qui rend Internet rapide ET résistant : si une route casse, les paquets en prennent une autre."]]},
+
+{id:"apollo",emoji:"🌙",annee:"1969",titre:"Apollo 11 — l'alunissage",sous:"Résoudre 10 000 problèmes pour un objectif « impossible »",soir:7,
+probleme:"1961 : Kennedy promet un humain sur la Lune avant 1970. Problème : personne ne sait faire AUCUNE des étapes — ni la fusée géante, ni la navigation, ni l'atterrissage, ni le retour.",
+idee:"Découper l'impossible en <b>milliers de problèmes possibles</b>, confiés à 400 000 personnes : une fusée à étages (Saturn V), un vaisseau en 3 modules, un ordinateur de bord miniaturisé, et des répétitions de chaque seconde de la mission.",
+impact:"Le 20 juillet 1969, 600 millions d'humains regardent Neil Armstrong poser le pied sur la Lune. La preuve qu'un projet d'ingénierie assez déterminé peut réaliser un rêve vieux de 100 000 ans.",
+steps:[
+["La fusée à étages","🚀=🧱+🧱+🧱 <span class='fl'>➜</span> 🔥🧱↘️ <span class='fl'>➜</span> plus léger !","Saturn V, 111 m, 3000 tonnes. Le secret : jeter les réservoirs vides en route ! Chaque étage brûle, se détache et tombe — la fusée s'allège et accélère. 96% du poids n'arrivera jamais sur la Lune."],
+["Le voyage et la ronde des modules","🌍 <span class='fl'>➜</span> 🛸(3 modules) <span class='fl'>➜</span> 🌙 384 000 km","Trois jours de voyage. Autour de la Lune, le vaisseau se sépare : Collins reste en orbite dans le module de commande, Armstrong et Aldrin descendent dans le fragile module lunaire « Eagle »."],
+["L'alunissage aux commandes","🛸⬇️ ⚠️🖥️(alarme!) <span class='fl'>➜</span> 🕹️👨🚀 <span class='fl'>➜</span> 🌙✅ (25s de carburant)","Descente dramatique : alarmes de l'ordinateur saturé, zone prévue pleine de rochers. Armstrong prend les commandes manuelles et se pose avec 25 secondes de carburant restant. « L'Aigle s'est posé. »"],
+["Revenir vivants","🌙🚀⤴️ <span class='fl'>➜</span> 🤝(rendez-vous orbital) <span class='fl'>➜</span> 🌍🔥☂️🌊","Le plus dur : repartir ! L'étage supérieur du module décolle de la Lune, retrouve Collins en orbite lunaire (un rendez-vous au millimètre à 6000 km/h), puis la capsule traverse l'atmosphère à 40 000 km/h — bouclier en feu, parachutes, océan. Mission accomplie."]],
+savais:"<b>Le savais-tu ?</b> L'ordinateur de bord d'Apollo 11 avait moins de puissance qu'une calculatrice de collège d'aujourd'hui — et environ un million de fois moins que ton smartphone. Le code était tissé À LA MAIN dans des fils de cuivre par des ouvrières du textile.",
+quiz:[["Pourquoi la fusée Saturn V jetait-elle ses étages en route ?",["Ils étaient cassés","Pour s'alléger en larguant les réservoirs vides et accélérer plus facilement","Pour faire des feux d'artifice","Pour marquer le chemin du retour"],1,"Transporter des réservoirs vides coûte une énergie folle. En les larguant, la fusée devient plus légère à chaque étape : c'est l'idée qui rend le voyage lunaire possible."]]},
+
+{id:"microproc",emoji:"🧠",annee:"1971",titre:"Le microprocesseur",sous:"Le cerveau d'un ordinateur sur une puce d'un centimètre",soir:0,
+probleme:"Un ordinateur, c'est des armoires entières de circuits reliés par des kilomètres de câbles. Cher, encombrant, fragile — impossible d'en mettre un dans un objet du quotidien.",
+idee:"Graver <b>TOUT le cerveau de l'ordinateur</b> (calcul, mémoire de travail, contrôle) sur un seul petit carré de silicium, en photographiant les circuits comme on développe une photo — en des milliers de fois plus petit.",
+impact:"L'intelligence devient assez petite et assez bon marché pour se glisser partout : voitures, machines à laver, jouets, cartes bancaires, téléphones. L'ordinateur personnel devient possible.",
+steps:[
+["Le plan de la ville microscopique","📐🖥️ <span class='fl'>➜</span> 🗺️ (milliards de rues)","Des ingénieurs dessinent le circuit comme le plan d'une ville géante : les transistors sont les maisons, les pistes de cuivre sont les rues. Aujourd'hui : des milliards de « maisons » sur 1 cm²."],
+["La photolithographie","💡 <span class='fl'>➜</span> 🎭(masque) <span class='fl'>➜</span> 💎(silicium photosensible)","Le plan est projeté en ultra-réduit sur la galette de silicium couverte d'un vernis sensible à la lumière — exactement comme développer une photo, mais avec des détails 10 000 fois plus fins qu'un cheveu."],
+["Graver couche après couche","🧪 <span class='fl'>➜</span> 🏗️ ×80 couches <span class='fl'>➜</span> 🧠","Des bains chimiques creusent les zones exposées, on dépose des matériaux, on recommence : 80 couches empilées au nanomètre près. Trois mois de fabrication dans les usines les plus propres du monde."],
+["Le cycle infini du processeur","💾 <span class='fl'>➜</span> 📖(lire) ⚙️(calculer) ✍️(écrire) <span class='fl'>➜</span> 🔄 ×10⁹/s","Le processeur fait toujours la même chose : lire une instruction, l'exécuter, passer à la suivante — des milliards de fois par seconde. C'est TOUT. La magie vient du nombre et de la vitesse."]],
+savais:"<b>Le savais-tu ?</b> Le premier microprocesseur (Intel 4004, 1971) avait 2300 transistors et a été conçu… pour une calculatrice de bureau japonaise. Les puces actuelles en ont plus de 100 milliards — l'ingénieur Federico Faggin ne se doutait pas qu'il lançait une révolution.",
+quiz:[["Comment grave-t-on des milliards de transistors sur une puce ?",["Avec un stylo très fin","Par photolithographie : on projette le plan en lumière sur le silicium, couche par couche","Avec une imprimante classique","À la main sous microscope"],1,"On projette le dessin du circuit en version ultra-réduite sur un vernis photosensible, puis des bains chimiques gravent la matière. On empile ainsi ~80 couches avec une précision de quelques nanomètres."]]},
+
+{id:"irm",emoji:"🩻",annee:"1971-1977",titre:"Le scanner et l'IRM",sous:"Voir l'intérieur du corps sans l'ouvrir",soir:0,
+probleme:"La radio classique montre bien les os, mais les organes mous (cerveau, muscles, tumeurs) restent presque invisibles. Pour savoir, il fallait… opérer.",
+idee:"Le scanner prend des radios <b>sous tous les angles</b> et un ordinateur reconstruit l'image en tranches. L'IRM va plus loin : un aimant géant fait « chanter » les atomes d'hydrogène de ton corps, et on écoute leur réponse — sans aucun rayon X.",
+impact:"Les médecins voient tumeurs, lésions et hémorragies sans une seule incision. Des millions de diagnostics précoces chaque année : l'ingénierie qui sauve peut-être le plus de vies.",
+steps:[
+["La radio tourne autour de toi","🩻🔄👤 <span class='fl'>➜</span> 📸×1000 angles","Le scanner : un tube à rayons X tourne autour du patient et prend des centaines d'images sous tous les angles. Chaque image seule ne montre pas grand-chose…"],
+["L'ordinateur reconstruit les tranches","📸📸📸 <span class='fl'>➜</span> 🖥️🧮 <span class='fl'>➜</span> 🍞(tranches 3D)","…mais en combinant mathématiquement toutes les vues, l'ordinateur calcule l'image de chaque « tranche » du corps, comme si on découpait un pain de mie. Le corps en 3D, sans l'ouvrir."],
+["L'IRM aligne tes atomes","🧲💪 <span class='fl'>➜</span> ⚛️⚛️⚛️(alignés)","L'IRM : un aimant 60 000 fois plus fort que le champ terrestre aligne les noyaux d'hydrogène de l'eau de ton corps — tu es fait à 65% d'eau, donc plein d'hydrogène partout."],
+["Les atomes répondent","📻(impulsion) <span class='fl'>➜</span> ⚛️〰️(écho) <span class='fl'>➜</span> 🖥️🧠🫀","Une brève onde radio fait basculer ces noyaux ; en revenant en place, chacun émet un mini-signal. Graisse, muscle, tumeur répondent différemment : l'ordinateur en fait des images d'une précision stupéfiante. Zéro rayon dangereux."]],
+savais:"<b>Le savais-tu ?</b> L'aimant d'une IRM est si puissant qu'il peut transformer une chaise ou une bouteille métallique en projectile — c'est pour ça qu'on te demande d'enlever TOUT métal avant d'entrer. Il reste allumé jour et nuit, refroidi à −269 °C.",
+quiz:[["Quelle est la grande différence entre l'IRM et la radio ?",["L'IRM est plus petite","L'IRM utilise un aimant et des ondes radio, sans aucun rayon X","L'IRM montre seulement les os","Il n'y a pas de différence"],1,"L'IRM fait « répondre » les atomes d'hydrogène du corps grâce à un aimant géant et des ondes radio — aucune radiation ionisante, et une image superbe des organes mous."]]},
+
+{id:"mobile",emoji:"📱",annee:"1973-2007",titre:"Le téléphone mobile",sous:"Rester connecté en se déplaçant, d'antenne en antenne",soir:0,
+probleme:"Le téléphone est attaché à un fil. Un émetteur unique assez puissant pour couvrir un pays ne pourrait servir que quelques dizaines d'appels à la fois. Comment connecter des millions de gens EN MOUVEMENT ?",
+idee:"Découper le territoire en petites <b>« cellules »</b>, chacune avec sa propre antenne réutilisant les mêmes fréquences que les cellules éloignées. Et quand tu te déplaces, le réseau te fait passer d'une antenne à l'autre <b>sans couper l'appel</b> : le handover.",
+impact:"Plus de 8 milliards d'abonnements mobiles : appeler, être secouru, payer, apprendre — depuis n'importe où. Dans certains pays, le mobile est arrivé avant l'eau courante.",
+steps:[
+["Le territoire en nid d'abeille","🗺️ <span class='fl'>➜</span> ⬡⬡⬡⬡⬡ 📡 par case","Le pays est découpé en cellules hexagonales de quelques kilomètres, chacune servie par une antenne. C'est de là que vient le mot « cellulaire » !"],
+["Réutiliser les fréquences","⬡🔵⬡🔴⬡🔵 <span class='fl'>➜</span> ♾️ conversations","Deux cellules éloignées peuvent utiliser LA MÊME fréquence sans se gêner (signaux trop faibles pour se croiser). Résultat : un nombre quasi illimité d'appels simultanés avec peu de fréquences."],
+["Ton téléphone se signale","📱📶 « je suis ici ! » <span class='fl'>➜</span> 🗄️(réseau)","Ton téléphone écoute les antennes voisines et se signale régulièrement. Le réseau sait toujours dans quelle cellule te joindre — c'est comme ça qu'un appel te trouve."],
+["Le handover invisible","🚗📱 ⬡A <span class='fl'>➜</span> ⬡B « passe-moi l'appel ! » ✅","Tu roules en téléphonant : le signal de l'antenne A faiblit, celui de B grandit. Le réseau bascule ton appel de A vers B en quelques millisecondes. Tu ne remarques rien — c'est ça, la prouesse."]],
+savais:"<b>Le savais-tu ?</b> Le premier appel mobile de l'histoire (Martin Cooper, 1973) a été passé dans la rue à New York… pour narguer son concurrent chez Bell Labs. Le téléphone pesait 1,1 kg et la batterie tenait 25 minutes.",
+quiz:[["Que se passe-t-il quand tu téléphones en voiture et que tu quittes une zone d'antenne ?",["L'appel coupe toujours","Le réseau bascule ton appel vers l'antenne suivante sans interruption (handover)","La voiture ralentit","L'antenne te suit"],1,"C'est le handover : le réseau surveille la force du signal et transfère ton appel à l'antenne voisine en quelques millisecondes, sans que tu t'en aperçoives."]]},
+
+{id:"gps",emoji:"🧭",annee:"1978-1995",titre:"Le GPS",sous:"Des horloges atomiques dans l'espace te disent où tu es",soir:8,
+probleme:"Se repérer précisément a toujours été vital (marins, aviateurs, randonneurs perdus). Cartes et boussoles demandent du savoir-faire — et par brouillard, en mer, dans le désert ?",
+idee:"Des satellites portant des <b>horloges atomiques</b> ultra-précises diffusent l'heure en continu. Ton téléphone compare : « ce signal a mis 0,07 seconde à m'atteindre » → distance. Avec <b>4 satellites</b>, il calcule le seul point de l'espace compatible : toi.",
+impact:"N'importe qui se localise à quelques mètres près, gratuitement, partout : navigation, secours, agriculture de précision, suivi des séismes… et retrouver son chemin vers l'hôtel.",
+steps:[
+["31 horloges volantes","🛰️⏰🛰️⏰🛰️⏰ à 20 000 km","Une constellation de 31 satellites tourne autour de la Terre. Chacun embarque une horloge atomique (précise à 1 seconde sur 3 millions d'années) et crie en continu : « il est TELLE heure et je suis ICI »."],
+["Le retard trahit la distance","🛰️📶 <span class='fl'>➜</span> ⏱️0,07s <span class='fl'>➜</span> 📏 21 000 km","Ton téléphone reçoit le signal et compare l'heure d'émission à l'heure d'arrivée. La lumière parcourt 300 000 km/s : le retard donne la distance au satellite, au mètre près."],
+["4 sphères, 1 seul point","🛰️🛰️🛰️🛰️ <span class='fl'>➜</span> ⭕⭕⭕⭕ <span class='fl'>➜</span> 📍toi","« Je suis à 20 000 km du satellite A » = quelque part sur une sphère géante. Avec 4 satellites, les sphères ne se croisent qu'en UN point : ta position (et ton altitude, et l'heure exacte !)."],
+["Einstein est dans ton téléphone","🛰️⏰ vs 🌍⏰ ≠ ! <span class='fl'>➜</span> 🧮 relativité <span class='fl'>➜</span> ✅","Incroyable mais vrai : à 20 000 km d'altitude et 14 000 km/h, les horloges des satellites avancent de 38 microsecondes par jour par rapport aux tiennes (relativité d'Einstein !). Sans cette correction, le GPS dériverait de 10 km PAR JOUR."]],
+savais:"<b>Le savais-tu ?</b> Ton téléphone ne DIT jamais rien aux satellites GPS — il ne fait qu'écouter. C'est pour ça que le GPS marche pour des milliards d'appareils à la fois et ne sait pas où tu es : c'est ton téléphone qui le calcule, tout seul.",
+quiz:[["Comment ton téléphone calcule-t-il ta position avec le GPS ?",["Les satellites le voient avec des caméras","Il mesure le temps de trajet des signaux de 4 satellites et en déduit les distances","Il demande à Google","Il utilise une boussole"],1,"Chaque satellite envoie l'heure exacte de son horloge atomique. Le retard de réception donne la distance ; avec 4 distances, il n'existe qu'un point possible : toi. Et il faut corriger avec la relativité d'Einstein !"]]},
+
+{id:"impression3d",emoji:"🖨️",annee:"1984",titre:"L'impression 3D",sous:"Construire couche par couche au lieu de découper",soir:0,
+probleme:"Depuis toujours, fabriquer = enlever de la matière (tailler, percer, fraiser) ou couler dans un moule très cher. Les formes complexes ou les pièces uniques coûtent une fortune.",
+idee:"Faire l'inverse : <b>ajouter la matière uniquement là où il en faut</b>, fine couche par fine couche, en suivant un modèle 3D découpé en tranches par l'ordinateur. Une forme « impossible » ne coûte pas plus cher qu'un cube.",
+impact:"Prototypes en une nuit au lieu de 3 mois, prothèses sur mesure, pièces d'avion allégées, maisons imprimées — et des inventeurs de 10 ans qui fabriquent leurs idées dans leur chambre.",
+steps:[
+["L'objet est tranché","🗿(modèle 3D) <span class='fl'>➜</span> 🍞 ×400 tranches","Le logiciel découpe ton modèle 3D en centaines de tranches horizontales ultra-fines (0,2 mm), comme un scanner à l'envers. Chaque tranche devient un plan de dépôt."],
+["Le filament fond","🧵(plastique) <span class='fl'>➜</span> 🔥200°C <span class='fl'>➜</span> 🖊️💧","Un fil de plastique est poussé dans une buse chauffée : il fond juste ce qu'il faut pour sortir comme un stylo à pâte fine — et durcit dès qu'il refroidit."],
+["La buse dessine chaque couche","🖊️〰️〰️ <span class='fl'>➜</span> ⬆️0,2mm <span class='fl'>➜</span> 〰️〰️","La buse dessine la tranche n°1 sur le plateau, monte d'une épaisseur de couche, dessine la n°2 par-dessus (qui se soude à la première en refroidissant), et ainsi de suite pendant des heures."],
+["L'objet émerge","🧱🧱🧱 <span class='fl'>➜</span> 🗿✅ ‼️ formes impossibles OK","Couche après couche, l'objet grandit — y compris des formes creuses ou imbriquées qu'AUCUN moule ni aucune fraise ne pourrait produire. La complexité devient gratuite."]],
+savais:"<b>Le savais-tu ?</b> La Station spatiale internationale a une imprimante 3D : quand un outil casse, la NASA envoie… le fichier par email, et l'outil est imprimé là-haut. Le premier fut une clé à cliquet, en 2014.",
+quiz:[["Quelle est la grande différence entre l'impression 3D et l'usinage classique ?",["C'est plus joli","On ajoute la matière couche par couche au lieu de l'enlever","Ça ne marche qu'avec du métal","C'est toujours plus rapide"],1,"L'usinage retire de la matière d'un bloc ; l'impression 3D la dépose uniquement où il en faut, tranche par tranche — ce qui rend les formes complexes aussi faciles qu'un cube."]]},
+
+{id:"web",emoji:"🌍",annee:"1989-1991",titre:"Le World Wide Web",sous:"Cliquer sur un lien pour sauter d'un savoir à l'autre",soir:0,
+probleme:"Internet existe et relie les machines… mais s'en servir est réservé aux experts : commandes compliquées, fichiers éparpillés, aucun moyen simple de passer d'une information à une autre.",
+idee:"Tim Berners-Lee (au CERN) invente le trio magique : des <b>pages</b> (HTML) contenant des <b>liens cliquables</b> vers d'autres pages, des <b>adresses</b> universelles (URL), et un langage de livraison (HTTP). Cliquer = voyager.",
+impact:"Internet devient utilisable par tous, pas seulement les ingénieurs. Wikipédia, la presse, les boutiques, l'école en ligne, cette application même : tout est du Web. Et Berners-Lee l'a offert au monde, gratuitement.",
+steps:[
+["La page et ses liens","📄HTML = texte + 🖼️ + <u style='color:#60a5fa'>liens bleus</u>","Une page web est un simple document où certains mots sont des portes : les hyperliens. Derrière chaque lien se cache l'adresse d'une autre page, n'importe où dans le monde."],
+["L'adresse universelle","🔗 https://fr.wikipedia.org/wiki/Fusée","L'URL dit tout : le protocole (https), la machine (fr.wikipedia.org), le document (/wiki/Fusée). Une seule manière d'écrire les adresses pour toute la planète."],
+["Clic = requête + réponse","🖱️ <span class='fl'>➜</span> 📨« GET /wiki/Fusée » <span class='fl'>➜</span> 🖥️ <span class='fl'>➜</span> 📄","Quand tu cliques, ton navigateur envoie une requête HTTP au serveur, qui renvoie la page. Le navigateur la dessine à l'écran. Durée totale : quelques dixièmes de seconde."],
+["La toile mondiale","📄🔗📄🔗📄🔗📄 <span class='fl'>➜</span> 🕸️🌍","Chaque page pointe vers d'autres pages, qui pointent vers d'autres encore : une toile d'araignée de milliards de documents reliés. D'où le nom : la « toile » mondiale — le World Wide Web."]],
+savais:"<b>Le savais-tu ?</b> Tim Berners-Lee a refusé de breveter le Web pour qu'il reste gratuit et ouvert à tous. Le premier site web de l'histoire (info.cern.ch, 1991) existe toujours — il explique… ce qu'est le Web.",
+quiz:[["Quelle est LA grande idée du Web ?",["Inventer les ordinateurs","Relier les documents par des liens cliquables avec des adresses universelles","Remplacer Internet","Créer les réseaux sociaux"],1,"Le Web n'est pas Internet (qui existait déjà) : c'est la couche qui l'a rendu simple — pages, liens cliquables et URL. Cliquer pour voyager d'un document à l'autre, partout dans le monde."]]},
+
+{id:"batterie",emoji:"🔋",annee:"1991",titre:"La batterie lithium-ion",sous:"Beaucoup d'énergie dans très peu de poids",soir:0,
+probleme:"Les batteries classiques (plomb, nickel) sont lourdes, se déchargent vite et vieillissent mal. Aucun appareil portable sérieux n'est possible : les premiers téléphones portables tenaient 25 minutes.",
+idee:"Utiliser le <b>lithium, le métal le plus léger</b> qui existe : ses ions font la navette entre deux électrodes « éponges » qui les stockent sans les abîmer. Décharge : les ions vont d'un côté. Recharge : on les repousse de l'autre. Des milliers de fois.",
+impact:"Smartphones, ordinateurs portables, drones, voitures électriques, stockage solaire : presque tout ce qui est mobile et moderne vit sur du lithium-ion. Prix Nobel de chimie 2019 pour ses inventeurs.",
+steps:[
+["Deux éponges à ions","🧽(graphite) ↔️ 🧽(oxyde de lithium)","La batterie a deux électrodes qui peuvent héberger des ions lithium dans leurs « étagères » atomiques, comme deux hôtels face à face, séparés par un liquide conducteur."],
+["Décharge : la navette produit","🔋 ⚡ : Li⁺ <span class='fl'>➜</span> 🏨B &nbsp;&nbsp;/&nbsp;&nbsp; 🔴e⁻ <span class='fl'>➜</span> 💡 <span class='fl'>➜</span> 🏨B","Quand tu utilises l'appareil, les ions lithium traversent vers l'hôtel B pendant que les électrons font le tour PAR TON CIRCUIT — c'est eux qui alimentent l'écran, le moteur, la console."],
+["Recharge : on repousse tout","🔌 <span class='fl'>➜</span> Li⁺ ⬅️ 🏨A <span class='fl'>➜</span> 🔋💯","Le chargeur impose un courant inverse : ions et électrons retournent dans l'hôtel A. La navette est prête à repartir — 500 à 2000 fois dans une vie de batterie."],
+["Léger = révolutionnaire","⚖️ Li = 3× plus léger que l'aluminium <span class='fl'>➜</span> 📱💻🚗⚡","Le lithium est minuscule et ultraléger : on stocke 6 fois plus d'énergie par kilo qu'avec le plomb. C'est CE rapport poids/énergie qui rend possibles le smartphone fin et la voiture électrique."]],
+savais:"<b>Le savais-tu ?</b> John Goodenough, co-inventeur de la cathode moderne, a reçu le prix Nobel en 2019… à 97 ans — le plus vieux lauréat de l'histoire. Et il travaillait encore sur la batterie du futur !",
+quiz:[["Pendant que tu utilises ton téléphone, que font les électrons de la batterie ?",["Ils dorment","Ils font le tour par le circuit et alimentent l'appareil pendant que les ions traversent à l'intérieur","Ils s'échappent dans l'air","Ils chauffent l'écran"],1,"C'est le duo gagnant : les ions lithium migrent à l'intérieur de la batterie, et les électrons — obligés de passer par l'extérieur — font le travail utile dans ton appareil."]]},
+
+{id:"ve",emoji:"⚡",annee:"2008-2012",titre:"La voiture électrique moderne",sous:"Une vieille idée rendue révolutionnaire par plusieurs progrès à la fois",soir:0,
+probleme:"La voiture électrique existait déjà… en 1900 ! Mais avec les batteries au plomb, 50 km d'autonomie et des heures de recharge : l'essence l'a écrasée pendant un siècle.",
+idee:"Aucune invention unique — la <b>convergence</b> : batteries lithium-ion (énergie), électronique de puissance (contrôle du courant au millième de seconde), moteurs électriques compacts, et logiciel qui orchestre le tout. Quatre progrès mûrs en même temps.",
+impact:"Des voitures sans pot d'échappement, silencieuses, avec des accélérations de sportive — et la preuve qu'une idée « morte » peut renaître quand les technologies sont prêtes. Leçon d'ingénieur : le bon moment compte autant que la bonne idée.",
+steps:[
+["Le moteur presque parfait","🔋 <span class='fl'>➜</span> 🧲🔄 <span class='fl'>➜</span> 🛞 (95% efficace !)","Le moteur électrique transforme 95% de l'énergie en mouvement (l'essence : à peine 30%, le reste part en chaleur). Couple immédiat, deux pièces qui tournent, quasi aucun entretien."],
+["L'électronique de puissance","🔋= <span class='fl'>➜</span> 🎛️(onduleur) <span class='fl'>➜</span> 〰️🧲 ×1000/s","Le cerveau musclé : l'onduleur découpe le courant continu de la batterie en ondes parfaitement dosées pour le moteur, ajustées des milliers de fois par seconde. Appuyer sur la pédale = reprogrammer le courant."],
+["Le freinage qui recharge","🛞💨 <span class='fl'>➜</span> 🧲(générateur !) <span class='fl'>➜</span> 🔋⤴️","Génial : pour ralentir, le moteur s'inverse et devient générateur — l'énergie du mouvement retourne dans la batterie au lieu de chauffer des disques de frein. En ville, on récupère jusqu'à 30% !"],
+["Le logiciel chef d'orchestre","💻 <span class='fl'>➜</span> 🌡️🔋 + 🛞 + 🔌 + 🗺️ <span class='fl'>➜</span> ✅","Des millions de lignes de code gèrent la température de chaque cellule de batterie, la puissance, la recharge, l'autonomie. La voiture se met à jour la nuit, comme un téléphone — la mécanique est devenue aussi de l'informatique."]],
+savais:"<b>Le savais-tu ?</b> En 1899, la voiture la plus rapide du monde était électrique : « La Jamais Contente », première à dépasser 100 km/h ! Puis les batteries de l'époque ont perdu la bataille contre l'essence… pour un siècle.",
+quiz:[["Qu'est-ce que le freinage régénératif ?",["Des freins qui se réparent seuls","Le moteur devient générateur en ralentissant et recharge la batterie","Un frein à main électrique","Freiner avec le klaxon"],1,"Au lieu de perdre l'énergie du mouvement en chaleur dans les disques, le moteur inversé la reconvertit en électricité qui retourne dans la batterie. Jusqu'à 30% d'autonomie récupérée en ville."]]},
+
+{id:"fuseereu",emoji:"🔁",annee:"2015",titre:"La fusée réutilisable",sous:"Remettre en cause ce que tout le monde avait accepté",soir:9,
+probleme:"Depuis 60 ans, on jette la fusée après chaque vol : des dizaines de millions d'euros de mécanique de précision qui finissent au fond de l'océan. Tout le monde trouvait ça… normal. « Imagine jeter l'avion après chaque vol ! »",
+idee:"Faire <b>revenir le premier étage</b> et le poser debout pour le réutiliser : garder du carburant pour le retour, le guider avec des ailettes, rallumer le moteur au bon moment et se poser au mètre près sur une barge en pleine mer.",
+impact:"Le prix du kilo en orbite est divisé par 10 et des boosters revolent 20 fois. Constellations de satellites, missions lunaires : l'espace redevient une frontière ouverte. Et une grande leçon : les contraintes « évidentes » méritent d'être requestionnées.",
+steps:[
+["Séparation et retournement","🚀 <span class='fl'>➜</span> 🧱↕️(sépare) <span class='fl'>➜</span> 🔄180°","À 70 km d'altitude, le premier étage se sépare, se retourne complètement avec ses petits propulseurs… et se prépare à rentrer à la maison, à 6000 km/h."],
+["Rallumages de freinage","🔥⬅️🧱 <span class='fl'>➜</span> 🐢 <span class='fl'>➜</span> 🌍","Le moteur se rallume CONTRE le sens de la chute pour freiner : une fois pour revenir, une fois pour survivre à l'atmosphère qui, sinon, le brûlerait."],
+["Les ailettes pilotent la chute","🧱 + ✂️✂️✂️✂️(grilles) <span class='fl'>➜</span> 🎯","Quatre ailettes en grille se déploient et orientent l'étage pendant la chute, corrigeant la trajectoire en continu vers la cible — une barge de 90 m dans l'océan."],
+["L'atterrissage impossible","🔥 <span class='fl'>➜</span> 🦵🦵🦵🦵 <span class='fl'>➜</span> 🧱🛳️✅ <span class='fl'>➜</span> 🔁×20","Dernier allumage à la seconde près : l'étage de 40 m ralentit de 300 km/h à 0 exactement au niveau du sol, déploie ses jambes et se pose debout. Inspection, plein, et il revole — comme un avion."]],
+savais:"<b>Le savais-tu ?</b> Avant de réussir, SpaceX a explosé plusieurs prototypes — et en a fait des vidéos « bêtisier » publiques. Rater, comprendre, corriger, recommencer : c'est exactement la méthode de l'ingénieur.",
+quiz:[["Pourquoi la fusée réutilisable change-t-elle tout ?",["Elle est plus jolie","Réutiliser le premier étage divise énormément le coût de chaque lancement","Elle vole plus haut","Elle n'a plus besoin de carburant"],1,"L'étage le plus cher n'est plus jeté à la mer : il revole jusqu'à 20 fois. Le prix du kilo en orbite a été divisé par 10 — et l'accès à l'espace transformé."]]},
+
+{id:"crispr",emoji:"🧬",annee:"2012",titre:"CRISPR",sous:"« Rechercher / remplacer » dans le texte de la vie",soir:0,
+probleme:"L'ADN est le livre de recettes de chaque être vivant — 3 milliards de lettres. Certaines maladies viennent d'UNE lettre erronée. Mais modifier l'ADN précisément prenait des années et coûtait des millions.",
+idee:"Détourner un système que les <b>bactéries utilisent depuis toujours</b> pour découper les virus : un « guide » ARN programmable amène des ciseaux moléculaires (Cas9) EXACTEMENT sur la séquence choisie parmi 3 milliards de lettres. Comme Ctrl+F, puis couper.",
+impact:"Premiers patients guéris de la drépanocytose, plantes résistantes aux maladies, recherche accélérée partout. Prix Nobel 2020 pour Emmanuelle Charpentier (une Française !) et Jennifer Doudna — et de grandes questions éthiques que l'humanité doit se poser.",
+steps:[
+["L'ADN, un texte de 3 milliards de lettres","📖 ATCGGATTACA… ×3 000 000 000","Chaque cellule contient le même immense livre écrit avec 4 lettres (A, T, C, G). Une seule faute de frappe au mauvais endroit peut causer une maladie grave."],
+["Le guide programmable","🧭(ARN guide) = « cherche ATCGGAT »","On fabrique un petit « guide » dont la séquence correspond exactement au passage à corriger. C'est lui qu'on programme — la partie « Rechercher » du système."],
+["Les ciseaux coupent au bon endroit","🧭 + ✂️(Cas9) <span class='fl'>➜</span> 📖…✂️…📖","Le guide balaie l'ADN, reconnaît SA séquence parmi 3 milliards de lettres, et la protéine Cas9 coupe précisément là. Nulle part ailleurs."],
+["La cellule répare — avec le bon texte","✂️ <span class='fl'>➜</span> 🩹 + 📄(modèle corrigé) <span class='fl'>➜</span> 📖✅","La cellule répare toujours son ADN coupé. En lui fournissant un modèle corrigé, elle recopie la bonne version : la faute de frappe est corrigée — la partie « Remplacer »."]],
+savais:"<b>Le savais-tu ?</b> CRISPR n'a pas été « inventé » mais découvert : les bactéries l'utilisent depuis des milliards d'années comme système immunitaire, en gardant un morceau d'ADN de chaque virus rencontré — un carnet de vaccination moléculaire !",
+quiz:[["À quoi sert le « guide » dans CRISPR ?",["À couper l'ADN","À amener les ciseaux Cas9 exactement sur la séquence d'ADN choisie","À recoller l'ADN","À colorier les gènes"],1,"Le guide ARN est la partie programmable : sa séquence reconnaît le passage exact à modifier parmi 3 milliards de lettres. Les ciseaux Cas9 ne coupent que là où le guide s'accroche."]]},
+
+{id:"ia",emoji:"🤖",annee:"2012-…",titre:"L'intelligence artificielle moderne",sous:"L'histoire des inventions n'est pas terminée — tu peux en écrire la suite",soir:10,
+probleme:"Programmer, c'est écrire toutes les règles à la main. Mais comment écrire les règles pour reconnaître un chat, comprendre une phrase, ou déceler une maladie sur une radio ? Personne ne SAIT écrire ces règles.",
+idee:"Ne plus écrire les règles : construire des <b>réseaux de neurones artificiels</b> qui les découvrent EUX-MÊMES en étudiant des millions d'exemples. À chaque erreur, des milliards de petits réglages internes s'ajustent un peu. Petit à petit, la machine apprend.",
+impact:"Traduction instantanée, aide au diagnostic médical, voitures autonomes, assistants qui comprennent et écrivent (celui qui vérifie les questions de cette app !)… Et surtout : une révolution en cours, dont les inventeurs sont peut-être… dans ta classe.",
+steps:[
+["Le neurone artificiel","🔢🔢🔢 <span class='fl'>➜</span> ⚖️(pèse) <span class='fl'>➜</span> 💡0 ou 1","Un neurone artificiel, c'est une mini-calculatrice : il reçoit des nombres, les pèse (certains comptent plus que d'autres), et s'allume si le total dépasse un seuil. Inspiré — de très loin — de tes vrais neurones."],
+["Des couches par milliards","💡💡💡 <span class='fl'>➜</span> 💡💡 <span class='fl'>➜</span> 💡 « chat ! »","On empile les neurones en couches : les premières repèrent des traits simples (contours), les suivantes des formes (oreilles, moustaches), les dernières concluent (« c'est un chat »). Des milliards de connexions."],
+["L'apprentissage par l'erreur","🖼️ <span class='fl'>➜</span> 🤖« chien »❌ <span class='fl'>➜</span> 🔧⚖️±0,001 <span class='fl'>➜</span> 🔁×1 000 000","On montre une image : la machine se trompe. On calcule QUELS réglages ont causé l'erreur et on les corrige tous, un tout petit peu. Répété des millions de fois, le réseau devient expert — sans qu'on ait écrit UNE seule règle."],
+["Et maintenant, à toi","🤖 + 🧒💡 <span class='fl'>➜</span> 🚀🧬🌍❓","L'IA apprend des structures dans les données, mais ne sait ni ce qui est vrai, ni ce qui est bien : elle a besoin d'humains qui comprennent, vérifient et inventent. La locomotive a 200 ans, l'IA en a 15. La prochaine grande invention de cette liste… c'est peut-être toi qui l'écriras."]],
+savais:"<b>Le savais-tu ?</b> Les idées des réseaux de neurones datent de 1958 ! Il a fallu attendre 50 ans pour avoir assez de données (Internet) et de puissance de calcul (les processeurs graphiques des jeux vidéo !) pour qu'elles fonctionnent. Encore une idée en avance sur son époque.",
+quiz:[["Quelle est LA grande différence entre l'IA moderne et un programme classique ?",["L'IA est plus rapide","On n'écrit pas les règles : la machine les apprend elle-même à partir de millions d'exemples","L'IA n'a pas besoin d'ordinateur","Il n'y a pas de différence"],1,"Un programme classique suit des règles écrites par des humains. Un réseau de neurones découvre ses propres réglages en corrigeant ses erreurs sur des millions d'exemples — c'est l'apprentissage automatique."]]}
+];
+
+let filterMode='all';
+let currentIdx=0;
+
+function setFilter(m){
+  filterMode=m;
+  document.getElementById('fAll').classList.toggle('active',m==='all');
+  document.getElementById('fSoir').classList.toggle('active',m==='soir');
+  renderGrid();
+}
+function visibleList(){
+  if(filterMode==='soir') return INVENTIONS.filter(i=>i.soir>0).sort((a,b)=>a.soir-b.soir);
+  return INVENTIONS;
+}
+function renderGrid(){
+  const g=document.getElementById('grid');
+  g.innerHTML=visibleList().map(inv=>
+    '<div class="tile" onclick="showInv(\''+inv.id+'\')">'
+    +(inv.soir>0?'<span class="tile-soir">🌙 soir '+inv.soir+'</span>':'')
+    +'<span class="tile-emoji">'+inv.emoji+'</span>'
+    +'<div class="tile-title">'+inv.titre+'</div>'
+    +'<span class="tile-era">'+inv.annee+'</span>'
+    +'</div>').join('');
+}
+function showInv(id){
+  const list=visibleList();
+  currentIdx=list.findIndex(i=>i.id===id);
+  if(currentIdx<0){currentIdx=0}
+  const inv=list[currentIdx];
+  document.getElementById('home').style.display='none';
+  document.getElementById('detail').classList.add('active');
+  document.getElementById('dEmoji').textContent=inv.emoji;
+  document.getElementById('dTitle').textContent=inv.titre;
+  document.getElementById('dSub').textContent=inv.sous;
+  document.getElementById('dEra').textContent='🗓️ '+inv.annee;
+  const soirEl=document.getElementById('dSoir');
+  if(inv.soir>0){soirEl.style.display='inline-block';soirEl.textContent='🌙 Une invention par soir — n°'+inv.soir}
+  else soirEl.style.display='none';
+  document.getElementById('dProbleme').innerHTML=inv.probleme;
+  document.getElementById('dIdee').innerHTML=inv.idee;
+  document.getElementById('dImpact').innerHTML=inv.impact;
+  document.getElementById('dSteps').innerHTML=inv.steps.map((s,i)=>
+    '<div class="step">'
+    +'<span class="step-num">'+(i+1)+'</span><span class="step-title">'+s[0]+'</span>'
+    +'<div class="step-visu">'+s[1]+'</div>'
+    +'<div class="step-desc">'+s[2]+'</div>'
+    +'</div>').join('');
+  document.getElementById('dSavais').innerHTML=inv.savais;
+  document.getElementById('dQuiz').innerHTML=inv.quiz.map((q,qi)=>
+    '<div class="q-block"><div class="q-question">'+q[0]+'</div><div class="q-choices">'
+    +q[1].map((c,ci)=>'<button class="q-choice" onclick="answerQ(this,'+qi+','+ci+')">'+c+'</button>').join('')
+    +'</div><div class="q-expl" id="expl-'+qi+'">'+q[3]+'</div></div>').join('');
+  window.scrollTo(0,0);
+}
+function answerQ(btn,qi,ci){
+  const inv=visibleList()[currentIdx];
+  const good=inv.quiz[qi][2];
+  const block=btn.parentElement;
+  Array.from(block.children).forEach((b,i)=>{
+    b.disabled=true;
+    if(i===good)b.classList.add('correct');
+    else if(i===ci)b.classList.add('wrong');
+  });
+  document.getElementById('expl-'+qi).classList.add('show');
+}
+function showHome(){
+  document.getElementById('detail').classList.remove('active');
+  document.getElementById('home').style.display='block';
+  window.scrollTo(0,0);
+}
+function nextInv(){
+  const list=visibleList();
+  currentIdx=(currentIdx+1)%list.length;
+  showInv(list[currentIdx].id);
+}
+renderGrid();
+</script>
+</body>
+</html>

@@ -760,6 +760,18 @@ function renderHome(){
         <div class="kingdom-enter" style="color:#60a5fa">\u2794</div>
       </div>
     </div>
+    <div class="kingdom-gate fade-in" style="animation-delay:1.1s;--k-color:#fb923c" onclick="location.href='lecons/inventions.html'">
+      <div class="kingdom-glow" style="background:radial-gradient(ellipse at 30% 50%,rgba(251,146,60,0.12),transparent 70%)"></div>
+      <div class="kingdom-border-glow" style="--k-color:#fb923c"></div>
+      <div class="kingdom-inner">
+        <div class="kingdom-mascot">\u{1F680}</div>
+        <div class="kingdom-info">
+          <h3 class="kingdom-name" style="color:#fb923c">Les Grandes Inventions</h3>
+          <p class="kingdom-stage">34 id\u00e9es g\u00e9niales en images \u2014 s\u00e9rie \u00ab une invention par soir \u00bb</p>
+        </div>
+        <div class="kingdom-enter" style="color:#fb923c">\u2794</div>
+      </div>
+    </div>
     <div class="subject-card fade-in" style="border-color:#f472b6;background:rgba(244,114,182,0.07)" onclick="navigate('battleHome')">
       <div class="subject-emoji bounce">\u2694\ufe0f</div>
       <div class="subject-info">

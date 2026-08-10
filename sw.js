@@ -8,7 +8,7 @@
  *
  * Bump CACHE_VERSION pour forcer une mise à jour du shell.
  */
-const CACHE_VERSION = 'royaume-v5';
+const CACHE_VERSION = 'royaume-v6';
 const SHELL_CACHE = CACHE_VERSION + '-shell';
 const RUNTIME_CACHE = CACHE_VERSION + '-runtime';
 
@@ -19,7 +19,7 @@ const SHELL_URLS = [
   './exercises.js?v=13',
   './exercises_extra.js?v=3',
   './qr.js?v=1',
-  './game.js?v=27',
+  './game.js?v=28',
 ];
 
 // Domaines à laisser passer en network-only (jamais cacher).
