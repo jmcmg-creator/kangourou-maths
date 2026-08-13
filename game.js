@@ -23,8 +23,10 @@ const SUBJECTS=[
       {id:"emc-cm2",name:"EMC",sub:"CM2 \u2014 Institutions",icon:"\u{1F3DB}\uFE0F",color:"#a78bfa"}
     ]},
   {id:"poesie",name:"Po\u00e9sies",icon:"\u{1F4DC}",color:"#a78bfa",desc:"\u00c9coute, r\u00e9cite \u00e0 voix haute (avec micro)",isPoetry:true},
-  {id:"langues",name:"Langues",icon:"\u{1F310}",color:"#10b981",desc:"H\u00e9breu (alphabet, vocabulaire, lecture)",
+  {id:"langues",name:"Langues",icon:"\u{1F310}",color:"#10b981",desc:"H\u00e9breu, Espagnol, Italien",
     levels:[
+      {id:"espagnol-debutant",name:"Espagnol",sub:"D\u00e9butant \u2014 mots & phrases",icon:"\u{1F1EA}\u{1F1F8}",color:"#f59e0b"},
+      {id:"italien-debutant",name:"Italien",sub:"D\u00e9butant \u2014 mots & phrases",icon:"\u{1F1EE}\u{1F1F9}",color:"#22c55e"},
       {id:"hebreu-alphabet",name:"H\u00e9breu",sub:"Alphabet (\u05D0\u05D1\u05D2)",icon:"\u{1F524}",color:"#0ea5e9"},
       {id:"hebreu-vocabulaire",name:"H\u00e9breu",sub:"Vocabulaire de base",icon:"\u{1F4DA}",color:"#0ea5e9"},
       {id:"hebreu-expressions",name:"H\u00e9breu",sub:"Expressions courantes",icon:"\u{1F5E3}\uFE0F",color:"#0ea5e9"},
@@ -670,6 +672,7 @@ function navigate(screen,data){
   if(state.timerID){clearInterval(state.timerID);state.timerID=null}
   if(state.autoNextID){clearTimeout(state.autoNextID);state.autoNextID=null}
   if(state.battlePollID){clearTimeout(state.battlePollID);state.battlePollID=null}
+  if(state.memTickID){clearInterval(state.memTickID);state.memTickID=null}
   state.screen=screen;
   if(data) Object.assign(state,data);
   backArrow.classList.toggle('hidden',screen==='home');
@@ -685,6 +688,8 @@ function render(){
     case 'game': renderGame(); break;
     case 'results': renderResults(); break;
     case 'battleHome': renderBattleHome(); break;
+    case 'memoryHome': renderMemoryHome(); break;
+    case 'memoryGame': renderMemoryGame(); break;
     case 'battleResults': renderBattleResults(); break;
     case 'royaume': renderRoyaume(); break;
     case 'parent': renderParent(); break;
@@ -835,6 +840,14 @@ function renderHome(){
         </div>
         <div class="kingdom-enter" style="color:#fb923c">\u2794</div>
       </div>
+    </div>
+    <div class="subject-card fade-in" style="border-color:#34d399;background:rgba(52,211,153,0.07)" onclick="navigate('memoryHome')">
+      <div class="subject-emoji bounce">\u{1F0CF}</div>
+      <div class="subject-info">
+        <h3 class="subject-name" style="color:#34d399">Memory des Tables</h3>
+        <p class="subject-desc">Retourne les cartes, r\u00e9cite tes multiplications !</p>
+      </div>
+      <div class="arrow">\u2192</div>
     </div>
     <div class="subject-card fade-in" style="border-color:#f472b6;background:rgba(244,114,182,0.07)" onclick="navigate('battleHome')">
       <div class="subject-emoji bounce">\u2694\ufe0f</div>
@@ -2689,6 +2702,185 @@ async function _shareBattleCode(code){
       url:battleLink(code)
     });
   }catch(e){}
+}
+
+
+/* ════════ MEMORY DES TABLES ════════
+   Jeu de paires : associer « 7 × 8 » à « 56 ». Trois niveaux calés sur
+   les programmes (Apprenti tables 2-5, Chevalier 3-7, Maître 6-9) ou une
+   table précise. À chaque paire trouvée, l'app RÉCITE la multiplication
+   à voix haute (« 7 fois 8, 56 ») pour ancrer la mémorisation auditive.
+   Les produits du plateau sont uniques : aucune ambiguïté possible.
+*/
+const MEMORY_MODES=[
+  {id:"apprenti",name:"Apprenti",sub:"Tables 2 à 5 · 6 paires",icon:"\u{1F9D9}",tables:[2,3,4,5],pairs:6,color:"#22c55e"},
+  {id:"chevalier",name:"Chevalier",sub:"Tables 3 à 7 · 8 paires",icon:"\u2694\uFE0F",tables:[3,4,5,6,7],pairs:8,color:"#f7a020"},
+  {id:"maitre",name:"Ma\u00eetre Dragon",sub:"Tables 6 à 9 · 8 paires",icon:"\u{1F409}",tables:[6,7,8,9],pairs:8,color:"#ef4444"}
+];
+let _memVoice=true;
+try{_memVoice=localStorage.getItem('royaume_mem_voice')!=='0'}catch(e){}
+
+function renderMemoryHome(){
+  const stats=profile.memoryStats||{};
+  const tableChips=[2,3,4,5,6,7,8,9].map(t=>
+    '<button class="btn-stone btn-small" style="min-width:52px" onclick="startMemory(\'table-'+t+'\')">\u00d7'+t+'</button>').join(' ');
+  app.innerHTML='<div class="text-center py-6 fade-in">'
+    +'<div style="font-size:3.5rem">\u{1F0CF}</div>'
+    +'<h2 class="title" style="color:#34d399;font-size:1.6rem">Memory des Tables</h2>'
+    +'<p class="sub">Retourne les cartes deux par deux : associe chaque multiplication \u00e0 son r\u00e9sultat. \u00c0 chaque paire, l\'app la r\u00e9cite \u00e0 voix haute !</p>'
+  +'</div>'
+  +MEMORY_MODES.map((m,i)=>{
+    const best=stats[m.id];
+    const bestTxt=best?('Record : '+best.moves+' coups \u00b7 '+best.time+'s'):'Pas encore jou\u00e9';
+    return '<div class="card clickable fade-in" style="animation-delay:'+(i*.07)+'s;border-color:'+m.color+'" onclick="startMemory(\''+m.id+'\')">'
+      +'<div class="row"><div style="font-size:2.2rem">'+m.icon+'</div>'
+      +'<div class="flex-1"><h3 class="card-title" style="color:'+m.color+'">'+m.name+'</h3>'
+      +'<p class="sub">'+m.sub+' \u2014 '+bestTxt+'</p></div>'
+      +'<div class="arrow">\u2192</div></div></div>';
+  }).join('')
+  +'<div class="card mb-4"><h3 class="fredoka" style="font-size:.85rem;color:#8b7ec8;margin-bottom:10px;letter-spacing:.1em;text-transform:uppercase">\u{1F3AF} Ou entra\u00eene UNE table pr\u00e9cise</h3>'
+  +'<div class="row" style="flex-wrap:wrap;gap:8px">'+tableChips+'</div></div>'
+  +'<button class="btn-stone mb-2" onclick="toggleMemVoice()" id="memVoiceBtn">'+(_memVoice?'\u{1F50A} R\u00e9citation vocale : activ\u00e9e':'\u{1F507} R\u00e9citation vocale : coup\u00e9e')+'</button>'
+  +'<button class="btn-stone" onclick="navigate(\'home\')">\u2190 Retour</button>';
+}
+function toggleMemVoice(){
+  _memVoice=!_memVoice;
+  try{localStorage.setItem('royaume_mem_voice',_memVoice?'1':'0')}catch(e){}
+  const b=document.getElementById('memVoiceBtn');
+  if(b)b.textContent=_memVoice?'\u{1F50A} R\u00e9citation vocale : activ\u00e9e':'\u{1F507} R\u00e9citation vocale : coup\u00e9e';
+}
+
+function _memBuildPairs(modeId){
+  let tables,pairs,label;
+  if(modeId.startsWith('table-')){
+    const t=parseInt(modeId.slice(6),10);
+    tables=[t];pairs=6;label='Table de '+t;
+  }else{
+    const m=MEMORY_MODES.find(x=>x.id===modeId)||MEMORY_MODES[0];
+    tables=m.tables;pairs=m.pairs;label=m.name;
+  }
+  // Tire des opérations aux PRODUITS UNIQUES (sinon deux cartes résultat
+  // identiques rendraient le jeu ambigu).
+  const ops=[];
+  for(const a of tables)for(let b2=2;b2<=9;b2++)ops.push([a,b2]);
+  const chosen=[];const seen=new Set();
+  for(const op of shuffle(ops)){
+    const p=op[0]*op[1];
+    if(seen.has(p))continue;
+    seen.add(p);chosen.push(op);
+    if(chosen.length>=pairs)break;
+  }
+  return {label,cards:shuffle(chosen.flatMap((op,i)=>[
+    {pair:i,face:op[0]+' \u00d7 '+op[1],op},
+    {pair:i,face:String(op[0]*op[1]),op}
+  ]))};
+}
+
+function startMemory(modeId){
+  const built=_memBuildPairs(modeId);
+  state.mem={modeId,label:built.label,cards:built.cards,flipped:[],found:0,moves:0,lock:false,start:Date.now(),time:0};
+  navigate('memoryGame');
+}
+
+function renderMemoryGame(){
+  const M=state.mem;
+  if(!M){navigate('memoryHome');return}
+  const total=M.cards.length/2;
+  const cols=M.cards.length<=12?3:4;
+  app.innerHTML='<div class="text-center py-4 fade-in">'
+    +'<h2 class="title" style="color:#34d399;font-size:1.3rem">\u{1F0CF} '+esc(M.label)+'</h2>'
+    +'<div class="row" style="justify-content:center;gap:16px;margin-top:6px">'
+      +'<span class="sub">Paires : <b id="memFound" style="color:#34d399">'+M.found+'</b>/'+total+'</span>'
+      +'<span class="sub">Coups : <b id="memMoves" style="color:#fbbf24">'+M.moves+'</b></span>'
+      +'<span class="sub">\u23F1 <b id="memTime" style="color:#60a5fa">'+M.time+'</b>s</span>'
+    +'</div>'
+  +'</div>'
+  +'<div class="mem-grid" style="grid-template-columns:repeat('+cols+',1fr)">'
+  +M.cards.map((c,i)=>{
+    const st=c.matched?'matched':(M.flipped.includes(i)?'flipped':'');
+    return '<div class="mem-card '+st+'" onclick="memFlip('+i+')"><div class="mem-inner">'
+      +'<div class="mem-front">\u2753</div>'
+      +'<div class="mem-back">'+esc(c.face)+'</div>'
+    +'</div></div>';
+  }).join('')
+  +'</div>'
+  +'<div id="memWin"></div>'
+  +'<button class="btn-stone mt-4" onclick="navigate(\'memoryHome\')">\u2190 Abandonner</button>';
+  if(state.memTickID)clearInterval(state.memTickID);
+  state.memTickID=setInterval(()=>{
+    if(!state.mem)return;
+    state.mem.time=Math.round((Date.now()-state.mem.start)/1000);
+    const t=document.getElementById('memTime');
+    if(t)t.textContent=state.mem.time;
+  },1000);
+}
+
+function memFlip(i){
+  const M=state.mem;
+  if(!M||M.lock)return;
+  const c=M.cards[i];
+  if(c.matched||M.flipped.includes(i))return;
+  M.flipped.push(i);
+  const el=document.querySelectorAll('.mem-card')[i];
+  if(el)el.classList.add('flipped');
+  if(M.flipped.length<2)return;
+  M.moves++;
+  const mv=document.getElementById('memMoves');if(mv)mv.textContent=M.moves;
+  const [a,b2]=M.flipped;
+  if(M.cards[a].pair===M.cards[b2].pair){
+    // Paire trouvée : on la récite à voix haute pour ancrer la table.
+    M.cards[a].matched=true;M.cards[b2].matched=true;
+    M.found++;M.flipped=[];
+    const f=document.getElementById('memFound');if(f)f.textContent=M.found;
+    document.querySelectorAll('.mem-card')[a].classList.add('matched');
+    document.querySelectorAll('.mem-card')[b2].classList.add('matched');
+    const op=M.cards[a].op;
+    if(_memVoice&&'speechSynthesis' in window){
+      try{
+        speechSynthesis.cancel();
+        const u=new SpeechSynthesisUtterance(op[0]+' fois '+op[1]+', '+(op[0]*op[1]));
+        u.lang='fr-FR';u.rate=0.95;
+        speechSynthesis.speak(u);
+      }catch(e){}
+    }
+    if(M.found===M.cards.length/2)memWin();
+  }else{
+    M.lock=true;
+    setTimeout(()=>{
+      M.flipped=[];M.lock=false;
+      const els=document.querySelectorAll('.mem-card');
+      if(els[a]&&!M.cards[a].matched)els[a].classList.remove('flipped');
+      if(els[b2]&&!M.cards[b2].matched)els[b2].classList.remove('flipped');
+    },900);
+  }
+}
+
+function memWin(){
+  const M=state.mem;
+  if(state.memTickID){clearInterval(state.memTickID);state.memTickID=null}
+  const total=M.cards.length/2;
+  const perfect=total; // minimum théorique de coups
+  const stars=M.moves<=perfect+2?3:M.moves<=perfect+5?2:1;
+  const xp=total*5+stars*10;
+  const cr=total*2;
+  profile.xp=(Number(profile.xp)||0)+xp;
+  profile.cristaux=(Number(profile.cristaux)||0)+cr;
+  if(!profile.memoryStats)profile.memoryStats={};
+  const prev=profile.memoryStats[M.modeId];
+  if(!prev||M.moves<prev.moves||(M.moves===prev.moves&&M.time<prev.time)){
+    profile.memoryStats[M.modeId]={moves:M.moves,time:M.time,date:today()};
+  }
+  saveProfile();
+  const w=document.getElementById('memWin');
+  if(w)w.innerHTML='<div class="card fade-in glow-anim text-center mt-4" style="border-color:#fbbf24">'
+    +'<div style="font-size:3rem">'+(stars===3?'\u{1F3C6}':'\u{1F389}')+'</div>'
+    +'<h3 class="title" style="color:#fbbf24">Bravo !</h3>'
+    +'<p style="font-size:1.6rem;margin:6px 0">'+'\u2B50'.repeat(stars)+'</p>'
+    +'<p class="sub">'+M.moves+' coups \u00b7 '+M.time+'s \u00b7 +'+xp+' XP \u00b7 \u{1F48E} +'+cr+'</p>'
+    +'<div class="btn-row mt-3">'
+      +'<button class="btn-fire" onclick="startMemory(\''+esc(M.modeId)+'\')">\u{1F504} Rejouer</button>'
+      +'<button class="btn-stone" onclick="navigate(\'memoryHome\')">Autres niveaux</button>'
+    +'</div></div>';
 }
 
 render();

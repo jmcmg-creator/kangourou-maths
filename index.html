@@ -612,6 +612,17 @@ footer{
   .container{padding-left:max(16px,env(safe-area-inset-left));padding-right:max(16px,env(safe-area-inset-right))}
   footer{padding-bottom:max(32px,env(safe-area-inset-bottom))}
 }
+
+/* ══ MEMORY DES TABLES ══ */
+.mem-grid{display:grid;gap:10px;max-width:520px;margin:0 auto}
+.mem-card{aspect-ratio:3/4;perspective:600px;cursor:pointer;-webkit-tap-highlight-color:transparent}
+.mem-inner{position:relative;width:100%;height:100%;transition:transform .45s cubic-bezier(0.4,0,0.2,1);transform-style:preserve-3d}
+.mem-card.flipped .mem-inner,.mem-card.matched .mem-inner{transform:rotateY(180deg)}
+.mem-front,.mem-back{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;border-radius:14px;backface-visibility:hidden;-webkit-backface-visibility:hidden;font-family:'Fredoka',sans-serif;font-weight:700}
+.mem-front{background:linear-gradient(145deg,#1e1650,#231854);border:2px solid rgba(52,211,153,.35);font-size:1.6rem;color:#34d399}
+.mem-back{background:linear-gradient(145deg,#122a22,#0d3325);border:2px solid #34d399;transform:rotateY(180deg);font-size:clamp(1rem,4.5vw,1.5rem);color:#faf5ff;text-align:center;padding:4px}
+.mem-card.matched .mem-back{background:linear-gradient(145deg,#14432f,#0f5132);border-color:#fbbf24;box-shadow:0 0 18px rgba(251,191,36,.35);color:#fde68a}
+.mem-card.matched{cursor:default;animation:popIn .4s var(--transition-bounce)}
 </style>
 </head>
 <body>
@@ -661,9 +672,9 @@ footer{
 </script>
 
 <script src="exercises.js?v=13"></script>
-<script src="exercises_extra.js?v=3"></script>
+<script src="exercises_extra.js?v=4"></script>
 <script src="qr.js?v=1"></script>
-<script src="game.js?v=29"></script>
+<script src="game.js?v=30"></script>
 <script>
 // Service Worker : enregistré uniquement en HTTPS / localhost (sinon le navigateur refuse).
 if ('serviceWorker' in navigator && (location.protocol === 'https:' || location.hostname === 'localhost' || location.hostname === '127.0.0.1')) {
