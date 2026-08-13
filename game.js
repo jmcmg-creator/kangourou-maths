@@ -578,7 +578,10 @@ const _localSave=saveProfile;
 saveProfile=function(){
   _localSave();
   if(_syncTimer) clearTimeout(_syncTimer);
-  _syncTimer=setTimeout(()=>pushProfileToCloud(),1000);
+  _syncTimer=setTimeout(()=>{
+    pushProfileToCloud();
+    try{if(window.Supa&&Supa.enabled()&&Supa.creds(profile.name))Supa.saveProfile(profile.name,profile)}catch(e){}
+  },1000);
 };
 // Flush immédiat : pousse vers le cloud sans attendre le debounce. Sur mobile,
 // l'app peut être fermée/mise en arrière-plan avant la fin du debounce.
@@ -689,6 +692,7 @@ function render(){
     case 'results': renderResults(); break;
     case 'battleHome': renderBattleHome(); break;
     case 'memoryHome': renderMemoryHome(); break;
+    case 'pseudoSetup': renderPseudoSetup(); break;
     case 'memoryGame': renderMemoryGame(); break;
     case 'battleResults': renderBattleResults(); break;
     case 'royaume': renderRoyaume(); break;
@@ -747,7 +751,15 @@ function renderHome(){
     return;
   }
   checkDailyQuest();
-  checkBattleInvites();   // bannière "X te défie !" si un ami a lancé un défi
+  checkBattleInvites();
+  setTimeout(()=>{
+    if(window.Supa&&Supa.enabled()&&!profile.pseudo&&state.screen==='home'&&!document.getElementById('pseudoNudge')){
+      const d=document.createElement('div');
+      d.innerHTML='<div class="card fade-in" id="pseudoNudge" style="border-color:#f472b6"><div class="row" style="gap:12px"><div style="font-size:2rem">🛡️</div><div class="flex-1"><h3 class="card-title" style="color:#f472b6">Choisis ton pseudo de battle !</h3><p class="sub">Un nom unique pour défier tes amis, protégé par un code secret.</p></div><button class="btn-fire btn-small" onclick="navigate(&quot;pseudoSetup&quot;)">Go !</button></div></div>';
+      const first=app.firstElementChild;
+      if(first)app.insertBefore(d.firstElementChild,first);
+    }
+  },100);   // bannière "X te défie !" si un ami a lancé un défi
   checkFinishedBattles(); // bannière "🏁 Léa a fini !" si une battle attendue est terminée
   // Total des XP de tous les royaumes
   const totalXp=Object.values(profile.royaumes||{}).reduce((s,r)=>s+(r.xp||0),0)+(profile.xp||0);
@@ -2232,6 +2244,104 @@ function renderFichesView(){
   </div>`;
 }
 
+/* ════════ IDENTITÉ DE BATTLE (pseudo Supabase si configuré) ════════
+   Quand Supabase est branché (config.js), chaque enfant réserve un pseudo
+   UNIQUE protégé par un code secret : les battles utilisent le pseudo,
+   fini les collisions entre deux « Léa ». Sans config : prénom, comme avant.
+*/
+function playerName(){return (profile&&profile.pseudo)||(profile&&profile.name)||''}
+
+function _renderInviteBanner(inv,totalCount){
+  const holder=document.createElement('div');
+  holder.innerHTML='<div class="card fade-in glow-anim" id="inviteBanner" style="border-color:#f472b6;background:rgba(244,114,182,0.1)">'
+    +'<div class="row" style="gap:12px">'
+      +'<div style="font-size:2.2rem">⚔️</div>'
+      +'<div class="flex-1"><h3 class="card-title" style="color:#f472b6">'+esc(inv.from)+' te défie !</h3>'
+      +'<p class="sub">'+esc(inv.lvName||'')+' · '+(inv.count||'?')+' questions'+(totalCount>1?' · +'+(totalCount-1)+' autre(s) défi(s)':'')+'</p></div>'
+    +'</div>'
+    +'<div class="btn-row mt-3">'
+      +'<button class="btn-fire" onclick="joinBattle(\''+esc(inv.code)+'\')">🔥 Relever le défi</button>'
+      +'<button class="btn-stone" onclick="dismissInvite(\''+esc(inv.code)+'\')">Plus tard</button>'
+    +'</div>'
+  +'</div>';
+  const first=app.firstElementChild;
+  if(first) app.insertBefore(holder.firstElementChild,first);
+}
+
+function renderPseudoSetup(){
+  if(!window.Supa||!Supa.enabled()){navigate('home');return}
+  app.innerHTML='<div class="text-center py-6 fade-in">'
+    +'<div style="font-size:3.5rem">🛡️</div>'
+    +'<h2 class="title" style="color:#f472b6;font-size:1.5rem">Ton pseudo de battle</h2>'
+    +'<p class="sub">Un nom unique au monde pour te battre avec tes amis — protégé par ton code secret.</p>'
+  +'</div>'
+  +'<div class="card mb-4" style="border-color:#f472b6">'
+    +'<h3 class="fredoka" style="font-size:.85rem;color:#f472b6;margin-bottom:10px;letter-spacing:.1em;text-transform:uppercase">✨ Créer mon pseudo</h3>'
+    +'<input class="name-prompt" id="pseudoInp" placeholder="Ex. DragonDore" maxlength="16" autocomplete="off" oninput="checkPseudoLive()">'
+    +'<p class="sub" id="pseudoHint" style="font-size:.75rem;margin:4px 0 10px">3 à 16 caractères : lettres, chiffres, - et _</p>'
+    +'<input class="name-prompt" id="pinInp" placeholder="Code secret : 4 chiffres" maxlength="6" inputmode="numeric" pattern="[0-9]*" type="password">'
+    +'<p class="sub" style="font-size:.72rem;margin-top:4px">🔐 Retiens-le bien : il servira sur les autres appareils. Papa/Maman peuvent le noter.</p>'
+    +'<button class="btn-fire mt-3" onclick="doRegisterPseudo()">🛡️ Réserver mon pseudo</button>'
+  +'</div>'
+  +'<div class="card mb-4" style="border-color:#60a5fa">'
+    +'<h3 class="fredoka" style="font-size:.85rem;color:#60a5fa;margin-bottom:10px;letter-spacing:.1em;text-transform:uppercase">🔑 J\'ai déjà un pseudo</h3>'
+    +'<input class="name-prompt" id="pseudoLoginInp" placeholder="Ton pseudo" maxlength="16" autocomplete="off">'
+    +'<input class="name-prompt" id="pinLoginInp" style="margin-top:8px" placeholder="Ton code secret" maxlength="6" inputmode="numeric" type="password">'
+    +'<button class="btn-fire mt-3" onclick="doLoginPseudo()">🚀 Me connecter</button>'
+  +'</div>'
+  +'<button class="btn-stone" onclick="navigate(\'home\')">Plus tard →</button>';
+}
+let _pseudoCheckT=null;
+function checkPseudoLive(){
+  const inp=document.getElementById('pseudoInp');
+  const hint=document.getElementById('pseudoHint');
+  if(!inp||!hint)return;
+  const v=inp.value.trim();
+  if(_pseudoCheckT)clearTimeout(_pseudoCheckT);
+  if(!/^[A-Za-z0-9_-]{3,16}$/.test(v)){hint.textContent='3 à 16 caractères : lettres, chiffres, - et _';hint.style.color='#8b7ec8';return}
+  _pseudoCheckT=setTimeout(async()=>{
+    const r=await Supa.checkPseudo(v);
+    const cur=document.getElementById('pseudoInp');
+    if(cur&&cur.value.trim()===v){
+      if(r&&r.available){hint.textContent='✅ « '+v+' » est libre !';hint.style.color='#34d399'}
+      else{hint.textContent='❌ « '+v+' » est déjà pris — essaie '+v+Math.floor(Math.random()*90+10);hint.style.color='#f87171'}
+    }
+  },350);
+}
+async function doRegisterPseudo(){
+  const pseudo=((document.getElementById('pseudoInp')||{}).value||'').trim();
+  const pin=((document.getElementById('pinInp')||{}).value||'').trim();
+  if(!/^[A-Za-z0-9_-]{3,16}$/.test(pseudo)){alert('Pseudo : 3 à 16 caractères (lettres, chiffres, - et _).');return}
+  if(!/^[0-9]{4,6}$/.test(pin)){alert('Code secret : 4 à 6 chiffres.');return}
+  if(typeof isCleanName==='function'&&!isCleanName(pseudo)){alert('Ce pseudo contient un mot interdit.');return}
+  const res=await Supa.register(profile.name,pseudo,pin);
+  if(res&&res.pseudo){
+    profile.pseudo=res.pseudo;
+    saveProfile();
+    alert('🛡️ Pseudo « '+res.pseudo+' » réservé pour toujours ! En battle, tes amis te verront sous ce nom.');
+    navigate('home');
+  }else if(res&&res.error==='pseudo_pris'){
+    alert('❌ Ce pseudo est déjà pris. Essaie une variante !');
+  }else{
+    alert('🌐 Impossible pour le moment ('+((res&&res.error)||'réseau')+'). Réessaie.');
+  }
+}
+async function doLoginPseudo(){
+  const pseudo=((document.getElementById('pseudoLoginInp')||{}).value||'').trim();
+  const pin=((document.getElementById('pinLoginInp')||{}).value||'').trim();
+  if(!pseudo||!pin){alert('Entre ton pseudo et ton code secret.');return}
+  const res=await Supa.login(profile.name,pseudo,pin);
+  if(res&&res.pseudo){
+    profile.pseudo=res.pseudo;
+    if(res.profile&&res.profile.name){profile=mergeProfiles(profile,migrate(res.profile));profile.pseudo=res.pseudo}
+    saveProfile();
+    alert('🚀 Re-bonjour '+res.pseudo+' ! Ton profil est synchronisé.');
+    navigate('home');
+  }else{
+    alert('❌ Pseudo ou code secret incorrect.');
+  }
+}
+
 /* \u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550 BATTLE DES AMIS \u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550
    Deux joueurs (ou plus) jouent EXACTEMENT les m\u00eames questions, chacun sur
    son appareil, reli\u00e9s par un code court kid-friendly (ex. POTION-37).
@@ -2293,21 +2403,37 @@ async function mailboxAid(name){
   return Array.from(new Uint8Array(buf)).map(b=>b.toString(16).padStart(2,'0')).join('').slice(0,32);
 }
 async function sendBattleInvite(friendName,battle){
+  if(window.Supa&&Supa.enabled()&&Supa.creds(profile.name)){
+    const r=await Supa.sendInvite(profile.name,friendName,battle.code,battle.lvName,battle.count);
+    if(r&&r.ok) return true;
+    if(r&&r.error==='destinataire_inconnu') return false;
+  }
   try{
     const aid=await mailboxAid(friendName);
     let box=await fetchProfileByAid(aid);
     if(!box||!box.mailbox) box={mailbox:true,invites:[]};
     box.invites=(box.invites||[]).filter(i=>i.code!==battle.code).slice(-9);
-    box.invites.push({code:battle.code,from:profile.name,lvName:battle.lvName,count:battle.count,at:new Date().toISOString()});
+    box.invites.push({code:battle.code,from:playerName(),lvName:battle.lvName,count:battle.count,at:new Date().toISOString()});
     await fetch(API_BASE+'/profile/'+aid,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(box)});
     return true;
   }catch(e){console.warn('invite fail',e);return false}
 }
 // Bannière "X te défie !" sur l'accueil (fire-and-forget, jamais bloquant).
 async function checkBattleInvites(){
-  if(!profile.name) return;
+  if(!playerName()) return;
   try{
-    const aid=await mailboxAid(profile.name);
+    if(window.Supa&&Supa.enabled()&&Supa.creds(profile.name)){
+      const inv=await Supa.fetchInvites(profile.name);
+      if(inv&&inv.length&&state.screen==='home'){
+        const played=new Set((profile.battleHistory||[]).map(h=>h.code));
+        const dismissed=new Set(profile.dismissedInvites||[]);
+        const fresh=inv.filter(i=>i&&i.code&&!played.has(i.code)&&!dismissed.has(i.code));
+        if(fresh.length){_renderInviteBanner(fresh[fresh.length-1],fresh.length);return}
+      }
+    }
+  }catch(e){}
+  try{
+    const aid=await mailboxAid(playerName());
     const box=await fetchProfileByAid(aid);
     if(!box||!box.mailbox||!Array.isArray(box.invites)||box.invites.length===0) return;
     if(state.screen!=='home') return; // l'utilisateur a déjà navigué ailleurs
@@ -2365,7 +2491,7 @@ async function createBattle(lvId,count,inviteName){
     code=randomBattleCode();
   }
   const exIds=shuffle(pool).slice(0,count).map(e=>e.id);
-  const battle={battle:true,code,createdAt:new Date().toISOString(),level:lvId,lvName:(lv.name+' \u2014 '+(lv.sub||'')),count,exIds,hostName:profile.name,players:{}};
+  const battle={battle:true,code,createdAt:new Date().toISOString(),level:lvId,lvName:(lv.name+' \u2014 '+(lv.sub||'')),count,exIds,hostName:playerName(),players:{}};
   try{await pushBattle(battle)}catch(e){alert('\ud83c\udf10 Impossible de cr\u00e9er la battle (connexion ?). R\u00e9essaie.');navigate('battleHome');return}
   // M\u00e9morise dans l'historique local (r\u00e9sultats compl\u00e9t\u00e9s plus tard).
   if(!profile.battleHistory)profile.battleHistory=[];
@@ -2415,8 +2541,8 @@ async function submitBattleResult(code,gameData){
     const battle=await fetchBattle(code);
     if(battle&&battle.battle){
       battle.players=battle.players||{};
-      battle.players[profile.name]={
-        name:profile.name,
+      battle.players[playerName()]={
+        name:playerName(),
         answers:state.results.map((r,i)=>({i,choice:r.choice,ok:!!r.correct})),
         score:gameData.score,total:gameData.total,maxStreak:gameData.maxStreak,
         duration:gameData.duration,finishedAt:new Date().toISOString()
@@ -2437,7 +2563,7 @@ async function submitBattleResult(code,gameData){
 // D\u00e8s qu'un adversaire a fini, r\u00e8gle le r\u00e9sultat (ligue \u00e0 jour) et
 // affiche une banni\u00e8re avec le verdict \u2014 sans rouvrir l'\u00e9cran battle.
 async function checkFinishedBattles(){
-  if(!profile.name) return;
+  if(!playerName()) return;
   const twoWeeks=Date.now()-14*24*3600*1000;
   const waiting=(profile.battleHistory||[]).filter(h=>h.me&&!h.settled&&new Date(h.date||0).getTime()>twoWeeks).slice(0,5);
   if(waiting.length===0) return;
@@ -2446,16 +2572,16 @@ async function checkFinishedBattles(){
       const battle=await fetchBattle(h.code);
       if(!battle||!battle.battle) continue;
       const players=Object.values(battle.players||{});
-      const me=battle.players&&battle.players[profile.name];
+      const me=battle.players&&battle.players[playerName()];
       if(!me||players.length<2) continue;
       // R\u00e8gle le r\u00e9sultat localement (la ligue se met \u00e0 jour sans ouvrir l'\u00e9cran).
       h.me={score:me.score};
-      h.opps=players.filter(p=>p.name!==profile.name).map(p=>({name:p.name,score:p.score}));
+      h.opps=players.filter(p=>p.name!==playerName()).map(p=>({name:p.name,score:p.score}));
       const best=Math.max(...h.opps.map(o=>o.score));
       h.won=me.score>best?true:me.score<best?false:null;
       h.settled=true;
       if(!profile.friends)profile.friends={};
-      for(const p of players){if(p.name!==profile.name)profile.friends[p.name]={name:p.name,lastBattle:battle.createdAt}}
+      for(const p of players){if(p.name!==playerName())profile.friends[p.name]={name:p.name,lastBattle:battle.createdAt}}
       saveProfile();
       if(state.screen!=='home') return; // l'utilisateur a d\u00e9j\u00e0 navigu\u00e9 ailleurs
       const opp=h.opps[0];
@@ -2493,7 +2619,7 @@ function renderBattleHome(){
       +'<tr style="color:#8b7ec8;font-size:.75rem;text-transform:uppercase;letter-spacing:.05em"><td style="padding:6px 4px">#</td><td>Joueur</td><td style="text-align:center">V</td><td style="text-align:center">N</td><td style="text-align:center">D</td><td style="text-align:right">Pts</td></tr>'
       +league.rows.map((r,i)=>{
         const medal=i===0?'\ud83e\udd47':i===1?'\ud83e\udd48':i===2?'\ud83e\udd49':(i+1);
-        const me=r.name===profile.name;
+        const me=r.name===playerName();
         return '<tr style="border-top:1px solid rgba(255,255,255,0.07);'+(me?'color:#fbbf24;font-weight:700':'color:#faf5ff')+'"><td style="padding:8px 4px">'+medal+'</td><td>'+esc(r.name)+(me?' (toi)':'')+'</td><td style="text-align:center;color:#34d399">'+r.wins+'</td><td style="text-align:center;color:#8b7ec8">'+r.draws+'</td><td style="text-align:center;color:#f87171">'+r.losses+'</td><td style="text-align:right;font-weight:700">'+r.points+'</td></tr>';
       }).join('')
       +'</table></div><p class="sub" style="font-size:.7rem;margin-top:6px">Victoire = 3 pts \u00b7 \u00c9galit\u00e9 = 1 pt \u00b7 Bas\u00e9 sur tes battles termin\u00e9es</p>';
@@ -2569,7 +2695,7 @@ function computeLeague(){
     if(!h.settled||!h.opps||h.opps.length===0||!h.me) continue;
     const myScore=h.me.score;
     for(const o of h.opps){
-      const me=slot(profile.name),op=slot(o.name);
+      const me=slot(playerName()),op=slot(o.name);
       if(myScore>o.score){me.wins++;me.points+=3;op.losses++}
       else if(myScore<o.score){me.losses++;op.wins++;op.points+=3}
       else{me.draws++;me.points+=1;op.draws++;op.points+=1}
@@ -2591,14 +2717,14 @@ async function renderBattleResults(){
     return;
   }
   const players=Object.values(battle.players||{}).sort((a,b)=>(a.finishedAt||'').localeCompare(b.finishedAt||''));
-  const me=battle.players&&battle.players[profile.name];
+  const me=battle.players&&battle.players[playerName()];
   const byId={};EX.forEach(e=>{byId[e.id]=e});
   // Met \u00e0 jour l'historique local (pour la ligue) d\u00e8s qu'il y a 2 joueurs et que j'ai jou\u00e9.
   if(me&&players.length>=2){
     const h=(profile.battleHistory||[]).find(x=>x.code===battle.code);
     if(h){
       h.me={score:me.score};
-      h.opps=players.filter(p=>p.name!==profile.name).map(p=>({name:p.name,score:p.score}));
+      h.opps=players.filter(p=>p.name!==playerName()).map(p=>({name:p.name,score:p.score}));
       const best=Math.max(...h.opps.map(o=>o.score));
       h.won=me.score>best?true:me.score<best?false:null;
       h.settled=true;
@@ -2607,7 +2733,7 @@ async function renderBattleResults(){
     // (le nombre de battles par ami est déduit de battleHistory à l'affichage)
     if(!profile.friends)profile.friends={};
     for(const p of players){
-      if(p.name===profile.name) continue;
+      if(p.name===playerName()) continue;
       profile.friends[p.name]={name:p.name,lastBattle:battle.createdAt};
     }
     saveProfile();
@@ -2624,7 +2750,7 @@ async function renderBattleResults(){
   }
   // Cartes scores par joueur
   const scoreCards=players.map(p=>{
-    const isMe=p.name===profile.name;
+    const isMe=p.name===playerName();
     return '<div class="stat-card" style="'+(isMe?'border:1px solid rgba(251,191,36,.4)':'')+'"><div class="stat-val" style="color:'+(isMe?'#fbbf24':'#c4b5fd')+'">'+p.score+'/'+p.total+'</div><div class="stat-label">'+esc(p.name)+(isMe?' (toi)':'')+'<br>\u23f1 '+p.duration+'s \u00b7 \ud83d\udd25 '+p.maxStreak+'</div></div>';
   }).join('');
   // Grille question par question
