@@ -1,0 +1,9 @@
+{
+  "appId": "com.royaumesavoirs.ios",
+  "appName": "Royaume des Savoirs",
+  "webDir": "www",
+  "ios": {
+    "contentInset": "automatic",
+    "backgroundColor": "#0f0a2e"
+  }
+}

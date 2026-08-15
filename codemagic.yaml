@@ -1,0 +1,40 @@
+# Codemagic — build iOS + envoi TestFlight
+# Pré-requis (une seule fois, voir iphone-app/SETUP.md) :
+#   1. App créée dans App Store Connect avec le bundle id com.royaumesavoirs.ios
+#   2. Clé API App Store Connect ajoutée dans Codemagic sous le nom "RoyaumeKey"
+#   3. Repo connecté à Codemagic
+workflows:
+  ios-testflight:
+    name: Royaume des Savoirs to TestFlight
+    instance_type: mac_mini_m2
+    max_build_duration: 60
+    integrations:
+      app_store_connect: RoyaumeKey
+    environment:
+      ios_signing:
+        distribution_type: app_store
+        bundle_identifier: com.royaumesavoirs.ios
+      node: 20
+      xcode: latest
+      cocoapods: default
+    scripts:
+      - name: Build web
+        script: cd iphone-app && npm ci && npm run build
+      - name: Capacitor sync iOS
+        script: cd iphone-app && npx cap sync ios
+      - name: Pod install
+        script: cd iphone-app/ios/App && pod install
+      - name: Apply signing
+        script: xcode-project use-profiles
+      - name: Bump build number
+        # TestFlight refuse deux builds avec le même numéro : on utilise le
+        # compteur de builds Codemagic, toujours croissant.
+        script: cd iphone-app/ios/App && agvtool new-version -all $BUILD_NUMBER
+      - name: Build IPA
+        script: cd iphone-app/ios/App && xcode-project build-ipa --workspace "App.xcworkspace" --scheme "App"
+    artifacts:
+      - iphone-app/ios/App/build/ios/ipa/*.ipa
+    publishing:
+      app_store_connect:
+        auth: integration
+        submit_to_testflight: true
