@@ -2,7 +2,11 @@
 # Pré-requis (une seule fois, voir iphone-app/SETUP.md) :
 #   1. App créée dans App Store Connect avec le bundle id com.royaumesavoirs.ios
 #   2. Clé API App Store Connect ajoutée dans Codemagic sous le nom "RoyaumeKey"
-#   3. Repo connecté à Codemagic
+#
+# DEUX WORKFLOWS AU CHOIX dans "Start new build" :
+#   - ios-testflight        : signature AUTOMATIQUE (recommandé, zéro secret à gérer)
+#   - ios-testflight-manual : signature via CLI — EXIGE la variable secrète
+#     CERTIFICATE_PRIVATE_KEY (clé RSA 2048) dans le groupe d'env "signing"
 workflows:
   ios-testflight:
     name: Royaume des Savoirs to TestFlight
@@ -27,8 +31,50 @@ workflows:
       - name: Apply signing
         script: xcode-project use-profiles
       - name: Bump build number
-        # TestFlight refuse deux builds avec le même numéro : on utilise le
-        # compteur de builds Codemagic, toujours croissant.
+        # TestFlight refuse deux builds au même numéro : compteur Codemagic,
+        # toujours croissant → on peut enchaîner les builds sans conflit.
+        script: cd iphone-app/ios/App && agvtool new-version -all $BUILD_NUMBER
+      - name: Build IPA
+        script: cd iphone-app/ios/App && xcode-project build-ipa --workspace "App.xcworkspace" --scheme "App"
+    artifacts:
+      - iphone-app/ios/App/build/ios/ipa/*.ipa
+    publishing:
+      app_store_connect:
+        auth: integration
+        submit_to_testflight: true
+
+  ios-testflight-manual:
+    name: Royaume des Savoirs to TestFlight (signature manuelle CLI)
+    instance_type: mac_mini_m2
+    max_build_duration: 60
+    integrations:
+      app_store_connect: RoyaumeKey
+    environment:
+      groups:
+        - signing   # doit contenir CERTIFICATE_PRIVATE_KEY (clé RSA 2048, secret)
+      node: 20
+      xcode: latest
+      cocoapods: default
+    scripts:
+      - name: Build web
+        script: cd iphone-app && npm ci && npm run build
+      - name: Capacitor sync iOS
+        script: cd iphone-app && npx cap sync ios
+      - name: Pod install
+        script: cd iphone-app/ios/App && pod install
+      - name: Set up code signing (create cert + profile)
+        # ⚠️ Nécessite CERTIFICATE_PRIVATE_KEY dans le groupe "signing".
+        # La générer UNE fois (Mac/Linux/Git Bash) :  openssl genrsa 2048
+        # puis coller tout le bloc -----BEGIN/END RSA PRIVATE KEY----- dans
+        # Codemagic → Environment variables → groupe "signing" → Secret.
+        # La MÊME clé doit rester d'un build à l'autre (sinon un nouveau
+        # certificat est créé à chaque build — Apple en limite à 2 !).
+        script: |
+          keychain initialize
+          app-store-connect fetch-signing-files "com.royaumesavoirs.ios" --type IOS_APP_STORE --create
+          keychain add-certificates
+          xcode-project use-profiles
+      - name: Bump build number
         script: cd iphone-app/ios/App && agvtool new-version -all $BUILD_NUMBER
       - name: Build IPA
         script: cd iphone-app/ios/App && xcode-project build-ipa --workspace "App.xcworkspace" --scheme "App"

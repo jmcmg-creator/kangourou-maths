@@ -78,3 +78,25 @@ garanti.)
   URL GitHub Pages à renseigner dans App Store Connect
 - Catégorie **Éducation** (la catégorie *Made for Kids* impose des règles
   supplémentaires — à décider ensemble)
+
+## Deux workflows disponibles (Start new build)
+
+| Workflow | Signature | Configuration en plus |
+|---|---|---|
+| **Royaume des Savoirs to TestFlight** (recommandé) | Automatique (`ios_signing`) — Codemagic crée et stocke le certificat via l'intégration RoyaumeKey | Aucune |
+| Royaume des Savoirs to TestFlight (signature manuelle CLI) | `app-store-connect fetch-signing-files --create` | Variable secrète `CERTIFICATE_PRIVATE_KEY` obligatoire |
+
+### Si tu choisis le workflow « signature manuelle CLI »
+
+1. Génère UNE clé RSA (une seule fois, n'importe où : Mac/Linux/Git Bash Windows) :
+   `openssl genrsa 2048`
+2. Copie tout le bloc `-----BEGIN RSA PRIVATE KEY----- … -----END RSA PRIVATE KEY-----`
+3. Codemagic → ton app → Environment variables :
+   - Name : `CERTIFICATE_PRIVATE_KEY` · Value : la clé · Group : `signing` · ✅ Secret
+4. ⚠️ Garde TOUJOURS la même clé : une clé neuve à chaque build créerait un
+   nouveau certificat à chaque fois, et Apple limite à 2 certificats de
+   distribution — le 3ᵉ build échouerait.
+
+Sans cette variable, l'étape « Set up code signing » échoue avec
+« certificate private key not provided ». Le workflow automatique n'a pas
+ce problème.
