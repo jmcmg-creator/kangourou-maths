@@ -405,7 +405,10 @@ async function fetchProfileByAid(aid){
 // plus que 3000 » : avant, un vieux profil pouvait en écraser un récent.
 function mergeProfiles(a,b){
   if(!a||!a.name) return b;
-  if(!b||!b.name) return a;
+  if(!b) return a;
+  // Les copies cloud récentes n'ont plus de prénom (RGPD) : on reprend
+  // celui du profil local pour que la fusion fonctionne.
+  if(!b.name) b=Object.assign({},b,{name:a.name});
   const out=migrate(Object.assign({},a));
   const mx=(k)=>{out[k]=Math.max(Number(a[k])||0,Number(b[k])||0)};
   ['totalGames','totalQuestions','totalCorrect','bestStreak','xp','cristaux'].forEach(mx);
@@ -480,11 +483,19 @@ async function syncProfileFromCloud(){
 async function pushProfileToCloud(){
   await ensureAid();
   if(!profile.name||!profile.aid) return;
+  // Si Supabase est actif et que ce profil a un pseudo enregistré, la sync
+  // sécurisée (jeton + pseudo unique) prend le relais : on n'envoie plus
+  // rien au Worker historique non authentifié.
+  try{if(window.Supa&&Supa.enabled()&&Supa.creds(profile.name)) return}catch(e){}
   try{
+    // RGPD enfants : on ne transmet JAMAIS le prénom au serveur. La copie
+    // cloud est identifiée par l'AID seul ; le prénom reste sur l'appareil.
+    const copie=Object.assign({},profile);
+    delete copie.name;
     await fetch(API_BASE+'/profile/'+profile.aid,{
       method:'PUT',
       headers:{'Content-Type':'application/json'},
-      body:JSON.stringify(profile),
+      body:JSON.stringify(copie),
       keepalive:true
     });
   }catch(e){}
@@ -665,7 +676,7 @@ function parentalGate(onPass,onCancel){
 }
 function ensureMicConsent(onYes,onNo){
   try{if(localStorage.getItem('royaume_mic_consent')==='1'){onYes&&onYes();return}}catch(e){}
-  const ok=window.confirm("Le micro va s'allumer pour écouter la récitation.\n\n• Le son reste sur ton appareil (rien n'est envoyé sur Internet).\n• Tu peux arrêter à tout moment.\n\nAutoriser le micro ?");
+  const ok=window.confirm("Le micro va s'allumer pour écouter la récitation.\n\n• Ta voix est analysée par la reconnaissance vocale de l'appareil (le service du fabricant, ex. Apple, peut la traiter).\n• L'app n'enregistre ni ne conserve aucun son.\n• Tu peux arrêter à tout moment.\n\nAutoriser le micro ?");
   if(ok){try{localStorage.setItem('royaume_mic_consent','1')}catch(e){}onYes&&onYes()}else{onNo&&onNo()}
 }
 
@@ -1003,10 +1014,14 @@ function renderProfilePicker(){
     if(b===active) return 1;
     return (dict[b].totalGames||0)-(dict[a].totalGames||0);
   });
+  // Sécurité : jamais de donnée dynamique dans un onclick inline (le
+  // navigateur décode les entités HTML AVANT d'exécuter le JS, donc esc()
+  // ne protège pas ici). On passe par un index dans une liste mémorisée.
+  window._profileNames=names;
   const cards=names.map((n,i)=>{
     const p=dict[n];
     const xp=(p.xp||0)+Object.values(p.royaumes||{}).reduce((s,r)=>s+(r.xp||0),0);
-    return `<div class="card fade-in" style="animation-delay:${i*.06}s;cursor:pointer;border-color:#fbbf24" onclick="switchProfile('${esc(n)}')">
+    return `<div class="card fade-in" style="animation-delay:${i*.06}s;cursor:pointer;border-color:#fbbf24" onclick="switchProfileIdx(${i})">
       <div class="row">
         <div style="font-size:2.4rem">🧙</div>
         <div class="flex-1">
@@ -1017,7 +1032,7 @@ function renderProfilePicker(){
       </div>
     </div>`;
   }).join('');
-  const delBtns=names.map(n=>`<button class="btn-stone btn-small" style="margin:4px" onclick="deleteProfile('${esc(n)}')">🗑️ ${esc(n)}</button>`).join('');
+  const delBtns=names.map((n,i)=>`<button class="btn-stone btn-small" style="margin:4px" onclick="deleteProfileIdx(${i})">🗑️ ${esc(n)}</button>`).join('');
   app.innerHTML=`<div class="text-center py-6 fade-in">
     <div class="big-icon">👋</div>
     <h2 class="title">Qui joue aujourd'hui ?</h2>
@@ -1033,6 +1048,8 @@ function renderProfilePicker(){
   ${names.length>0?`<details style="margin-top:24px"><summary style="color:var(--text-dim);font-size:.85rem;cursor:pointer;text-align:center">Supprimer un profil</summary><div style="margin-top:12px;text-align:center">${delBtns}</div></details>`:''}`;
 }
 
+function switchProfileIdx(i){const n=(window._profileNames||[])[i];if(n!=null)switchProfile(n)}
+function deleteProfileIdx(i){const n=(window._profileNames||[])[i];if(n!=null)deleteProfile(n)}
 async function switchProfile(name){
   profile=loadProfileByName(name);
   const nameAid=await aidFromName(profile.name||name);
@@ -1230,13 +1247,13 @@ function renderGame(){
   ${timerHTML}
   <div class="card fade-in mt-3">
     <div class="row gap-2 mb-4" style="flex-wrap:wrap">
-      <span class="badge">${ex.cat}</span>
+      <span class="badge">${esc(ex.cat)}</span>
       <span class="stars">${'\u2605'.repeat(ex.diff)}${'\u2606'.repeat(5-ex.diff)}</span>
       ${levelBadge}
     </div>
-    <p style="font-size:clamp(1rem,2.5vw,1.2rem);color:#faf5ff;line-height:1.7;margin-bottom:24px">${ex.q}</p>
+    <p style="font-size:clamp(1rem,2.5vw,1.2rem);color:#faf5ff;line-height:1.7;margin-bottom:24px">${esc(ex.q)}</p>
     <div class="choices-grid">
-      ${ex.ch.map((c,i)=>{let cls='choice-btn';if(state.selected!==null){if(i===ex.ans)cls+=' correct';else if(i===state.selected&&i!==ex.ans)cls+=' wrong'}return `<button class="${cls}" ${state.selected!==null?'disabled':''} onclick="selectAnswer(${i})"><span class="choice-letter">${String.fromCharCode(65+i)}.</span>${c}</button>`}).join('')}
+      ${ex.ch.map((c,i)=>{let cls='choice-btn';if(state.selected!==null){if(i===ex.ans)cls+=' correct';else if(i===state.selected&&i!==ex.ans)cls+=' wrong'}return `<button class="${cls}" ${state.selected!==null?'disabled':''} onclick="selectAnswer(${i})"><span class="choice-letter">${String.fromCharCode(65+i)}.</span>${esc(c)}</button>`}).join('')}
     </div>
     <div id="explanation"></div>
   </div>
@@ -1301,7 +1318,7 @@ function showExplanation(ex,correct){
   // gel\u00e9e sur tous les royaumes non-maths, chrono et progression compris.
   const hasMethode=Array.isArray(ex.methode)&&ex.methode.length>0;
   const hasDetail=hasMethode||ex.regle||ex.exemple;
-  const methodeHTML=hasMethode?ex.methode.map(m=>`<div class="pedago-step">${m}</div>`).join(''):'';
+  const methodeHTML=hasMethode?ex.methode.map(m=>`<div class="pedago-step">${esc(m)}</div>`).join(''):'';
   const gainHTML=correct?`<span class="xp-gain">+${Math.round(ex.diff*10*(state.streak>=10?3:state.streak>=5?2:state.streak>=3?1.5:1))} XP</span> <span class="crystal-gain">\u{1F48E} +${ex.diff*2}</span>`:'';
   const isLast=state.gameOver||state.idx>=state.exercises.length-1;
   // Bonne r\u00e9ponse : passage auto (message discret). Mauvaise : bouton Suivant.
@@ -1312,8 +1329,8 @@ function showExplanation(ex,correct){
     <div class="row gap-2 mb-2"><span style="font-size:1.5rem">${correct?'\u2705':'\u274C'}</span>
     <h4 class="fredoka" style="font-size:1.1rem;font-weight:700;color:${correct?'#22c55e':'#ef4444'};margin:0">${correct?'Excellent !':'Pas cette fois\u2026'}</h4>
     ${gainHTML}</div>
-    ${ex.se?`<p style="color:#faf5ff;margin-bottom:12px;line-height:1.6;font-weight:600">${ex.se}</p>`:''}
-    ${!correct&&ex.pourquoi?`<div class="error-box"><p style="font-size:.9rem;margin:0"><span class="error-label">\u{1F914} L'erreur probable : </span><span style="color:#faf5ff">${ex.pourquoi}</span></p></div>`:''}
+    ${ex.se?`<p style="color:#faf5ff;margin-bottom:12px;line-height:1.6;font-weight:600">${esc(ex.se)}</p>`:''}
+    ${!correct&&ex.pourquoi?`<div class="error-box"><p style="font-size:.9rem;margin:0"><span class="error-label">\u{1F914} L'erreur probable : </span><span style="color:#faf5ff">${esc(ex.pourquoi)}</span></p></div>`:''}
     ${hasDetail?`<a class="detail-link mt-3" style="display:inline-block;margin-top:10px" onclick="toggleDetail()">${state.detailOpen?'Masquer':'Voir'} la m\u00e9thode pas \u00e0 pas \u2192</a>
     <div id="detailPanel" class="${state.detailOpen?'':'hidden'}">
       ${hasMethode?`<div class="pedago-box">
@@ -1321,10 +1338,10 @@ function showExplanation(ex,correct){
         ${methodeHTML}
       </div>`:''}
       ${ex.regle?`<div class="tip-box">
-        <p style="font-size:.9rem;margin:0"><span class="tip-label">\u{1F4A1} \u00c0 retenir : </span><span class="tip-text">${ex.regle}</span></p>
+        <p style="font-size:.9rem;margin:0"><span class="tip-label">\u{1F4A1} \u00c0 retenir : </span><span class="tip-text">${esc(ex.regle)}</span></p>
       </div>`:''}
-      ${ex.exemple?`<div class="pedago-box" style="background:rgba(59,130,246,.08);border-color:rgba(59,130,246,.2)"><div class="pedago-title" style="color:#93c5fd">\u{1F4DA} Exemple similaire</div><p style="color:#faf5ff;font-size:.9rem">${ex.exemple}</p></div>`:''}
-      ${ex.sk?`<p style="font-size:.75rem;color:#8b7ec8;margin-top:8px">Comp\u00e9tence : ${ex.sk}</p>`:''}
+      ${ex.exemple?`<div class="pedago-box" style="background:rgba(59,130,246,.08);border-color:rgba(59,130,246,.2)"><div class="pedago-title" style="color:#93c5fd">\u{1F4DA} Exemple similaire</div><p style="color:#faf5ff;font-size:.9rem">${esc(ex.exemple)}</p></div>`:''}
+      ${ex.sk?`<p style="font-size:.75rem;color:#8b7ec8;margin-top:8px">Comp\u00e9tence : ${esc(ex.sk)}</p>`:''}
     </div>`:''}
     ${footerHTML}
   </div>`;
@@ -1512,7 +1529,7 @@ function renderResults(){
   <div class="card mb-6"><h3 class="fredoka" style="font-size:.85rem;color:#f7a020;margin-bottom:12px;letter-spacing:.1em;text-transform:uppercase">R\u00e9capitulatif</h3>
     <div class="recap-scroll">${d.results.map(r=>`<div class="recap-item">
       <span class="recap-icon">${r.correct?'\u2705':'\u274C'}</span>
-      <div class="flex-1"><p class="recap-q">${r.ex.q.length>110?r.ex.q.slice(0,110)+'\u2026':r.ex.q}</p>
+      <div class="flex-1"><p class="recap-q">${esc(r.ex.q.length>110?r.ex.q.slice(0,110)+'\u2026':r.ex.q)}</p>
       ${!r.correct?`<p class="recap-answer">R\u00e9ponse : ${r.ex.ch[r.ex.ans]}</p>`:''}</div></div>`).join('')}</div></div>
   <div class="btn-row">
     <button class="btn-fire" onclick="startGame('${d.mode}')">Rejouer</button>
@@ -1623,8 +1640,8 @@ function renderParent(){
         <div class="sub" style="margin-top:2px">${esc(p.author||'sans auteur')} · ${p.dur||'?'}s</div>
       </div>
       <div class="row gap-2">
-        <button class="btn-stone btn-small" onclick="editCustomPoem('${p.id}')">✏️</button>
-        <button class="btn-stone btn-small" onclick="deleteCustomPoem('${p.id}')" style="background:rgba(239,68,68,0.15);border-color:rgba(239,68,68,0.3);color:#fca5a5">🗑️</button>
+        <button class="btn-stone btn-small" onclick="editCustomPoemId(this.dataset.pid)" data-pid="${esc(p.id)}">✏️</button>
+        <button class="btn-stone btn-small" onclick="deleteCustomPoemId(this.dataset.pid)" data-pid="${esc(p.id)}" style="background:rgba(239,68,68,0.15);border-color:rgba(239,68,68,0.3);color:#fca5a5">🗑️</button>
       </div>
     </div>`).join('');
     return `<div class="card mb-4" style="border-color:#a78bfa">
@@ -1642,8 +1659,8 @@ function renderParent(){
         +'<div class="sub" style="margin-top:2px">'+esc(ex.lv||'?')+' · '+esc(ex.cat||'?')+'</div>'
       +'</div>'
       +'<div class="row gap-2">'
-        +'<button class="btn-stone btn-small" onclick="editCustomExercise(\''+ex.id+'\')">✏️</button>'
-        +'<button class="btn-stone btn-small" onclick="deleteCustomExercise(\''+ex.id+'\')" style="background:rgba(239,68,68,0.15);border-color:rgba(239,68,68,0.3);color:#fca5a5">🗑️</button>'
+        +'<button class="btn-stone btn-small" data-id="'+esc(ex.id)+'" onclick="editCustomExercise(this.dataset.id)">✏️</button>'
+        +'<button class="btn-stone btn-small" data-id="'+esc(ex.id)+'" onclick="deleteCustomExercise(this.dataset.id)" style="background:rgba(239,68,68,0.15);border-color:rgba(239,68,68,0.3);color:#fca5a5">🗑️</button>'
       +'</div>'
     +'</div>').join('');
     return '<div class="card mb-4" style="border-color:#34d399">'
@@ -1906,6 +1923,10 @@ function saveCustomPoem(){
 }
 
 function editCustomPoem(id){state.editingPoemId=id;navigate('addPoem');}
+function editCustomPoemId(id){editCustomPoem(id)}
+function deleteCustomPoemId(id){deleteCustomPoem(id)}
+function openFableIdx(i){const f=getAllPoems()[i];if(f)navigate('poesieFable',{fableId:f.id})}
+
 
 /* ════════ EXERCICES PERSONNALISÉS (ajoutés par le parent) ════════ */
 function renderAddExercise(){
@@ -1999,12 +2020,12 @@ function renderPoesieHome(){
     const stats=(profile.poesieStats||{})[f.id]||{};
     const best=stats.best||0;
     const star=best>=80?'\u2B50\u2B50\u2B50':best>=60?'\u2B50\u2B50':best>=40?'\u2B50':'';
-    return `<div class="card clickable fade-in" style="animation-delay:${i*.05}s;border-color:#c4b5fd" onclick="navigate('poesieFable',{fableId:'${f.id}'})">
+    return `<div class="card clickable fade-in" style="animation-delay:${i*.05}s;border-color:#c4b5fd" onclick="openFableIdx(${i})">
       <div class="row">
         <div style="font-size:2.2rem">${f.icon}</div>
         <div class="flex-1">
-          <h3 class="card-title" style="color:#5b21b6">${f.title}${f.custom?' <span style="font-size:.7rem;color:#34d399;border:1px solid #34d399;padding:2px 7px;border-radius:9999px;vertical-align:middle">📝 perso</span>':''}</h3>
-          <p class="sub">${f.author?f.author+' · ':''}${f.dur}s à lire ${star?' \u2014 '+star:''}</p>
+          <h3 class="card-title" style="color:#5b21b6">${esc(f.title)}${f.custom?' <span style="font-size:.7rem;color:#34d399;border:1px solid #34d399;padding:2px 7px;border-radius:9999px;vertical-align:middle">📝 perso</span>':''}</h3>
+          <p class="sub">${f.author?esc(f.author)+' · ':''}${f.dur}s à lire ${star?' \u2014 '+star:''}</p>
         </div>
         <div class="arrow">\u2192</div>
       </div>
@@ -2029,7 +2050,7 @@ function renderPoesieFable(){
   <div class="card mb-4" style="border-color:#c4b5fd">
     <div style="font-style:italic;color:#faf5ff;line-height:1.7;font-size:1.05rem;font-weight:500" id="fableText">${textHtml}</div>
     ${f.morale?`<div class="divider"></div>
-    <div style="background:rgba(251,191,36,0.08);padding:10px 14px;border-radius:10px;border-left:3px solid rgba(251,191,36,0.5);color:#fbbf24;font-weight:600">\u{1F4A1} Morale : <em>${f.morale}</em></div>`:''}
+    <div style="background:rgba(251,191,36,0.08);padding:10px 14px;border-radius:10px;border-left:3px solid rgba(251,191,36,0.5);color:#fbbf24;font-weight:600">\u{1F4A1} Morale : <em>${esc(f.morale)}</em></div>`:''}
   </div>
   <div class="card mb-4" style="border-color:#a78bfa">
     <h3 class="card-title" style="color:#5b21b6;margin-bottom:6px">\u{1F3A7} Écoute</h3>
@@ -2050,7 +2071,7 @@ function renderPoesieFable(){
     <h3 class="card-title" style="margin-bottom:8px">\u{1F4CA} Tes scores</h3>
     <div class="row gap-2"><div class="resource">\u{1F39E}\uFE0F ${stats.plays||0} essais</div><div class="resource flame">\u{1F31F} Meilleur : ${stats.best||0}%</div></div>
   </div>
-  ${f.custom?`<div class="btn-row mb-4"><button class="btn-stone btn-small" onclick="editCustomPoem('${f.id}')">\u270f\ufe0f Modifier</button><button class="btn-stone btn-small" onclick="deleteCustomPoem('${f.id}')" style="background:rgba(239,68,68,0.15);border-color:rgba(239,68,68,0.3);color:#fca5a5">\ud83d\uddd1\ufe0f Supprimer</button></div>`:''}
+  ${f.custom?`<div class="btn-row mb-4"><button class="btn-stone btn-small" onclick="editCustomPoemId(this.dataset.pid)" data-pid="${esc(f.id)}">\u270f\ufe0f Modifier</button><button class="btn-stone btn-small" onclick="deleteCustomPoemId(this.dataset.pid)" data-pid="${esc(f.id)}" style="background:rgba(239,68,68,0.15);border-color:rgba(239,68,68,0.3);color:#fca5a5">\ud83d\uddd1\ufe0f Supprimer</button></div>`:''}
   <button class="btn-stone" onclick="navigate('poesieHome')">\u2190 Autres po\u00e9sies</button>`;
 }
 
@@ -2182,12 +2203,12 @@ function renderFichesTopics(){
     <h2 class="title" style="color:${lv.color}">${lv.name}</h2>
     <p class="sub">${lv.sub||''} \u2014 Choisis un th\u00e8me</p>
   </div>
-  ${state.topics.map((t,i)=>`<div class="card clickable fade-in" style="animation-delay:${i*.05}s" onclick="loadFiche('${(t.id||'').replace(/[^a-z0-9-]/gi,'')}','${(t.title||'').replace(/'/g,'').replace(/\"/g,'')}')">
+  ${state.topics.map((t,i)=>`<div class="card clickable fade-in" style="animation-delay:${i*.05}s" onclick="loadFicheIdx(${i})">
     <div class="row">
-      <div style="font-size:2rem">${t.emoji||'\u{1F4D6}'}</div>
+      <div style="font-size:2rem">${esc(t.emoji||'\u{1F4D6}')}</div>
       <div class="flex-1">
-        <h3 class="card-title">${t.title}</h3>
-        <p class="sub">${t.desc||''}</p>
+        <h3 class="card-title">${esc(t.title)}</h3>
+        <p class="sub">${esc(t.desc||'')}</p>
       </div>
       <div class="arrow">\u2192</div>
     </div>
@@ -2195,6 +2216,7 @@ function renderFichesTopics(){
   <button class="btn-stone mt-4" onclick="navigate('fichesSubject',{subjectId:state.subjectId})">\u2190 Retour</button>`;
 }
 
+function loadFicheIdx(i){const t=(state.topics||[])[i];if(t)loadFiche(String(t.id||''),String(t.title||''))}
 async function loadFiche(topicId,topicTitle){
   state.fiche=null;state.ficheTopic={id:topicId,title:topicTitle};
   navigate('fichesView');
@@ -2228,15 +2250,15 @@ function renderFichesView(){
     <p class="sub">${lv?lv.sub||lv.name:''}</p>
   </div>
   <div class="fiche-card fade-in">
-    <h1 class="fiche-h1">${f.titre||state.ficheTopic.title}</h1>
-    ${f.intro?`<p class="fiche-intro">${f.intro}</p>`:''}
-    ${(f.essentiel&&f.essentiel.length>0)?`<div class="fiche-section"><h3>\u2728 L'essentiel</h3><ul class="fiche-list">${f.essentiel.map(p=>`<li>${p}</li>`).join('')}</ul></div>`:''}
-    ${(f.dates&&f.dates.length>0)?`<div class="fiche-section"><h3>\u{1F4C5} Dates cl\u00e9s</h3>${f.dates.map(d=>`<div class="fiche-mini"><b>${d.date}</b> \u2014 ${d.evenement}</div>`).join('')}</div>`:''}
-    ${(f.personnalites&&f.personnalites.length>0)?`<div class="fiche-section"><h3>\u{1F464} Personnalit\u00e9s</h3>${f.personnalites.map(p=>`<div class="fiche-mini"><b>${p.nom}</b> \u2014 ${p.role}</div>`).join('')}</div>`:''}
-    ${(f.vocabulaire&&f.vocabulaire.length>0)?`<div class="fiche-section"><h3>\u{1F4DA} Vocabulaire</h3>${f.vocabulaire.map(v=>`<div class="fiche-mini"><b>${v.mot}</b> : ${v.definition}</div>`).join('')}</div>`:''}
-    ${f.anecdote?`<div class="fiche-anecdote">\u{1F4A1} <b>Le savais-tu ?</b> ${f.anecdote}</div>`:''}
-    ${f.retiens_bien?`<div class="fiche-retiens">\u{1F31F} ${f.retiens_bien}</div>`:''}
-    ${(f.quiz_rapide&&f.quiz_rapide.length>0)?`<div class="fiche-section"><h3>\u{1F3AF} Quiz \u00e9clair</h3>${f.quiz_rapide.map((q,i)=>`<div class="fiche-mini" onclick="this.querySelector('span').classList.toggle('hidden')" style="cursor:pointer"><b>Q${i+1} :</b> ${q.q}<br><span class="hidden" style="color:#34d399;font-weight:600">\u279c ${q.r}</span><br><small style="color:#8b7ec8">(clique pour voir la r\u00e9ponse)</small></div>`).join('')}</div>`:''}
+    <h1 class="fiche-h1">${esc(f.titre||state.ficheTopic.title)}</h1>
+    ${f.intro?`<p class="fiche-intro">${esc(f.intro)}</p>`:''}
+    ${(f.essentiel&&f.essentiel.length>0)?`<div class="fiche-section"><h3>\u2728 L'essentiel</h3><ul class="fiche-list">${f.essentiel.map(p=>`<li>${esc(p)}</li>`).join('')}</ul></div>`:''}
+    ${(f.dates&&f.dates.length>0)?`<div class="fiche-section"><h3>\u{1F4C5} Dates cl\u00e9s</h3>${f.dates.map(d=>`<div class="fiche-mini"><b>${esc(d.date)}</b> \u2014 ${esc(d.evenement)}</div>`).join('')}</div>`:''}
+    ${(f.personnalites&&f.personnalites.length>0)?`<div class="fiche-section"><h3>\u{1F464} Personnalit\u00e9s</h3>${f.personnalites.map(p=>`<div class="fiche-mini"><b>${esc(p.nom)}</b> \u2014 ${esc(p.role)}</div>`).join('')}</div>`:''}
+    ${(f.vocabulaire&&f.vocabulaire.length>0)?`<div class="fiche-section"><h3>\u{1F4DA} Vocabulaire</h3>${f.vocabulaire.map(v=>`<div class="fiche-mini"><b>${esc(v.mot)}</b> : ${esc(v.definition)}</div>`).join('')}</div>`:''}
+    ${f.anecdote?`<div class="fiche-anecdote">\u{1F4A1} <b>Le savais-tu ?</b> ${esc(f.anecdote)}</div>`:''}
+    ${f.retiens_bien?`<div class="fiche-retiens">\u{1F31F} ${esc(f.retiens_bien)}</div>`:''}
+    ${(f.quiz_rapide&&f.quiz_rapide.length>0)?`<div class="fiche-section"><h3>\u{1F3AF} Quiz \u00e9clair</h3>${f.quiz_rapide.map((q,i)=>`<div class="fiche-mini" onclick="this.querySelector('span').classList.toggle('hidden')" style="cursor:pointer"><b>Q${i+1} :</b> ${esc(q.q)}<br><span class="hidden" style="color:#34d399;font-weight:600">\u279c ${esc(q.r)}</span><br><small style="color:#8b7ec8">(clique pour voir la r\u00e9ponse)</small></div>`).join('')}</div>`:''}
   </div>
   <div class="btn-row">
     <button class="btn-stone" onclick="loadFiche(state.ficheTopic.id,state.ficheTopic.title)">\u{1F504} R\u00e9g\u00e9n\u00e9rer</button>
@@ -2260,8 +2282,8 @@ function _renderInviteBanner(inv,totalCount){
       +'<p class="sub">'+esc(inv.lvName||'')+' · '+(inv.count||'?')+' questions'+(totalCount>1?' · +'+(totalCount-1)+' autre(s) défi(s)':'')+'</p></div>'
     +'</div>'
     +'<div class="btn-row mt-3">'
-      +'<button class="btn-fire" onclick="joinBattle(\''+esc(inv.code)+'\')">🔥 Relever le défi</button>'
-      +'<button class="btn-stone" onclick="dismissInvite(\''+esc(inv.code)+'\')">Plus tard</button>'
+      +'<button class="btn-fire" data-code="'+esc(inv.code)+'" onclick="joinBattle(this.dataset.code)">🔥 Relever le défi</button>'
+      +'<button class="btn-stone" data-code="'+esc(inv.code)+'" onclick="dismissInvite(this.dataset.code)">Plus tard</button>'
     +'</div>'
   +'</div>';
   const first=app.firstElementChild;
@@ -2451,8 +2473,8 @@ async function checkBattleInvites(){
         +'<p class="sub">'+esc(inv.lvName||'')+' · '+(inv.count||'?')+' questions'+(fresh.length>1?' · +'+(fresh.length-1)+' autre(s) défi(s)':'')+'</p></div>'
       +'</div>'
       +'<div class="btn-row mt-3">'
-        +'<button class="btn-fire" onclick="joinBattle(\''+esc(inv.code)+'\')">🔥 Relever le défi</button>'
-        +'<button class="btn-stone" onclick="dismissInvite(\''+esc(inv.code)+'\')">Plus tard</button>'
+        +'<button class="btn-fire" data-code="'+esc(inv.code)+'" onclick="joinBattle(this.dataset.code)">🔥 Relever le défi</button>'
+        +'<button class="btn-stone" data-code="'+esc(inv.code)+'" onclick="dismissInvite(this.dataset.code)">Plus tard</button>'
       +'</div>'
     +'</div>';
     const first=app.firstElementChild;
@@ -2593,8 +2615,8 @@ async function checkFinishedBattles(){
         +'<div class="flex-1"><h3 class="card-title" style="color:#fbbf24">'+msg+'</h3>'
         +'<p class="sub">Battle '+esc(h.code)+' : toi '+h.me.score+'/'+total+' \u00b7 '+esc(opp.name)+' '+opp.score+'/'+total+(h.opps.length>1?' \u00b7 +'+(h.opps.length-1)+' autre(s) joueur(s)':'')+'</p></div></div>'
         +'<div class="btn-row mt-3">'
-          +'<button class="btn-fire" onclick="navigate(\'battleResults\',{battleViewCode:\''+esc(h.code)+'\'})">Voir le d\u00e9tail</button>'
-          +'<button class="btn-stone" onclick="createBattle(\''+esc(h.level)+'\','+(h.count||5)+',\''+esc(opp.name)+'\')">\ud83d\udd04 Revanche</button>'
+          +'<button class="btn-fire" data-code="'+esc(h.code)+'" onclick="navigate(\'battleResults\',{battleViewCode:this.dataset.code})">Voir le d\u00e9tail</button>'
+          +'<button class="btn-stone" data-lv="'+esc(h.level)+'" data-n="'+(h.count||5)+'" data-opp="'+esc(opp.name)+'" onclick="createBattle(this.dataset.lv,+this.dataset.n,this.dataset.opp)">\ud83d\udd04 Revanche</button>'
         +'</div>'
       +'</div>';
       const first=app.firstElementChild;
@@ -2629,7 +2651,7 @@ function renderBattleHome(){
     +history.map(h=>{
       const settled=h.settled&&h.opps&&h.opps.length>0;
       const badge=settled?(h.won===true?'<span style="color:#34d399;font-weight:700">Gagn\u00e9e \ud83c\udfc6</span>':h.won===false?'<span style="color:#f87171;font-weight:700">Perdue</span>':'<span style="color:#8b7ec8;font-weight:700">\u00c9galit\u00e9</span>'):'<span style="color:#fbbf24">En cours\u2026</span>';
-      return '<div class="row-between" style="padding:8px 0;border-top:1px solid rgba(255,255,255,0.06)"><div class="flex-1" style="min-width:0"><div style="color:#faf5ff;font-weight:600">'+esc(h.code)+'</div><div class="sub" style="font-size:.75rem">'+esc(h.lvName||h.level||'')+'</div></div><div class="row gap-2">'+badge+'<button class="btn-stone btn-small" onclick="navigate(\'battleResults\',{battleViewCode:\''+esc(h.code)+'\'})">Voir</button></div></div>';
+      return '<div class="row-between" style="padding:8px 0;border-top:1px solid rgba(255,255,255,0.06)"><div class="flex-1" style="min-width:0"><div style="color:#faf5ff;font-weight:600">'+esc(h.code)+'</div><div class="sub" style="font-size:.75rem">'+esc(h.lvName||h.level||'')+'</div></div><div class="row gap-2">'+badge+'<button class="btn-stone btn-small" data-code="'+esc(h.code)+'" onclick="navigate(\'battleResults\',{battleViewCode:this.dataset.code})">Voir</button></div></div>';
     }).join('')+'</div>';
   app.innerHTML='<div class="text-center py-6 fade-in">'
     +'<div style="font-size:3.5rem">\u2694\ufe0f</div>'
@@ -2660,7 +2682,7 @@ function renderBattleHome(){
         return '<div class="row-between" style="padding:8px 0;border-top:1px solid rgba(255,255,255,0.06)">'
           +'<div class="flex-1" style="min-width:0"><span style="color:#faf5ff;font-weight:600">'+esc(f.name)+'</span>'
           +' <span class="sub" style="font-size:.72rem">'+w+'V \u2013 '+l+'D contre toi</span></div>'
-          +'<button class="btn-stone btn-small" onclick="challengeFriend(\''+esc(f.name)+'\')">\u2694\ufe0f D\u00e9fier</button>'
+          +'<button class="btn-stone btn-small" data-name="'+esc(f.name)+'" onclick="challengeFriend(this.dataset.name)">\u2694\ufe0f D\u00e9fier</button>'
         +'</div>';
       }).join('')
     +'</div>';
@@ -2780,7 +2802,7 @@ async function renderBattleResults(){
     actionsHTML='<div class="card mb-4 text-center" style="border-color:#60a5fa"><div style="font-size:2rem">\u23f3</div><p style="color:#faf5ff;font-weight:600;margin:8px 0">En attente d\'un adversaire\u2026</p><p class="sub">Partage le code ci-dessus \u2014 la page se met \u00e0 jour toute seule.</p></div>';
   }
   if(me){
-    actionsHTML+='<button class="btn-stone mb-2" onclick="createBattle(\''+esc(battle.level)+'\','+battle.count+')">\ud83d\udd04 Revanche (nouvelles questions)</button>';
+    actionsHTML+='<button class="btn-stone mb-2" data-lv="'+esc(battle.level)+'" data-n="'+battle.count+'" onclick="createBattle(this.dataset.lv,+this.dataset.n)">\ud83d\udd04 Revanche (nouvelles questions)</button>';
   }
   app.innerHTML='<div class="text-center py-4 fade-in">'
     +'<div style="font-size:2.5rem">\u2694\ufe0f</div>'
