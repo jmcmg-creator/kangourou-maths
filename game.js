@@ -868,8 +868,8 @@ function renderHome(){
     <div class="subject-card fade-in" style="border-color:#34d399;background:rgba(52,211,153,0.07)" onclick="navigate('memoryHome')">
       <div class="subject-emoji bounce">\u{1F0CF}</div>
       <div class="subject-info">
-        <h3 class="subject-name" style="color:#34d399">Memory des Tables</h3>
-        <p class="subject-desc">Retourne les cartes, r\u00e9cite tes multiplications !</p>
+        <h3 class="subject-name" style="color:#34d399">Memory</h3>
+        <p class="subject-desc">M\u00e9morise les cartes 10 secondes, puis retrouve les paires d'animaux !</p>
       </div>
       <div class="arrow">\u2192</div>
     </div>
@@ -2861,7 +2861,11 @@ async function _shareBattleCode(code){
    à voix haute (« 7 fois 8, 56 ») pour ancrer la mémorisation auditive.
    Les produits du plateau sont uniques : aucune ambiguïté possible.
 */
+const MEMORY_ANIMALS=["\u{1F436}","\u{1F431}","\u{1F981}","\u{1F43C}","\u{1F438}","\u{1F98A}","\u{1F435}","\u{1F437}","\u{1F430}","\u{1F992}","\u{1F418}","\u{1F98B}","\u{1F422}","\u{1F42C}","\u{1F989}","\u{1F434}","\u{1F99C}","\u{1F419}","\u{1F41D}","\u{1F995}","\u{1F42F}","\u{1F993}","\u{1F427}","\u{1F41E}"];
 const MEMORY_MODES=[
+  {id:"zoo-facile",name:"Petit Zoo",sub:"Animaux \u00b7 6 paires",icon:"\u{1F431}",animals:true,pairs:6,color:"#34d399"},
+  {id:"zoo-moyen",name:"Grand Zoo",sub:"Animaux \u00b7 8 paires",icon:"\u{1F981}",animals:true,pairs:8,color:"#60a5fa"},
+  {id:"zoo-expert",name:"Safari Expert",sub:"Animaux \u00b7 10 paires",icon:"\u{1F992}",animals:true,pairs:10,color:"#f472b6"},
   {id:"apprenti",name:"Apprenti",sub:"Tables 2 à 5 · 6 paires",icon:"\u{1F9D9}",tables:[2,3,4,5],pairs:6,color:"#22c55e"},
   {id:"chevalier",name:"Chevalier",sub:"Tables 3 à 7 · 8 paires",icon:"\u2694\uFE0F",tables:[3,4,5,6,7],pairs:8,color:"#f7a020"},
   {id:"maitre",name:"Ma\u00eetre Dragon",sub:"Tables 6 à 9 · 8 paires",icon:"\u{1F409}",tables:[6,7,8,9],pairs:8,color:"#ef4444"}
@@ -2875,8 +2879,8 @@ function renderMemoryHome(){
     '<button class="btn-stone btn-small" style="min-width:52px" onclick="startMemory(\'table-'+t+'\')">\u00d7'+t+'</button>').join(' ');
   app.innerHTML='<div class="text-center py-6 fade-in">'
     +'<div style="font-size:3.5rem">\u{1F0CF}</div>'
-    +'<h2 class="title" style="color:#34d399;font-size:1.6rem">Memory des Tables</h2>'
-    +'<p class="sub">Retourne les cartes deux par deux : associe chaque multiplication \u00e0 son r\u00e9sultat. \u00c0 chaque paire, l\'app la r\u00e9cite \u00e0 voix haute !</p>'
+    +'<h2 class="title" style="color:#34d399;font-size:1.6rem">Memory</h2>'
+    +'<p class="sub">Toutes les cartes s\'affichent 10 secondes : m\u00e9morise-les bien, puis retrouve les paires ! Animaux pour tous \u2014 et tables de multiplication pour les champions.</p>'
   +'</div>'
   +MEMORY_MODES.map((m,i)=>{
     const best=stats[m.id];
@@ -2901,6 +2905,15 @@ function toggleMemVoice(){
 
 function _memBuildPairs(modeId){
   let tables,pairs,label;
+  const mode=MEMORY_MODES.find(x=>x.id===modeId);
+  if(mode&&mode.animals){
+    // Vrai Memory : paires d'animaux identiques.
+    const picked=shuffle(MEMORY_ANIMALS.slice()).slice(0,mode.pairs);
+    return {label:mode.name,cards:shuffle(picked.flatMap((a,i)=>[
+      {pair:i,face:a,animal:true},
+      {pair:i,face:a,animal:true}
+    ]))};
+  }
   if(modeId.startsWith('table-')){
     const t=parseInt(modeId.slice(6),10);
     tables=[t];pairs=6;label='Table de '+t;
@@ -2927,7 +2940,7 @@ function _memBuildPairs(modeId){
 
 function startMemory(modeId){
   const built=_memBuildPairs(modeId);
-  state.mem={modeId,label:built.label,cards:built.cards,flipped:[],found:0,moves:0,lock:false,start:Date.now(),time:0};
+  state.mem={modeId,label:built.label,cards:built.cards,flipped:[],found:0,moves:0,lock:false,start:Date.now(),time:0,preview:10};
   navigate('memoryGame');
 }
 
@@ -2936,26 +2949,47 @@ function renderMemoryGame(){
   if(!M){navigate('memoryHome');return}
   const total=M.cards.length/2;
   const cols=M.cards.length<=12?3:4;
+  const preview=M.preview>0;
   app.innerHTML='<div class="text-center py-4 fade-in">'
     +'<h2 class="title" style="color:#34d399;font-size:1.3rem">\u{1F0CF} '+esc(M.label)+'</h2>'
-    +'<div class="row" style="justify-content:center;gap:16px;margin-top:6px">'
-      +'<span class="sub">Paires : <b id="memFound" style="color:#34d399">'+M.found+'</b>/'+total+'</span>'
-      +'<span class="sub">Coups : <b id="memMoves" style="color:#fbbf24">'+M.moves+'</b></span>'
-      +'<span class="sub">\u23F1 <b id="memTime" style="color:#60a5fa">'+M.time+'</b>s</span>'
-    +'</div>'
+    +(preview
+      ?'<p class="sub" style="margin-top:6px;font-size:1rem">\u{1F440} M\u00e9morise les cartes\u2026 <b id="memPrev" style="color:#fbbf24;font-size:1.2rem">'+M.preview+'</b>s</p>'
+      :'<div class="row" style="justify-content:center;gap:16px;margin-top:6px">'
+        +'<span class="sub">Paires : <b id="memFound" style="color:#34d399">'+M.found+'</b>/'+total+'</span>'
+        +'<span class="sub">Coups : <b id="memMoves" style="color:#fbbf24">'+M.moves+'</b></span>'
+        +'<span class="sub">\u23F1 <b id="memTime" style="color:#60a5fa">'+M.time+'</b>s</span>'
+      +'</div>')
   +'</div>'
   +'<div class="mem-grid" style="grid-template-columns:repeat('+cols+',1fr)">'
   +M.cards.map((c,i)=>{
-    const st=c.matched?'matched':(M.flipped.includes(i)?'flipped':'');
+    const st=c.matched?'matched':((preview||M.flipped.includes(i))?'flipped':'');
+    const big=c.animal?'font-size:clamp(1.8rem,8vw,2.6rem)':'';
     return '<div class="mem-card '+st+'" onclick="memFlip('+i+')"><div class="mem-inner">'
       +'<div class="mem-front">\u2753</div>'
-      +'<div class="mem-back">'+esc(c.face)+'</div>'
+      +'<div class="mem-back" style="'+big+'">'+esc(c.face)+'</div>'
     +'</div></div>';
   }).join('')
   +'</div>'
   +'<div id="memWin"></div>'
   +'<button class="btn-stone mt-4" onclick="navigate(\'memoryHome\')">\u2190 Abandonner</button>';
   if(state.memTickID)clearInterval(state.memTickID);
+  if(preview){
+    // Phase de m\u00e9morisation : toutes les cartes visibles, puis elles se
+    // retournent et le chrono d\u00e9marre.
+    state.memTickID=setInterval(()=>{
+      const m=state.mem;
+      if(!m){clearInterval(state.memTickID);state.memTickID=null;return}
+      m.preview--;
+      const pv=document.getElementById('memPrev');
+      if(pv)pv.textContent=m.preview;
+      if(m.preview<=0){
+        clearInterval(state.memTickID);state.memTickID=null;
+        m.start=Date.now();m.time=0;
+        if(state.screen==='memoryGame')renderMemoryGame();
+      }
+    },1000);
+    return;
+  }
   state.memTickID=setInterval(()=>{
     if(!state.mem)return;
     state.mem.time=Math.round((Date.now()-state.mem.start)/1000);
@@ -2966,7 +3000,7 @@ function renderMemoryGame(){
 
 function memFlip(i){
   const M=state.mem;
-  if(!M||M.lock)return;
+  if(!M||M.lock||M.preview>0)return;
   const c=M.cards[i];
   if(c.matched||M.flipped.includes(i))return;
   M.flipped.push(i);
@@ -2984,7 +3018,7 @@ function memFlip(i){
     document.querySelectorAll('.mem-card')[a].classList.add('matched');
     document.querySelectorAll('.mem-card')[b2].classList.add('matched');
     const op=M.cards[a].op;
-    if(_memVoice&&'speechSynthesis' in window){
+    if(op&&_memVoice&&'speechSynthesis' in window){
       try{
         speechSynthesis.cancel();
         const u=new SpeechSynthesisUtterance(op[0]+' fois '+op[1]+', '+(op[0]*op[1]));

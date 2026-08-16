@@ -8,6 +8,8 @@
 <meta name="apple-mobile-web-app-title" content="Royaume des Savoirs">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="theme-color" content="#0f0a2e">
+<script>(function(){try{if(localStorage.getItem('royaume_theme')==='light'){document.documentElement.classList.add('light');document.addEventListener('DOMContentLoaded',function(){var m=document.querySelector('meta[name="theme-color"]');if(m)m.setAttribute('content','#f4efff');var b=document.getElementById('themeToggle');if(b)b.textContent='\u{1F319}'})}}catch(e){}})();
+function toggleTheme(){var h=document.documentElement;var light=!h.classList.contains('light');h.classList.toggle('light',light);try{localStorage.setItem('royaume_theme',light?'light':'dark')}catch(e){}var b=document.getElementById('themeToggle');if(b)b.textContent=light?'\u{1F319}':'\u2600\uFE0F';var m=document.querySelector('meta[name="theme-color"]');if(m)m.setAttribute('content',light?'#f4efff':'#0f0a2e')}</script>
 <meta property="og:title" content="Le Royaume des Savoirs">
 <meta property="og:description" content="Plateforme magique pour enfants — 9 royaumes, 46 niveaux, du CP au CM2.">
 <meta property="og:type" content="website">
@@ -623,6 +625,60 @@ footer{
 .mem-back{background:linear-gradient(145deg,#122a22,#0d3325);border:2px solid #34d399;transform:rotateY(180deg);font-size:clamp(1rem,4.5vw,1.5rem);color:#faf5ff;text-align:center;padding:4px}
 .mem-card.matched .mem-back{background:linear-gradient(145deg,#14432f,#0f5132);border-color:#fbbf24;box-shadow:0 0 18px rgba(251,191,36,.35);color:#fde68a}
 .mem-card.matched{cursor:default;animation:popIn .4s var(--transition-bounce)}
+
+/* ══ THEME TOGGLE ══ */
+.header-right{display:flex;align-items:center;gap:10px}
+#themeToggle{background:rgba(255,255,255,0.07);border:1px solid var(--border-subtle);border-radius:50%;width:36px;height:36px;font-size:1.05rem;cursor:pointer;line-height:1;transition:transform .25s var(--transition-bounce),background .25s;display:flex;align-items:center;justify-content:center;padding:0}
+#themeToggle:hover,#themeToggle:active{transform:scale(1.12) rotate(15deg);background:rgba(251,191,36,0.12)}
+
+/* ══ MODE CLAIR ══ */
+html.light body{
+  --bg-deep:#f4efff;--bg-mid:#eae2fb;--bg-surface:#ffffff;
+  --bg-card:rgba(76,61,143,0.05);--bg-card-solid:#ffffff;
+  --border-glow:rgba(180,83,9,0.35);--border-subtle:rgba(36,27,82,0.14);
+  --text-bright:#241b52;--text-mid:#463a85;--text-dim:#6b5fa8;
+  --gold:#b45309;--gold-light:#92400e;
+  --green:#059669;--red:#dc2626;--blue:#2563eb;--purple:#7c3aed;
+  --shadow-card:0 6px 20px rgba(60,40,140,0.10),0 2px 6px rgba(60,40,140,0.06);
+  --shadow-card-hover:0 14px 36px rgba(60,40,140,0.16),0 4px 14px rgba(180,83,9,0.10);
+  background-image:radial-gradient(ellipse at 20% 50%,rgba(124,58,237,0.06) 0%,transparent 50%),radial-gradient(ellipse at 80% 20%,rgba(37,99,235,0.05) 0%,transparent 50%),radial-gradient(ellipse at 50% 80%,rgba(180,83,9,0.04) 0%,transparent 50%);
+  color-scheme:light;
+}
+html.light #stars-bg{display:none}
+html.light .orb{opacity:.18}
+html.light ::selection{background:rgba(180,83,9,0.2);color:#241b52}
+html.light header{background:rgba(255,255,255,0.78);border-bottom:1px solid rgba(180,83,9,0.15);box-shadow:0 4px 22px rgba(60,40,140,0.08)}
+html.light header h1{text-shadow:none}
+html.light .card::before{background:linear-gradient(90deg,transparent,rgba(36,27,82,0.08),transparent)}
+html.light .btn-stone{background:rgba(36,27,82,0.05);border-color:rgba(36,27,82,0.14);color:var(--text-bright)}
+html.light .btn-stone:hover,html.light .btn-stone:active{background:rgba(180,83,9,0.08);border-color:rgba(180,83,9,0.25);box-shadow:0 4px 14px rgba(60,40,140,0.12)}
+html.light .choice-btn{background:#ffffff;border-color:rgba(36,27,82,0.12)}
+html.light .choice-btn:hover:not(:disabled):not(.correct):not(.wrong){background:rgba(180,83,9,0.05);box-shadow:0 8px 20px rgba(60,40,140,0.12)}
+html.light .choice-btn.correct{color:#065f46!important;background:rgba(5,150,105,0.10)!important}
+html.light .choice-btn.wrong{color:#b91c1c!important}
+html.light .name-prompt{background:#ffffff;border-color:rgba(36,27,82,0.18)}
+html.light .name-prompt:focus{background:#fffdf5}
+html.light ::-webkit-scrollbar-thumb{background:rgba(180,83,9,0.35)}
+html.light .mem-front{background:linear-gradient(145deg,#ffffff,#edf5ff);border-color:rgba(5,150,105,.45);color:#059669}
+html.light .mem-back{background:linear-gradient(145deg,#eafaf1,#daf2e6);border-color:#059669;color:#241b52}
+html.light .mem-card.matched .mem-back{background:linear-gradient(145deg,#fdf3d8,#fae9bd);border-color:#b45309;color:#92400e;box-shadow:0 0 14px rgba(180,83,9,.25)}
+html.light [style*="color:#faf5ff"]{color:#241b52!important}
+html.light [style*="color:#fde68a"]{color:#92400e!important}
+html.light [style*="color:#c4b5fd"]{color:#463a85!important}
+html.light [style*="color:#8b7ec8"]{color:#6b5fa8!important}
+html.light [style*="color:#fbbf24"]{color:#b45309!important}
+html.light [style*="color:#34d399"]{color:#059669!important}
+html.light [style*="color:#60a5fa"]{color:#2563eb!important}
+html.light [style*="color:#f472b6"]{color:#db2777!important}
+html.light [style*="color:#fb923c"]{color:#c2410c!important}
+html.light [style*="color:#22d3ee"]{color:#0e7490!important}
+html.light [style*="color:#93c5fd"]{color:#1d4ed8!important}
+html.light [style*="color:#fca5a5"]{color:#b91c1c!important}
+html.light [style*="color:#a78bfa"]{color:#6d28d9!important}
+html.light [style*="color:#22c55e"]{color:#15803d!important}
+html.light [style*="color:#f87171"]{color:#b91c1c!important}
+html.light [style*="color:#f7a020"]{color:#b45309!important}
+html.light [style*="color:#a7f3d0"]{color:#065f46!important}
 </style>
 </head>
 <body>
@@ -639,7 +695,7 @@ footer{
 <span id="backArrow" class="hidden">&#8592;</span>
 <h1>&#x1F3F0; Le Royaume des Savoirs</h1>
 </div>
-<div class="header-sub">Apprends en t'amusant</div>
+<div class="header-right"><button id="themeToggle" onclick="toggleTheme()" aria-label="Mode clair / sombre" title="Mode clair / sombre">☀️</button><div class="header-sub">Apprends en t'amusant</div></div>
 </header>
 
 <div class="container" id="app"></div>
@@ -676,7 +732,7 @@ footer{
 <script src="config.js?v=2"></script>
 <script src="supa.js?v=1"></script>
 <script src="qr.js?v=1"></script>
-<script src="game.js?v=33"></script>
+<script src="game.js?v=34"></script>
 <script>
 // Service Worker : enregistré uniquement en HTTPS / localhost (sinon le navigateur refuse).
 if ('serviceWorker' in navigator && (location.protocol === 'https:' || location.hostname === 'localhost' || location.hostname === '127.0.0.1')) {
