@@ -54,7 +54,7 @@ revoke all on public.invites from anon, authenticated;
 
 -- Un pseudo est-il libre ? (pour le feedback en direct pendant la saisie)
 create or replace function public.check_pseudo(p_pseudo text)
-returns json language plpgsql security definer set search_path = public as $$
+returns json language plpgsql security definer set search_path = public, extensions as $$
 begin
   if p_pseudo !~ '^[A-Za-z0-9_-]{3,16}$' then
     return json_build_object('available', false, 'reason', 'format');
@@ -66,7 +66,7 @@ end $$;
 
 -- Créer son pseudo (une seule fois). Retourne id + jeton secret.
 create or replace function public.register_player(p_pseudo text, p_pin text)
-returns json language plpgsql security definer set search_path = public as $$
+returns json language plpgsql security definer set search_path = public, extensions as $$
 declare v players;
 begin
   if p_pseudo !~ '^[A-Za-z0-9_-]{3,16}$' then
@@ -86,7 +86,7 @@ end $$;
 
 -- Se connecter depuis un autre appareil : pseudo + PIN → id + jeton.
 create or replace function public.login_player(p_pseudo text, p_pin text)
-returns json language plpgsql security definer set search_path = public as $$
+returns json language plpgsql security definer set search_path = public, extensions as $$
 declare v players;
 begin
   select * into v from players where pseudo_lower = lower(p_pseudo);
@@ -99,7 +99,7 @@ end $$;
 
 -- Sauvegarder son profil (vérifié par jeton).
 create or replace function public.save_profile(p_id uuid, p_token uuid, p_profile jsonb)
-returns json language plpgsql security definer set search_path = public as $$
+returns json language plpgsql security definer set search_path = public, extensions as $$
 declare n int;
 begin
   if pg_column_size(p_profile) > 400000 then
@@ -114,7 +114,7 @@ end $$;
 
 -- Recharger son profil (vérifié par jeton).
 create or replace function public.load_profile(p_id uuid, p_token uuid)
-returns json language plpgsql security definer set search_path = public as $$
+returns json language plpgsql security definer set search_path = public, extensions as $$
 declare v players;
 begin
   select * into v from players where id = p_id and token = p_token;
@@ -125,7 +125,7 @@ end $$;
 -- Envoyer un défi à un pseudo (vérifié côté expéditeur par jeton).
 create or replace function public.send_invite(
   p_id uuid, p_token uuid, p_to_pseudo text, p_code text, p_lv text, p_count int)
-returns json language plpgsql security definer set search_path = public as $$
+returns json language plpgsql security definer set search_path = public, extensions as $$
 declare sender players;
 begin
   select * into sender from players where id = p_id and token = p_token;
@@ -148,7 +148,7 @@ end $$;
 
 -- Relever sa boîte à défis (7 derniers jours, vérifié par jeton).
 create or replace function public.fetch_invites(p_id uuid, p_token uuid)
-returns json language plpgsql security definer set search_path = public as $$
+returns json language plpgsql security definer set search_path = public, extensions as $$
 declare v players;
 begin
   select * into v from players where id = p_id and token = p_token;
