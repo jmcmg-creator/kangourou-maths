@@ -45,6 +45,8 @@
 	</array>
 	<key>UIViewControllerBasedStatusBarAppearance</key>
 	<true/>
+	<key>NSCameraUsageDescription</key>
+	<string>La caméra sert uniquement à scanner le QR code d’une battle pour rejoindre un ami. Aucune photo n’est enregistrée.</string>
 	<key>NSMicrophoneUsageDescription</key>
 	<string>Le micro sert uniquement à écouter l’enfant réciter ses poésies et répondre aux exercices oraux. Le son reste sur l’appareil.</string>
 	<key>NSSpeechRecognitionUsageDescription</key>

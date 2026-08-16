@@ -1220,6 +1220,9 @@ async function startGame(mode){
 
 /* ════════ GAME SCREEN ════════ */
 function renderGame(){
+  // Anti "réponse pré-surlignée" : reset de selected dès que l'index change
+  // (équivalent useEffect sur questionIndex).
+  if(state._qIdxRendered!==state.idx){state._qIdxRendered=state.idx;state.selected=null}
   let ex=state.exercises[state.idx];
   if(!ex) return finishGame();
   // Défense en profondeur : si un exo invalide s'est glissé dans la partie
@@ -2376,7 +2379,11 @@ async function doLoginPseudo(){
 const BATTLE_WORDS=['DRAGON','POTION','ETOILE','LICORNE','GRIFFON','CRISTAL','PHENIX','TONNERRE','COMETE','SORCIER','PLUME','LUTIN','ORAGE','SAPHIR','RUBIS','MERLIN','PEGASE','YETI','KRAKEN','NINJA'];
 
 function normalizeBattleCode(raw){
-  const s=String(raw||'').toUpperCase().replace(/[^A-Z0-9]/g,'');
+  let s=String(raw||'');
+  // Tolère un ancien lien complet (…?battle=TONNERRE-80) collé ou scanné.
+  const url=s.match(/[?&]battle=([^&\s]+)/i);
+  if(url) s=decodeURIComponent(url[1]);
+  s=s.toUpperCase().replace(/[^A-Z0-9]/g,'');
   const m=s.match(/^([A-Z]+)(\d{2})$/);
   return m?m[1]+'-'+m[2]:s;
 }
@@ -2407,7 +2414,8 @@ function renderBattleQRInto(elId,code){
   if(!el||typeof window.qrcode!=='function') return;
   try{
     const qr=window.qrcode(0,'M');
-    qr.addData(battleLink(code));
+    // Code brut : capacitor://localhost/?battle=X était un lien mort.
+    qr.addData(normalizeBattleCode(code));
     qr.make();
     const n=qr.getModuleCount(),quiet=3,sz=n+quiet*2;
     let rects='';
@@ -2415,6 +2423,34 @@ function renderBattleQRInto(elId,code){
     el.innerHTML='<svg viewBox="0 0 '+sz+' '+sz+'" style="width:170px;height:170px;background:#fff;border-radius:12px;display:block;margin:10px auto 0" shape-rendering="crispEdges"><g fill="#0f0a2e">'+rects+'</g></svg>'
       +'<p class="sub" style="font-size:.72rem;margin-top:6px">📷 Ton copain le scanne avec son appareil photo</p>';
   }catch(e){console.warn('qr fail',e)}
+}
+
+// ── Scanner QR natif (app iOS — @capacitor-mlkit/barcode-scanning) ────
+function _hasNativeScanner(){
+  return !!(window.Capacitor&&window.Capacitor.isNativePlatform&&window.Capacitor.isNativePlatform());
+}
+async function scanBattleQR(){
+  if(!_hasNativeScanner()){alert('Le scanner est disponible dans l\'app iPhone.');return}
+  try{
+    const BS=window.Capacitor.registerPlugin('BarcodeScanner');
+    try{
+      const p=await BS.requestPermissions();
+      if(p&&p.camera&&p.camera!=='granted'&&p.camera!=='limited'){
+        alert('Autorise la caméra dans Réglages → Royaume des Savoirs pour scanner.');
+        return;
+      }
+    }catch(e){}
+    const res=await BS.scan({formats:['QR_CODE']});
+    const raw=res&&res.barcodes&&res.barcodes[0]&&res.barcodes[0].rawValue;
+    if(!raw){alert('Aucun QR détecté. Réessaie en visant bien le carré.');return}
+    // Accepte le code brut ET les anciens QR contenant ?battle=XXX.
+    const code=normalizeBattleCode(raw);
+    const inp=document.getElementById('battleCodeInp');
+    if(inp)inp.value=code;
+    joinBattle(code);
+  }catch(e){
+    alert('Scan impossible : '+((e&&e.message)||e));
+  }
 }
 
 // ── Boîte à défis (invitations entre amis) ────────────────────────────
@@ -2691,7 +2727,8 @@ function renderBattleHome(){
   +'<div class="card mb-4" style="border-color:#60a5fa">'
     +'<h3 class="fredoka" style="font-size:.85rem;color:#60a5fa;margin-bottom:10px;letter-spacing:.1em;text-transform:uppercase">\ud83d\udd11 Rejoindre avec un code</h3>'
     +'<p class="sub" style="font-size:.75rem;margin-bottom:8px">Ton copain t\'a envoy\u00e9 un lien ? Clique dessus, c\'est tout. Sinon entre son code :</p>'
-    +'<input class="name-prompt" id="battleCodeInp" placeholder="Ex. POTION-37" maxlength="12" autocapitalize="characters" style="text-transform:uppercase;text-align:center;font-size:1.2rem;letter-spacing:.15em">'
+    +'<input class="name-prompt" id="battleCodeInp" placeholder="Ex. POTION-37" maxlength="40" autocapitalize="characters" style="text-transform:uppercase;text-align:center;font-size:1.2rem;letter-spacing:.15em">'
+    +(_hasNativeScanner()?'<button class="btn-stone mt-2" onclick="scanBattleQR()">\ud83d\udcf7 Scanner le QR du copain</button>':'')
     +'<button class="btn-fire mt-3" onclick="joinBattle(document.getElementById(\'battleCodeInp\').value)">\ud83d\ude80 Rejoindre la battle</button>'
   +'</div>'
   +'<div class="card mb-4" style="border-color:#fbbf24">'
@@ -2812,7 +2849,7 @@ async function renderBattleResults(){
     +'<div class="card mt-3" style="border-color:#f472b6;padding:14px">'
       +(navigator.share
         ?'<button class="btn-fire mb-2" onclick="_shareBattleCode(\''+esc(battle.code)+'\')">\ud83d\udcf2 Envoyer le d\u00e9fi (WhatsApp, SMS\u2026)</button>'
-        :'<button class="btn-fire mb-2" onclick="_copyBattleCode(\''+esc(battle.code)+'\')">\ud83d\udd17 Copier le lien du d\u00e9fi</button>')
+        :'<button class="btn-fire mb-2" onclick="_copyBattleCode(\''+esc(battle.code)+'\')">\ud83d\udccb Copier le message du d\u00e9fi</button>')
       +'<div id="battleQR"></div>'
       +'<div class="divider" style="margin:12px 0"></div>'
       +'<p class="sub" style="font-size:.75rem;margin-bottom:2px">Ou avec le code, dans \u00ab Rejoindre \u00bb :</p>'
@@ -2838,17 +2875,20 @@ function _startBattleFromView(){
   if(b&&b.battle) startBattleGame(b);
 }
 function _copyBattleCode(code){
-  const txt='\u2694\ufe0f Je te d\u00e9fie sur Le Royaume des Savoirs ! Clique : '+battleLink(code)+' (ou entre le code '+code+')';
+  const txt=_battleShareText(code);
   if(navigator.clipboard&&navigator.clipboard.writeText){
-    navigator.clipboard.writeText(txt).then(()=>alert('\u2705 Lien copi\u00e9 ! Envoie-le \u00e0 ton copain \u2014 un clic et il est dans la battle.')).catch(()=>prompt('Copie ce lien :',battleLink(code)));
-  }else{prompt('Copie ce lien :',battleLink(code))}
+    navigator.clipboard.writeText(txt).then(()=>alert('\u2705 Message copi\u00e9 ! Envoie-le \u00e0 ton copain.')).catch(()=>prompt('Copie ce message :',txt));
+  }else{prompt('Copie ce message :',txt)}
+}
+function _battleShareText(code){
+  const c=normalizeBattleCode(code);
+  return '\u2694\ufe0f Je te d\u00e9fie sur Le Royaume des Savoirs ! Ouvre l\'app \u2192 Battle des Amis \u2192 onglet Rejoindre, code : '+c;
 }
 async function _shareBattleCode(code){
   try{
     await navigator.share({
       title:'Battle \u2014 Le Royaume des Savoirs',
-      text:'\u2694\ufe0f Je te d\u00e9fie ! Un clic et c\'est parti (ou code '+code+')',
-      url:battleLink(code)
+      text:_battleShareText(code)
     });
   }catch(e){}
 }
