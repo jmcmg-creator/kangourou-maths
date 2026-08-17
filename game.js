@@ -71,7 +71,9 @@ const SUBJECTS=[
       {id:"geo-ce2",name:"La France",sub:"CE2 \u2014 R\u00e9gions & villes",icon:"\u{1F1EB}\u{1F1F7}",color:"#0ea5e9"},
       {id:"geo-cm1",name:"L'Europe",sub:"CM1 \u2014 Pays & capitales",icon:"\u{1F5FA}\uFE0F",color:"#0284c7"},
       {id:"geo-cm2",name:"Le Monde",sub:"CM2 \u2014 Continents & cultures",icon:"\u{1F30F}",color:"#0369a1"},
-      {id:"geo-drapeaux",name:"Pays & Drapeaux",sub:"Tous niveaux \u2014 Reconna\u00eetre les drapeaux",icon:"\u{1F6A9}",color:"#0ea5e9"}
+      {id:"geo-drapeaux",name:"Pays & Drapeaux",sub:"Tous niveaux \u2014 Reconna\u00eetre les drapeaux",icon:"\u{1F6A9}",color:"#0ea5e9"},
+      {id:"geo-carte-france",name:"Villes de France",sub:"Place les villes sur la carte",icon:"\u{1F4CD}",color:"#06b6d4",noBattle:true},
+      {id:"geo-carte-europe",name:"Capitales d'Europe",sub:"Place les capitales sur la carte",icon:"\u{1F9ED}",color:"#0891b2",noBattle:true}
     ]}
 ];
 
@@ -573,6 +575,8 @@ async function generateAIExercises(level,count){
 
 // Auto-generation en arrière-plan (fire & forget) si pool insuffisant
 function maybeAutoGenerate(level){
+  // Niveaux carte : pool fixe dessiné à la main, l'IA ne sait pas générer de cartes.
+  if(String(level).indexOf('geo-carte')===0) return;
   const pool=EX.filter(e=>e.lv===level);
   const aiPool=(profile.aiExercises||[]).filter(e=>e.lv===level);
   // Compte les exos jamais vus
@@ -1158,17 +1162,60 @@ async function reqGen(lvId,n){
 // sur ex.ch.map). On les écarte de TOUS les modes.
 function isPlayableEx(e){
   if(!e||e.oral) return false;
+  if(e.type==='map') return !!(MAP_POINTS[e.map]&&e.target&&MAP_POINTS[e.map].some(p=>p.id===e.target));
   if(e.type==='input') return Array.isArray(e.answers)&&e.answers.length>0&&typeof e.q==='string';
   return Array.isArray(e.ch)&&e.ch.length>=2&&e.ch.length<=4&&typeof e.ans==='number'&&e.ans>=0&&e.ans<e.ch.length;
 }
 // Réponse correcte d'un exo, quel que soit son format.
 function exAnswerText(e){
+  if(e.type==='map'){const p=((MAP_POINTS[e.map])||[]).find(x=>x.id===e.target);return p?p.name:''}
   return e.type==='input'?(e.answers&&e.answers[0]||''):(e.ch&&e.ch[e.ans]||'');
 }
 // Normalisation pour comparer une réponse tapée (accents/casse/espaces).
 function normAnswer(s){
   return String(s||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z0-9\u00e6\u0153]+/g,' ').replace(/\s+/g,' ').trim();
 }
+/* ════════ CARTES GÉO : villes de France & capitales d'Europe ════════
+   Type d'exercice 'map' : l'enfant touche le bon point sur une carte SVG. */
+const MAP_POINTS={
+  france:[
+    {id:'paris',name:'Paris',x:55,y:25,diff:1,se:"Paris, la capitale, est au nord, sur la Seine."},
+    {id:'marseille',name:'Marseille',x:77,y:88,diff:2,se:"Marseille est le grand port du sud, sur la Méditerranée."},
+    {id:'lyon',name:'Lyon',x:74,y:60,diff:2,se:"Lyon est au sud-est, au confluent du Rhône et de la Saône."},
+    {id:'lille',name:'Lille',x:60,y:8,diff:2,se:"Lille est tout au nord, près de la Belgique."},
+    {id:'nice',name:'Nice',x:89,y:81,diff:2,se:"Nice est au bord de la Méditerranée, tout près de l'Italie."},
+    {id:'toulouse',name:'Toulouse',x:48,y:85,diff:3,se:"Toulouse, la « ville rose », est dans le sud-ouest."},
+    {id:'bordeaux',name:'Bordeaux',x:33,y:71,diff:3,se:"Bordeaux est dans le sud-ouest, près de l'océan Atlantique."},
+    {id:'strasbourg',name:'Strasbourg',x:91,y:29,diff:3,se:"Strasbourg est à l'est, en Alsace, à la frontière allemande."},
+    {id:'nantes',name:'Nantes',x:26,y:44,diff:3,se:"Nantes est à l'ouest, sur la Loire, près de l'Atlantique."},
+    {id:'montpellier',name:'Montpellier',x:66,y:85,diff:4,se:"Montpellier est dans le sud, près de la Méditerranée."},
+    {id:'rennes',name:'Rennes',x:25,y:34,diff:4,se:"Rennes est la capitale de la Bretagne."},
+    {id:'brest',name:'Brest',x:8,y:31,diff:4,se:"Brest est à la pointe de la Bretagne, tout à l'ouest."}
+  ],
+  europe:[
+    {id:'paris',name:'Paris',gen:"de la France",x:29,y:45,diff:2,se:"Paris est la capitale de la France, à l'ouest de l'Europe."},
+    {id:'londres',name:'Londres',gen:"du Royaume-Uni",x:23.5,y:33,diff:2,se:"Londres est la capitale du Royaume-Uni, sur l'île de Grande-Bretagne."},
+    {id:'madrid',name:'Madrid',gen:"de l'Espagne",x:15,y:78,diff:2,se:"Madrid est au centre de l'Espagne, sur la péninsule Ibérique."},
+    {id:'rome',name:'Rome',gen:"de l'Italie",x:53.5,y:72,diff:2,se:"Rome est la capitale de l'Italie, la « botte » au sud de l'Europe."},
+    {id:'berlin',name:'Berlin',gen:"de l'Allemagne",x:55.5,y:30,diff:3,se:"Berlin est la capitale de l'Allemagne, au nord-est du pays."},
+    {id:'bruxelles',name:'Bruxelles',gen:"de la Belgique",x:33,y:38,diff:3,se:"Bruxelles est la capitale de la Belgique, juste au nord de la France."},
+    {id:'amsterdam',name:'Amsterdam',gen:"des Pays-Bas",x:37,y:28.5,diff:3,se:"Amsterdam est la capitale des Pays-Bas, au bord de la mer du Nord."},
+    {id:'lisbonne',name:'Lisbonne',gen:"du Portugal",x:4,y:85,diff:3,se:"Lisbonne est la capitale du Portugal, tout à l'ouest de l'Europe, sur l'Atlantique."},
+    {id:'athenes',name:'Athènes',gen:"de la Grèce",x:80,y:88,diff:3,se:"Athènes est la capitale de la Grèce, au sud-est de l'Europe."},
+    {id:'berne',name:'Berne',gen:"de la Suisse",x:41.5,y:52,diff:4,se:"Berne est la capitale de la Suisse, au cœur des Alpes."},
+    {id:'vienne',name:'Vienne',gen:"de l'Autriche",x:63,y:47,diff:4,se:"Vienne est la capitale de l'Autriche, sur le Danube."},
+    {id:'prague',name:'Prague',gen:"de la Tchéquie",x:58,y:39.5,diff:4,se:"Prague est la capitale de la Tchéquie, en Europe centrale."},
+    {id:'varsovie',name:'Varsovie',gen:"de la Pologne",x:74,y:31,diff:4,se:"Varsovie est la capitale de la Pologne, à l'est de l'Allemagne."},
+    {id:'copenhague',name:'Copenhague',gen:"du Danemark",x:53.5,y:17,diff:4,se:"Copenhague est la capitale du Danemark, entre la mer du Nord et la Baltique."},
+    {id:'stockholm',name:'Stockholm',gen:"de la Suède",x:67,y:6,diff:4,se:"Stockholm est la capitale de la Suède, en Scandinavie."},
+    {id:'oslo',name:'Oslo',gen:"de la Norvège",x:49.5,y:5,diff:5,se:"Oslo est la capitale de la Norvège, à l'ouest de la Scandinavie."},
+    {id:'dublin',name:'Dublin',gen:"de l'Irlande",x:13,y:26,diff:5,se:"Dublin est la capitale de l'Irlande, l'île à l'ouest de la Grande-Bretagne."},
+    {id:'budapest',name:'Budapest',gen:"de la Hongrie",x:69,y:50,diff:5,se:"Budapest est la capitale de la Hongrie, sur le Danube."}
+  ]
+};
+MAP_POINTS.france.forEach(p=>EX.push({id:'mapfr_'+p.id,lv:'geo-carte-france',cat:'Villes de France',diff:p.diff,type:'map',map:'france',target:p.id,q:'Où est '+p.name+' ? Touche le bon point sur la carte !',se:p.se,sk:'Carte de France'}));
+MAP_POINTS.europe.forEach(p=>EX.push({id:'mapeu_'+p.id,lv:'geo-carte-europe',cat:"Capitales d'Europe",diff:p.diff,type:'map',map:'europe',target:p.id,q:'Où est '+p.name+', la capitale '+p.gen+' ? Touche le bon point !',se:p.se,sk:"Capitales d'Europe"}));
+
 function pickExercises(mode,lvId){
   const lv=LEVELS.find(l=>l.id===lvId);
   // Inclure les exercices AI générés (persistés dans le profil)
@@ -1267,7 +1314,9 @@ function renderGame(){
       ${levelBadge}
     </div>
     <p style="font-size:clamp(1rem,2.5vw,1.2rem);color:#faf5ff;line-height:1.7;margin-bottom:24px">${esc(ex.q)}</p>
-    ${ex.type==='input'
+    ${ex.type==='map'
+      ?renderMapArea(ex)
+      :ex.type==='input'
       ?(state.selected===null
         ?`<input class="name-prompt" id="inputAnswer" placeholder="Écris ta réponse ici…" autocomplete="off" autocapitalize="off" onkeydown="if(event.key==='Enter')submitInputAnswer()">
           <button class="btn-fire" onclick="submitInputAnswer()">✅ Valider ma réponse</button>`
@@ -1313,6 +1362,62 @@ function submitInputAnswer(){
   });
   state.selected=val;
   state.results.push({ex,choice:val,correct});
+  if(correct){
+    state.score++;state.streak++;
+    if(state.streak>state.maxStreak)state.maxStreak=state.streak;
+    const mult=state.streak>=10?3:state.streak>=5?2:state.streak>=3?1.5:1;
+    state.sessionXP+=Math.round(ex.diff*10*mult);
+    state.sessionCristaux+=ex.diff*2+(state.streak===3||state.streak===5||state.streak===10?10:0);
+  }else{
+    state.streak=0;
+    if(state.mode==='progression')state.gameOver=true;
+  }
+  renderGame();
+  showExplanation(ex,correct);
+  if(correct){
+    if(state.autoNextID)clearTimeout(state.autoNextID);
+    state.autoNextID=setTimeout(()=>{state.autoNextID=null;if(state.screen==='game'&&state.selected!==null)nextQuestion()},1600);
+  }
+}
+
+/* ── Exercices carte : rendu SVG + gestion du toucher ── */
+function mapSVG(kind){
+  if(kind==='france') return '<svg viewBox="0 0 100 100" aria-hidden="true">'
+    +'<path class="map-land" d="M58,2 L66,6 L74,10 L88,18 L95,26 L92,40 L86,52 L94,64 L94,78 L86,88 L78,92 L68,88 L60,96 L46,96 L32,92 L28,80 L30,68 L26,56 L16,46 L4,38 L2,30 L12,28 L22,26 L28,18 L36,12 L44,16 L50,10 Z"/>'
+    +'<path class="map-land" d="M95,84 L98,82 L99,92 L96,94 Z"/>'
+    +'</svg>';
+  return '<svg viewBox="0 0 100 100" aria-hidden="true">'
+    +'<path class="map-land" d="M0,82 L6,70 L20,66 L24,74 L20,88 L8,94 Z"/>'
+    +'<path class="map-land" d="M20,64 L18,50 L24,40 L32,36 L38,26 L50,22 L62,20 L78,22 L92,30 L94,44 L86,56 L76,62 L64,58 L52,56 L44,60 L34,62 Z"/>'
+    +'<path class="map-land" d="M46,58 L52,56 L56,62 L60,72 L64,80 L62,86 L56,82 L52,72 L46,64 Z"/>'
+    +'<path class="map-land" d="M20,18 L26,16 L30,24 L28,34 L22,38 L18,30 Z"/>'
+    +'<path class="map-land" d="M8,22 L14,20 L16,28 L12,33 L7,30 Z"/>'
+    +'<path class="map-land" d="M42,14 L46,4 L54,0 L66,0 L74,4 L72,12 L64,10 L58,16 L50,18 Z"/>'
+    +'<path class="map-land" d="M51,15 L55,13 L56,19 L52,20 Z"/>'
+    +'<path class="map-land" d="M72,76 L80,78 L86,84 L84,94 L76,92 L72,84 Z"/>'
+    +'</svg>';
+}
+function renderMapArea(ex){
+  const pts=MAP_POINTS[ex.map]||[];
+  const done=state.selected!==null;
+  return '<div class="map-wrap">'+mapSVG(ex.map)
+    +pts.map(p=>{
+      let cls='map-dot';
+      if(done){if(p.id===ex.target)cls+=' correct';else if(p.id===state.selected)cls+=' wrong'}
+      // Étiquette : sous le point si près du bord haut, calée si près des bords gauche/droit (sinon coupée par overflow:hidden)
+      const lblStyle=(p.y<10?'top:30px;':'')+(p.x<12?'left:0;transform:none;':p.x>88?'left:auto;right:0;transform:none;':'');
+      const lbl=done&&(p.id===ex.target||p.id===state.selected)?'<span class="map-lbl" style="'+lblStyle+'">'+esc(p.name)+'</span>':'';
+      return '<button class="'+cls+'" style="left:'+p.x+'%;top:'+p.y+'%" '+(done?'disabled':'')+' data-id="'+p.id+'" aria-label="Point sur la carte" onclick="selectMapAnswer(this.dataset.id)">'+lbl+'</button>';
+    }).join('')
+  +'</div>';
+}
+function selectMapAnswer(id){
+  if(state.selected!==null||state.gameOver) return;
+  if(state.timerID){clearInterval(state.timerID);state.timerID=null}
+  const ex=state.exercises[state.idx];
+  const correct=id===ex.target;
+  state.selected=id;
+  state.results.push({ex,choice:id,correct});
   if(correct){
     state.score++;state.streak++;
     if(state.streak>state.maxStreak)state.maxStreak=state.streak;
@@ -2721,7 +2826,7 @@ function renderBattleHome(){
   const lastLv=state.level&&LEVELS.find(l=>l.id===state.level)?state.level:(LEVELS[1]&&LEVELS[1].id);
   const lvOptions=SUBJECTS.map(s=>
     '<optgroup label="'+esc(s.name)+'">'
-    +(s.levels||[]).filter(l=>!l.secret).map(l=>'<option value="'+esc(l.id)+'"'+(l.id===lastLv?' selected':'')+'>'+esc(l.name)+' \u2014 '+esc(l.sub||'')+'</option>').join('')
+    +(s.levels||[]).filter(l=>!l.secret&&!l.noBattle).map(l=>'<option value="'+esc(l.id)+'"'+(l.id===lastLv?' selected':'')+'>'+esc(l.name)+' \u2014 '+esc(l.sub||'')+'</option>').join('')
     +'</optgroup>').join('');
   // Ligue des amis : agr\u00e9g\u00e9e depuis l'historique local r\u00e9gl\u00e9 (settled).
   const league=computeLeague();
