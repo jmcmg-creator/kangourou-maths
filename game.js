@@ -721,6 +721,7 @@ function render(){
     case 'poesieFable': renderPoesieFable(); break;
     case 'addPoem': renderAddPoem(); break;
     case 'addExercise': renderAddExercise(); break;
+    case 'photoExercise': renderPhotoExercise(); break;
   }
   updateFooter();
 }
@@ -1156,7 +1157,17 @@ async function reqGen(lvId,n){
 // dans cette version : les inclure gelait la partie (renderGame plantait
 // sur ex.ch.map). On les écarte de TOUS les modes.
 function isPlayableEx(e){
-  return e&&Array.isArray(e.ch)&&e.ch.length===4&&typeof e.ans==='number'&&!e.oral;
+  if(!e||e.oral) return false;
+  if(e.type==='input') return Array.isArray(e.answers)&&e.answers.length>0&&typeof e.q==='string';
+  return Array.isArray(e.ch)&&e.ch.length>=2&&e.ch.length<=4&&typeof e.ans==='number'&&e.ans>=0&&e.ans<e.ch.length;
+}
+// Réponse correcte d'un exo, quel que soit son format.
+function exAnswerText(e){
+  return e.type==='input'?(e.answers&&e.answers[0]||''):(e.ch&&e.ch[e.ans]||'');
+}
+// Normalisation pour comparer une réponse tapée (accents/casse/espaces).
+function normAnswer(s){
+  return String(s||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z0-9\u00e6\u0153]+/g,' ').replace(/\s+/g,' ').trim();
 }
 function pickExercises(mode,lvId){
   const lv=LEVELS.find(l=>l.id===lvId);
@@ -1256,9 +1267,15 @@ function renderGame(){
       ${levelBadge}
     </div>
     <p style="font-size:clamp(1rem,2.5vw,1.2rem);color:#faf5ff;line-height:1.7;margin-bottom:24px">${esc(ex.q)}</p>
-    <div class="choices-grid">
+    ${ex.type==='input'
+      ?(state.selected===null
+        ?`<input class="name-prompt" id="inputAnswer" placeholder="Écris ta réponse ici…" autocomplete="off" autocapitalize="off" onkeydown="if(event.key==='Enter')submitInputAnswer()">
+          <button class="btn-fire" onclick="submitInputAnswer()">✅ Valider ma réponse</button>`
+        :`<div class="choice-btn ${state.results[state.results.length-1]&&state.results[state.results.length-1].correct?'correct':'wrong'}" style="cursor:default">Ta réponse : ${esc(String(state.selected))}</div>
+          ${state.results[state.results.length-1]&&state.results[state.results.length-1].correct?'':`<div class="choice-btn correct" style="cursor:default;margin-top:8px">Bonne réponse : ${esc(exAnswerText(ex))}</div>`}`)
+      :`<div class="choices-grid">
       ${ex.ch.map((c,i)=>{let cls='choice-btn';if(state.selected!==null){if(i===ex.ans)cls+=' correct';else if(i===state.selected&&i!==ex.ans)cls+=' wrong'}return `<button class="${cls}" ${state.selected!==null?'disabled':''} onclick="selectAnswer(${i})"><span class="choice-letter">${String.fromCharCode(65+i)}.</span>${esc(c)}</button>`}).join('')}
-    </div>
+    </div>`}
     <div id="explanation"></div>
   </div>
   ${state.selected===null?`<button class="btn-stone mt-3" onclick="finishGame(true)">Abandonner la qu\u00eate</button>`:''}`;
@@ -1276,6 +1293,41 @@ function renderGame(){
         if(tTxt){tTxt.style.color=tc;tTxt.textContent=state.timer+'s'}
       }
     },1000);
+  }
+}
+
+function submitInputAnswer(){
+  if(state.selected!==null||state.gameOver) return;
+  const el=document.getElementById('inputAnswer');
+  const val=el?el.value:'';
+  if(!val.trim()){if(el)el.focus();return}
+  if(state.timerID){clearInterval(state.timerID);state.timerID=null}
+  const ex=state.exercises[state.idx];
+  const mine=normAnswer(val);
+  const correct=(ex.answers||[]).some(a=>{
+    const ref=normAnswer(a);
+    if(ref===mine) return true;
+    // Tolérance numérique : "12" == "12.0" == "12,0"
+    const n1=parseFloat(mine.replace(',','.')),n2=parseFloat(ref.replace(',','.'));
+    return !isNaN(n1)&&!isNaN(n2)&&n1===n2&&/^[-\d.,\s]+$/.test(mine);
+  });
+  state.selected=val;
+  state.results.push({ex,choice:val,correct});
+  if(correct){
+    state.score++;state.streak++;
+    if(state.streak>state.maxStreak)state.maxStreak=state.streak;
+    const mult=state.streak>=10?3:state.streak>=5?2:state.streak>=3?1.5:1;
+    state.sessionXP+=Math.round(ex.diff*10*mult);
+    state.sessionCristaux+=ex.diff*2+(state.streak===3||state.streak===5||state.streak===10?10:0);
+  }else{
+    state.streak=0;
+    if(state.mode==='progression')state.gameOver=true;
+  }
+  renderGame();
+  showExplanation(ex,correct);
+  if(correct){
+    if(state.autoNextID)clearTimeout(state.autoNextID);
+    state.autoNextID=setTimeout(()=>{state.autoNextID=null;if(state.screen==='game'&&state.selected!==null)nextQuestion()},1600);
   }
 }
 
@@ -1534,7 +1586,7 @@ function renderResults(){
     <div class="recap-scroll">${d.results.map(r=>`<div class="recap-item">
       <span class="recap-icon">${r.correct?'\u2705':'\u274C'}</span>
       <div class="flex-1"><p class="recap-q">${esc(r.ex.q.length>110?r.ex.q.slice(0,110)+'\u2026':r.ex.q)}</p>
-      ${!r.correct?`<p class="recap-answer">R\u00e9ponse : ${r.ex.ch[r.ex.ans]}</p>`:''}</div></div>`).join('')}</div></div>
+      ${!r.correct?`<p class="recap-answer">R\u00e9ponse : ${esc(exAnswerText(r.ex))}</p>`:''}</div></div>`).join('')}</div></div>
   <div class="btn-row">
     <button class="btn-fire" onclick="startGame('${d.mode}')">Rejouer</button>
     <button class="btn-stone" onclick="navigate('royaume')">Mon Royaume</button>
@@ -1628,7 +1680,7 @@ function renderParent(){
   ${strong.length>0?`<div class="card mb-4"><h3 class="fredoka" style="font-size:.85rem;color:#22c55e;margin-bottom:12px;letter-spacing:.1em;text-transform:uppercase">\u2B50 Points forts</h3>
   ${strong.map(([c,s])=>{const p=Math.round(s.cor/s.att*100);return `<div class="strong-cat"><div><div style="color:#bbf7d0;font-weight:700">${c}</div><div style="font-size:.75rem;color:#8b7ec8">${s.cor}/${s.att} bonnes r\u00e9ponses</div></div><div style="color:#22c55e;font-weight:700;font-family:'Cinzel'">${p}%</div></div>`}).join('')}</div>`:''}
   ${failedEx.length>0?`<div class="card mb-4"><h3 class="fredoka" style="font-size:.85rem;color:#f7a020;margin-bottom:12px;letter-spacing:.1em;text-transform:uppercase">Exercices \u00e0 refaire ensemble</h3>
-  <div class="recap-scroll">${failedEx.map(e=>`<div class="recap-item"><span class="recap-icon">\u{1F4DD}</span><div class="flex-1"><p class="recap-q"><strong>${e.cat}</strong> \u2014 ${e.q.length>120?e.q.slice(0,120)+'\u2026':e.q}</p><p style="color:#22c55e;font-size:.75rem;margin-top:4px">R\u00e9ponse : ${e.ch[e.ans]}</p></div></div>`).join('')}</div></div>`:''}
+  <div class="recap-scroll">${failedEx.map(e=>`<div class="recap-item"><span class="recap-icon">\u{1F4DD}</span><div class="flex-1"><p class="recap-q"><strong>${e.cat}</strong> \u2014 ${e.q.length>120?e.q.slice(0,120)+'\u2026':e.q}</p><p style="color:#22c55e;font-size:.75rem;margin-top:4px">R\u00e9ponse : ${esc(exAnswerText(e))}</p></div></div>`).join('')}</div></div>`:''}
   ${recentSessions.length>0?`<div class="card mb-4"><h3 class="fredoka" style="font-size:.85rem;color:#f7a020;margin-bottom:12px;letter-spacing:.1em;text-transform:uppercase">10 derni\u00e8res sessions</h3>
   ${recentSessions.map(s=>{const p=s.total>0?Math.round(s.score/s.total*100):0;const lv=LEVELS.find(l=>l.id===s.level);const dt=new Date(s.date);const dtStr=dt.toLocaleDateString('fr-FR',{day:'2-digit',month:'2-digit'})+' '+dt.toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'});return `<div class="session-item"><div><div style="color:#faf5ff">${lv?lv.icon+' '+lv.sub:s.level} \u00b7 ${s.mode}</div><div style="font-size:.7rem;color:#8b7ec8">${dtStr} \u00b7 ${Math.round((s.duration||0)/60)}min</div></div><div style="color:${p>=60?'#22c55e':'#ef4444'};font-weight:700;font-family:'Cinzel'">${s.score}/${s.total}</div></div>`}).join('')}</div>`:''}
   <div class="card mb-4" style="border-color:#c4b5fd"><h3 class="fredoka" style="font-size:.85rem;color:#c4b5fd;margin-bottom:8px">\u{1F517} Sync sur un autre appareil</h3>
@@ -1670,7 +1722,8 @@ function renderParent(){
     return '<div class="card mb-4" style="border-color:#34d399">'
       +'<h3 class="fredoka" style="font-size:.85rem;color:#34d399;margin-bottom:8px;letter-spacing:.1em;text-transform:uppercase">📚 Tes exercices personnalisés</h3>'
       +'<p style="color:#faf5ff;font-size:.8rem;margin-bottom:10px">Ajoute tes propres questions à choix multiples (géo, maths, etc.). Elles s\'intègrent au pool de '+esc(profile.name)+' et se synchronisent sur tous tes appareils.</p>'
-      +'<button class="btn-fire btn-small" onclick="state.editingExerciseId=null;navigate(\'addExercise\')">➕ Ajouter un exercice</button>'
+      +'<button class="btn-fire btn-small" onclick="navigate(\'photoExercise\')">📸 Photographier un exercice</button>'
+      +'<button class="btn-stone btn-small" style="margin-left:8px" onclick="state.editingExerciseId=null;navigate(\'addExercise\')">✍️ À la main</button>'
       +(list.length>0?'<div style="margin-top:12px">'+items+'</div>':'<p class="sub" style="margin-top:10px;font-style:italic">Aucun exercice personnalisé pour le moment.</p>')
     +'</div>';
   })()}
@@ -2539,7 +2592,7 @@ function challengeFriend(name){
 async function createBattle(lvId,count,inviteName){
   const lv=LEVELS.find(l=>l.id===lvId);
   if(!lv){alert('Choisis d\'abord un niveau.');return}
-  const pool=EX.filter(e=>e.lv===lvId&&isPlayableEx(e));
+  const pool=EX.filter(e=>e.lv===lvId&&isPlayableEx(e)&&Array.isArray(e.ch)&&e.ch.length===4);
   if(pool.length<count){alert('Pas assez de questions pour ce niveau ('+pool.length+' dispo). Choisis un autre niveau ou 5 questions.');return}
   app.innerHTML='<div class="card text-center" style="margin-top:60px"><div class="dragon-emoji float">\u2694\ufe0f</div><h2 class="title">Pr\u00e9paration de la battle\u2026</h2></div>';
   // Code unique : on retire si une battle existe d\u00e9j\u00e0 sous ce code.
@@ -2893,6 +2946,107 @@ async function _shareBattleCode(code){
   }catch(e){}
 }
 
+
+/* ════════ PHOTO → EXERCICES (Espace Parent) ════════
+   Le parent photographie une feuille (exercice, leçon, manuel, affiche…).
+   Le Sage (IA vision) la lit et invente des questions adaptées : QCM,
+   Vrai/Faux et réponses à écrire. Aucun formulaire à remplir. */
+function renderPhotoExercise(){
+  const lastLv=state.level&&LEVELS.find(l=>l.id===state.level)?state.level:'ce1-ce2';
+  const lvOptions=SUBJECTS.map(su=>'<optgroup label="'+esc(su.name)+'">'
+    +(su.levels||[]).filter(l=>!l.secret).map(l=>'<option value="'+esc(l.id)+'"'+(l.id===lastLv?' selected':'')+'>'+esc(l.name)+' — '+esc(l.sub||'')+'</option>').join('')
+    +'</optgroup>').join('');
+  app.innerHTML='<div class="text-center py-6 fade-in">'
+    +'<div style="font-size:3.2rem">📸</div>'
+    +'<h2 class="title" style="color:#34d399;font-size:1.5rem">Photographier un exercice</h2>'
+    +'<p class="sub">Prends en photo une feuille d\'exercices, une leçon, une page de manuel, une affiche de musée… Le Sage la lit et invente les bonnes questions pour '+esc(profile.name)+'.</p>'
+  +'</div>'
+  +'<div class="card mb-4" style="border-color:#34d399">'
+    +'<label class="sub" style="display:block;margin-bottom:4px">Niveau / royaume où ranger les questions</label>'
+    +'<select class="name-prompt" id="photoLv">'+lvOptions+'</select>'
+    +'<input type="file" id="photoInput" accept="image/*" capture="environment" style="display:none" onchange="photoChosen(this)">'
+    +'<button class="btn-fire" onclick="document.getElementById(\'photoInput\').click()">📷 Prendre / choisir une photo</button>'
+    +'<div id="photoPreview" style="margin-top:12px"></div>'
+    +'<div id="photoStatus" style="margin-top:10px"></div>'
+    +'<div id="photoResults" style="margin-top:12px"></div>'
+  +'</div>'
+  +'<button class="btn-stone" onclick="navigate(\'parent\')">← Retour Espace Parent</button>';
+}
+async function photoChosen(inp){
+  const file=inp.files&&inp.files[0];
+  if(!file) return;
+  const st=document.getElementById('photoStatus');
+  try{
+    const dataUrl=await _compressPhoto(file,1400,0.82);
+    const pv=document.getElementById('photoPreview');
+    if(pv)pv.innerHTML='<img src="'+dataUrl+'" style="max-width:100%;border-radius:12px;border:1px solid rgba(255,255,255,0.15)">';
+    if(st)st.innerHTML='<p class="sub">🔮 Le Sage lit ta photo et prépare les questions… (10-30 s)</p>';
+    const lvSel=document.getElementById('photoLv');
+    const lv=lvSel?lvSel.value:'ce1-ce2';
+    const b64=dataUrl.split(',')[1];
+    const r=await fetch(API_BASE+'/photo',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({image:b64,media_type:'image/jpeg',level:lv})});
+    if(!r.ok) throw new Error('status '+r.status);
+    const data=await r.json();
+    if(data.error) throw new Error(data.error.message||data.error);
+    const clean=_sanitizePhotoExercises(data.exercises,lv);
+    if(clean.length===0) throw new Error('Aucune question exploitable — réessaie avec une photo plus nette.');
+    window._photoDraft=clean;
+    if(st)st.innerHTML='<p style="color:#34d399;font-weight:600">✅ '+clean.length+' questions créées ! Décoche celles que tu ne veux pas, puis ajoute.</p>';
+    const res=document.getElementById('photoResults');
+    if(res)res.innerHTML=clean.map((ex,i)=>{
+      const kind=ex.type==='input'?'✍️ À écrire':(ex.ch.length===2?'⚖️ Vrai/Faux':'🔤 QCM');
+      const ans=ex.type==='input'?ex.answers[0]:ex.ch[ex.ans];
+      return '<label class="row" style="align-items:flex-start;padding:10px 0;border-top:1px solid rgba(255,255,255,0.08);cursor:pointer">'
+        +'<input type="checkbox" checked data-i="'+i+'" class="photoPick" style="margin-top:4px;width:18px;height:18px">'
+        +'<div class="flex-1" style="min-width:0"><div style="color:#faf5ff;font-weight:600">'+esc(ex.q)+'</div>'
+        +'<div class="sub" style="margin-top:2px">'+kind+' · Réponse : '+esc(ans)+'</div></div></label>';
+    }).join('')
+    +'<button class="btn-fire mt-3" onclick="addPhotoExercises()">➕ Ajouter au Royaume de '+esc(profile.name)+'</button>';
+  }catch(e){
+    if(st)st.innerHTML='<p style="color:#f87171">'+esc(_friendlyAIError(String(e&&e.message||e)))+'</p>';
+  }
+  inp.value='';
+}
+function _compressPhoto(file,maxDim,quality){
+  return new Promise((resolve,reject)=>{
+    const img=new Image();
+    img.onload=()=>{
+      const scale=Math.min(1,maxDim/Math.max(img.width,img.height));
+      const cv=document.createElement('canvas');
+      cv.width=Math.round(img.width*scale);cv.height=Math.round(img.height*scale);
+      cv.getContext('2d').drawImage(img,0,0,cv.width,cv.height);
+      resolve(cv.toDataURL('image/jpeg',quality));
+    };
+    img.onerror=()=>reject(new Error('image illisible'));
+    img.src=URL.createObjectURL(file);
+  });
+}
+function _sanitizePhotoExercises(list,lv){
+  if(!Array.isArray(list)) return [];
+  const out=[];
+  const ts=Date.now();
+  list.slice(0,15).forEach((raw,i)=>{
+    if(!raw||typeof raw.q!=='string'||!raw.q.trim()) return;
+    const base={id:'photo_'+ts+'_'+i,lv,cat:String(raw.cat||'Exercice photo').slice(0,40),diff:Math.min(3,Math.max(1,parseInt(raw.diff,10)||2)),q:raw.q.slice(0,300),se:String(raw.se||'').slice(0,300),sk:'Photo',custom:true};
+    if(raw.type==='input'&&Array.isArray(raw.answers)&&raw.answers.length>0){
+      out.push(Object.assign(base,{type:'input',answers:raw.answers.slice(0,6).map(a=>String(a).slice(0,80))}));
+    }else if(Array.isArray(raw.ch)&&(raw.ch.length===2||raw.ch.length===4)&&typeof raw.ans==='number'&&raw.ans>=0&&raw.ans<raw.ch.length){
+      out.push(Object.assign(base,{ch:raw.ch.map(c=>String(c).slice(0,120)),ans:raw.ans}));
+    }
+  });
+  return out;
+}
+function addPhotoExercises(){
+  const draft=window._photoDraft||[];
+  const picks=Array.from(document.querySelectorAll('.photoPick')).filter(c=>c.checked).map(c=>draft[+c.dataset.i]).filter(Boolean);
+  if(picks.length===0){alert('Coche au moins une question.');return}
+  if(!profile.customExercises)profile.customExercises=[];
+  profile.customExercises=profile.customExercises.concat(picks);
+  saveProfile();
+  window._photoDraft=null;
+  alert('✅ '+picks.length+' questions ajoutées ! '+profile.name+' les verra dans ses parties ('+picks[0].lv+').');
+  navigate('parent');
+}
 
 /* ════════ MEMORY DES TABLES ════════
    Jeu de paires : associer « 7 × 8 » à « 56 ». Trois niveaux calés sur
