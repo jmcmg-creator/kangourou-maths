@@ -2584,25 +2584,31 @@ async function pushBattle(battle){
   const aid=await battleAid(battle.code);
   await fetch(API_BASE+'/profile/'+aid,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(battle)});
 }
-// Lien magique : un tap dessus ouvre l'app directement dans la battle.
+// Base PUBLIQUE du jeu : toujours le site web. Dans l'app iOS,
+// window.location.origin vaut capacitor://localhost → lien mort. Jamais ça.
+const PUBLIC_BASE='https://jmcmg-creator.github.io/kangourou-maths/';
+const TESTFLIGHT_URL='https://testflight.apple.com/join/KY83JYtY';
+// Lien magique : un tap dessus ouvre le jeu directement dans la battle
+// (dans le navigateur — et propose l'app iPhone via TestFlight).
 function battleLink(code){
-  return window.location.origin+window.location.pathname+'?battle='+encodeURIComponent(normalizeBattleCode(code));
+  return PUBLIC_BASE+'?battle='+encodeURIComponent(normalizeBattleCode(code));
 }
-// QR affiché à l'écran : le copain scanne avec l'appareil photo natif
-// (iPhone/Android ouvrent l'URL détectée) → aucun code à taper.
+// QR affiché à l'écran : le copain le scanne avec son appareil photo →
+// l'iPhone propose d'ouvrir le lien → le jeu s'ouvre et rejoint la battle.
+// Le scanner intégré de l'app sait aussi le lire (normalizeBattleCode
+// extrait le code depuis ?battle=XXX).
 function renderBattleQRInto(elId,code){
   const el=document.getElementById(elId);
   if(!el||typeof window.qrcode!=='function') return;
   try{
     const qr=window.qrcode(0,'M');
-    // Code brut : capacitor://localhost/?battle=X était un lien mort.
-    qr.addData(normalizeBattleCode(code));
+    qr.addData(battleLink(code));
     qr.make();
     const n=qr.getModuleCount(),quiet=3,sz=n+quiet*2;
     let rects='';
     for(let r=0;r<n;r++)for(let c=0;c<n;c++)if(qr.isDark(r,c))rects+='<rect x="'+(c+quiet)+'" y="'+(r+quiet)+'" width="1" height="1"/>';
     el.innerHTML='<svg viewBox="0 0 '+sz+' '+sz+'" style="width:170px;height:170px;background:#fff;border-radius:12px;display:block;margin:10px auto 0" shape-rendering="crispEdges"><g fill="#0f0a2e">'+rects+'</g></svg>'
-      +'<p class="sub" style="font-size:.72rem;margin-top:6px">📷 Ton copain le scanne avec son appareil photo</p>';
+      +'<p class="sub" style="font-size:.72rem;margin-top:6px">📷 Scanne-le avec l\'appareil photo : le jeu s\'ouvre tout seul dans la battle</p>';
   }catch(e){console.warn('qr fail',e)}
 }
 
@@ -3036,6 +3042,7 @@ async function renderBattleResults(){
       +'<p class="sub" style="font-size:.75rem;margin-bottom:2px">Ou avec le code, dans \u00ab Rejoindre \u00bb :</p>'
       +'<p style="font-size:1.5rem;font-weight:800;letter-spacing:.18em;color:#fbbf24;font-family:Fredoka,sans-serif">'+esc(battle.code)
       +' <button class="btn-stone btn-small" style="vertical-align:middle" onclick="_copyBattleCode(\''+esc(battle.code)+'\')">\ud83d\udccb</button></p>'
+      +'<p class="sub" style="font-size:.72rem;margin-top:8px">\ud83d\udcf2 Ton copain n\'a pas l\'app ? <a class="detail-link" href="'+TESTFLIGHT_URL+'" target="_blank" rel="noopener">T\u00e9l\u00e9charger sur TestFlight</a></p>'
     +'</div>'
   +'</div>'
   +bannerHTML
@@ -3063,7 +3070,10 @@ function _copyBattleCode(code){
 }
 function _battleShareText(code){
   const c=normalizeBattleCode(code);
-  return '\u2694\ufe0f Je te d\u00e9fie sur Le Royaume des Savoirs ! Ouvre l\'app \u2192 Battle des Amis \u2192 onglet Rejoindre, code : '+c;
+  return '\u2694\ufe0f Je te d\u00e9fie sur Le Royaume des Savoirs !\n'
+    +'\ud83d\udc49 Touche ce lien pour rejoindre ma battle : '+battleLink(c)+'\n'
+    +'(ou entre le code '+c+' dans Battle des Amis \u2192 Rejoindre)\n'
+    +'\ud83d\udcf2 L\'app iPhone : '+TESTFLIGHT_URL;
 }
 async function _shareBattleCode(code){
   try{
