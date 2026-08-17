@@ -951,7 +951,7 @@ function renderLecons(){
       <p class="sub" style="color:var(--text-mid)">Des expériences animées pour comprendre la science</p>
     </div>
     ${LECONS.map((l,i)=>`
-      <div class="kingdom-gate fade-in" style="animation-delay:${i*.07}s;--k-color:${l.color}" onclick="window.open('${l.file}','_blank')">
+      <div class="kingdom-gate fade-in" style="animation-delay:${i*.07}s;--k-color:${l.color}" onclick="location.href='${l.file}'">
         <div class="kingdom-glow" style="background:radial-gradient(ellipse at 30% 50%,${l.color}18,transparent 70%)"></div>
         <div class="kingdom-border-glow" style="--k-color:${l.color}"></div>
         <div class="kingdom-inner">
