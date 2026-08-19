@@ -2892,6 +2892,8 @@ function renderBattleHome(){
       +'<button class="btn-stone" style="flex:1" id="battleCount10" onclick="_setBattleCount(10)">\ud83c\udff0 Classique \u2014 10</button>'
     +'</div>'
     +'<button class="btn-fire mt-4" onclick="createBattle(document.getElementById(\'battleLv\').value,window._battleCount||5)">\u2694\ufe0f Cr\u00e9er et obtenir le code</button>'
+    +'<div class="divider" style="margin:14px 0"></div>'
+    +'<button class="btn-stone" style="width:100%;border-color:#34d399;color:#34d399" onclick="createMemoryBattle()">\ud83c\udccf Ou une battle MEMORY \u2014 8 paires d\'animaux, m\u00eames cartes pour les deux !</button>'
   +'</div>'
   +(function(){
     const friends=Object.values(profile.friends||{}).sort((a,b)=>(b.lastBattle||'').localeCompare(a.lastBattle||''));
@@ -2991,18 +2993,23 @@ async function renderBattleResults(){
     const sorted=[...players].sort((a,b)=>b.score-a.score||a.duration-b.duration);
     const top=sorted[0];
     const tie=sorted.length>1&&sorted[1].score===top.score&&sorted[1].duration===top.duration;
+    const topLine=battle.mode==='memory'
+      ?top.score+' pts \u2014 '+(top.moves||'?')+' coups en '+top.duration+'s'
+      :top.score+'/'+top.total+' en '+top.duration+'s';
     bannerHTML=tie
       ?'<div class="card mb-4 text-center" style="border-color:#8b7ec8"><div style="font-size:2.5rem">\ud83e\udd1d</div><h3 class="title" style="font-size:1.3rem">\u00c9galit\u00e9 parfaite !</h3></div>'
-      :'<div class="card mb-4 text-center glow-anim" style="border-color:#fbbf24"><div style="font-size:2.8rem">\ud83d\udc51</div><h3 class="title" style="color:#fbbf24;font-size:1.4rem">'+esc(top.name)+' remporte la battle !</h3><p class="sub">'+top.score+'/'+top.total+' en '+top.duration+'s</p></div>';
+      :'<div class="card mb-4 text-center glow-anim" style="border-color:#fbbf24"><div style="font-size:2.8rem">\ud83d\udc51</div><h3 class="title" style="color:#fbbf24;font-size:1.4rem">'+esc(top.name)+' remporte la battle !</h3><p class="sub">'+topLine+'</p></div>';
   }
   // Cartes scores par joueur
   const scoreCards=players.map(p=>{
     const isMe=p.name===playerName();
-    return '<div class="stat-card" style="'+(isMe?'border:1px solid rgba(251,191,36,.4)':'')+'"><div class="stat-val" style="color:'+(isMe?'#fbbf24':'#c4b5fd')+'">'+p.score+'/'+p.total+'</div><div class="stat-label">'+esc(p.name)+(isMe?' (toi)':'')+'<br>\u23f1 '+p.duration+'s \u00b7 \ud83d\udd25 '+p.maxStreak+'</div></div>';
+    const val=battle.mode==='memory'?(p.score+' pts'):(p.score+'/'+p.total);
+    const detail=battle.mode==='memory'?('\ud83c\udccf '+(p.moves!=null?p.moves+' coups':'')+' \u00b7 \u23f1 '+p.duration+'s'):('\u23f1 '+p.duration+'s \u00b7 \ud83d\udd25 '+p.maxStreak);
+    return '<div class="stat-card" style="'+(isMe?'border:1px solid rgba(251,191,36,.4)':'')+'"><div class="stat-val" style="color:'+(isMe?'#fbbf24':'#c4b5fd')+'">'+val+'</div><div class="stat-label">'+esc(p.name)+(isMe?' (toi)':'')+'<br>'+detail+'</div></div>';
   }).join('');
   // Grille question par question
   let gridHTML='';
-  if(players.length>=1){
+  if(players.length>=1&&Array.isArray(battle.exIds)){
     const shown=players.slice(0,4); // max 4 colonnes pour rester lisible
     gridHTML='<div class="card mb-4"><h3 class="fredoka" style="font-size:.85rem;color:#8b7ec8;margin-bottom:10px;letter-spacing:.1em;text-transform:uppercase">\ud83d\udccb Question par question</h3>'
       +'<div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:.85rem">'
@@ -3022,17 +3029,19 @@ async function renderBattleResults(){
   // Actions selon mon statut
   let actionsHTML='';
   if(!me){
-    actionsHTML='<button class="btn-fire mb-2" onclick="_startBattleFromView()">\u2694\ufe0f Jouer mes '+battle.count+' questions !</button>';
+    actionsHTML='<button class="btn-fire mb-2" onclick="_startBattleFromView()">'+(battle.mode==='memory'?'\ud83c\udccf Jouer le Memory !':'\u2694\ufe0f Jouer mes '+battle.count+' questions !')+'</button>';
   }else if(players.length<2){
     actionsHTML='<div class="card mb-4 text-center" style="border-color:#60a5fa"><div style="font-size:2rem">\u23f3</div><p style="color:#faf5ff;font-weight:600;margin:8px 0">En attente d\'un adversaire\u2026</p><p class="sub">Partage le code ci-dessus \u2014 la page se met \u00e0 jour toute seule.</p></div>';
   }
   if(me){
-    actionsHTML+='<button class="btn-stone mb-2" data-lv="'+esc(battle.level)+'" data-n="'+battle.count+'" onclick="createBattle(this.dataset.lv,+this.dataset.n)">\ud83d\udd04 Revanche (nouvelles questions)</button>';
+    actionsHTML+=battle.mode==='memory'
+      ?'<button class="btn-stone mb-2" onclick="createMemoryBattle()">\ud83d\udd04 Revanche Memory (nouvelles cartes)</button>'
+      :'<button class="btn-stone mb-2" data-lv="'+esc(battle.level)+'" data-n="'+battle.count+'" onclick="createBattle(this.dataset.lv,+this.dataset.n)">\ud83d\udd04 Revanche (nouvelles questions)</button>';
   }
   app.innerHTML='<div class="text-center py-4 fade-in">'
     +'<div style="font-size:2.5rem">\u2694\ufe0f</div>'
     +'<h2 class="title" style="color:#f472b6;font-size:1.4rem">Battle '+esc(battle.code)+'</h2>'
-    +'<p class="sub">'+esc(battle.lvName||'')+' \u00b7 '+battle.count+' questions</p>'
+    +'<p class="sub">'+esc(battle.lvName||'')+' \u00b7 '+(battle.mode==='memory'?battle.pairs+' paires d\'animaux':battle.count+' questions')+'</p>'
     +'<div class="card mt-3" style="border-color:#f472b6;padding:14px">'
       +(navigator.share
         ?'<button class="btn-fire mb-2" onclick="_shareBattleCode(\''+esc(battle.code)+'\')">\ud83d\udcf2 Envoyer le d\u00e9fi (WhatsApp, SMS\u2026)</button>'
@@ -3060,7 +3069,58 @@ async function renderBattleResults(){
 }
 function _startBattleFromView(){
   const b=window._battleView;
-  if(b&&b.battle) startBattleGame(b);
+  if(!b||!b.battle) return;
+  if(b.mode==='memory') startMemoryBattle(b);
+  else startBattleGame(b);
+}
+
+/* ── Battle MEMORY : même paquet de cartes pour les deux joueurs ────────
+   Le paquet (disposition incluse) est stocké dans la battle → les deux
+   appareils voient EXACTEMENT la même grille. Points = vitesse + peu de
+   coups (plus haut = mieux, comparable au score des battles questions). */
+async function createMemoryBattle(inviteName){
+  app.innerHTML='<div class="card text-center" style="margin-top:60px"><div class="dragon-emoji float">🃏</div><h2 class="title">Préparation de la battle Memory…</h2></div>';
+  let code=randomBattleCode();
+  for(let tries=0;tries<5;tries++){
+    const existing=await fetchBattle(code);
+    if(!existing||!existing.battle) break;
+    code=randomBattleCode();
+  }
+  const picked=shuffle(MEMORY_ANIMALS.slice()).slice(0,8);
+  const deck=shuffle(picked.flatMap((a,i)=>[{pair:i,face:a},{pair:i,face:a}]));
+  const battle={battle:true,code,createdAt:new Date().toISOString(),mode:'memory',level:'memory',lvName:'🃏 Memory — 8 paires',count:8,pairs:8,deck,hostName:playerName(),players:{}};
+  try{await pushBattle(battle)}catch(e){alert('🌐 Impossible de créer la battle (connexion ?). Réessaie.');navigate('battleHome');return}
+  if(!profile.battleHistory)profile.battleHistory=[];
+  profile.battleHistory.unshift({code,date:battle.createdAt,level:'memory',lvName:battle.lvName,count:8});
+  profile.battleHistory=profile.battleHistory.slice(0,50);
+  saveProfile();
+  if(inviteName){
+    const ok=await sendBattleInvite(inviteName,battle);
+    if(ok) alert('🃏 Défi Memory envoyé à '+inviteName+' !');
+  }
+  navigate('battleResults',{battleViewCode:code});
+}
+function startMemoryBattle(battle){
+  const cards=(battle.deck||[]).map(c=>({pair:c.pair,face:c.face,animal:true}));
+  if(cards.length<4){alert('Battle Memory illisible — recréez-en une.');return}
+  state.mem={modeId:'battle',label:'🃏 Battle '+battle.code,cards,flipped:[],found:0,moves:0,lock:false,start:Date.now(),time:0,preview:10,battleCode:battle.code};
+  navigate('memoryGame');
+}
+// Points battle Memory : 1000 de base, -40 par coup au-dessus du parfait, -3 par seconde.
+function _memoryBattlePoints(moves,time,pairs){
+  return Math.max(100,1000-Math.max(0,moves-pairs)*40-time*3);
+}
+async function _submitMemoryBattle(code,r){
+  try{
+    const battle=await fetchBattle(code);
+    if(battle&&battle.battle){
+      battle.players=battle.players||{};
+      battle.players[playerName()]={name:playerName(),score:r.pts,total:1000,moves:r.moves,time:r.time,maxStreak:0,duration:r.time,finishedAt:new Date().toISOString()};
+      await pushBattle(battle);
+      const h=(profile.battleHistory||[]).find(x=>x.code===code);
+      if(h){h.me={score:r.pts};saveProfile()}
+    }
+  }catch(e){console.warn('memory battle submit failed',e)}
 }
 function _copyBattleCode(code){
   const txt=_battleShareText(code);
@@ -3386,6 +3446,19 @@ function memWin(){
     profile.memoryStats[M.modeId]={moves:M.moves,time:M.time,date:today()};
   }
   saveProfile();
+  // Battle Memory : on envoie les points et on renvoie vers l'\u00e9cran battle.
+  if(M.battleCode){
+    const pts=_memoryBattlePoints(M.moves,M.time,total);
+    _submitMemoryBattle(M.battleCode,{moves:M.moves,time:M.time,pts});
+    const w2=document.getElementById('memWin');
+    if(w2)w2.innerHTML='<div class="card fade-in glow-anim text-center mt-4" style="border-color:#34d399">'
+      +'<div style="font-size:3rem">\ud83c\udccf</div>'
+      +'<h3 class="title" style="color:#34d399">'+pts+' points !</h3>'
+      +'<p class="sub">'+M.moves+' coups \u00b7 '+M.time+'s \u00b7 +'+xp+' XP \u00b7 \ud83d\udc8e +'+cr+'</p>'
+      +'<button class="btn-fire mt-3" data-code="'+esc(M.battleCode)+'" onclick="navigate(\'battleResults\',{battleViewCode:this.dataset.code})">\u2694\ufe0f Voir la battle</button>'
+    +'</div>';
+    return;
+  }
   const w=document.getElementById('memWin');
   if(w)w.innerHTML='<div class="card fade-in glow-anim text-center mt-4" style="border-color:#fbbf24">'
     +'<div style="font-size:3rem">'+(stars===3?'\u{1F3C6}':'\u{1F389}')+'</div>'
