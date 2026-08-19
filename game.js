@@ -60,6 +60,7 @@ const SUBJECTS=[
     ]},
   {id:"logique",name:"Logique & M\u00e9moire",icon:"\u{1F9E9}",color:"#14b8a6",desc:"Raisonnement, patterns et m\u00e9moire",
     levels:[
+      {id:"logique",name:"D\u00e9fis Logique",sub:"Tous \u00e2ges \u2014 suites, intrus, \u00e9nigmes",icon:"\u{1F9E0}",color:"#2dd4bf",hasStatic:true},
       {id:"logique-cp",name:"Premiers patterns",sub:"CP \u2014 Suites & formes",icon:"\u{1F537}",color:"#5eead4"},
       {id:"logique-ce1-ce2",name:"Raisonnement",sub:"CE1-CE2 \u2014 D\u00e9ductions",icon:"\u{1F9E0}",color:"#14b8a6"},
       {id:"logique-cm1",name:"\u00c9nigmes",sub:"CM1 \u2014 Casse-t\u00eate & sudoku",icon:"\u{1F510}",color:"#0d9488"},
@@ -322,7 +323,8 @@ function setActiveName(n){try{localStorage.setItem(STORAGE_ACTIVE,n||'')}catch(e
 function newProfile(){
   return {name:"",totalGames:0,totalQuestions:0,totalCorrect:0,bestStreak:0,sessions:[],catStats:{},exerciseStats:{},playDays:[],unlockedBadges:[],
     xp:0,cristaux:0,dragonnets:[],mainDragon:"main",stage:0,
-    dailyQuest:null,aiExercises:[],recentMisses:[],aid:""};
+    dailyQuest:null,aiExercises:[],recentMisses:[],aid:"",
+    grade:null,age:null,unlocks:{},unlockProgress:{},recentExIds:[]};
 }
 function migrate(p){
   const base=newProfile();
@@ -471,6 +473,20 @@ function mergeProfiles(a,b){
   uniById('customExercises',x=>x.id);
   uniById('battleHistory',x=>x.code);out.battleHistory=out.battleHistory.sort((x,y)=>String(y.date||'').localeCompare(String(x.date||''))).slice(0,50);
   out.friends=Object.assign({},a.friends||{},b.friends||{});
+  // Anti-doublon multi-appareils : union des questions déjà jouées (b = plus récent).
+  out.recentExIds=Array.from(new Set([...(a.recentExIds||[]),...(b.recentExIds||[])])).slice(-RECENT_MAX);
+  // Classe et âge : on garde la valeur renseignée (jamais d'écrasement par null).
+  out.grade=(b.grade!=null?b.grade:(a.grade!=null?a.grade:null));
+  out.age=(b.age!=null?b.age:(a.age!=null?a.age:null));
+  // Déblocages : on garde le plus avancé des deux appareils.
+  out.unlocks={};
+  for(const k of new Set([...Object.keys(a.unlocks||{}),...Object.keys(b.unlocks||{})])){
+    out.unlocks[k]=Math.max(Number((a.unlocks||{})[k])||0,Number((b.unlocks||{})[k])||0);
+  }
+  out.unlockProgress={};
+  for(const k of new Set([...Object.keys(a.unlockProgress||{}),...Object.keys(b.unlockProgress||{})])){
+    out.unlockProgress[k]=Math.max(Number((a.unlockProgress||{})[k])||0,Number((b.unlockProgress||{})[k])||0);
+  }
   out.topicsCache=Object.assign({},a.topicsCache||{},b.topicsCache||{});
   // Quête du jour : la plus récente.
   out.dailyQuest=(String((b.dailyQuest||{}).date||'')>String((a.dailyQuest||{}).date||''))?b.dailyQuest:a.dailyQuest;
@@ -571,6 +587,14 @@ async function generateAIExercises(level,count){
     }
     // Persiste dans le profil pour cross-device + sessions futures
     if(!profile.aiExercises) profile.aiExercises=[];
+    // Anti-doublon à la source : le Dragon regénère parfois un énoncé déjà connu
+    // avec un id neuf. On le jette ici, sinon il polluerait tous les tirages.
+    const known=new Set(EX.concat(profile.aiExercises).concat(profile.customExercises||[]).map(_qKey));
+    data.exercises=(data.exercises||[]).filter(e=>{
+      const k=_qKey(e);
+      if(!k||known.has(k)) return false;
+      known.add(k);return true;
+    });
     profile.aiExercises=profile.aiExercises.concat(data.exercises);
     // Limite à 200 max pour éviter explosion de taille
     if(profile.aiExercises.length>200) profile.aiExercises=profile.aiExercises.slice(-200);
@@ -721,6 +745,7 @@ function render(){
     case 'royaume': renderRoyaume(); break;
     case 'parent': renderParent(); break;
     case 'nameAsk': renderNameAsk(); break;
+    case 'gradeAsk': renderGradeAsk(); break;
     case 'profilePicker': renderProfilePicker(); break;
     case 'collection': renderCollection(); break;
     case 'leconsHome': renderLecons(); break;
@@ -735,6 +760,141 @@ function render(){
     case 'photoExercise': renderPhotoExercise(); break;
   }
   updateFooter();
+}
+
+/* Petit bandeau éphémère (le conteneur #toast-area existait déjà dans
+   index.html mais rien ne l'alimentait). Ne bloque jamais le jeu. */
+function toast(msg,kind){
+  try{
+    const area=document.getElementById('toast-area');
+    if(!area){console.log('[toast]',msg);return}
+    const el=document.createElement('div');
+    el.className='toast'+(kind?' toast-'+kind:'');
+    el.setAttribute('role','status');
+    el.textContent=String(msg||'');
+    area.appendChild(el);
+    setTimeout(()=>{el.classList.add('toast-out');setTimeout(()=>el.remove(),400)},kind==='win'?4200:3200);
+  }catch(e){}
+}
+
+/* ════════ CLASSE DE L'ENFANT & DÉBLOCAGE PROGRESSIF ════════
+   Principe : l'enfant démarre avec les niveaux de SA classe (et en dessous)
+   ouverts. Les niveaux supérieurs sont verrouillés 🔒 et s'ouvrent à la
+   performance : 3 parties à 80 % ou plus sur son niveau le plus haut
+   débloquent le palier suivant, matière par matière.
+
+   RÈGLE DE NON-RÉGRESSION : un profil qui n'a PAS de classe renseignée
+   (tous les profils existants) garde TOUT ouvert, exactement comme avant.
+   Le verrouillage ne s'applique qu'aux profils qui ont choisi leur classe. */
+const GRADES=[
+  {id:'cp',   name:'CP',  age:6,  rank:0},
+  {id:'ce1',  name:'CE1', age:7,  rank:1},
+  {id:'ce2',  name:'CE2', age:8,  rank:2},
+  {id:'cm1',  name:'CM1', age:9,  rank:3},
+  {id:'cm2',  name:'CM2', age:10, rank:4},
+  {id:'6e',   name:'6e',  age:11, rank:5},
+  {id:'5e',   name:'5e',  age:12, rank:6}
+];
+function gradeByRank(r){return GRADES.find(g=>g.rank===r)||null}
+function gradeById(id){return GRADES.find(g=>g.id===id)||null}
+
+/* Palier minimum d'un niveau, déduit de son libellé ("CE1 – CE2" → CE1).
+   Un niveau sans mention de classe ("Tous âges", "Tous niveaux") est
+   transverse : jamais verrouillé. */
+const _GRADE_PATTERNS=[
+  [/\bCP\b/i,0],[/\bCE1\b/i,1],[/\bCE2\b/i,2],
+  [/\bCM1\b/i,3],[/\bCM2\b/i,4],[/\b6[eè]\b/i,5],[/\b5[eè]\b/i,6]
+];
+const _minGradeCache={};
+function levelMinGrade(lv){
+  if(!lv) return null;
+  if(_minGradeCache[lv.id]!==undefined) return _minGradeCache[lv.id];
+  const txt=String(lv.sub||'')+' '+String(lv.name||'')+' '+String(lv.id||'');
+  let min=null;
+  for(const [re,rank] of _GRADE_PATTERNS){
+    if(re.test(txt)&&(min===null||rank<min)) min=rank;
+  }
+  _minGradeCache[lv.id]=min;
+  return min;
+}
+// Matière à laquelle appartient un niveau (pour un déblocage par matière).
+function subjectOfLevel(lvId){
+  for(const s of SUBJECTS){ if((s.levels||[]).some(l=>l.id===lvId)) return s.id }
+  return null;
+}
+// Palier maximum ouvert dans une matière = classe de l'enfant + bonus gagnés.
+function maxOpenGrade(subjectId){
+  if(profile.grade==null) return 99;                 // profil sans classe : tout ouvert
+  const bonus=(profile.unlocks&&profile.unlocks[subjectId])||0;
+  return profile.grade+bonus;
+}
+// Le niveau le plus bas d'une matière est TOUJOURS ouvert : sans cela un
+// enfant de CP se retrouverait sans aucune porte d'entrée dans une matière
+// dont le premier palier commence en CE1 (cas réel des maths).
+function _lowestLevelOf(subjectId){
+  const su=SUBJECTS.find(x=>x.id===subjectId);
+  if(!su) return null;
+  const graded=(su.levels||[]).filter(l=>!l.secret&&levelMinGrade(l)!==null);
+  if(graded.length===0) return null;
+  return graded.reduce((a,b)=>(levelMinGrade(b)<levelMinGrade(a)?b:a));
+}
+function isLevelUnlocked(lvId){
+  const lv=LEVELS.find(l=>l.id===lvId);
+  if(!lv) return true;
+  if(profile.grade==null) return true;               // non-régression
+  const need=levelMinGrade(lv);
+  if(need===null) return true;                       // contenu transverse
+  const subj=subjectOfLevel(lvId);
+  const lowest=_lowestLevelOf(subj);
+  if(lowest&&lowest.id===lvId) return true;          // porte d'entrée garantie
+  return need<=maxOpenGrade(subj);
+}
+// Niveau le plus haut actuellement ouvert dans une matière (celui à travailler).
+function topOpenLevel(subjectId){
+  const s=SUBJECTS.find(x=>x.id===subjectId);
+  if(!s) return null;
+  const open=(s.levels||[]).filter(l=>!l.secret&&isLevelUnlocked(l.id)&&levelMinGrade(l)!==null);
+  if(open.length===0) return null;
+  return open.reduce((a,b)=>(levelMinGrade(b)>levelMinGrade(a)?b:a));
+}
+function nextLockedLevel(subjectId){
+  const s=SUBJECTS.find(x=>x.id===subjectId);
+  if(!s) return null;
+  const locked=(s.levels||[]).filter(l=>!l.secret&&!isLevelUnlocked(l.id)&&levelMinGrade(l)!==null);
+  if(locked.length===0) return null;
+  return locked.reduce((a,b)=>(levelMinGrade(b)<levelMinGrade(a)?b:a));
+}
+
+/* Appelé à la fin de chaque partie : 3 parties à ≥ 80 % sur le niveau le
+   plus haut ouvert débloquent le palier suivant de la matière. */
+const UNLOCK_THRESHOLD=0.8, UNLOCK_GAMES=3, UNLOCK_MIN_QUESTIONS=5;
+function checkLevelUnlock(lvId,score,total){
+  try{
+    if(profile.grade==null) return null;              // pas de progression sans classe
+    if(!lvId||total<UNLOCK_MIN_QUESTIONS) return null;
+    const subj=subjectOfLevel(lvId);
+    if(!subj) return null;
+    const top=topOpenLevel(subj);
+    if(!top||top.id!==lvId) return null;              // on ne progresse que sur son plus haut niveau
+    const nextLv=nextLockedLevel(subj);
+    if(!nextLv) return null;                          // déjà tout ouvert
+    if(!profile.unlockProgress) profile.unlockProgress={};
+    const ratio=total>0?score/total:0;
+    if(ratio<UNLOCK_THRESHOLD){
+      profile.unlockProgress[lvId]=0;                 // il faut 3 bonnes parties d'affilée
+      saveProfile();
+      return null;
+    }
+    const n=(profile.unlockProgress[lvId]||0)+1;
+    profile.unlockProgress[lvId]=n;
+    if(n<UNLOCK_GAMES){ saveProfile(); return {progress:n,need:UNLOCK_GAMES,next:nextLv}; }
+    if(!profile.unlocks) profile.unlocks={};
+    profile.unlocks[subj]=(profile.unlocks[subj]||0)+1;
+    profile.unlockProgress[lvId]=0;
+    saveProfile();
+    track('level_unlocked',{level:String(nextLv.id).slice(0,30)});
+    return {unlocked:nextLv,progress:UNLOCK_GAMES,need:UNLOCK_GAMES,next:nextLv};
+  }catch(e){console.warn('unlock',e);return null}
 }
 
 /* ════════ STAGE DRAGONNET ════════ */
@@ -916,17 +1076,35 @@ function renderSubject(){
     <h2 class="title" style="color:${s.color};font-size:1.6rem">${s.name}</h2>
     <p class="sub">${s.desc}</p>
   </div>
-  ${visibleLevels.map((lv,i)=>`<div class="card clickable fade-in" style="animation-delay:${i*.06}s;border-color:${lv.color}" onclick="navigate('mode',{level:'${lv.id}'})">
+  ${visibleLevels.map((lv,i)=>{
+    const open=isLevelUnlocked(lv.id);
+    const prog=(profile.unlockProgress||{})[topOpenLevel(s.id)&&topOpenLevel(s.id).id]||0;
+    const isNext=!open&&nextLockedLevel(s.id)&&nextLockedLevel(s.id).id===lv.id;
+    return `<div class="card ${open?'clickable':'level-locked'} fade-in" style="animation-delay:${i*.06}s;border-color:${open?lv.color:'rgba(255,255,255,0.10)'}" onclick="${open?`navigate('mode',{level:'${lv.id}'})`:`showLockedLevel('${lv.id}')`}">
     <div class="row">
-      <div style="font-size:2.2rem">${lv.icon}</div>
+      <div style="font-size:2.2rem">${open?lv.icon:'\u{1F512}'}</div>
       <div class="flex-1">
-        <h3 class="card-title" style="color:${lv.color}">${lv.name}${lv.secret?' \u{1F510}':''}</h3>
-        <p class="sub">${lv.sub||''}</p>
+        <h3 class="card-title" style="color:${open?lv.color:'#8b7ec8'}">${lv.name}${lv.secret?' \u{1F510}':''}</h3>
+        <p class="sub">${open?(lv.sub||''):(isNext?`\u00c0 d\u00e9bloquer \u2014 ${prog}/3 parties r\u00e9ussies`:'Bient\u00f4t\u2026')}</p>
       </div>
-      <div class="arrow">\u2192</div>
+      <div class="arrow">${open?'\u2192':''}</div>
     </div>
-  </div>`).join('')}
+  </div>`}).join('')}
   <button class="btn-stone mt-4" onclick="navigate('home')">\u2190 Retour</button>`;
+}
+
+// Niveau verrouillé : on explique gentiment comment l'ouvrir.
+function showLockedLevel(lvId){
+  const lv=LEVELS.find(l=>l.id===lvId);
+  const subj=subjectOfLevel(lvId);
+  const top=topOpenLevel(subj);
+  const prog=(profile.unlockProgress||{})[top&&top.id]||0;
+  track('locked_level_tapped');
+  if(top){
+    toast('\u{1F512} Ce niveau s\'ouvrira apr\u00e8s 3 belles parties en \u00ab '+top.name+' \u00bb ('+prog+'/3)');
+  }else{
+    toast('\u{1F512} Continue de progresser pour ouvrir ce niveau !');
+  }
 }
 
 /* ════════ LEÇONS INTERACTIVES ════════ */
@@ -1015,6 +1193,53 @@ async function setName(){
   saveProfilesDict(dict);
   setActiveName(profile.name);
   saveProfile(); // pousse la version fusionnée au cloud (debounced)
+  // Nouveau profil (aucune partie jouée, pas de classe connue) → on demande
+  // l'âge/la classe. Un profil existant n'est jamais réinterrogé.
+  if(profile.grade==null&&!(profile.totalGames>0)){ navigate('gradeAsk'); return }
+  navigate('home');
+}
+
+/* ════════ ÉCRAN 2 DE L'INSCRIPTION : âge & classe ════════
+   Demandé une seule fois, à la création du profil. Sert à ouvrir les bons
+   niveaux dès le départ (et à verrouiller ceux qui viendront plus tard).
+   Un enfant peut passer l'étape : dans ce cas tout reste ouvert, comme
+   avant — aucune régression pour les profils existants. */
+function renderGradeAsk(){
+  const cur=profile.grade;
+  app.innerHTML='<div class="card fade-in" style="margin-top:32px">'
+    +'<h2 class="title" style="color:#fbbf24;font-size:1.3rem">Tu es en quelle classe, '+esc(profile.name)+' ?</h2>'
+    +'<p style="color:#faf5ff;margin-bottom:14px">On ouvrira les niveaux qui te correspondent. Les suivants se débloqueront quand tu progresseras 🔓</p>'
+    +'<div class="grade-grid">'
+    +GRADES.map(g=>'<button class="grade-chip'+(cur===g.rank?' grade-on':'')+'" data-r="'+g.rank+'" onclick="pickGrade(+this.dataset.r)">'
+        +'<span class="grade-name">'+g.name+'</span>'
+        +'<span class="grade-age">'+g.age+' ans</span>'
+      +'</button>').join('')
+    +'</div>'
+    +'<button class="btn-fire mt-4" id="gradeGo" onclick="confirmGrade()"'+(cur==null?' disabled style="opacity:.45"':'')+'>C\'est parti ! →</button>'
+    +'<button class="btn-stone" style="width:100%;margin-top:10px" onclick="skipGrade()">Je préfère ne pas dire</button>'
+  +'</div>';
+}
+function pickGrade(rank){
+  profile.grade=rank;
+  const g=gradeByRank(rank);
+  if(g) profile.age=g.age;
+  saveProfile();
+  track('signup_grade_picked',{grade:g?g.id:''});
+  renderGradeAsk();
+}
+function confirmGrade(){
+  if(profile.grade==null){toast('Choisis ta classe pour continuer');return}
+  if(!profile.unlocks) profile.unlocks={};
+  saveProfile();
+  track('signup_completed',{grade:(gradeByRank(profile.grade)||{}).id||''});
+  const g=gradeByRank(profile.grade);
+  toast('\u{1F393} Niveaux ' + (g?g.name:'') + ' ouverts ! Les suivants se débloqueront en jouant.','win');
+  navigate('home');
+}
+function skipGrade(){
+  profile.grade=null; profile.age=null;
+  saveProfile();
+  track('signup_grade_skipped');
   navigate('home');
 }
 
@@ -1267,6 +1492,76 @@ EX.push({id:'mapcy_dk',lv:'geo-carte-payseu',cat:"Pays d'Europe",diff:4,type:'ma
 EX.push({id:'mapcy_gb',lv:'geo-carte-payseu',cat:"Pays d'Europe",diff:2,type:'map-country',target:'gb',q:'Où est '+MAP_COUNTRIES.gb.name+' ? Touche le pays sur la carte !',se:"Le Royaume-Uni est une île au nord-ouest de la France.",sk:"Pays d'Europe"});
 EX.push({id:'mapcy_cz',lv:'geo-carte-payseu',cat:"Pays d'Europe",diff:4,type:'map-country',target:'cz',q:'Où est '+MAP_COUNTRIES.cz.name+' ? Touche le pays sur la carte !',se:"La Tchéquie est entre l'Allemagne et la Pologne.",sk:"Pays d'Europe"});
 
+/* ══════ ANTI-DOUBLON : jamais deux fois la même question ══════
+   Trois couches, de la plus stricte à la plus tolérante :
+   1. dedupeExercises() — dans une même partie, un id OU un énoncé ne peut
+      apparaître qu'une seule fois. Garantie dure, appliquée à tous les modes
+      (entraînement, chrono, progression, adaptatif, battle). Le doublon
+      d'énoncé compte vraiment : l'IA regénère parfois la même question avec
+      un id différent, et le pool statique + le pool parent peuvent se croiser.
+   2. profile.recentExIds — mémoire glissante des 150 dernières questions
+      jouées. Écartées du tirage pour ne pas revoir la même d'une partie
+      à l'autre.
+   3. Si tout écarter ne laisse pas assez d'exercices, on ré-admet les plus
+      anciennes d'abord : mieux vaut un rappel espacé qu'une partie vide. */
+const RECENT_MAX=150;
+function _norm(t){
+  return String(t||'').toLowerCase()
+    .normalize('NFD').replace(/[̀-ͯ]/g,'')
+    // On enlève la ponctuation et les espaces, mais on GARDE toutes les
+    // écritures (hébreu, emoji, drapeaux…) : « Quelle lettre s'écrit ב ? » et
+    // « Quelle lettre s'écrit א ? » sont deux questions différentes.
+    .replace(/[\s!-\/:-@\[-`{-~\u00ab\u00bb\u2026\u2013\u2014\u201c\u201d\u2018\u2019]+/g,' ').trim();
+}
+/* Clé d'unicité d'une question = énoncé + réponses proposées (triées).
+   Deux exercices peuvent légitimement partager un énoncé générique
+   (« Quelle phrase est correcte ? ») avec des propositions différentes :
+   ce ne sont PAS des doublons. En revanche, même énoncé + mêmes propositions
+   (l'IA qui regénère, deux royaumes qui se recouvrent) → doublon. */
+function _qKey(e){
+  if(!e) return '';
+  const ch=Array.isArray(e.ch)?e.ch.map(_norm).sort().join('|'):'';
+  const extra=e.target?('@'+e.target):(e.flag?('@'+e.flag):'');
+  return _norm(e.q)+'||'+ch+extra;
+}
+function dedupeExercises(list){
+  const ids=new Set(),qs=new Set(),out=[];
+  for(const e of (list||[])){
+    if(!e) continue;
+    const k=_qKey(e);
+    if(e.id&&ids.has(e.id)) continue;
+    if(k&&qs.has(k)) continue;
+    if(e.id) ids.add(e.id);
+    if(k) qs.add(k);
+    out.push(e);
+  }
+  return out;
+}
+function recentExIds(){return Array.isArray(profile.recentExIds)?profile.recentExIds:[]}
+// Enregistre les questions réellement jouées (appelé en fin de partie).
+function rememberExercises(ids){
+  try{
+    const fresh=(ids||[]).filter(Boolean);
+    if(!fresh.length) return;
+    const kept=recentExIds().filter(id=>fresh.indexOf(id)<0);
+    profile.recentExIds=kept.concat(fresh).slice(-RECENT_MAX);
+  }catch(e){}
+}
+/* Écarte les questions récemment jouées. Ordre préservé pour les modes où
+   il porte du sens (progression = par difficulté, adaptatif = par faiblesse). */
+function _applyCooldown(candidates,n){
+  const recent=recentExIds();
+  if(!recent.length) return candidates;
+  const rank=new Map(recent.map((id,i)=>[id,i])); // 0 = la plus ancienne
+  const fresh=candidates.filter(e=>!rank.has(e.id));
+  if(fresh.length>=n) return fresh;
+  const stale=candidates.filter(e=>rank.has(e.id)).sort((a,b)=>rank.get(a.id)-rank.get(b.id));
+  return fresh.concat(stale);
+}
+function finalizePick(candidates,n){
+  return _applyCooldown(dedupeExercises(candidates),n).slice(0,n);
+}
+
 function pickExercises(mode,lvId){
   const lv=LEVELS.find(l=>l.id===lvId);
   // Inclure les exercices AI générés (persistés dans le profil)
@@ -1278,17 +1573,22 @@ function pickExercises(mode,lvId){
   const staticPool=EX.filter(e=>e.lv===lvId);
   const pool=staticPool.concat(aiPool).concat(customPool).filter(isPlayableEx);
   if(mode==='progression'){
-    return shuffle(EX.filter(e=>e.lv!=='cp'&&isPlayableEx(e))).sort((a,b)=>a.diff-b.diff).slice(0,10);
+    // finalizePick d'abord (dédoublonnage + cooldown), tri par difficulté ensuite :
+    // l'ordre croissant doit rester vrai sur les 10 questions réellement tirées.
+    return finalizePick(shuffle(EX.filter(e=>e.lv!=='cp'&&isPlayableEx(e))),10)
+      .sort((a,b)=>a.diff-b.diff);
   }
   if(mode==='adaptive'){
-    // Priorise les exercices rat\u00e9s ou jamais vus
-    return pool.slice().sort((a,b)=>{
+    // Priorise les exercices rat\u00e9s ou jamais vus.
+    // Ici on d\u00e9doublonne mais on n'applique PAS le cooldown : le mode adaptatif
+    // existe justement pour refaire les questions rat\u00e9es r\u00e9cemment.
+    return dedupeExercises(pool.slice().sort((a,b)=>{
       const sa=profile.exerciseStats[a.id]||{att:0,cor:0};
       const sb=profile.exerciseStats[b.id]||{att:0,cor:0};
       const scA=sa.att>0?sa.cor/sa.att:0.5;
       const scB=sb.att>0?sb.cor/sb.att:0.5;
       return scA-scB;
-    }).slice(0,10);
+    })).slice(0,10);
   }
   // Training / Challenge : rotation intelligente
   // S\u00e9pare : jamais vus vs d\u00e9j\u00e0 vus
@@ -1302,8 +1602,8 @@ function pickExercises(mode,lvId){
   });
   // Priorit\u00e9 aux jamais vus, puis les plus anciens
   let candidates=shuffle(unseen);
-  if(candidates.length<10) candidates=candidates.concat(seen.slice(0,10-candidates.length));
-  return candidates.slice(0,10);
+  if(candidates.length<10) candidates=candidates.concat(seen);
+  return finalizePick(candidates,10);
 }
 
 async function startGame(mode){
@@ -1322,12 +1622,83 @@ async function startGame(mode){
     }
   }
   state.battleCode=null; // partie normale : ne jamais soumettre à une battle quittée en route
-  state.mode=mode;state.exercises=exercises;state.idx=0;state.selected=null;state.score=0;state.streak=0;state.maxStreak=0;state.results=[];state.timer=60;state.gameOver=false;state.startTime=Date.now();state.detailOpen=false;state.sessionXP=0;state.sessionCristaux=0;
+  state.mode=mode;state.exercises=exercises;state.idx=0;state.selected=null;state.score=0;state.streak=0;state.maxStreak=0;state.results=[];state.timer=60;state.gameOver=false;state.startTime=Date.now();state.detailOpen=false;state.sessionXP=0;state.sessionCristaux=0;state.chestsOpen=[];
   if(state.level&&state.level!=='cp') maybeAutoGenerate(state.level);
   navigate('game');
 }
 
+/* ── VISUEL PÉDAGOGIQUE D'UNE QUESTION (ÉTAPE 12/13) ──
+   Le visuel se place TOUJOURS avant les réponses et n'est affiché que
+   s'il apporte vraiment une information (drapeau à reconnaître, grille à
+   compter…). Rien à télécharger : tout est rendu en emoji ou en SVG, donc
+   ça marche hors ligne et ça ne coûte rien en bande passante. */
+function renderQuestionVisual(ex){
+  if(!ex) return '';
+  if(ex.flag){
+    return '<div class="q-visual q-visual-flag" role="img" aria-label="Drapeau à reconnaître">'+esc(ex.flag)+'</div>';
+  }
+  if(ex.visual&&ex.visualKind==='grid'){
+    const rows=String(ex.visual).split('\n').map(r=>'<div class="q-grid-row">'+esc(r)+'</div>').join('');
+    return '<div class="q-visual q-visual-grid" role="img" aria-label="'+esc(ex.visualAlt||'Grille de symboles à observer')+'">'+rows+'</div>';
+  }
+  return '';
+}
+
 /* ════════ GAME SCREEN ════════ */
+/* ══════ CHEMIN DE QUÊTE (accès gamifié aux questions suivantes) ══════
+   Au lieu d'une barre de progression muette, l'enfant voit le chemin complet :
+   les questions déjà gagnées deviennent des étoiles, celle en cours pulse,
+   les suivantes restent fermées, et des coffres jalonnent le parcours.
+   Objectif : donner envie d'ouvrir la case d'après. Purement visuel —
+   aucune question n'est réellement bloquée, le moteur de jeu est inchangé. */
+const QUEST_CHESTS=[2,5,9]; // index 0-based : coffres après les Q3, Q6 et Q10
+
+function renderQuestPath(){
+  const total=state.exercises.length;
+  if(!total) return '';
+  const answered=state.idx+(state.selected!==null?1:0); // cases résolues
+  const cells=[];
+  for(let i=0;i<total;i++){
+    const isChest=QUEST_CHESTS.indexOf(i)>=0;
+    const r=state.results[i];
+    let cls='qp-cell',inner;
+    if(i<answered){
+      if(r&&r.correct){cls+=' qp-ok';inner=isChest?'\u{1F48E}':'★'}
+      else{cls+=' qp-ko';inner=isChest?'\u{1F48E}':'·'}
+    }else if(i===answered){
+      cls+=' qp-now';inner=String(i+1);
+    }else{
+      cls+=' qp-lock';inner=isChest?'\u{1F381}':'';
+    }
+    cells.push('<span class="'+cls+'" aria-hidden="true">'+inner+'</span>');
+  }
+  const done=state.results.filter(r=>r&&r.correct).length;
+  return '<div class="qp-path" role="img" aria-label="Question '+Math.min(answered+1,total)+' sur '+total+', '+done+' réussies">'+cells.join('')+'</div>';
+}
+
+/* Récompense de palier : ouvre le coffre atteint et crédite des cristaux.
+   Bonus renforcé si le tronçon depuis le coffre précédent est parfait. */
+function questChestAward(){
+  const i=state.idx;
+  const ci=QUEST_CHESTS.indexOf(i);
+  if(ci<0) return;
+  if(!Array.isArray(state.chestsOpen)) state.chestsOpen=[];
+  if(state.chestsOpen.indexOf(i)>=0) return;
+  state.chestsOpen.push(i);
+  const from=ci===0?0:QUEST_CHESTS[ci-1]+1;
+  let good=0,tot=0;
+  for(let k=from;k<=i;k++){
+    const r=state.results[k];
+    if(r){tot++;if(r.correct)good++}
+  }
+  if(!tot) return;
+  const perfect=good===tot;
+  const bonus=perfect?15:good*3;
+  if(bonus<=0){toast('\u{1F381} Coffre manqué — le prochain est à toi !');return}
+  state.sessionCristaux+=bonus;
+  toast(perfect?'\u{1F381} Coffre PARFAIT ! \u{1F48E} +'+bonus:'\u{1F381} Coffre ouvert \u{1F48E} +'+bonus, perfect?'win':'');
+}
+
 function renderGame(){
   // Anti "réponse pré-surlignée" : reset de selected dès que l'index change
   // (équivalent useEffect sur questionIndex).
@@ -1356,7 +1727,8 @@ function renderGame(){
     <span>Question ${state.idx+1}/${total}</span>
     <span>Score : ${state.score}/${state.idx+(state.selected!==null?1:0)}</span>
     ${streakHTML}</div>
-    <div class="progress-track"><div class="progress-fill" style="width:${pct}%"></div></div></div>
+    <div class="progress-track"><div class="progress-fill" style="width:${pct}%"></div></div>
+    ${renderQuestPath()}</div>
   ${timerHTML}
   <div class="card fade-in mt-3">
     <div class="row gap-2 mb-4" style="flex-wrap:wrap">
@@ -1364,7 +1736,7 @@ function renderGame(){
       <span class="stars">${'\u2605'.repeat(ex.diff)}${'\u2606'.repeat(5-ex.diff)}</span>
       ${levelBadge}
     </div>
-    ${ex.flag?`<div style="font-size:clamp(4rem,20vw,6rem);line-height:1.1;text-align:center;margin:4px 0 10px;filter:drop-shadow(0 4px 12px rgba(0,0,0,.35))">${esc(ex.flag)}</div>`:''}
+    ${renderQuestionVisual(ex)}
     <p style="font-size:clamp(1rem,2.5vw,1.2rem);color:#faf5ff;line-height:1.7;margin-bottom:24px">${esc(ex.q)}</p>
     ${ex.type==='map-country'
       ?renderCountryMapArea(ex)
@@ -1426,6 +1798,7 @@ function submitInputAnswer(){
     state.streak=0;
     if(state.mode==='progression')state.gameOver=true;
   }
+  questChestAward();
   renderGame();
   showExplanation(ex,correct);
   if(correct){
@@ -1491,6 +1864,7 @@ function selectCountryAnswer(id){
     state.streak=0;
     if(state.mode==='progression')state.gameOver=true;
   }
+  questChestAward();
   renderGame();
   showExplanation(ex,correct);
   if(correct){
@@ -1516,6 +1890,7 @@ function selectMapAnswer(id){
     state.streak=0;
     if(state.mode==='progression')state.gameOver=true;
   }
+  questChestAward();
   renderGame();
   showExplanation(ex,correct);
   if(correct){
@@ -1545,6 +1920,7 @@ function selectAnswer(i){
     state.streak=0;
     if(state.mode==='progression')state.gameOver=true;
   }
+  questChestAward();
   renderGame();
   showExplanation(ex,correct);
   // Bonne réponse → passage automatique à la question suivante.
@@ -1572,7 +1948,7 @@ function showExplanation(ex,correct){
   const isLast=state.gameOver||state.idx>=state.exercises.length-1;
   // Bonne r\u00e9ponse : passage auto (message discret). Mauvaise : bouton Suivant.
   const footerHTML=correct
-    ?`<p class="sub" style="margin-top:16px;color:#8b7ec8;font-style:italic">${isLast?'R\u00e9sultats dans un instant\u2026':'Question suivante dans un instant\u2026'}</p>`
+    ?`<p class="sub qp-unlock" style="margin-top:16px;font-style:italic">${isLast?'R\u00e9sultats dans un instant\u2026':'\u{1F513} Tu d\u00e9bloques la question suivante\u2026'}</p>`
     :`<button class="btn-fire mt-6" onclick="nextQuestion()">${isLast?'Voir mes r\u00e9sultats \u2192':'Question suivante \u2192'}</button>`;
   el.innerHTML=`<div class="card fade-in mt-6">
     <div class="row gap-2 mb-2"><span style="font-size:1.5rem">${correct?'\u2705':'\u274C'}</span>
@@ -1613,6 +1989,13 @@ function finishGame(abandoned){
   const d={score:state.score,total,maxStreak:state.maxStreak,results:state.results,mode:state.mode,abandoned:!!abandoned,duration,date:new Date().toISOString(),level:state.level,xp:state.sessionXP,cristaux:state.sessionCristaux};
   state.gameData=d;
   if(total>0){
+    // Déblocage progressif : 3 parties à 80 % ouvrent le palier suivant.
+    const _unlock=checkLevelUnlock(state.level,state.score,total);
+    if(_unlock&&_unlock.unlocked){
+      setTimeout(()=>toast('\u{1F389} Nouveau niveau d\u00e9bloqu\u00e9 : '+_unlock.unlocked.name+' !','win'),900);
+    }else if(_unlock&&_unlock.progress){
+      setTimeout(()=>toast('\u{1F525} '+_unlock.progress+'/3 parties r\u00e9ussies \u2014 encore '+(_unlock.need-_unlock.progress)+' pour ouvrir \u00ab '+_unlock.next.name+' \u00bb'),900);
+    }
     const oldStage=getCurrentStage();
     // Per-royaume stats
     const rid=getRoyaumeId(state.level);
@@ -1677,6 +2060,8 @@ function finishGame(abandoned){
       if(r.correct)profile.exerciseStats[eid].cor++;
       profile.exerciseStats[eid].lastSeen=d.date;
     });
+    // Mémoire anti-doublon : ces questions ne ressortiront pas tout de suite.
+    rememberExercises(state.results.map(r=>r.ex&&r.ex.id).filter(Boolean));
     // Badges
     const newBadges=[];
     BADGES.forEach(b=>{
@@ -1880,6 +2265,24 @@ function renderParent(){
     <div class="stat-card"><div class="stat-val" style="color:${pct>=60?'#22c55e':'#ef4444'}">${pct}%</div><div class="stat-label">R\u00e9ussite</div></div>
     <div class="stat-card"><div class="stat-val" style="color:#fbbf24">${totalMinutes}m</div><div class="stat-label">Temps total</div></div>
   </div></div>
+  ${(function(){
+    const g=gradeByRank(profile.grade);
+    const rows=SUBJECTS.filter(su=>(su.levels||[]).some(l=>levelMinGrade(l)!==null)).map(su=>{
+      const top=topOpenLevel(su.id), nxt=nextLockedLevel(su.id);
+      const prog=(profile.unlockProgress||{})[top&&top.id]||0;
+      if(!top) return '';
+      return '<div class="row-between" style="padding:8px 0;border-top:1px solid rgba(255,255,255,0.06)">'
+        +'<div class="flex-1" style="min-width:0"><div style="color:#faf5ff;font-weight:600">'+su.icon+' '+esc(su.name)+'</div>'
+        +'<div class="sub" style="font-size:.72rem">Niveau ouvert : '+esc(top.name)+(nxt?(' \u00b7 prochain : '+esc(nxt.name)+' ('+prog+'/3)'):' \u00b7 tout est ouvert \u2705')+'</div></div></div>';
+    }).join('');
+    return '<div class="card mb-4" style="border-color:#fbbf24">'
+      +'<h3 class="fredoka" style="font-size:.85rem;color:#fbbf24;margin-bottom:8px;letter-spacing:.1em;text-transform:uppercase">\u{1F393} Niveau et \u00e2ge</h3>'
+      +(g
+        ?'<p style="color:#faf5ff;font-size:.85rem;margin-bottom:4px">Classe d\u00e9clar\u00e9e : <b style="color:#fbbf24">'+g.name+'</b> ('+g.age+' ans). Les niveaux sup\u00e9rieurs se d\u00e9bloquent apr\u00e8s 3 parties r\u00e9ussies \u00e0 80 %.</p>'+rows
+        :'<p style="color:#faf5ff;font-size:.85rem">Aucune classe renseign\u00e9e : <b>tous les niveaux sont ouverts</b>. Indiquez la classe pour activer la progression guid\u00e9e.</p>')
+      +'<button class="btn-stone btn-small mt-3" onclick="parentalGate(function(){navigate(\'gradeAsk\')})">'+(g?'Changer la classe':'Indiquer la classe')+'</button>'
+    +'</div>';
+  })()}
   ${weak.length>0?`<div class="card mb-4"><h3 class="fredoka" style="font-size:.85rem;color:#ef4444;margin-bottom:12px;letter-spacing:.1em;text-transform:uppercase">\u26A0\uFE0F Domaines \u00e0 travailler</h3>
   ${weak.map(([c,s])=>{const p=Math.round(s.cor/s.att*100);return `<div class="weak-cat"><div><div style="color:#fca5a5;font-weight:700">${c}</div><div style="font-size:.75rem;color:#8b7ec8">${s.cor}/${s.att} bonnes r\u00e9ponses</div></div><div style="color:#ef4444;font-weight:700;font-family:'Cinzel'">${p}%</div></div>`}).join('')}
   <p style="font-size:.8rem;color:#8b7ec8;margin-top:8px;font-style:italic">Conseil : lancez le \u00ab Mode adaptatif \u00bb pour travailler ces domaines.</p></div>`:''}
@@ -2654,8 +3057,13 @@ function normalizeBattleCode(raw){
   const url=s.match(/[?&]battle=([^&\s]+)/i);
   if(url) s=decodeURIComponent(url[1]);
   s=s.toUpperCase().replace(/[^A-Z0-9]/g,'');
-  const m=s.match(/^([A-Z]+)(\d{2})$/);
-  return m?m[1]+'-'+m[2]:s;
+  // Format historique MOT+2 chiffres (DRAGON80 \u2192 DRAGON-80). Le seuil de
+  // 6 caract\u00e8res \u00e9vite de transformer un futur code court type "AB12".
+  if(s.length>=6){
+    const m=s.match(/^([A-Z]+)(\d{2})$/);
+    if(m) return m[1]+'-'+m[2];
+  }
+  return s;
 }
 function randomBattleCode(){
   const w=BATTLE_WORDS[Math.floor(Math.random()*BATTLE_WORDS.length)];
@@ -2673,6 +3081,138 @@ async function pushBattle(battle){
   const aid=await battleAid(battle.code);
   await fetch(API_BASE+'/profile/'+aid,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(battle)});
 }
+/* ════════ ANALYTICS PRODUIT (local, sans SDK tiers) ════════
+   Aucune donnée personnelle n'est collectée : juste des compteurs
+   d'événements pour mesurer ce qui marche. Ne lève JAMAIS d'exception. */
+function track(event,props){
+  try{
+    const e={e:String(event),t:Date.now()};
+    if(props&&typeof props==='object'){
+      for(const k of Object.keys(props)){
+        const v=props[k];
+        if(typeof v==='number'||typeof v==='boolean') e[k]=v;
+        else if(typeof v==='string'&&v.length<=40) e[k]=v;
+      }
+    }
+    const arr=JSON.parse(localStorage.getItem('royaume_events')||'[]');
+    arr.push(e);
+    while(arr.length>200) arr.shift();
+    localStorage.setItem('royaume_events',JSON.stringify(arr));
+  }catch(err){}
+}
+function analyticsDump(){try{return JSON.parse(localStorage.getItem('royaume_events')||'[]')}catch(e){return[]}}
+
+/* ════════ CONTENU DES BATTLES — décorrélé du niveau scolaire ════════
+   CHOIX PRODUIT : un CE2 et un 5e ne doivent pas être départagés par leur
+   classe mais par leur réflexion, leur mémoire et leur rapidité. Les
+   battles piochent donc par défaut dans des pools TRANSVERSES, identiques
+   pour les deux joueurs — le problème d'équilibrage de niveau disparaît.
+   Le mode « programme scolaire » reste disponible (même niveau imposé aux
+   deux joueurs, comportement historique inchangé). */
+const BATTLE_DISCIPLINES=[
+  {id:'logique', name:'Logique',  icon:'\u{1F9E0}', color:'#a78bfa', lv:'logique',
+   desc:'Suites, intrus, énigmes'},
+  {id:'memory',  name:'Memory',   icon:'\u{1F0CF}', color:'#34d399', mode:'memory',
+   desc:'8 paires, mêmes cartes'},
+  {id:'monde',   name:'Monde',    icon:'\u{1F30D}', color:'#38bdf8', lv:'geo-drapeaux',
+   desc:'Drapeaux, pays, capitales'},
+  {id:'eclair',  name:'Éclair',   icon:'⚡', color:'#fbbf24', gen:'eclair',
+   desc:'Calcul mental rapide'},
+  {id:'observation', name:'Observation', icon:'\u{1F440}', color:'#f472b6', gen:'observation',
+   desc:'Compter et repérer vite'}
+];
+function battleDiscipline(id){return BATTLE_DISCIPLINES.find(d=>d.id===id)||null}
+
+/* Générateur DÉTERMINISTE : à partir du code de la battle, les deux
+   appareils fabriquent exactement les mêmes calculs — rien à stocker,
+   aucune divergence possible entre les deux téléphones. */
+function _seedFromCode(code){
+  let h=2166136261>>>0; const c=String(code||'');
+  for(let i=0;i<c.length;i++){h^=c.charCodeAt(i);h=Math.imul(h,16777619)>>>0}
+  return h>>>0;
+}
+function _mulberry32(a){
+  return function(){
+    a=(a+0x6D2B79F5)>>>0; let t=a;
+    t=Math.imul(t^(t>>>15),t|1); t^=t+Math.imul(t^(t>>>7),t|61);
+    return ((t^(t>>>14))>>>0)/4294967296;
+  };
+}
+function genEclairQuestions(code,n){
+  const rnd=_mulberry32(_seedFromCode(code)); const out=[];
+  for(let i=0;i<n;i++){
+    const kind=Math.floor(rnd()*3); let a,b,res,sym;
+    if(kind===0){a=2+Math.floor(rnd()*48);b=2+Math.floor(rnd()*48);res=a+b;sym='+'}
+    else if(kind===1){a=10+Math.floor(rnd()*60);b=2+Math.floor(rnd()*(a-2));res=a-b;sym='−'}
+    else{a=2+Math.floor(rnd()*9);b=2+Math.floor(rnd()*9);res=a*b;sym='×'}
+    const set=new Set([res]);
+    while(set.size<4){
+      const off=(rnd()<0.5?-1:1)*(1+Math.floor(rnd()*9));
+      const v=res+off; if(v>=0) set.add(v);
+    }
+    const ch=Array.from(set);
+    for(let k=ch.length-1;k>0;k--){const j=Math.floor(rnd()*(k+1));const t=ch[k];ch[k]=ch[j];ch[j]=t}
+    out.push({id:'ecl_'+code+'_'+i,lv:'eclair',cat:'Calcul Éclair',diff:2,
+      q:a+' '+sym+' '+b+' = ?',ch:ch.map(String),ans:ch.indexOf(res),
+      se:a+' '+sym+' '+b+' = '+res,sk:'Calcul mental'});
+  }
+  return out;
+}
+
+/* ── ÉPREUVE OBSERVATION & VITESSE (générée, donc toujours équitable) ──
+   Compter des formes, repérer l'intrus visuel : ça ne s'apprend pas à
+   l'école — un CP attentif peut battre un 5e distrait. Comme le Calcul
+   Éclair, tout est fabriqué à partir du code de la battle, donc les deux
+   téléphones voient exactement la même grille. */
+const OBS_SETS=[
+  ['\u{1F534}','\u{1F535}'],['\u{1F7E2}','\u{1F7E1}'],['\u{1F536}','\u{1F537}'],
+  ['\u2B50','\u2728'],['\u{1F34E}','\u{1F345}'],['\u{1F431}','\u{1F436}'],
+  ['\u{1F338}','\u{1F33C}'],['\u{1F41D}','\u{1F41E}']
+];
+function genObservationQuestions(code,n){
+  const rnd=_mulberry32(_seedFromCode('obs:'+code));
+  const shuf=(arr)=>{for(let k=arr.length-1;k>0;k--){const j=Math.floor(rnd()*(k+1));const t=arr[k];arr[k]=arr[j];arr[j]=t}return arr};
+  const out=[];
+  for(let i=0;i<n;i++){
+    const pair=OBS_SETS[Math.floor(rnd()*OBS_SETS.length)];
+    const A=pair[0],B=pair[1];
+    if(Math.floor(rnd()*2)===0){
+      // Compter : combien de A dans la grille ?
+      const total=12+Math.floor(rnd()*9);
+      const nA=3+Math.floor(rnd()*Math.min(7,total-4));
+      const cells=[];
+      for(let k=0;k<total;k++) cells.push(k<nA?A:B);
+      shuf(cells);
+      const rows=[];
+      for(let k=0;k<cells.length;k+=6) rows.push(cells.slice(k,k+6).join(' '));
+      const set=new Set([nA]);
+      while(set.size<4){const v=nA+(rnd()<0.5?-1:1)*(1+Math.floor(rnd()*3));if(v>0)set.add(v)}
+      const ch=shuf(Array.from(set)).map(String);
+      out.push({id:'obs_'+code+'_'+i,lv:'observation',cat:'Observation',diff:2,
+        q:'Combien de '+A+' vois-tu ?',visual:rows.join('\n'),visualKind:'grid',
+        ch:ch,ans:ch.indexOf(String(nA)),se:'Il y en avait exactement '+nA+'.',sk:'Compter vite'});
+    }else{
+      // Repérer l'intrus : une seule case diffère.
+      const total=8+Math.floor(rnd()*5);
+      const pos=Math.floor(rnd()*total);
+      const cells=[];
+      for(let k=0;k<total;k++) cells.push(k===pos?B:A);
+      const rows=[];
+      for(let k=0;k<cells.length;k+=6){
+        rows.push(cells.slice(k,k+6).map((c,idx)=>c+String(k+idx+1)).join('  '));
+      }
+      const good=String(pos+1);
+      const set=new Set([good]);
+      while(set.size<4){set.add(String(1+Math.floor(rnd()*total)))}
+      const ch=shuf(Array.from(set));
+      out.push({id:'obs_'+code+'_'+i,lv:'observation',cat:'Observation',diff:3,
+        q:'Quel numéro est différent des autres ?',visual:rows.join('\n'),visualKind:'grid',
+        ch:ch,ans:ch.indexOf(good),se:'Le numéro '+good+' était un '+B+' au milieu des '+A+'.',sk:'Repérer vite'});
+    }
+  }
+  return out;
+}
+
 // Base PUBLIQUE du jeu : toujours le site web. Dans l'app iOS,
 // window.location.origin vaut capacitor://localhost → lien mort. Jamais ça.
 const PUBLIC_BASE='https://jmcmg-creator.github.io/kangourou-maths/';
@@ -2813,10 +3353,16 @@ function challengeFriend(name){
 // \u2500\u2500 Cr\u00e9ation \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
 // inviteName (optionnel) : d\u00e9pose aussi un d\u00e9fi dans la bo\u00eete de cet ami.
 async function createBattle(lvId,count,inviteName){
-  const lv=LEVELS.find(l=>l.id===lvId);
+  // Discipline « Éclair » : les questions ne viennent pas d'un pool mais
+  // sont fabriquées à partir du code de la battle → strictement identiques
+  // sur les deux téléphones, sans rien stocker.
+  const gen=(lvId==='eclair'||lvId==='observation')?lvId:null;
+  const GEN_LABEL={eclair:{name:'\u26a1 Calcul \u00c9clair',sub:'Tous \u00e2ges'},observation:{name:'\u{1F440} Observation',sub:'Tous \u00e2ges'}};
+  const lv=gen?GEN_LABEL[gen]:LEVELS.find(l=>l.id===lvId);
   if(!lv){alert('Choisis d\'abord un niveau.');return}
-  const pool=EX.filter(e=>e.lv===lvId&&isPlayableEx(e)&&Array.isArray(e.ch)&&e.ch.length===4);
-  if(pool.length<count){alert('Pas assez de questions pour ce niveau ('+pool.length+' dispo). Choisis un autre niveau ou 5 questions.');return}
+  // dedupeExercises : deux joueurs ne doivent jamais tomber deux fois sur le même énoncé.
+  const pool=gen?[]:dedupeExercises(EX.filter(e=>e.lv===lvId&&isPlayableEx(e)&&Array.isArray(e.ch)&&e.ch.length===4));
+  if(!gen&&pool.length<count){alert('Pas assez de questions pour ce niveau ('+pool.length+' dispo). Choisis un autre niveau ou 5 questions.');return}
   app.innerHTML='<div class="card text-center" style="margin-top:60px"><div class="dragon-emoji float">\u2694\ufe0f</div><h2 class="title">Pr\u00e9paration de la battle\u2026</h2></div>';
   // Code unique : on retire si une battle existe d\u00e9j\u00e0 sous ce code.
   let code=randomBattleCode();
@@ -2825,8 +3371,9 @@ async function createBattle(lvId,count,inviteName){
     if(!existing||!existing.battle) break;
     code=randomBattleCode();
   }
-  const exIds=shuffle(pool).slice(0,count).map(e=>e.id);
+  const exIds=gen?[]:shuffle(pool).slice(0,count).map(e=>e.id);
   const battle={battle:true,code,createdAt:new Date().toISOString(),level:lvId,lvName:(lv.name+' \u2014 '+(lv.sub||'')),count,exIds,hostName:playerName(),players:{}};
+  if(gen) battle.gen=gen;
   try{await pushBattle(battle)}catch(e){alert('\ud83c\udf10 Impossible de cr\u00e9er la battle (connexion ?). R\u00e9essaie.');navigate('battleHome');return}
   // M\u00e9morise dans l'historique local (r\u00e9sultats compl\u00e9t\u00e9s plus tard).
   if(!profile.battleHistory)profile.battleHistory=[];
@@ -2837,6 +3384,7 @@ async function createBattle(lvId,count,inviteName){
     const ok=await sendBattleInvite(inviteName,battle);
     if(ok) alert('\u2694\ufe0f D\u00e9fi envoy\u00e9 \u00e0 '+inviteName+' ! Il/elle le verra en ouvrant son app.');
   }
+  track('battle_code_created',{discipline:String(lvId).slice(0,20),count:count});
   navigate('battleResults',{battleViewCode:code});
 }
 
@@ -2858,14 +3406,24 @@ async function joinBattle(rawCode){
 
 // \u2500\u2500 Jouer \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
 function startBattleGame(battle){
-  // R\u00e9sout les questions par id \u2014 les deux appareils ont le m\u00eame pool statique.
-  const byId={};EX.forEach(e=>{byId[e.id]=e});
-  const exercises=battle.exIds.map(id=>byId[id]).filter(e=>isPlayableEx(e));
+  // Deux sources possibles, toutes deux identiques sur les deux appareils :
+  //  - gen : questions fabriquées à partir du code (calcul Éclair) ;
+  //  - exIds : identifiants du pool statique commun.
+  let exercises;
+  if(battle.gen==='eclair'){
+    exercises=genEclairQuestions(battle.code,battle.count||5);
+  }else if(battle.gen==='observation'){
+    exercises=genObservationQuestions(battle.code,battle.count||5);
+  }else{
+    const byId={};EX.forEach(e=>{byId[e.id]=e});
+    exercises=(battle.exIds||[]).map(id=>byId[id]).filter(e=>isPlayableEx(e));
+  }
+  exercises=dedupeExercises(exercises);
   if(exercises.length===0){alert('Questions introuvables \u2014 vos versions de l\'app diff\u00e8rent. Mettez \u00e0 jour puis recr\u00e9ez une battle.');return}
   state.battleCode=battle.code;
   state.level=battle.level;
   state.mode='battle';
-  state.exercises=exercises;state.idx=0;state.selected=null;state.score=0;state.streak=0;state.maxStreak=0;state.results=[];state.timer=60;state.gameOver=false;state.startTime=Date.now();state.detailOpen=false;state.sessionXP=0;state.sessionCristaux=0;
+  state.exercises=exercises;state.idx=0;state.selected=null;state.score=0;state.streak=0;state.maxStreak=0;state.results=[];state.timer=60;state.gameOver=false;state.startTime=Date.now();state.detailOpen=false;state.sessionXP=0;state.sessionCristaux=0;state.chestsOpen=[];
   navigate('game');
 }
 
@@ -2972,8 +3530,17 @@ function renderBattleHome(){
     +'<p class="sub">M\u00eames questions, chacun son appareil. Qui sera le champion ?</p>'
   +'</div>'
   +'<div class="card mb-4" style="border-color:#f472b6">'
-    +'<h3 class="fredoka" style="font-size:.85rem;color:#f472b6;margin-bottom:10px;letter-spacing:.1em;text-transform:uppercase">\ud83c\udfaf Cr\u00e9er une battle</h3>'
-    +'<label class="sub" style="display:block;margin-bottom:4px">Niveau / mati\u00e8re</label>'
+    +'<h3 class="fredoka" style="font-size:.85rem;color:#f472b6;margin-bottom:6px;letter-spacing:.1em;text-transform:uppercase">\ud83c\udfaf Cr\u00e9er une battle</h3>'
+    +'<p class="sub" style="font-size:.75rem;margin-bottom:10px">Ces d\u00e9fis ne d\u00e9pendent pas de la classe : petits et grands ont leurs chances.</p>'
+    +'<div class="battle-disc-grid">'+BATTLE_DISCIPLINES.map(function(d){
+      return '<button class="battle-disc" data-d="'+d.id+'" onclick="startDisciplineBattle(this.dataset.d)" style="--dc:'+d.color+'">'
+        +'<span class="battle-disc-ico">'+d.icon+'</span>'
+        +'<span class="battle-disc-name">'+esc(d.name)+'</span>'
+        +'<span class="battle-disc-desc">'+esc(d.desc)+'</span>'
+      +'</button>';
+    }).join('')+'</div>'
+    +'<div class="divider" style="margin:14px 0"></div>'
+    +'<label class="sub" style="display:block;margin-bottom:4px">\ud83d\udcda Ou r\u00e9viser le programme (m\u00eame niveau pour les deux)</label>'
     +'<select class="name-prompt" id="battleLv">'+lvOptions+'</select>'
     +'<label class="sub" style="display:block;margin:12px 0 4px">Nombre de questions</label>'
     +'<div class="row gap-2">'
@@ -2981,8 +3548,6 @@ function renderBattleHome(){
       +'<button class="btn-stone" style="flex:1" id="battleCount10" onclick="_setBattleCount(10)">\ud83c\udff0 Classique \u2014 10</button>'
     +'</div>'
     +'<button class="btn-fire mt-4" onclick="createBattle(document.getElementById(\'battleLv\').value,window._battleCount||5)">\u2694\ufe0f Cr\u00e9er et obtenir le code</button>'
-    +'<div class="divider" style="margin:14px 0"></div>'
-    +'<button class="btn-stone" style="width:100%;border-color:#34d399;color:#34d399" onclick="createMemoryBattle()">\ud83c\udccf Ou une battle MEMORY \u2014 8 paires d\'animaux, m\u00eames cartes pour les deux !</button>'
   +'</div>'
   +(function(){
     const friends=Object.values(profile.friends||{}).sort((a,b)=>(b.lastBattle||'').localeCompare(a.lastBattle||''));
@@ -3016,6 +3581,15 @@ function renderBattleHome(){
   +historyHTML
   +'<button class="btn-stone" onclick="navigate(\'home\')">\u2190 Retour</button>';
   setTimeout(()=>_setBattleCount(window._battleCount||5),30);
+}
+// Lance une battle « contenu transverse » (logique, memory, monde, éclair).
+function startDisciplineBattle(id){
+  const d=battleDiscipline(id);
+  if(!d) return;
+  const n=window._battleCount||5;
+  track('battle_discipline_picked',{discipline:id});
+  if(d.mode==='memory') return createMemoryBattle();
+  return createBattle(d.gen?d.id:d.lv,n);
 }
 function _setBattleCount(n){
   window._battleCount=n;

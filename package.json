@@ -6,7 +6,8 @@
   "type": "module",
   "scripts": {
     "verify:questions": "node scripts/verify-questions.mjs",
-    "verify:questions:sample": "LIMIT=20 node scripts/verify-questions.mjs"
+    "verify:questions:sample": "LIMIT=20 node scripts/verify-questions.mjs",
+    "test": "node scripts/test-battle.mjs"
   },
   "devDependencies": {
     "@anthropic-ai/sdk": "^0.40.0"
