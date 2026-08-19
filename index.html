@@ -350,6 +350,33 @@ header h1{
 /* ══ PROGRESS ══ */
 .progress-track{width:100%;height:8px;border-radius:4px;background:rgba(255,255,255,0.06);overflow:hidden}
 /* ── Chemin de quête : accès gamifié aux questions suivantes ── */
+/* ── Journal des erreurs (espace parent) ── */
+.miss-tabs{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px}
+.miss-tab{background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.10);color:#c4b5fd;
+  border-radius:999px;padding:5px 10px;font-size:.74rem;font-weight:600;cursor:pointer;font-family:inherit}
+.miss-tab.on{background:rgba(248,113,113,.16);border-color:rgba(248,113,113,.45);color:#fecaca}
+.miss-n{background:rgba(0,0,0,.25);border-radius:999px;padding:1px 6px;margin-left:4px;font-size:.68rem}
+.miss-card{background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);
+  border-left:3px solid #f87171;border-radius:14px;padding:12px;margin-bottom:10px}
+.miss-answers{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
+.miss-given,.miss-right{flex:1 1 140px;border-radius:10px;padding:7px 10px;min-width:0}
+.miss-given{background:rgba(239,68,68,.12);border:1px solid rgba(239,68,68,.28)}
+.miss-right{background:rgba(34,197,94,.12);border:1px solid rgba(34,197,94,.28)}
+.miss-given span,.miss-right span{display:block;font-size:.64rem;letter-spacing:.06em;text-transform:uppercase;opacity:.75}
+.miss-given span{color:#fca5a5}.miss-right span{color:#86efac}
+.miss-given b{color:#fecaca;font-size:.84rem;word-break:break-word}
+.miss-right b{color:#bbf7d0;font-size:.84rem;word-break:break-word}
+.miss-why{color:#faf5ff;font-size:.8rem;line-height:1.5;margin-top:9px;
+  background:rgba(96,165,250,.10);border:1px solid rgba(96,165,250,.22);border-radius:10px;padding:7px 10px}
+.miss-why b{color:#93c5fd}
+.miss-trap{color:#faf5ff;font-size:.78rem;line-height:1.5;margin-top:6px;
+  background:rgba(247,160,32,.10);border:1px solid rgba(247,160,32,.22);border-radius:10px;padding:7px 10px}
+.miss-trap b{color:#fbbf24}
+html.light .miss-card{background:rgba(36,27,82,0.04);border-color:rgba(36,27,82,0.10);border-left-color:#ef4444}
+html.light .miss-tab{background:rgba(36,27,82,0.05);border-color:rgba(36,27,82,0.12);color:#5b4b9a}
+html.light .miss-why,html.light .miss-trap{color:#241b52}
+html.light .miss-given b{color:#b91c1c}html.light .miss-right b{color:#15803d}
+.map-hit{fill:transparent;stroke:none;cursor:pointer}
 .qp-path{display:flex;gap:5px;flex-wrap:wrap;margin-top:8px;align-items:center}
 .qp-cell{width:22px;height:22px;flex:0 0 22px;border-radius:7px;display:flex;align-items:center;justify-content:center;
   font-size:.72rem;font-weight:700;line-height:1;
@@ -827,7 +854,7 @@ html.light .btn-stone:hover{background:rgba(180,83,9,0.08);border-color:rgba(180
 <script src="config.js?v=2"></script>
 <script src="supa.js?v=1"></script>
 <script src="qr.js?v=1"></script>
-<script src="game.js?v=45"></script>
+<script src="game.js?v=46"></script>
 <script>
 // Service Worker : enregistré uniquement en HTTPS / localhost (sinon le navigateur refuse).
 if ('serviceWorker' in navigator && (location.protocol === 'https:' || location.hostname === 'localhost' || location.hostname === '127.0.0.1')) {

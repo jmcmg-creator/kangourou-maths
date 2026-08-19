@@ -72,11 +72,11 @@ const SUBJECTS=[
       {id:"geo-ce2",name:"La France",sub:"CE2 \u2014 R\u00e9gions & villes",icon:"\u{1F1EB}\u{1F1F7}",color:"#0ea5e9"},
       {id:"geo-cm1",name:"L'Europe",sub:"CM1 \u2014 Pays & capitales",icon:"\u{1F5FA}\uFE0F",color:"#0284c7"},
       {id:"geo-cm2",name:"Le Monde",sub:"CM2 \u2014 Continents & cultures",icon:"\u{1F30F}",color:"#0369a1"},
-      {id:"geo-drapeaux",name:"Pays & Drapeaux",sub:"Tous niveaux \u2014 Reconna\u00eetre les drapeaux",icon:"\u{1F6A9}",color:"#0ea5e9"},
-      {id:"geo-carte-drapeaux",name:"Drapeaux sur la carte",sub:"Vois le drapeau, touche le pays",icon:"\u{1F6A9}",color:"#22d3ee",noBattle:true},
-      {id:"geo-carte-france",name:"Villes de France",sub:"Place les villes sur la carte",icon:"\u{1F4CD}",color:"#06b6d4",noBattle:true},
-      {id:"geo-carte-europe",name:"Capitales d'Europe",sub:"Place les capitales sur la carte",icon:"\u{1F9ED}",color:"#0891b2",noBattle:true},
-      {id:"geo-carte-payseu",name:"Pays d'Europe",sub:"Touche le pays sur la carte",icon:"\u{1F30D}",color:"#0ea5e9",noBattle:true}
+      {id:"geo-drapeaux",name:"Pays & Drapeaux",sub:"Tous niveaux \u2014 Reconna\u00eetre les drapeaux",icon:"\u{1F6A9}",color:"#0ea5e9",alwaysOpen:true},
+      {id:"geo-carte-drapeaux",name:"Drapeaux sur la carte",sub:"Vois le drapeau, touche le pays",icon:"\u{1F6A9}",color:"#22d3ee",noBattle:true,alwaysOpen:true},
+      {id:"geo-carte-france",name:"Villes de France",sub:"Place les villes sur la carte",icon:"\u{1F4CD}",color:"#06b6d4",noBattle:true,alwaysOpen:true},
+      {id:"geo-carte-europe",name:"Capitales d'Europe",sub:"Place les capitales sur la carte",icon:"\u{1F9ED}",color:"#0891b2",noBattle:true,alwaysOpen:true},
+      {id:"geo-carte-payseu",name:"Pays d'Europe",sub:"Touche le pays sur la carte",icon:"\u{1F30D}",color:"#0ea5e9",noBattle:true,alwaysOpen:true}
     ]}
 ];
 
@@ -86,7 +86,9 @@ const SUBJECTS=[
 const LEVELS=SUBJECTS.flatMap(s=>s.levels||[]);
 
 function getSubjectForLevel(lvId){
-  for(const s of SUBJECTS) if(s.levels.find(l=>l.id===lvId)) return s;
+  // « ||[] » indispensable : certaines matières (Poésies) n'ont pas de niveaux.
+  // Sans ça, la boucle plantait sur s.levels.find et emportait tout l'appelant.
+  for(const s of SUBJECTS) if((s.levels||[]).find(l=>l.id===lvId)) return s;
   return SUBJECTS[0];
 }
 const MODES=[
@@ -861,6 +863,9 @@ const _GRADE_PATTERNS=[
 const _minGradeCache={};
 function levelMinGrade(lv){
   if(!lv) return null;
+  // Cartes et drapeaux : entraînement pur, jamais indexé sur la classe.
+  // C'est une garantie explicite, pas une déduction depuis le libellé.
+  if(lv.alwaysOpen) return null;
   if(_minGradeCache[lv.id]!==undefined) return _minGradeCache[lv.id];
   const txt=String(lv.sub||'')+' '+String(lv.name||'')+' '+String(lv.id||'');
   let min=null;
@@ -1142,6 +1147,49 @@ function subjectProgressBanner(s){
     +nextHTML+hot
   +'</div>';
 }
+
+/* ══════ JOURNAL DES ERREURS (espace parent) ══════
+   Julien veut retrouver le DÉTAIL de chaque question ratée, pas seulement des
+   pourcentages : l'énoncé complet, ce que l'enfant a répondu, la bonne réponse
+   et l'explication — pour pouvoir la refaire avec elle. */
+const MISSES_MAX=120;
+function recentMisses(){return Array.isArray(profile.recentMisses)?profile.recentMisses:[]}
+// Regroupe les erreurs par royaume, du plus récent au plus ancien.
+function missesBySubject(){
+  const groups={};
+  for(const m of recentMisses().slice().reverse()){
+    const k=m.subject||m.lv||'?';
+    if(!groups[k]) groups[k]={id:k,name:m.subjectName||m.lvName||m.cat||'Autre',icon:m.subjectIcon||'\u2753',items:[]};
+    groups[k].items.push(m);
+  }
+  return Object.values(groups).sort((a,b)=>b.items.length-a.items.length);
+}
+/* Rejouer exactement les questions ratées d'un royaume (ou toutes).
+   On retrouve l'exercice d'origine par son id dans tous les pools ; ceux qui
+   n'existent plus (question IA purgée) sont simplement ignorés. */
+function setMissSubject(id){state.missSubject=id;state.missAll=false;render()}
+function replayMisses(subjectId){
+  const pool=EX.concat(profile.aiExercises||[]).concat(profile.customExercises||[]);
+  const byId={};pool.forEach(e=>{if(e&&e.id)byId[e.id]=e});
+  const wanted=recentMisses().slice().reverse()
+    .filter(m=>!subjectId||m.subject===subjectId);
+  const seen=new Set(),list=[];
+  for(const m of wanted){
+    if(seen.has(m.id))continue;seen.add(m.id);
+    const e=byId[m.id];
+    if(e&&isPlayableEx(e))list.push(e);
+    if(list.length>=10)break;
+  }
+  if(list.length===0){toast('Ces questions ne sont plus disponibles \u2014 elles ont \u00e9t\u00e9 remplac\u00e9es.');return}
+  state.battleCode=null;
+  state.mode='revision';state.level=list[0].lv;state.exercises=dedupeExercises(list);
+  state.idx=0;state.selected=null;state.score=0;state.streak=0;state.maxStreak=0;state.results=[];
+  state.timer=60;state.gameOver=false;state.startTime=Date.now();state.detailOpen=false;
+  state.sessionXP=0;state.sessionCristaux=0;state.chestsOpen=[];
+  track('replay_misses',{count:list.length});
+  navigate('game');
+}
+// fin journal erreurs
 
 function renderSubject(){
   const s=SUBJECTS.find(x=>x.id===state.subjectId)||SUBJECTS[0];
@@ -1546,7 +1594,23 @@ const MAP_COUNTRIES={
   it:{name:"l'Italie",path:"M48.7,52.4 L50.1,53 L50.4,52.2 L52.7,51.5 L53.3,52.9 L56.7,54 L56.4,55.9 L57,57.6 L55.1,57.1 L53.2,58.5 L53.3,60.5 L53,61.6 L53.8,63.6 L56,65.7 L57.2,69 L59.9,72.2 L61.7,72.2 L62.3,73 L61.6,73.8 L63.8,75.3 L65.5,76.5 L67.6,78.6 L67.8,79.3 L67.4,80.8 L66,78.9 L64,78.2 L63,80.8 L64.7,82.3 L64.4,84.4 L63.4,84.6 L62.1,88.1 L61.2,88.4 L61.2,87.1 L61.6,85 L62.2,84.1 L61.2,81.8 L60.5,79.8 L59.5,79.3 L58.8,77.6 L57.3,76.9 L56.3,75.2 L54.5,75 L52.6,73.2 L50.5,70.6 L48.8,68.3 L48.1,64.3 L46.9,63.9 L45,62.5 L43.9,63.1 L42.5,64.9 L41.5,65.2 L41.8,63.5 L40.5,63 L39.9,59.9 L40.7,58.7 L40,57.2 L40.1,56 L41.1,56.9 L42.3,56.7 L43.6,55.3 L44,56 L45.2,55.9 L45.7,54.2 L47.4,54.7 L48.5,54.1 L48.7,52.4 Z M59,87.4 L60.8,87.1 L59.9,90.2 L60.3,91.5 L59.8,93.5 L57.9,92 L56.7,91.6 L53.4,89.5 L53.7,87.5 L56.5,87.9 L59,87.4 Z M44.5,76.4 L45.7,75.2 L47.2,78 L46.8,83.3 L45.7,83 L44.8,84.4 L43.9,83.3 L43.8,78.5 L43.2,76.2 L44.5,76.4 Z"},
   dk:{name:"le Danemark",path:"M47.4,20.1 L45.9,20.7 L44.1,20.1 L43.1,17.9 L43.1,13.8 L43.5,12.8 L44.2,11.6 L46.2,11.3 L47.1,10.2 L49,9.1 L48.9,11.1 L48.2,12.4 L48.5,13.6 L49.8,14.2 L49.2,15.7 L48.5,15.2 L46.8,18.1 L47.4,20.1 Z"},
   gb:{name:"le Royaume-Uni",path:"M9.1,24.5 L7.3,23.7 L5.8,23.8 L6.3,21.6 L5.8,19.5 L7.8,19.3 L10.3,21.8 L9.1,24.5 Z M16.4,26.4 L16.8,24.1 L15.2,21.6 L12.3,20.8 L11.7,19.8 L12.6,18 L11.8,16.9 L10.5,18.8 L10.4,14.9 L9.2,12.9 L10,8.7 L11.9,5.5 L13.8,5.8 L16.7,5.5 L14.1,9.8 L16.5,9.2 L19.1,9.3 L18.5,12.5 L16.4,16.1 L18.8,16.4 L19,16.8 L21.2,21.5 L22.8,22.1 L24.3,26.7 L24.9,28.3 L27.8,29 L27.5,31.6 L26.3,32.8 L27.3,34.8 L25.1,36.9 L21.9,36.9 L17.9,38 L16.8,37.2 L15.2,39.1 L13,38.6 L11.3,40.2 L10.1,39.4 L13.5,35.2 L15.7,34.3 L11.9,33.6 L11.3,32 L13.8,30.8 L12.5,28.6 L12.9,26 L16.4,26.4 Z"},
-  cz:{name:"la Tchéquie",path:"M59.6,35.6 L60.7,36.9 L62.5,37.2 L62.3,38.3 L63.6,39.1 L64,38.1 L65.6,38.5 L65.8,39.8 L67.6,40 L68.7,42 L68,42 L67.6,42.7 L67.1,42.9 L66.9,43.8 L66.5,44 L66.4,44.4 L65.6,44.8 L64.5,44.7 L64.2,45.6 L63.1,44.9 L62,45.1 L60.1,43.8 L59.3,44.1 L57.9,45.8 L56.2,44.5 L54.8,42.8 L53.6,41.8 L53.4,40.1 L52.9,38.9 L54.7,38.1 L55.6,37.1 L57.3,36.3 L57.9,35.5 L58.5,36 L59.6,35.6 Z"}
+  cz:{name:"la Tchéquie",path:"M59.6,35.6 L60.7,36.9 L62.5,37.2 L62.3,38.3 L63.6,39.1 L64,38.1 L65.6,38.5 L65.8,39.8 L67.6,40 L68.7,42 L68,42 L67.6,42.7 L67.1,42.9 L66.9,43.8 L66.5,44 L66.4,44.4 L65.6,44.8 L64.5,44.7 L64.2,45.6 L63.1,44.9 L62,45.1 L60.1,43.8 L59.3,44.1 L57.9,45.8 L56.2,44.5 L54.8,42.8 L53.6,41.8 L53.4,40.1 L52.9,38.9 L54.7,38.1 L55.6,37.1 L57.3,36.3 L57.9,35.5 L58.5,36 L59.6,35.6 Z"},
+  sk:{name:"la Slovaquie",path:"M77.5,43.7 L76.9,44.7 L76.4,46.3 L75.9,46.7 L73.3,45.5 L72.6,45.7 L72,46.7 L70.9,47.2 L70.6,46.9 L69.5,47.6 L68.5,47.7 L68.3,48.5 L66.3,49 L65.4,48.5 L64.2,47.5 L64,46.1 L64.2,45.6 L64.5,44.7 L65.6,44.8 L66.4,44.4 L66.5,44 L66.9,43.8 L67.1,42.9 L67.6,42.7 L68,42 L68.7,42 L68.8,42.3 L69.8,41.7 L71,43.1 L72.4,42.3 L73.5,42.7 L75.2,42.1 L77.5,43.7 Z",cx:70.8,cy:45.4,w:13.5,h:7.3},
+  si:{name:"la Slovénie",path:"M56.7,54 L58.6,54.3 L59.8,53.4 L61.9,53.3 L62.4,52.6 L62.8,52.6 L63.2,54 L61.4,55 L61.1,56.7 L60.3,57.1 L60.3,58.2 L59.4,58.1 L58.6,57.5 L58.1,58.1 L56.5,58 L57,57.6 L56.4,55.9 L56.7,54 Z",cx:59.8,cy:55.4,w:6.8,h:5.6},
+  hr:{name:"la Croatie",path:"M63.2,54 L64,54.5 L65.8,56.2 L67.7,57 L68.6,56.4 L69.2,57.9 L70,59.1 L69.1,60.6 L68,59.7 L66.3,59.7 L64.3,59.1 L63.2,59.2 L62.7,60 L61.8,59.1 L61.3,60.7 L62.5,62.6 L63,63.8 L64.1,65.3 L65,66.2 L65.9,67.9 L68,69.4 L67.7,70.1 L65.5,68.6 L64.1,67.2 L61.9,66 L59.9,63 L60.4,62.7 L59.3,61 L59.3,59.7 L57.8,59.1 L57,60.8 L56.3,59.4 L56.4,58.1 L56.5,58 L58.1,58.1 L58.6,57.5 L59.4,58.1 L60.3,58.2 L60.3,57.1 L61.1,56.7 L61.4,55 L63.2,54 Z",cx:63.1,cy:62,w:13.7,h:16.1},
+  ba:{name:"la Bosnie-Herzégovine",path:"M68,69.4 L65.9,67.9 L65,66.2 L64.1,65.3 L63,63.8 L62.5,62.6 L61.3,60.7 L61.8,59.1 L62.7,60 L63.2,59.2 L64.3,59.1 L66.3,59.7 L68,59.7 L69.1,60.6 L69.9,60.5 L69.3,62.3 L70.5,63.8 L70.1,65.7 L69.6,65.9 L69.1,66.3 L68.3,67.2 L68,69.4 Z",cx:65.9,cy:64.3,w:9.2,h:10.3},
+  rs:{name:"la Serbie",path:"M68.6,56.4 L70.5,55.3 L71.9,55.5 L73.2,57.1 L73.5,58.3 L75,59.3 L75.1,60.9 L76.5,62.1 L77.3,61.2 L77.9,61.7 L77.3,62.4 L77.7,63.1 L77.2,64 L77.4,65.4 L78.5,67.2 L77.6,68.4 L77.2,69.7 L77.5,70.2 L77.1,70.7 L76,70.8 L75.2,71 L75.1,70.7 L75.4,70.2 L75.6,69.3 L75.3,69.3 L74.8,68.5 L74.5,68.4 L74.1,67.7 L73.7,67.5 L73.4,66.9 L72.9,67.1 L72.6,68.5 L72,68.8 L72.2,68.4 L71.3,67.6 L70.5,67.1 L70.2,66.6 L69.6,65.9 L70.1,65.7 L70.5,63.8 L69.3,62.3 L69.9,60.5 L69.1,60.6 L70,59.1 L69.2,57.9 L68.6,56.4 Z",cx:73.5,cy:63.1,w:9.9,h:15.7},
+  me:{name:"le Monténégro",path:"M71.6,69.6 L70.9,70 L70.8,69.2 L69.8,71.2 L69.9,72.5 L69.4,72.2 L68.8,70.9 L67.7,70.1 L68,69.4 L68.3,67.2 L69.1,66.3 L69.6,65.9 L70.2,66.6 L70.5,67.1 L71.3,67.6 L72.2,68.4 L72,68.8 L71.6,69.6 Z",cx:70,cy:69.2,w:4.5,h:6.6},
+  al:{name:"l'Albanie",path:"M73.8,76.6 L73.8,77.7 L73,78.3 L72.9,79.6 L71.8,81.5 L71.4,81.2 L71.3,80.3 L70,79 L69.8,77.1 L70,74.4 L70.3,73.1 L69.9,72.5 L69.8,71.2 L70.8,69.2 L70.9,70 L71.6,69.6 L72.1,70.7 L72.7,71.1 L72.8,72.6 L72.5,73.9 L72.9,75.7 L73.8,76.6 Z",cx:71.8,cy:75.3,w:4,h:12.3},
+  mk:{name:"la Macédoine du Nord",path:"M77.1,70.7 L78.3,72 L78.4,74.6 L78,74.8 L77.6,75.5 L76.3,75.4 L75.4,76.3 L73.8,76.6 L72.9,75.7 L72.5,73.9 L72.8,72.6 L73.1,72.6 L73.2,71.8 L74.6,71.2 L75.2,71 L76,70.8 L77.1,70.7 Z",cx:75.5,cy:73.7,w:5.9,h:5.9},
+  bg:{name:"la Bulgarie",path:"M77.7,63.1 L78.4,64.7 L79.4,64.4 L81.2,65 L84.7,65.2 L85.9,64.2 L88.7,63.3 L90.4,64.8 L91.8,65.2 L90.6,66.8 L89.7,69.7 L90.4,72 L88.4,71.4 L86,72.7 L86,74.7 L83.8,75.1 L82.1,73.7 L80.2,74.8 L78.4,74.6 L78.3,72 L77.1,70.7 L77.5,70.2 L77.2,69.7 L77.6,68.4 L78.5,67.2 L77.4,65.4 L77.2,64 L77.7,63.1 Z",cx:84.4,cy:69.1,w:14.7,h:12},
+  lt:{name:"la Lituanie",path:"M86.9,17.5 L87.1,19.3 L85.1,20.6 L84.6,22.9 L82,24.4 L79.7,24.4 L79.1,23.1 L77.9,22.7 L77.7,21.7 L78,20.6 L76.9,19.9 L74.4,19.2 L73.9,15.9 L76.7,14.7 L80.6,14.9 L83,14.5 L83.3,15.3 L84.6,15.6 L86.9,17.5 Z",cx:80.5,cy:19.4,w:13.2,h:9.9},
+  lv:{name:"la Lettonie",path:"M88.8,10.1 L89.9,11 L90.1,13 L90.9,15.3 L88.3,16.9 L86.9,17.5 L84.6,15.6 L83.3,15.3 L83,14.5 L80.6,14.9 L76.7,14.7 L73.9,15.9 L74,12.9 L75.2,10.4 L77.4,9 L79.3,12 L81.2,11.9 L81.7,8.8 L83.7,8.1 L84.8,8.6 L86.8,10.1 L88.8,10.1 Z",cx:82.4,cy:12.8,w:17,h:9.4},
+  ee:{name:"l'Estonie",path:"M90.4,2.1 L90.8,2.8 L89.1,5.1 L89.8,8.8 L88.8,10.1 L86.8,10.1 L84.8,8.6 L83.7,8.1 L81.7,8.8 L82,6.5 L81.1,7 L79.6,5.6 L79.4,3.2 L82.4,2.1 L85.4,1.6 L88,2.2 L90.4,2.1 Z",cx:85.1,cy:5.8,w:11.4,h:8.5},
+  by:{name:"la Biélorussie",path:"M90.9,15.3 L93.4,16.3 L93.7,17.3 L95,16.8 L97.3,17.8 L97.5,19.7 L97,20.8 L98.5,23.4 L99.5,24.1 L99.3,24.8 L100.9,25.5 L101.6,26.6 L100.7,27.5 L98.8,27.3 L98.3,27.7 L98.9,29 L99.5,31.6 L97.4,31.8 L96.7,32.7 L96.5,34.7 L95.6,34.3 L93.4,34.5 L92.8,33.6 L91.9,34.3 L91,33.7 L89.2,33.6 L86.5,32.7 L84.1,32.4 L82.3,32.4 L81,33.5 L79.8,33.7 L79.8,31.9 L79,30.1 L80.5,29.2 L80.5,27.6 L79.8,26.1 L79.7,24.4 L82,24.4 L84.6,22.9 L85.1,20.6 L87.1,19.3 L86.9,17.5 L88.3,16.9 L90.9,15.3 Z",cx:90.3,cy:25,w:22.6,h:19.4},
+  md:{name:"la Moldavie",path:"M87.2,47.1 L87.7,46.5 L89.3,46.1 L91.1,47.4 L92.1,47.5 L93.1,48.6 L93,50 L93.8,50.6 L94.2,52.3 L95,53.3 L94.8,53.9 L95.3,54.3 L94.6,54.6 L93.2,54.5 L93,53.9 L92.5,54.2 L92.7,55 L92,56.2 L91.6,57.6 L91,58 L90.6,56.2 L90.8,54.5 L90.8,52.8 L89.4,50.4 L88.6,48.7 L87.9,47.5 L87.2,47.1 Z",cx:91.3,cy:52,w:8.1,h:11.9},
+  ua:{name:"l'Ukraine",path:"M99.5,31.6 L100.4,31.8 L101,30.8 L101.7,31 L104.2,30.7 L105.7,32.9 L105.1,33.7 L105.3,35 L107.2,35.2 L108,36.9 L108,37.7 L111,39.1 L112.8,38.5 L114.3,40.3 L115.7,40.3 L119.2,41.6 L119.2,42.8 L118.2,44.9 L118.8,47.1 L118.4,48.4 L116.1,48.7 L114.9,49.8 L114.8,51.6 L112.9,51.9 L111.3,53.2 L109.1,53.4 L107,54.9 L107.1,57.1 L106.8,56.9 L106.5,56.1 L105.7,56 L104,55.1 L103.4,56.1 L103.1,55.7 L99.4,54.7 L99.2,53.2 L97,53.7 L96.1,55.9 L94.3,58.8 L93.2,58.1 L92.1,58.8 L91,58 L91.6,57.6 L92,56.2 L92.7,55 L92.5,54.2 L93,53.9 L93.2,54.5 L94.6,54.6 L95.3,54.3 L94.8,53.9 L95,53.3 L94.2,52.3 L93.8,50.6 L93,50 L93.1,48.6 L92.1,47.5 L91.1,47.4 L89.3,46.1 L87.7,46.5 L87.2,47.1 L86.2,47.1 L85.6,48.1 L83.8,48.4 L83,49.1 L81.9,48.1 L80.4,48.1 L78.9,47.6 L77.9,48.5 L77.7,47.4 L76.4,46.3 L76.9,44.7 L77.5,43.7 L78,43.9 L77.4,42.1 L79.6,38.8 L80.8,38.3 L81,37.2 L79.8,33.7 L81,33.5 L82.3,32.4 L84.1,32.4 L86.5,32.7 L89.2,33.6 L91,33.7 L91.9,34.3 L92.8,33.6 L93.4,34.5 L95.6,34.3 L96.5,34.7 L96.7,32.7 L97.4,31.8 L99.5,31.6 Z",cx:97.8,cy:44.8,w:42.8,h:28.1},
+  lu:{name:"le Luxembourg",path:"M38.2,39.5 L38.7,40.4 L38.5,42.1 L37.9,42.2 L37.3,41.9 L37.6,39.6 L38.2,39.5 Z",cx:38,cy:40.9,w:1.4,h:2.7}
 };
 EX.push({id:'mapcy_no',lv:'geo-carte-payseu',cat:"Pays d'Europe",diff:4,type:'map-country',target:'no',q:'Où est '+MAP_COUNTRIES.no.name+' ? Touche le pays sur la carte !',se:"La Norvège est tout au nord — on voit sa pointe sud, autour d'Oslo.",sk:"Pays d'Europe"});
 EX.push({id:'mapcy_fr',lv:'geo-carte-payseu',cat:"Pays d'Europe",diff:1,type:'map-country',target:'fr',q:'Où est '+MAP_COUNTRIES.fr.name+' ? Touche le pays sur la carte !',se:"La France est à l'ouest de l'Europe, entre l'Atlantique et la Méditerranée.",sk:"Pays d'Europe"});
@@ -1639,6 +1703,23 @@ function finalizePick(candidates,n){
 }
 // fin anti-doublon
 
+EX.push({id:'mapcy_sk',lv:'geo-carte-payseu',cat:"Pays d'Europe",diff:4,type:'map-country',target:'sk',q:'O\u00f9 est '+MAP_COUNTRIES.sk.name+' ? Touche le pays sur la carte !',se:"La Slovaquie est juste \u00e0 l\u2019est de la Tch\u00e9quie, au nord de la Hongrie.",sk:"Pays d'Europe"});
+EX.push({id:'mapcy_si',lv:'geo-carte-payseu',cat:"Pays d'Europe",diff:5,type:'map-country',target:'si',q:'O\u00f9 est '+MAP_COUNTRIES.si.name+' ? Touche le pays sur la carte !',se:"La Slov\u00e9nie est un petit pays coinc\u00e9 entre l\u2019Italie, l\u2019Autriche et la Croatie.",sk:"Pays d'Europe"});
+EX.push({id:'mapcy_hr',lv:'geo-carte-payseu',cat:"Pays d'Europe",diff:4,type:'map-country',target:'hr',q:'O\u00f9 est '+MAP_COUNTRIES.hr.name+' ? Touche le pays sur la carte !',se:"La Croatie longe la mer Adriatique en forme de croissant.",sk:"Pays d'Europe"});
+EX.push({id:'mapcy_ba',lv:'geo-carte-payseu',cat:"Pays d'Europe",diff:5,type:'map-country',target:'ba',q:'O\u00f9 est '+MAP_COUNTRIES.ba.name+' ? Touche le pays sur la carte !',se:"La Bosnie-Herz\u00e9govine est entour\u00e9e par la Croatie et la Serbie.",sk:"Pays d'Europe"});
+EX.push({id:'mapcy_rs',lv:'geo-carte-payseu',cat:"Pays d'Europe",diff:4,type:'map-country',target:'rs',q:'O\u00f9 est '+MAP_COUNTRIES.rs.name+' ? Touche le pays sur la carte !',se:"La Serbie est au centre des Balkans, travers\u00e9e par le Danube.",sk:"Pays d'Europe"});
+EX.push({id:'mapcy_me',lv:'geo-carte-payseu',cat:"Pays d'Europe",diff:5,type:'map-country',target:'me',q:'O\u00f9 est '+MAP_COUNTRIES.me.name+' ? Touche le pays sur la carte !',se:"Le Mont\u00e9n\u00e9gro est un tout petit pays sur la c\u00f4te adriatique.",sk:"Pays d'Europe"});
+EX.push({id:'mapcy_al',lv:'geo-carte-payseu',cat:"Pays d'Europe",diff:5,type:'map-country',target:'al',q:'O\u00f9 est '+MAP_COUNTRIES.al.name+' ? Touche le pays sur la carte !',se:"L\u2019Albanie fait face \u00e0 l\u2019Italie, de l\u2019autre c\u00f4t\u00e9 de la mer.",sk:"Pays d'Europe"});
+EX.push({id:'mapcy_mk',lv:'geo-carte-payseu',cat:"Pays d'Europe",diff:5,type:'map-country',target:'mk',q:'O\u00f9 est '+MAP_COUNTRIES.mk.name+' ? Touche le pays sur la carte !',se:"La Mac\u00e9doine du Nord est juste au nord de la Gr\u00e8ce.",sk:"Pays d'Europe"});
+EX.push({id:'mapcy_bg',lv:'geo-carte-payseu',cat:"Pays d'Europe",diff:4,type:'map-country',target:'bg',q:'O\u00f9 est '+MAP_COUNTRIES.bg.name+' ? Touche le pays sur la carte !',se:"La Bulgarie est au sud-est, entre la Roumanie et la Gr\u00e8ce.",sk:"Pays d'Europe"});
+EX.push({id:'mapcy_lt',lv:'geo-carte-payseu',cat:"Pays d'Europe",diff:5,type:'map-country',target:'lt',q:'O\u00f9 est '+MAP_COUNTRIES.lt.name+' ? Touche le pays sur la carte !',se:"La Lituanie est le plus au sud des trois pays baltes.",sk:"Pays d'Europe"});
+EX.push({id:'mapcy_lv',lv:'geo-carte-payseu',cat:"Pays d'Europe",diff:5,type:'map-country',target:'lv',q:'O\u00f9 est '+MAP_COUNTRIES.lv.name+' ? Touche le pays sur la carte !',se:"La Lettonie est le pays balte du milieu, entre Lituanie et Estonie.",sk:"Pays d'Europe"});
+EX.push({id:'mapcy_ee',lv:'geo-carte-payseu',cat:"Pays d'Europe",diff:5,type:'map-country',target:'ee',q:'O\u00f9 est '+MAP_COUNTRIES.ee.name+' ? Touche le pays sur la carte !',se:"L\u2019Estonie est le pays balte le plus au nord.",sk:"Pays d'Europe"});
+EX.push({id:'mapcy_by',lv:'geo-carte-payseu',cat:"Pays d'Europe",diff:4,type:'map-country',target:'by',q:'O\u00f9 est '+MAP_COUNTRIES.by.name+' ? Touche le pays sur la carte !',se:"La Bi\u00e9lorussie est \u00e0 l\u2019est de la Pologne.",sk:"Pays d'Europe"});
+EX.push({id:'mapcy_md',lv:'geo-carte-payseu',cat:"Pays d'Europe",diff:5,type:'map-country',target:'md',q:'O\u00f9 est '+MAP_COUNTRIES.md.name+' ? Touche le pays sur la carte !',se:"La Moldavie est un petit pays entre la Roumanie et l\u2019Ukraine.",sk:"Pays d'Europe"});
+EX.push({id:'mapcy_ua',lv:'geo-carte-payseu',cat:"Pays d'Europe",diff:3,type:'map-country',target:'ua',q:'O\u00f9 est '+MAP_COUNTRIES.ua.name+' ? Touche le pays sur la carte !',se:"L\u2019Ukraine est le plus grand pays enti\u00e8rement europ\u00e9en, \u00e0 l\u2019est.",sk:"Pays d'Europe"});
+EX.push({id:'mapcy_lu',lv:'geo-carte-payseu',cat:"Pays d'Europe",diff:5,type:'map-country',target:'lu',q:'O\u00f9 est '+MAP_COUNTRIES.lu.name+' ? Touche le pays sur la carte !',se:"Le Luxembourg est minuscule, entre la France, la Belgique et l\u2019Allemagne.",sk:"Pays d'Europe"});
+
 /* ── Drapeaux SUR LA CARTE (ÉTAPE demandée par Julien) ──
    Même carte tactile que « Pays d'Europe », mais la consigne est un drapeau :
    l'enfant voit 🇵🇹 et doit toucher le Portugal. Deux compétences d'un coup,
@@ -1649,7 +1730,23 @@ const MAP_FLAGS={
   at:'\u{1F1E6}\u{1F1F9}', hu:'\u{1F1ED}\u{1F1FA}', ro:'\u{1F1F7}\u{1F1F4}', de:'\u{1F1E9}\u{1F1EA}',
   gr:'\u{1F1EC}\u{1F1F7}', ch:'\u{1F1E8}\u{1F1ED}', be:'\u{1F1E7}\u{1F1EA}', nl:'\u{1F1F3}\u{1F1F1}',
   pt:'\u{1F1F5}\u{1F1F9}', es:'\u{1F1EA}\u{1F1F8}', ie:'\u{1F1EE}\u{1F1EA}', it:'\u{1F1EE}\u{1F1F9}',
-  dk:'\u{1F1E9}\u{1F1F0}', gb:'\u{1F1EC}\u{1F1E7}', cz:'\u{1F1E8}\u{1F1FF}'
+  dk:'\u{1F1E9}\u{1F1F0}', gb:'\u{1F1EC}\u{1F1E7}', cz:'\u{1F1E8}\u{1F1FF}',
+  sk:'\u{1F1F8}\u{1F1F0}',
+  si:'\u{1F1F8}\u{1F1EE}',
+  hr:'\u{1F1ED}\u{1F1F7}',
+  ba:'\u{1F1E7}\u{1F1E6}',
+  rs:'\u{1F1F7}\u{1F1F8}',
+  me:'\u{1F1F2}\u{1F1EA}',
+  al:'\u{1F1E6}\u{1F1F1}',
+  mk:'\u{1F1F2}\u{1F1F0}',
+  bg:'\u{1F1E7}\u{1F1EC}',
+  lt:'\u{1F1F1}\u{1F1F9}',
+  lv:'\u{1F1F1}\u{1F1FB}',
+  ee:'\u{1F1EA}\u{1F1EA}',
+  by:'\u{1F1E7}\u{1F1FE}',
+  md:'\u{1F1F2}\u{1F1E9}',
+  ua:'\u{1F1FA}\u{1F1E6}',
+  lu:'\u{1F1F1}\u{1F1FA}'
 };
 // Repère mémo + capitale : ce que l'enfant lit APRÈS avoir répondu.
 const MAP_FLAG_HINTS={
@@ -1671,7 +1768,23 @@ const MAP_FLAG_HINTS={
   gr:['Ath\u00e8nes','Bandes bleues et blanches avec une croix \u2014 tout au sud-est.'],
   dk:['Copenhague','Croix blanche sur fond rouge, entre Allemagne et Su\u00e8de.'],
   se:['Stockholm','Croix jaune sur fond bleu, en Scandinavie.'],
-  no:['Oslo','Croix bleue bord\u00e9e de blanc sur fond rouge, tout au nord.']
+  no:['Oslo','Croix bleue bord\u00e9e de blanc sur fond rouge, tout au nord.'],
+  sk:['Bratislava','Blanc, bleu, rouge avec un \u00e9cusson \u2014 juste \u00e0 l\u2019est de la Tch\u00e9quie.'],
+  si:['Ljubljana','Blanc, bleu, rouge \u2014 un petit pays entre l\u2019Italie et la Croatie.'],
+  hr:['Zagreb','Rouge, blanc, bleu avec un damier \u2014 sa forme fait un croissant le long de l\u2019Adriatique.'],
+  ba:['Sarajevo','Bleu avec un triangle jaune et des \u00e9toiles, au c\u0153ur des Balkans.'],
+  rs:['Belgrade','Rouge, bleu, blanc avec un \u00e9cusson \u2014 au centre des Balkans.'],
+  me:['Podgorica','Rouge bord\u00e9 d\u2019or avec un aigle \u2014 tout petit, au bord de l\u2019Adriatique.'],
+  al:['Tirana','Un aigle noir \u00e0 deux t\u00eates sur fond rouge, face \u00e0 l\u2019Italie.'],
+  mk:['Skopje','Un soleil jaune \u00e0 rayons sur fond rouge, au nord de la Gr\u00e8ce.'],
+  bg:['Sofia','Blanc, vert, rouge \u2014 au sud du Danube, au bord de la mer Noire.'],
+  lt:['Vilnius','Jaune, vert, rouge \u2014 la plus au sud des trois pays baltes.'],
+  lv:['Riga','Rouge fonc\u00e9 avec une bande blanche \u2014 le pays balte du milieu.'],
+  ee:['Tallinn','Bleu, noir, blanc \u2014 le pays balte le plus au nord, face \u00e0 la Finlande.'],
+  by:['Minsk','Rouge et vert avec un motif brod\u00e9, entre la Pologne et la Russie.'],
+  md:['Chi\u0219in\u0103u','Bleu, jaune, rouge avec un aigle, entre la Roumanie et l\u2019Ukraine.'],
+  ua:['Kyiv','Bleu en haut, jaune en bas : le ciel au-dessus des champs de bl\u00e9.'],
+  lu:['Luxembourg','Rouge, blanc, bleu clair \u2014 minuscule, entre France, Belgique et Allemagne.']
 };
 Object.keys(MAP_FLAGS).forEach(cid=>{
   const c=MAP_COUNTRIES[cid]; if(!c) return;
@@ -1999,16 +2112,29 @@ function renderMapArea(ex){
   +'</div>';
 }
 // ── Placer les PAYS : chaque pays est une vraie forme tappable ──────────
+/* En dessous de cette largeur (en unités du viewBox 0-100), un pays reçoit une
+   zone tactile ronde en plus de son tracé. */
+const TINY_COUNTRY=5, TINY_HIT_R=3.2;
 function renderCountryMapArea(ex){
   const done=state.selected!==null;
-  const shapes=Object.keys(MAP_COUNTRIES).map(cid=>{
+  const ids=Object.keys(MAP_COUNTRIES);
+  const shapes=ids.map(cid=>{
     let cls='map-country';
     if(done){if(cid===ex.target)cls+=' correct';else if(cid===state.selected)cls+=' wrong'}
     return '<path class="'+cls+'" d="'+MAP_COUNTRIES[cid].path+'" data-id="'+cid+'" onclick="selectCountryAnswer(this.dataset.id)"/>';
   }).join('');
+  /* Zone tactile de secours pour les tout petits pays (Luxembourg, Monténégro,
+     Slovénie…) : sur un iPhone, un tracé de 2 px est intouchable avec un doigt.
+     On pose un disque invisible sur leur centre, le plus petit pays en dernier
+     pour qu'il gagne si deux disques se chevauchent. */
+  const tiny=ids.filter(cid=>{const c=MAP_COUNTRIES[cid];
+      return c.w!=null&&c.h!=null&&Math.min(c.w,c.h)<TINY_COUNTRY})
+    .sort((a,b)=>(MAP_COUNTRIES[b].w*MAP_COUNTRIES[b].h)-(MAP_COUNTRIES[a].w*MAP_COUNTRIES[a].h))
+    .map(cid=>'<circle class="map-hit" cx="'+MAP_COUNTRIES[cid].cx+'" cy="'+MAP_COUNTRIES[cid].cy
+      +'" r="'+TINY_HIT_R+'" data-id="'+cid+'" onclick="selectCountryAnswer(this.dataset.id)"/>').join('');
   return '<div class="map-wrap"><svg viewBox="0 0 100 100">'
     +'<path class="map-land" style="pointer-events:none" d="'+MAP_SVG_PATHS.europe+'"/>'
-    +shapes+'</svg>'
+    +shapes+(done?'':tiny)+'</svg>'
     +'<p class="sub" style="position:absolute;bottom:6px;left:0;right:0;text-align:center;font-size:.7rem;pointer-events:none">Touche le bon pays !</p>'
   +'</div>';
 }
@@ -2150,13 +2276,19 @@ function nextQuestion(){
 function finishGame(abandoned){
   if(state.timerID){clearInterval(state.timerID);state.timerID=null}
   if(state.autoNextID){clearTimeout(state.autoNextID);state.autoNextID=null}
-  const total=abandoned?state.idx:state.results.length;
+  // state.results contient EXACTEMENT les questions auxquelles l'enfant a
+  // répondu, partie terminée ou abandonnée. L'ancien « abandoned?state.idx »
+  // oubliait la dernière réponse : quitter juste après une erreur effaçait
+  // cette erreur du journal parent.
+  const total=state.results.length;
   const duration=Math.round((Date.now()-state.startTime)/1000);
   const d={score:state.score,total,maxStreak:state.maxStreak,results:state.results,mode:state.mode,abandoned:!!abandoned,duration,date:new Date().toISOString(),level:state.level,xp:state.sessionXP,cristaux:state.sessionCristaux};
   state.gameData=d;
   if(total>0){
     // Déblocage progressif : 3 parties à 80 % ouvrent le palier suivant.
-    const _unlock=checkLevelUnlock(state.level,state.score,total);
+    // Une session de révision rejoue des questions déjà ratées : elle aide
+    // l'enfant, mais elle ne doit pas servir à ouvrir un palier supérieur.
+    const _unlock=state.mode==='revision'?null:checkLevelUnlock(state.level,state.score,total);
     if(_unlock&&_unlock.unlocked){
       setTimeout(()=>toast('\u{1F389} Nouveau niveau d\u00e9bloqu\u00e9 : '+_unlock.unlocked.name+' !','win'),900);
     }else if(_unlock&&_unlock.progress){
@@ -2213,8 +2345,17 @@ function finishGame(abandoned){
         else if(e.type==='map'){const p=(MAP_POINTS[e.map]||[]).find(x=>x.id===r.choice);given=p?p.name:'(temps écoulé)'}
         else if(e.type==='input'){given=String(r.choice||'')||'(vide)'}
         else{given=(typeof r.choice==='number'&&r.choice>=0&&Array.isArray(e.ch))?String(e.ch[r.choice]):'(temps écoulé)'}
-        profile.recentMisses.push({id:e.id,q:(e.q||'').length>140?e.q.slice(0,140)+'…':(e.q||''),cat:e.cat||'',lv:e.lv||'',given,ans:exAnswerText(e),date:d.date});
-        if(profile.recentMisses.length>50)profile.recentMisses=profile.recentMisses.slice(-50);
+        // On garde de quoi rejouer la scène complète avec l'enfant : l'énoncé
+        // entier (plus de troncature à 140 caractères), sa réponse, la bonne
+        // réponse, l'explication du prof, le royaume, le niveau et la difficulté.
+        const _su=getSubjectForLevel(e.lv)||{}, _lv=LEVELS.find(l=>l.id===e.lv);
+        profile.recentMisses.push({
+          id:e.id, q:(e.q||''), cat:e.cat||'', lv:e.lv||'',
+          lvName:_lv?_lv.name:'', subject:_su.id||'', subjectName:_su.name||'', subjectIcon:_su.icon||'',
+          skill:e.sk||'', diff:e.diff||0, flag:e.flag||'', mode:state.mode||'',
+          se:(e.se||''), pourquoi:(e.pourquoi||''),
+          given, ans:exAnswerText(e), date:d.date});
+        if(profile.recentMisses.length>MISSES_MAX)profile.recentMisses=profile.recentMisses.slice(-MISSES_MAX);
       }
       const cat=r.ex.cat;
       if(!profile.catStats[cat])profile.catStats[cat]={att:0,cor:0};
@@ -2455,15 +2596,38 @@ function renderParent(){
   ${strong.length>0?`<div class="card mb-4"><h3 class="fredoka" style="font-size:.85rem;color:#22c55e;margin-bottom:12px;letter-spacing:.1em;text-transform:uppercase">\u2B50 Points forts</h3>
   ${strong.map(([c,s])=>{const p=Math.round(s.cor/s.att*100);return `<div class="strong-cat"><div><div style="color:#bbf7d0;font-weight:700">${c}</div><div style="font-size:.75rem;color:#8b7ec8">${s.cor}/${s.att} bonnes r\u00e9ponses</div></div><div style="color:#22c55e;font-weight:700;font-family:'Cinzel'">${p}%</div></div>`}).join('')}</div>`:''}
   ${(function(){
-    const misses=(profile.recentMisses||[]).slice().reverse().slice(0,15);
-    if(misses.length===0)return `<div class="card mb-4"><h3 class="fredoka" style="font-size:.85rem;color:#f87171;margin-bottom:8px;letter-spacing:.1em;text-transform:uppercase">\u274c Ses derni\u00e8res erreurs</h3><p class="sub" style="font-style:italic">Les prochaines erreurs de ${esc(profile.name)} appara\u00eetront ici, avec sa r\u00e9ponse et la bonne r\u00e9ponse.</p></div>`;
-    return `<div class="card mb-4"><h3 class="fredoka" style="font-size:.85rem;color:#f87171;margin-bottom:12px;letter-spacing:.1em;text-transform:uppercase">\u274c Ses derni\u00e8res erreurs (${misses.length})</h3>
-    <div class="recap-scroll">${misses.map(m=>{
-      const dt=new Date(m.date);const dtStr=isNaN(dt)?'':dt.toLocaleDateString('fr-FR',{day:'2-digit',month:'2-digit'})+' '+dt.toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'});
-      return `<div class="recap-item"><span class="recap-icon">\u274c</span><div class="flex-1"><p class="recap-q"><strong>${esc(m.cat)}</strong> \u2014 ${esc(m.q)}</p>
-      <p style="color:#fca5a5;font-size:.78rem;margin-top:4px">Sa r\u00e9ponse : ${esc(m.given)}</p>
-      <p style="color:#22c55e;font-size:.78rem;margin-top:2px">Bonne r\u00e9ponse : ${esc(m.ans)}</p>
-      ${dtStr?`<p style="color:#8b7ec8;font-size:.68rem;margin-top:2px">${dtStr}</p>`:''}</div></div>`}).join('')}</div></div>`;
+    const groups=missesBySubject();
+    const nMiss=recentMisses().length;
+    if(nMiss===0)return `<div class="card mb-4"><h3 class="fredoka" style="font-size:.85rem;color:#f87171;margin-bottom:8px;letter-spacing:.1em;text-transform:uppercase">❌ Ses erreurs en détail</h3><p class="sub" style="font-style:italic">Chaque question ratée par ${esc(profile.name)} apparaîtra ici en entier : l'énoncé, ce qu'elle a répondu, la bonne réponse et l'explication.</p></div>`;
+    const open=state.missSubject||groups[0].id;
+    const cur=groups.find(g=>g.id===open)||groups[0];
+    const tabs=groups.map(g=>`<button class="miss-tab${g.id===cur.id?' on':''}" onclick="setMissSubject('${esc(g.id)}')">${g.icon} ${esc(g.name)} <span class="miss-n">${g.items.length}</span></button>`).join('');
+    const items=cur.items.slice(0,state.missAll?200:12);
+    return `<div class="card mb-4"><h3 class="fredoka" style="font-size:.85rem;color:#f87171;margin-bottom:10px;letter-spacing:.1em;text-transform:uppercase">❌ Ses erreurs en détail (${nMiss})</h3>
+    <div class="miss-tabs">${tabs}</div>
+    <div class="recap-scroll" style="max-height:460px">${items.map(m=>{
+      const dt=new Date(m.date);const dtStr=isNaN(dt)?'':dt.toLocaleDateString('fr-FR',{weekday:'short',day:'2-digit',month:'2-digit'})+' à '+dt.toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'});
+      const stars=m.diff?'★'.repeat(m.diff)+'☆'.repeat(5-m.diff):'';
+      const where=[m.lvName,m.skill||m.cat].filter(Boolean).join(' · ');
+      return `<div class="miss-card">
+        <div class="row-between" style="align-items:flex-start;gap:8px">
+          <div class="flex-1" style="min-width:0"><span class="badge">${esc(m.cat||'Question')}</span>
+          ${stars?`<span class="stars" style="margin-left:6px;font-size:.7rem">${stars}</span>`:''}</div>
+          ${dtStr?`<span style="color:#8b7ec8;font-size:.66rem;white-space:nowrap">${dtStr}</span>`:''}
+        </div>
+        ${m.flag?`<div style="font-size:2rem;line-height:1.2;margin-top:6px">${esc(m.flag)}</div>`:''}
+        <p style="color:#faf5ff;font-size:.86rem;line-height:1.5;margin-top:6px">${esc(m.q)}</p>
+        <div class="miss-answers">
+          <div class="miss-given"><span>Sa réponse</span><b>${esc(m.given)}</b></div>
+          <div class="miss-right"><span>Bonne réponse</span><b>${esc(m.ans)}</b></div>
+        </div>
+        ${m.se?`<p class="miss-why"><b>Pourquoi :</b> ${esc(m.se)}</p>`:''}
+        ${m.pourquoi?`<p class="miss-trap"><b>Piège probable :</b> ${esc(m.pourquoi)}</p>`:''}
+        ${where?`<p style="color:#8b7ec8;font-size:.68rem;margin-top:6px">${esc(where)}</p>`:''}
+      </div>`}).join('')}</div>
+    ${cur.items.length>12?`<button class="btn-stone btn-small mt-3" onclick="state.missAll=!state.missAll;render()">${state.missAll?'Voir moins':'Voir les '+cur.items.length+' erreurs'}</button>`:''}
+    <button class="btn-fire btn-small mt-3" style="margin-left:8px" onclick="replayMisses('${esc(cur.id)}')">\u{1F501} Refaire ces questions avec elle</button>
+    </div>`;
   })()}
   ${failedEx.length>0?`<div class="card mb-4"><h3 class="fredoka" style="font-size:.85rem;color:#f7a020;margin-bottom:12px;letter-spacing:.1em;text-transform:uppercase">Exercices \u00e0 refaire ensemble</h3>
   <div class="recap-scroll">${failedEx.map(e=>`<div class="recap-item"><span class="recap-icon">\u{1F4DD}</span><div class="flex-1"><p class="recap-q"><strong>${e.cat}</strong> \u2014 ${e.q.length>120?e.q.slice(0,120)+'\u2026':e.q}</p><p style="color:#22c55e;font-size:.75rem;margin-top:4px">R\u00e9ponse : ${esc(exAnswerText(e))}</p></div></div>`).join('')}</div></div>`:''}
