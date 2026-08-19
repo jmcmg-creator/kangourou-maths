@@ -217,18 +217,86 @@ ok('parties vides ignorées sans division par zéro', MA.subjectAccuracy('maths'
 ok('matière inconnue → null', MA.subjectAccuracy('zzz') === null);
 
 /* ---------- drapeaux sur la carte ---------- */
-section('Drapeaux sur la carte');
+section('Carte d’Europe & drapeaux');
 const fsrc = game.slice(game.indexOf('const MAP_FLAGS='), game.indexOf('Object.keys(MAP_FLAGS)'));
 const F = new Function(fsrc + '\nreturn {MAP_FLAGS,MAP_FLAG_HINTS};')();
-const CC = ['no','fr','se','pl','at','hu','ro','de','gr','ch','be','nl','pt','es','ie','it','dk','gb','cz'];
-ok('un drapeau pour chacun des 19 pays de la carte',
+// La liste des pays est lue depuis game.js : impossible d’oublier d’étendre le test.
+const CC = [...game.slice(game.indexOf('const MAP_COUNTRIES={'), game.indexOf("EX.push({id:'mapcy_"))
+  .matchAll(/\n {2}([a-z]{2}):\{name:"/g)].map(m => m[1]);
+ok('carte bien fournie (≥ 30 pays)', CC.length >= 30, CC.length + ' pays');
+ok('aucun code pays en double', new Set(CC).size === CC.length);
+ok('un drapeau pour chaque pays de la carte',
   CC.every(c => typeof F.MAP_FLAGS[c] === 'string' && F.MAP_FLAGS[c].length > 0), CC.filter(c => !F.MAP_FLAGS[c]).join());
-ok('aucun drapeau en double', new Set(Object.values(F.MAP_FLAGS)).size === CC.length);
+ok('aucun drapeau en double', new Set(Object.values(F.MAP_FLAGS)).size === Object.keys(F.MAP_FLAGS).length);
+ok('autant de drapeaux que de pays', Object.keys(F.MAP_FLAGS).length === CC.length,
+  Object.keys(F.MAP_FLAGS).length + ' vs ' + CC.length);
 ok('capitale + repère visuel pour chaque pays',
   CC.every(c => Array.isArray(F.MAP_FLAG_HINTS[c]) && F.MAP_FLAG_HINTS[c][0] && F.MAP_FLAG_HINTS[c][1]),
   CC.filter(c => !F.MAP_FLAG_HINTS[c]).join());
 ok('drapeaux bien composés de 2 indicateurs régionaux',
   Object.values(F.MAP_FLAGS).every(f => [...f].length === 2));
+ok('un exercice « où est ce pays » par pays',
+  CC.every(c => game.includes("id:'mapcy_" + c + "'")), CC.filter(c => !game.includes("id:'mapcy_" + c + "'")).join());
+
+/* Les tracés doivent rester dans le cadre visible de la carte (viewBox 0-100),
+   sinon le pays est injouable : on ne peut pas toucher ce qu’on ne voit pas. */
+const paths = [...game.slice(game.indexOf('const MAP_COUNTRIES={'), game.indexOf("EX.push({id:'mapcy_"))
+  .matchAll(/\n {2}([a-z]{2}):\{name:"[^"]*",path:"([^"]+)"/g)];
+ok('un tracé pour chaque pays', paths.length === CC.length, paths.length + ' vs ' + CC.length);
+const offscreen = paths.filter(([, cc, d]) => {
+  const pts = (d.match(/-?\d+(\.\d+)?,-?\d+(\.\d+)?/g) || []).map(s => s.split(',').map(Number));
+  return !pts.some(([x, y]) => x >= 0 && x <= 100 && y >= 0 && y <= 100);
+}).map(m => m[1]);
+ok('chaque pays a une partie visible à l’écran', offscreen.length === 0, offscreen.join());
+ok('tracés bien fermés', paths.every(([, , d]) => d.trim().endsWith('Z')));
+
+/* Zone tactile : un pays minuscule doit être atteignable au doigt. */
+const geom = [...game.slice(game.indexOf('const MAP_COUNTRIES={'), game.indexOf("EX.push({id:'mapcy_"))
+  .matchAll(/\n {2}([a-z]{2}):\{name:"[^"]*",path:"[^"]+",cx:(-?[\d.]+),cy:(-?[\d.]+),w:([\d.]+),h:([\d.]+)/g)]
+  .map(m => ({ cc: m[1], cx: +m[2], cy: +m[3], w: +m[4], h: +m[5] }));
+ok('les nouveaux pays portent leur centre et leur taille', geom.length >= 15, geom.length);
+const tinySrc = game.slice(game.indexOf('const TINY_COUNTRY='), game.indexOf('function renderCountryMapArea'));
+const T = new Function(tinySrc + '\nreturn {TINY_COUNTRY,TINY_HIT_R};')();
+const tiny = geom.filter(g => Math.min(g.w, g.h) < T.TINY_COUNTRY);
+ok('les pays minuscules reçoivent une zone tactile', tiny.length > 0, tiny.map(g => g.cc).join());
+ok('… assez large pour un doigt', T.TINY_HIT_R >= 3);
+ok('centres des petits pays dans le cadre',
+  tiny.every(g => g.cx >= 0 && g.cx <= 100 && g.cy >= 0 && g.cy <= 100), tiny.filter(g => g.cx < 0 || g.cx > 100 || g.cy < 0 || g.cy > 100).map(g => g.cc).join());
+
+/* ---------- géo hors progression scolaire ---------- */
+section('Géographie décorrélée de la classe');
+const GEO_FREE = ['geo-drapeaux', 'geo-carte-drapeaux', 'geo-carte-france', 'geo-carte-europe', 'geo-carte-payseu'];
+ok('les 5 niveaux carte/drapeaux sont marqués « toujours ouverts »',
+  GEO_FREE.every(id => new RegExp('id:"' + id + '"[\\s\\S]{0,220}?alwaysOpen:true').test(game)),
+  GEO_FREE.filter(id => !new RegExp('id:"' + id + '"[\\s\\S]{0,220}?alwaysOpen:true').test(game)).join());
+ok('alwaysOpen court-circuite la déduction de classe',
+  G.levelMinGrade({ id: 'geo-x', sub: 'CM2 — piège', alwaysOpen: true }) === null);
+ok('… et un niveau normal reste indexé sur la classe',
+  G.levelMinGrade({ id: 'geo-y', sub: 'CM2 — Le Monde' }) === 4);
+
+/* ---------- journal des erreurs ---------- */
+section('Journal des erreurs (espace parent)');
+const jsrc = grab('const MISSES_MAX=120;', '// fin journal erreurs');
+const profM = { recentMisses: [] };
+const J = new Function('profile', jsrc.slice(0, jsrc.indexOf('function replayMisses')) + '\nreturn {MISSES_MAX,recentMisses,missesBySubject};')(profM);
+ok('mémoire portée à 120 erreurs', J.MISSES_MAX === 120);
+ok('aucune erreur → aucun groupe', J.missesBySubject().length === 0);
+profM.recentMisses = [
+  { subject: 'maths', subjectName: 'Mathématiques', subjectIcon: '🧮', q: 'A', date: '1' },
+  { subject: 'geographie', subjectName: 'Géographie', subjectIcon: '🌍', q: 'B', date: '2' },
+  { subject: 'maths', subjectName: 'Mathématiques', subjectIcon: '🧮', q: 'C', date: '3' },
+];
+const gs = J.missesBySubject();
+ok('regroupement par royaume', gs.length === 2);
+ok('royaume le plus en difficulté en premier', gs[0].id === 'maths' && gs[0].items.length === 2);
+ok('la plus récente en tête', gs[0].items[0].q === 'C');
+profM.recentMisses = [{ q: 'orpheline', date: '1' }];
+ok('erreur sans royaume rangée sans planter', J.missesBySubject().length === 1);
+
+const rec = game.slice(game.indexOf('profile.recentMisses.push({'), game.indexOf('date:d.date});') + 14);
+for (const f of ['q:', 'given', 'ans:', 'se:', 'pourquoi:', 'lvName:', 'subjectName:', 'diff:', 'flag:', 'skill:'])
+  ok('le détail « ' + f.replace(':', '') + ' » est enregistré', rec.includes(f));
+ok('plus de troncature de l’énoncé à 140 caractères', !rec.includes("slice(0,140)"));
 
 console.log('\n══════════════════════════════');
 console.log(`  ${pass} réussis · ${fail} échoués`);

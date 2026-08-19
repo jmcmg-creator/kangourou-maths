@@ -221,7 +221,10 @@ check('les questions générées sont bien stockées dans le profil',
   await js('Array.isArray(profile.aiExercises)'));
 
 section('Drapeaux sur la carte');
-check('19 questions drapeau→carte', (await js('EX.filter(e=>e.lv==="geo-carte-drapeaux").length')) === 19);
+const _nc = await js('Object.keys(MAP_COUNTRIES).length');
+check('carte enrichie (≥ 30 pays)', _nc >= 30, _nc + ' pays');
+check('autant de questions drapeau→carte que de pays', (await js('EX.filter(e=>e.lv==="geo-carte-drapeaux").length')) === _nc);
+check('autant de questions nom→carte que de pays', (await js('EX.filter(e=>e.lv==="geo-carte-payseu").length')) === _nc);
 check('chaque question porte un drapeau et une cible valide',
   await js('EX.filter(e=>e.lv==="geo-carte-drapeaux").every(e=>e.flag&&MAP_COUNTRIES[e.target])'));
 check('l’écran affiche le drapeau ET la carte tactile', await (async () => {
@@ -239,8 +242,66 @@ check('toucher le mauvais pays ne marque pas de point', await (async () => {
     const before=state.score; selectCountryAnswer(other); return state.score===before })()`);
 })());
 
+section('Géographie hors classe + zones tactiles');
+check('les 5 niveaux géo restent ouverts même en CP', await js(`
+  profile.grade=0; profile.unlocks={};
+  ["geo-drapeaux","geo-carte-drapeaux","geo-carte-france","geo-carte-europe","geo-carte-payseu"]
+    .every(id=>isLevelUnlocked(id)===true)`));
+check('… et aussi pour un profil sans classe', await js(`
+  profile.grade=null;
+  ["geo-carte-payseu","geo-carte-drapeaux"].every(id=>isLevelUnlocked(id)===true)`));
+check('les deux exercices carte sont bien distincts', await js(`
+  (function(){const a=EX.filter(e=>e.lv==="geo-carte-payseu"),b=EX.filter(e=>e.lv==="geo-carte-drapeaux");
+   return a.length>0 && b.length>0 && a.every(e=>!e.flag) && b.every(e=>!!e.flag)})()`));
+check('zones tactiles générées pour les petits pays', await (async () => {
+  await js('profile.recentExIds=[]; state.level="geo-carte-payseu"; startGame("training")'); await sleep(900);
+  return (await js('document.querySelectorAll(".map-hit").length')) > 0;
+})());
+check('toucher la zone tactile d’un petit pays compte', await js(`
+  (function(){
+    const t=state.exercises[state.idx].target;
+    const before=state.score; selectCountryAnswer(t);
+    return state.score===before+1 })()`));
+check('les zones tactiles disparaissent après la réponse',
+  (await js('document.querySelectorAll(".map-hit").length')) === 0);
+check('tous les tracés sont rendus', await js('document.querySelectorAll(".map-country").length===Object.keys(MAP_COUNTRIES).length'));
+
+section('Détail des erreurs (espace parent)');
+check('une erreur enregistre tout le détail', await (async () => {
+  await js(`
+    profile.recentMisses=[]; profile.recentExIds=[];
+    state.level="logique"; startGame("training")`); await sleep(800);
+  await js(`
+    (function(){ const ex=state.exercises[0]; selectAnswer((ex.ans+1)%4); })()`); await sleep(300);
+  await js('finishGame(true)'); await sleep(700);
+  const m = await js('JSON.stringify(profile.recentMisses[profile.recentMisses.length-1]||{})');
+  const o = JSON.parse(m);
+  return !!(o.q && o.given && o.ans && o.se && o.subjectName && o.lvName && o.diff);
+})());
+check('la question n’est plus tronquée', await js(`
+  (function(){const m=profile.recentMisses[profile.recentMisses.length-1];
+   const ex=EX.find(e=>e.id===m.id); return !!ex && m.q===ex.q })()`));
+check('l’espace parent affiche le détail', await (async () => {
+  await js('navigate("parent")'); await sleep(700);
+  const h = await js('document.getElementById("app").innerHTML');
+  return h.includes('miss-card') && h.includes('Sa réponse') && h.includes('Bonne réponse') && h.includes('Pourquoi');
+})());
+check('les erreurs sont groupées par royaume', await js('document.querySelectorAll(".miss-tab").length>=1'));
+check('bouton pour refaire les questions ratées',
+  await js('document.getElementById("app").innerHTML.includes("Refaire ces questions")'));
+check('refaire lance bien une partie sur ces questions', await (async () => {
+  await js('replayMisses()'); await sleep(700);
+  return (await js('state.screen')) === 'game' && (await js('state.mode')) === 'revision'
+    && (await js('state.exercises.length')) > 0;
+})());
+check('une révision ne débloque aucun palier', await js(`
+  profile.grade=1; profile.unlocks={}; profile.unlockProgress={};
+  state.mode="revision"; state.level="ce1-ce2";
+  (function(){ for(let i=0;i<3;i++){ const u=(state.mode==="revision")?null:checkLevelUnlock("ce1-ce2",10,10) } 
+   return !(profile.unlocks.maths>0) })()`));
+
 section('Non-régression générale');
-check('carte des pays (19)', (await js('Object.keys(MAP_COUNTRIES).length')) === 19);
+check('carte des pays enrichie', (await js('Object.keys(MAP_COUNTRIES).length')) >= 30);
 check('memory intact', (await js('MEMORY_MODES.length')) >= 6);
 check('leçons intactes', (await js('LECONS.length')) >= 12);
 check('toast fonctionne', await js('toast("test"); document.querySelectorAll("#toast-area .toast").length>0'));
