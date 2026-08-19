@@ -15,6 +15,7 @@ mkdirSync(www, { recursive: true });
 
 const files = [
   'index.html', 'game.js', 'exercises.js', 'exercises_extra.js',
+  'exercises_logic.js',
   'qr.js', 'config.js', 'supa.js', 'manifest.json', 'sw.js',
   'confidentialite.html'
 ];
