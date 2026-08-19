@@ -234,6 +234,20 @@ function esc(s){return s==null?'':String(s).replace(/[&<>"'`]/g,c=>_ESC_MAP[c])}
 // Light sanitizer for values used inside attribute single-quoted JS calls (rare)
 function escAttr(s){return esc(s).replace(/\\/g,'\\\\')}
 
+/* ════════ VISUELS PÉDAGOGIQUES ════════
+   Un exercice peut porter un champ optionnel `visual` (string court d'emoji,
+   ex "🪐 🌍 ⭐") + `visualType` ("emoji" par défaut) + `visualAlt` (texte
+   d'accessibilité). Aucun HTML ni SVG accepté ici : tout est traité comme
+   du texte, échappé, et rendu en grand au-dessus de la question. Le champ
+   `visual` doit être court (≤ 24 caractères visibles) pour rester lisible
+   sans scroll sur mobile. */
+function renderExerciseVisual(ex){
+  if(!ex||!ex.visual) return '';
+  const v=String(ex.visual).slice(0,120);
+  const alt=ex.visualAlt||ex.visual;
+  return `<div class="ex-visual" role="img" aria-label="${esc(alt)}">${esc(v)}</div>`;
+}
+
 function shuffle(a){a=[...a];for(let i=a.length-1;i>0;i--){let j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]]}return a}
 function today(){return new Date().toISOString().slice(0,10)}
 
@@ -312,7 +326,11 @@ async function generateAIExercises(level,count){
     const r=await fetch(API_BASE+'/generate',{
       method:'POST',
       headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({level,count}),
+      // wantVisual demande au Worker (si supporté) d'ajouter un champ `visual`
+      // (chaîne d'emoji pédagogique, ex "🪐 🌍 ⭐") et éventuellement `visualAlt`
+      // aux questions générées. Un Worker qui ne connaît pas ce paramètre
+      // l'ignore silencieusement — le client reste fonctionnel.
+      body:JSON.stringify({level,count,wantVisual:true}),
       signal:ctrl.signal
     });
     clearTimeout(tid);
@@ -342,15 +360,34 @@ async function generateAIExercises(level,count){
   }
 }
 
-// Auto-génération en arrière-plan (fire & forget) si pool insuffisant
+// ═══ Progression : mastery / spaced repetition ═══
+// Un exo est "maîtrisé" si l'enfant l'a réussi 2 fois de suite (consecCor>=2)
+// ET qu'il ne l'a pas raté récemment (>7j). On ne le repropose plus tant qu'il
+// y a du neuf ou du rattrapage à faire.
+// Un exo "raté récemment" (1j–14j) revient en priorité en révision espacée.
+const DAY_MS=86400000;
+function _stat(id){return profile.exerciseStats[id]||{att:0,cor:0}}
+function isMastered(e){
+  const s=_stat(e.id);
+  if(s.att<2||(s.consecCor||0)<2) return false;
+  if(s.lastWrongTs && Date.now()-s.lastWrongTs<=7*DAY_MS) return false;
+  return true;
+}
+function isFailedRecently(e){
+  const s=_stat(e.id);
+  if(!s.lastWrongTs) return false;
+  const age=Date.now()-s.lastWrongTs;
+  return age>=1*DAY_MS && age<=14*DAY_MS;
+}
+
+// Auto-génération en arrière-plan (fire & forget) si pool "vraiment jouable" insuffisant
 function maybeAutoGenerate(level){
   const pool=EX.filter(e=>e.lv===level);
   const aiPool=(profile.aiExercises||[]).filter(e=>e.lv===level);
-  // Compte les exos jamais vus
   const allPool=[...pool,...aiPool];
-  const unseen=allPool.filter(e=>!profile.exerciseStats[e.id]||!profile.exerciseStats[e.id].att);
-  // Si moins de 15 exos jamais vus → génère 10 nouveaux en arrière-plan
-  if(unseen.length<15){
+  // "Jouable" = jamais vu OU pas encore maîtrisé OU à rejouer (raté récent)
+  const usable=allPool.filter(e=>!isMastered(e));
+  if(usable.length<15){
     generateAIExercises(level,10).catch(e=>console.warn('auto-gen failed',e));
   }
 }
@@ -395,6 +432,9 @@ function render(){
     case 'results': renderResults(); break;
     case 'royaume': renderRoyaume(); break;
     case 'parent': renderParent(); break;
+    case 'parentOnboarding': renderParentOnboarding(); break;
+    case 'parentGuidedAccess': renderParentGuidedAccess(); break;
+    case 'parentScreenTime': renderParentScreenTime(); break;
     case 'nameAsk': renderNameAsk(); break;
     case 'collection': renderCollection(); break;
     case 'fichesHome': renderFichesHome(); break;
@@ -594,29 +634,22 @@ function pickExercises(mode,lvId){
   if(mode==='progression'){
     return shuffle(EX.filter(e=>e.lv!=='cp')).sort((a,b)=>a.diff-b.diff).slice(0,10);
   }
+  // Mastery-aware bucketing
+  const unseen=pool.filter(e=>!_stat(e.id).att);
+  const failed=pool.filter(e=>isFailedRecently(e) && !isMastered(e));
+  const mastered=pool.filter(e=>isMastered(e));
+  const other=pool.filter(e=>_stat(e.id).att && !isMastered(e) && !isFailedRecently(e));
+  // Trie "other" par lastSeen le plus ancien d'abord
+  other.sort((a,b)=>(_stat(a.id).lastSeen||'').localeCompare(_stat(b.id).lastSeen||''));
   if(mode==='adaptive'){
-    // Priorise les exercices rat\u00e9s ou jamais vus
-    return pool.slice().sort((a,b)=>{
-      const sa=profile.exerciseStats[a.id]||{att:0,cor:0};
-      const sb=profile.exerciseStats[b.id]||{att:0,cor:0};
-      const scA=sa.att>0?sa.cor/sa.att:0.5;
-      const scB=sb.att>0?sb.cor/sb.att:0.5;
-      return scA-scB;
-    }).slice(0,10);
+    // Adaptatif : rat\u00e9s d'abord (r\u00e9vision espac\u00e9e), puis jamais vus, puis autres, mastered en dernier recours
+    return shuffle(failed).concat(shuffle(unseen)).concat(other).concat(shuffle(mastered)).slice(0,10);
   }
-  // Training / Challenge : rotation intelligente
-  // S\u00e9pare : jamais vus vs d\u00e9j\u00e0 vus
-  const unseen=pool.filter(e=>!profile.exerciseStats[e.id]||!profile.exerciseStats[e.id].att);
-  const seen=pool.filter(e=>profile.exerciseStats[e.id]&&profile.exerciseStats[e.id].att);
-  // Trie les vus par date (plus anciens d'abord)
-  seen.sort((a,b)=>{
-    const la=profile.exerciseStats[a.id].lastSeen||'';
-    const lb=profile.exerciseStats[b.id].lastSeen||'';
-    return la.localeCompare(lb);
-  });
-  // Priorit\u00e9 aux jamais vus, puis les plus anciens
+  // Training / Challenge : neuf d'abord, rat\u00e9s \u00e0 r\u00e9viser, autres, mastered en dernier recours
   let candidates=shuffle(unseen);
-  if(candidates.length<10) candidates=candidates.concat(seen.slice(0,10-candidates.length));
+  if(candidates.length<10) candidates=candidates.concat(shuffle(failed).slice(0,10-candidates.length));
+  if(candidates.length<10) candidates=candidates.concat(other.slice(0,10-candidates.length));
+  if(candidates.length<10) candidates=candidates.concat(shuffle(mastered).slice(0,10-candidates.length));
   return candidates.slice(0,10);
 }
 
@@ -669,6 +702,7 @@ function renderGame(){
       <span class="stars">${'\u2605'.repeat(ex.diff)}${'\u2606'.repeat(5-ex.diff)}</span>
       ${levelBadge}
     </div>
+    ${renderExerciseVisual(ex)}
     <p style="font-size:clamp(1rem,2.5vw,1.2rem);color:#2d2018;line-height:1.7;margin-bottom:24px">${esc(ex.q)}</p>
     <div class="choices-grid">
       ${ex.ch.map((c,i)=>{let cls='choice-btn';if(state.selected!==null){if(i===ex.ans)cls+=' correct';else if(i===state.selected&&i!==ex.ans)cls+=' wrong'}return `<button class="${cls}" ${state.selected!==null?'disabled':''} onclick="selectAnswer(${i})"><span class="choice-letter">${String.fromCharCode(65+i)}.</span>${esc(c)}</button>`}).join('')}
@@ -808,10 +842,18 @@ function finishGame(abandoned){
       profile.catStats[cat].att++;
       if(r.correct)profile.catStats[cat].cor++;
       const eid=r.ex.id;
-      if(!profile.exerciseStats[eid])profile.exerciseStats[eid]={att:0,cor:0};
-      profile.exerciseStats[eid].att++;
-      if(r.correct)profile.exerciseStats[eid].cor++;
-      profile.exerciseStats[eid].lastSeen=d.date;
+      if(!profile.exerciseStats[eid])profile.exerciseStats[eid]={att:0,cor:0,consecCor:0};
+      const es=profile.exerciseStats[eid];
+      es.att++;
+      if(r.correct){
+        es.cor++;
+        es.consecCor=(es.consecCor||0)+1;
+        es.lastCorrectTs=Date.now();
+      }else{
+        es.consecCor=0;
+        es.lastWrongTs=Date.now();
+      }
+      es.lastSeen=d.date;
     });
     // Badges
     const newBadges=[];
@@ -989,6 +1031,8 @@ function renderCollection(){
 
 /* ════════ ESPACE PARENT ════════ */
 function renderParent(){
+  // Première visite parent : proposer l'onboarding avant le récap
+  if(!profile.parentOnboardingDone){navigate('parentOnboarding',{step:0});return}
   const pct=profile.totalQuestions>0?Math.round(profile.totalCorrect/profile.totalQuestions*100):0;
   const cats=Object.entries(profile.catStats||{});
   const weak=cats.filter(([c,s])=>s.att>=3).sort((a,b)=>(a[1].cor/a[1].att)-(b[1].cor/b[1].att)).slice(0,3);
@@ -1001,6 +1045,15 @@ function renderParent(){
     <div style="font-size:3rem">\u{1F464}</div>
     <h2 class="title" style="color:#c4b5fd;font-size:1.6rem">Espace Parent</h2>
     <p class="sub">Suivi de ${esc(profile.name)}</p></div>
+  <div class="card mb-4" style="border-color:#c4b5fd;background:linear-gradient(145deg,#ede9fe,#e0e7ff)">
+    <h3 class="fredoka" style="font-size:.82rem;color:#5b21b6;letter-spacing:.1em;text-transform:uppercase;margin-bottom:10px">Pour les parents</h3>
+    <div class="row gap-2" style="flex-wrap:wrap">
+      <button class="parent-btn" onclick="navigate('parentGuidedAccess')">\u{1F512} Garder dans l'app</button>
+      <button class="parent-btn" onclick="navigate('parentScreenTime')">⏱️ Limiter le temps</button>
+      <button class="parent-btn" onclick="navigate('nameAsk')">\u{1F464} Renommer</button>
+      <button class="parent-btn" onclick="navigate('parentOnboarding',{step:0})">\u{1F4D6} Revoir le tour</button>
+    </div>
+  </div>
   <div class="card mb-4" style="border-color:#c4b5fd"><div class="stats-grid">
     <div class="stat-card"><div class="stat-val" style="color:#c4b5fd">${profile.totalGames}</div><div class="stat-label">Parties</div></div>
     <div class="stat-card"><div class="stat-val" style="color:${pct>=60?'#22c55e':'#ef4444'}">${pct}%</div><div class="stat-label">R\u00e9ussite</div></div>
@@ -1024,6 +1077,115 @@ function renderParent(){
   <button class="btn-stone btn-small" onclick="exportData()">\u{1F4E4} Exporter (JSON)</button>
   <button class="btn-stone btn-small" onclick="resetData()" style="margin-top:8px;background:linear-gradient(135deg,#7f1d1d,#991b1b)">\u{1F5D1}\uFE0F R\u00e9initialiser</button></div>
   <button class="btn-stone" onclick="navigate('home')">\u2190 Retour</button>`;
+}
+
+/* ════════ ONBOARDING PARENTS (6 écrans) ════════
+   Objectif : présenter en <90 s au parent la promesse, le contrôle du temps
+   et le verrouillage iOS (Accès guidé). Aucun appel réel à des API iOS —
+   uniquement des tutoriels textuels qui indiquent où trouver les réglages
+   dans les Réglages iPhone/iPad. Le parent effectue les réglages lui-même. */
+const PARENT_ONBOARDING_STEPS=[
+  {emoji:'\u{1F393}',title:'Apprendre devient un jeu.',sub:'Des questions adaptées à son âge, quelques minutes par jour.',hint:'\u{1F9E0} Maths, Sciences, Culture, Langues, Poésies…'},
+  {emoji:'\u{1F5FA}️',title:'Comprendre en voyant.',sub:'Images, cartes et schémas apparaissent quand ils aident vraiment à comprendre.',hint:'Exemple : \u{1FA90} \u{1F30D} ⭐ \u{1F319} — « Quelle planète a des anneaux ? »'},
+  {emoji:'⚔️',title:'Défier ses amis.',sub:'Deux téléphones, un défi, les mêmes questions.',hint:'\u{1F9D2} LÉO  ⚔️  EMMA \u{1F9D2}',note:'Bientôt disponible : version test à venir.'},
+  {emoji:'\u{1F512}',title:'Il reste dans l\'application.',sub:'Sur iPhone et iPad, l\'Accès guidé garde l\'app ouverte et bloque les autres usages.',cta:'Comment l\'activer',ctaTarget:'parentGuidedAccess'},
+  {emoji:'⏱️',title:'Vous choisissez la durée.',sub:'Temps d\'écran (iOS) permet de fixer une limite quotidienne, par ex. 15 min/jour.',cta:'Voir comment faire',ctaTarget:'parentScreenTime'},
+  {emoji:'\u{1F680}',title:'C\'est parti.',sub:'',hint:'\u{1F9E0} Apprendre · ⚔️ Défier · \u{1F3AF} Progresser · ⏱️ Temps maîtrisé'}
+];
+function renderParentOnboarding(){
+  const step=Math.max(0,Math.min(state.step||0,PARENT_ONBOARDING_STEPS.length-1));
+  const s=PARENT_ONBOARDING_STEPS[step];
+  const isLast=step===PARENT_ONBOARDING_STEPS.length-1;
+  const dots=PARENT_ONBOARDING_STEPS.map((_,i)=>`<div class="parent-onboarding-dot ${i===step?'active':''}"></div>`).join('');
+  const primary=isLast
+    ? `<button class="btn-fire" onclick="finishParentOnboarding()">Ouvrir l'espace parent →</button>`
+    : `<button class="btn-fire" onclick="navigate('parentOnboarding',{step:${step+1}})">Continuer</button>`;
+  const secondary=s.cta&&s.ctaTarget
+    ? `<button class="btn-stone btn-small mt-3" onclick="navigate('${s.ctaTarget}',{fromOnboarding:true})">${esc(s.cta)}</button>`
+    : '';
+  const backBtn=step>0
+    ? `<button class="btn-stone btn-small" onclick="navigate('parentOnboarding',{step:${step-1}})" style="background:transparent;border-color:transparent;color:#9c6f3a">← Retour</button>`
+    : `<button class="btn-stone btn-small" onclick="skipParentOnboarding()" style="background:transparent;border-color:transparent;color:#9c6f3a">Passer</button>`;
+  const noteHTML=s.note?`<p style="color:#9c6f3a;font-size:.75rem;margin-top:12px;font-style:italic">${esc(s.note)}</p>`:'';
+  app.innerHTML=`
+    <div class="text-center fade-in" style="padding:24px 8px">
+      <div style="font-size:4rem;margin-bottom:16px">${s.emoji}</div>
+      <h2 class="title" style="color:#7a3f04;font-size:1.55rem;line-height:1.25">${esc(s.title)}</h2>
+      ${s.sub?`<p class="sub" style="font-size:1rem;color:#5a4830;margin-top:12px;max-width:32em;margin-left:auto;margin-right:auto">${esc(s.sub)}</p>`:''}
+      ${s.hint?`<div class="ex-visual" style="margin-top:24px;font-size:clamp(1.4rem,4vw,2rem);min-height:60px">${esc(s.hint)}</div>`:''}
+      ${secondary}
+      ${noteHTML}
+    </div>
+    <div class="parent-onboarding-nav">
+      <div class="row" style="justify-content:center;gap:8px;margin-bottom:14px">${dots}</div>
+      <div class="row" style="gap:10px;justify-content:space-between;align-items:center">
+        ${backBtn}
+        ${primary}
+      </div>
+    </div>`;
+}
+function finishParentOnboarding(){
+  profile.parentOnboardingDone=true;
+  saveProfile();
+  navigate('parent');
+}
+function skipParentOnboarding(){
+  profile.parentOnboardingDone=true;
+  saveProfile();
+  navigate('parent');
+}
+
+/* Tutoriel Accès guidé (texte figé côté client, facilement modifiable si Apple change) */
+const GUIDED_ACCESS_STEPS_IOS=[
+  '<strong>Réglages</strong> → <strong>Accessibilité</strong> → <strong>Accès guidé</strong>.',
+  'Activez <strong>Accès guidé</strong>.',
+  'Touchez <strong>Réglages du code</strong>, puis <strong>Définir le code</strong> et choisissez un code à 4 chiffres.',
+  'Ouvrez l\'application <strong>Le Royaume des Nombres</strong>.',
+  'Appuyez rapidement <strong>3 fois</strong> sur le bouton latéral (ou Home).',
+  'Touchez <strong>Démarrer</strong> en haut à droite.',
+  'Pour quitter : appuyez à nouveau 3 fois sur le bouton, puis entrez votre code.'
+];
+function renderParentGuidedAccess(){
+  const from=state.fromOnboarding?'parentOnboarding':'parent';
+  const backData=state.fromOnboarding?",{step:3}":'';
+  app.innerHTML=`
+    <div class="text-center py-6 fade-in">
+      <div style="font-size:3rem">\u{1F512}</div>
+      <h2 class="title" style="color:#7a3f04;font-size:1.5rem">Garder l'enfant dans l'app</h2>
+      <p class="sub" style="max-width:32em;margin:8px auto 0">L'<strong>Accès guidé</strong> d'iOS verrouille l'iPhone ou l'iPad sur cette application. Impossible d'en sortir sans votre code.</p>
+    </div>
+    <div class="card mb-4" style="border-color:#c4b5fd">
+      <h3 class="fredoka" style="font-size:.85rem;color:#7a3f04;letter-spacing:.08em;margin-bottom:10px">Sur iPhone / iPad</h3>
+      ${GUIDED_ACCESS_STEPS_IOS.map((s,i)=>`<div class="parent-tuto-step"><span class="parent-tuto-kbd">${i+1}</span> ${s}</div>`).join('')}
+      <p style="color:#9c6f3a;font-size:.78rem;margin-top:12px;font-style:italic">Les intitulés exacts peuvent varier selon la version d'iOS. Cherchez « Accès guidé » dans <strong>Réglages</strong>.</p>
+    </div>
+    <button class="btn-stone" onclick="navigate('${from}'${backData})">← Retour</button>`;
+}
+
+/* Tutoriel Temps d'écran (texte figé côté client) */
+const SCREEN_TIME_STEPS_IOS=[
+  '<strong>Réglages</strong> → <strong>Temps d\'écran</strong>.',
+  'Si ce n\'est pas déjà fait : <strong>Activer Temps d\'écran</strong> → <strong>Cet appareil est à mon enfant</strong>.',
+  'Ouvrez <strong>Limites d\'app</strong> → <strong>Ajouter une limite</strong>.',
+  'Choisissez la catégorie <strong>Éducation</strong> (ou trouvez l\'app directement).',
+  'Fixez la durée quotidienne (ex. <strong>15 minutes</strong>).',
+  'Confirmez avec <strong>Ajouter</strong>. iOS bloquera l\'app une fois la durée atteinte.'
+];
+function renderParentScreenTime(){
+  const from=state.fromOnboarding?'parentOnboarding':'parent';
+  const backData=state.fromOnboarding?",{step:4}":'';
+  app.innerHTML=`
+    <div class="text-center py-6 fade-in">
+      <div style="font-size:3rem">⏱️</div>
+      <h2 class="title" style="color:#7a3f04;font-size:1.5rem">Limiter le temps</h2>
+      <p class="sub" style="max-width:32em;margin:8px auto 0">Utilisez <strong>Temps d'écran</strong> pour fixer une durée quotidienne. iOS bloquera l'app une fois la limite atteinte.</p>
+    </div>
+    <div class="card mb-4" style="border-color:#c4b5fd">
+      <h3 class="fredoka" style="font-size:.85rem;color:#7a3f04;letter-spacing:.08em;margin-bottom:10px">Sur iPhone / iPad</h3>
+      ${SCREEN_TIME_STEPS_IOS.map((s,i)=>`<div class="parent-tuto-step"><span class="parent-tuto-kbd">${i+1}</span> ${s}</div>`).join('')}
+      <p style="color:#9c6f3a;font-size:.78rem;margin-top:12px;font-style:italic">Les intitulés peuvent varier selon la version d'iOS. Cette limite est gérée par le système, pas par l'application.</p>
+    </div>
+    <button class="btn-stone" onclick="navigate('${from}'${backData})">← Retour</button>`;
 }
 
 function copySyncLink(){
