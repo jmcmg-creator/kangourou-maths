@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="fr">
 <head>
-<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>🫀 Le Corps Humain</title>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
@@ -31,7 +31,9 @@ body{background:#0a0815;color:#e8e0ff;font-family:'Trebuchet MS',sans-serif;min-
 .stat b{display:block;font-size:20px;font-family:Georgia,serif}
 .stat span{font-size:11px;color:#7a5a6a}
 </style>
-</head>
+<style>/* iOS : le bouton Retour etait sous la barre d'etat/encoche -> intappable */
+.back-btn{top:calc(12px + env(safe-area-inset-top,0px))!important;left:calc(12px + env(safe-area-inset-left,0px))!important;z-index:9999!important;min-height:40px;display:inline-flex;align-items:center}
+</style></head>
 <body>
 <a class="back-btn" href="../index.html">← Retour</a>
 <div class="header"><h1>🫀 Le Corps Humain</h1><p>Explore la machine la plus incroyable du monde</p></div>

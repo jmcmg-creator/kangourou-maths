@@ -2,7 +2,7 @@
 <html lang="fr">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>⚡ Le Laboratoire Électrique</title>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
@@ -40,7 +40,9 @@ input[type=range].red{accent-color:#ff5d6c}
 .status{text-align:center;margin-top:14px;font-size:14px}
 .tip{text-align:center;color:#8a96c4;font-size:13px;margin-top:28px;padding:0 20px 20px}
 </style>
-</head>
+<style>/* iOS : le bouton Retour etait sous la barre d'etat/encoche -> intappable */
+.back-btn{top:calc(12px + env(safe-area-inset-top,0px))!important;left:calc(12px + env(safe-area-inset-left,0px))!important;z-index:9999!important;min-height:40px;display:inline-flex;align-items:center}
+</style></head>
 <body>
 <a class="back-btn" href="../index.html">← Retour</a>
 <div class="header">

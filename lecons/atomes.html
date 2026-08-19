@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="fr">
 <head>
-<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>⚛️ Les Atomes</title>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
@@ -30,7 +30,9 @@ body{background:#08081a;color:#e0e8ff;font-family:'Trebuchet MS',sans-serif;min-
 .legend{display:flex;gap:16px;justify-content:center;margin:12px 0;font-size:13px}
 .legend-dot{width:12px;height:12px;border-radius:50%;display:inline-block;margin-right:4px;vertical-align:middle}
 </style>
-</head>
+<style>/* iOS : le bouton Retour etait sous la barre d'etat/encoche -> intappable */
+.back-btn{top:calc(12px + env(safe-area-inset-top,0px))!important;left:calc(12px + env(safe-area-inset-left,0px))!important;z-index:9999!important;min-height:40px;display:inline-flex;align-items:center}
+</style></head>
 <body>
 <a class="back-btn" href="../index.html">← Retour</a>
 <div class="header"><h1>⚛️ Les Atomes</h1><p>Les briques minuscules qui composent tout l'univers</p></div>

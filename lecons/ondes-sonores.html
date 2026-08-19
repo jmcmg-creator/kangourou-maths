@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="fr">
 <head>
-<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>🔊 Les Ondes Sonores</title>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
@@ -31,7 +31,9 @@ input[type=range]{width:100%;cursor:pointer;accent-color:#64dca0}
 .air-sim{position:relative;height:120px;background:rgba(0,0,0,.2);border-radius:14px;overflow:hidden;margin:16px 0}
 .air-dot{position:absolute;width:8px;height:8px;border-radius:50%;background:#64dca0;transform:translate(-50%,-50%)}
 </style>
-</head>
+<style>/* iOS : le bouton Retour etait sous la barre d'etat/encoche -> intappable */
+.back-btn{top:calc(12px + env(safe-area-inset-top,0px))!important;left:calc(12px + env(safe-area-inset-left,0px))!important;z-index:9999!important;min-height:40px;display:inline-flex;align-items:center}
+</style></head>
 <body>
 <a class="back-btn" href="../index.html">← Retour</a>
 <div class="header"><h1>🔊 Les Ondes Sonores</h1><p>Comment le son voyage de la guitare à ton oreille</p></div>

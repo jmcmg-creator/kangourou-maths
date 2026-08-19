@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="fr">
 <head>
-<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>📡 Les Ondes Électromagnétiques</title>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
@@ -29,7 +29,9 @@ input[type=range]{width:100%;cursor:pointer}
 .band-card h3{font-family:Georgia,serif;font-size:16px;margin:0 0 6px}
 .band-card p{font-size:13px;color:#8a80b0;margin:0;line-height:1.5}
 </style>
-</head>
+<style>/* iOS : le bouton Retour etait sous la barre d'etat/encoche -> intappable */
+.back-btn{top:calc(12px + env(safe-area-inset-top,0px))!important;left:calc(12px + env(safe-area-inset-left,0px))!important;z-index:9999!important;min-height:40px;display:inline-flex;align-items:center}
+</style></head>
 <body>
 <a class="back-btn" href="../index.html">← Retour</a>
 <div class="header"><h1>📡 Les Ondes Électromagnétiques</h1><p>La lumière, les ondes radio, les rayons X… c'est la même famille !</p></div>

@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="fr">
 <head>
-<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>🍎 Les Forces et la Gravité</title>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
@@ -32,7 +32,9 @@ input[type=range]{width:100%;cursor:pointer;accent-color:#64a0ff}
 .cmp .val{font-size:18px;font-weight:800;font-family:Georgia,serif;color:#64a0ff}
 .cmp .unit{font-size:11px;color:#5070a0}
 </style>
-</head>
+<style>/* iOS : le bouton Retour etait sous la barre d'etat/encoche -> intappable */
+.back-btn{top:calc(12px + env(safe-area-inset-top,0px))!important;left:calc(12px + env(safe-area-inset-left,0px))!important;z-index:9999!important;min-height:40px;display:inline-flex;align-items:center}
+</style></head>
 <body>
 <a class="back-btn" href="../index.html">← Retour</a>
 <div class="header"><h1>🍎 Les Forces et la Gravité</h1><p>Pourquoi les choses tombent (et les planètes tournent)</p></div>
