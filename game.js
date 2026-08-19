@@ -73,6 +73,7 @@ const SUBJECTS=[
       {id:"geo-cm1",name:"L'Europe",sub:"CM1 \u2014 Pays & capitales",icon:"\u{1F5FA}\uFE0F",color:"#0284c7"},
       {id:"geo-cm2",name:"Le Monde",sub:"CM2 \u2014 Continents & cultures",icon:"\u{1F30F}",color:"#0369a1"},
       {id:"geo-drapeaux",name:"Pays & Drapeaux",sub:"Tous niveaux \u2014 Reconna\u00eetre les drapeaux",icon:"\u{1F6A9}",color:"#0ea5e9"},
+      {id:"geo-carte-drapeaux",name:"Drapeaux sur la carte",sub:"Vois le drapeau, touche le pays",icon:"\u{1F6A9}",color:"#22d3ee",noBattle:true},
       {id:"geo-carte-france",name:"Villes de France",sub:"Place les villes sur la carte",icon:"\u{1F4CD}",color:"#06b6d4",noBattle:true},
       {id:"geo-carte-europe",name:"Capitales d'Europe",sub:"Place les capitales sur la carte",icon:"\u{1F9ED}",color:"#0891b2",noBattle:true},
       {id:"geo-carte-payseu",name:"Pays d'Europe",sub:"Touche le pays sur la carte",icon:"\u{1F30D}",color:"#0ea5e9",noBattle:true}
@@ -596,27 +597,79 @@ async function generateAIExercises(level,count){
       known.add(k);return true;
     });
     profile.aiExercises=profile.aiExercises.concat(data.exercises);
-    // Limite à 200 max pour éviter explosion de taille
-    if(profile.aiExercises.length>200) profile.aiExercises=profile.aiExercises.slice(-200);
+    // Plafond PAR NIVEAU puis global : avant, un seul plafond global de 200
+    // suffisait à faire disparaître les questions d'un royaume dès qu'un autre
+    // en générait beaucoup. On garde les 60 plus récentes de chaque niveau,
+    // 500 au total.
+    profile.aiExercises=_trimAiPool(profile.aiExercises);
     saveProfile();
+    // Stockage cloud : le profil (et donc les questions générées) est poussé
+    // vers la base, pour les retrouver sur l'autre téléphone et demain.
+    try{pushProfileToCloud()}catch(e){}
     state.generating=false;
     return data.exercises;
   }catch(e){state.generating=false;throw e}
 }
 
-// Auto-generation en arrière-plan (fire & forget) si pool insuffisant
-function maybeAutoGenerate(level){
-  // Niveaux carte : pool fixe dessiné à la main, l'IA ne sait pas générer de cartes.
-  if(String(level).indexOf('geo-carte')===0) return;
-  const pool=EX.filter(e=>e.lv===level);
-  const aiPool=(profile.aiExercises||[]).filter(e=>e.lv===level);
-  // Compte les exos jamais vus
-  const allPool=[...pool,...aiPool];
-  const unseen=allPool.filter(e=>!profile.exerciseStats[e.id]||!profile.exerciseStats[e.id].att);
-  // Si moins de 15 exos jamais vus → génère 10 nouveaux en arrière-plan
-  if(unseen.length<15){
-    generateAIExercises(level,10).catch(e=>console.warn('auto-gen failed',e));
+const AI_PER_LEVEL=60, AI_TOTAL=500;
+function _trimAiPool(list){
+  const byLv={},out=[];
+  // On parcourt du plus récent au plus ancien pour garder les nouveaux.
+  for(let i=list.length-1;i>=0;i--){
+    const e=list[i];if(!e)continue;
+    const lv=e.lv||'?';
+    byLv[lv]=(byLv[lv]||0)+1;
+    if(byLv[lv]<=AI_PER_LEVEL) out.push(e);
   }
+  out.reverse();
+  return out.length>AI_TOTAL?out.slice(-AI_TOTAL):out;
+}
+
+/* ══════ RÉAPPROVISIONNEMENT AUTOMATIQUE ══════
+   Dès que le stock de questions encore JAMAIS POSÉES d'un niveau descend trop
+   bas, le Dragon en fabrique de nouvelles en arrière-plan et elles sont
+   enregistrées dans le profil — donc dans la base, donc disponibles demain et
+   sur l'autre téléphone. Le compte tient désormais compte de la mémoire
+   anti-doublon : une question posée hier ne compte plus comme disponible,
+   c'est exactement le cas que Julien décrit. */
+const AUTOGEN_FLOOR=18, AUTOGEN_BATCH=10, AUTOGEN_COOLDOWN_MS=45000;
+const _autogenAt={};
+// Niveaux que l'IA ne sait pas fabriquer : cartes tactiles (tracés dessinés à
+// la main) et disciplines générées localement à partir du code de battle.
+function _aiCanGenerate(level){
+  const l=String(level||'');
+  if(!l||l==='cp') return false;
+  if(l.indexOf('geo-carte')===0) return false;
+  if(l==='eclair'||l==='observation') return false;
+  return true;
+}
+// Questions encore disponibles = ni jamais posées, ni dans la mémoire récente.
+function availableCount(level){
+  const recent=new Set(recentExIds());
+  const all=EX.filter(e=>e.lv===level)
+    .concat((profile.aiExercises||[]).filter(e=>e.lv===level))
+    .concat((profile.customExercises||[]).filter(e=>e.lv===level))
+    .filter(isPlayableEx);
+  return dedupeExercises(all).filter(e=>{
+    if(recent.has(e.id)) return false;
+    const st=profile.exerciseStats&&profile.exerciseStats[e.id];
+    return !st||!st.att;
+  }).length;
+}
+function maybeAutoGenerate(level){
+  try{
+    if(!_aiCanGenerate(level)) return;
+    const left=availableCount(level);
+    if(left>=AUTOGEN_FLOOR) return;
+    // Anti-rafale : une génération à la fois par niveau.
+    const now=Date.now();
+    if(_autogenAt[level]&&now-_autogenAt[level]<AUTOGEN_COOLDOWN_MS) return;
+    _autogenAt[level]=now;
+    // Stock très bas ⇒ on demande un lot double, sinon un lot simple.
+    const n=left<AUTOGEN_BATCH?AUTOGEN_BATCH*2:AUTOGEN_BATCH;
+    track('autogen_requested',{level:String(level).slice(0,30),left:left});
+    generateAIExercises(level,n).catch(e=>console.warn('auto-gen failed',e));
+  }catch(e){console.warn('autogen',e)}
 }
 
 // Override saveProfile to push to cloud (debounced)
@@ -1068,6 +1121,28 @@ function renderHome(){
   `;
 }
 
+/* Bandeau « où j'en suis DANS CE royaume » : rend visible le fait que la
+   progression est cloisonnée par matière. */
+function subjectProgressBanner(s){
+  if(profile.grade==null) return '';
+  const top=topOpenLevel(s.id);
+  if(!top) return '';
+  const nxt=nextLockedLevel(s.id);
+  const prog=(profile.unlockProgress||{})[top.id]||0;
+  const band=targetDifficulty(s.id);
+  const hot=band&&band.label==='expert'
+    ?'<div class="sub" style="color:#f7a020;margin-top:6px">\u{1F525} Tu cartonnes ici : le Dragon te sort des questions plus costaudes.</div>':'';
+  const nextHTML=nxt
+    ?'<div class="sub" style="margin-top:6px">Prochain palier : <b style="color:'+s.color+'">'+esc(nxt.name)+'</b> \u2014 '+prog+'/3 parties r\u00e9ussies</div>'
+      +'<div class="progress-track" style="margin-top:6px"><div class="progress-fill" style="width:'+Math.round(prog/3*100)+'%"></div></div>'
+    :'<div class="sub" style="margin-top:6px">Tout est ouvert dans ce royaume \u2705</div>';
+  return '<div class="card mb-3" style="border-color:'+s.color+'55">'
+    +'<div style="color:#faf5ff;font-weight:700">\u{1F393} Ton niveau ici : <span style="color:'+s.color+'">'+esc(top.name)+'</span></div>'
+    +'<div class="sub" style="margin-top:2px;font-size:.72rem">Chaque royaume avance \u00e0 son rythme \u2014 ce que tu gagnes ici ne compte que pour '+esc(s.name)+'.</div>'
+    +nextHTML+hot
+  +'</div>';
+}
+
 function renderSubject(){
   const s=SUBJECTS.find(x=>x.id===state.subjectId)||SUBJECTS[0];
   const visibleLevels=s.levels.filter(l=>!l.secret||profile.name.toLowerCase()==='joseph');
@@ -1076,6 +1151,7 @@ function renderSubject(){
     <h2 class="title" style="color:${s.color};font-size:1.6rem">${s.name}</h2>
     <p class="sub">${s.desc}</p>
   </div>
+  ${subjectProgressBanner(s)}
   ${visibleLevels.map((lv,i)=>{
     const open=isLevelUnlocked(lv.id);
     const prog=(profile.unlockProgress||{})[topOpenLevel(s.id)&&topOpenLevel(s.id).id]||0;
@@ -1561,6 +1637,90 @@ function _applyCooldown(candidates,n){
 function finalizePick(candidates,n){
   return _applyCooldown(dedupeExercises(candidates),n).slice(0,n);
 }
+// fin anti-doublon
+
+/* ── Drapeaux SUR LA CARTE (ÉTAPE demandée par Julien) ──
+   Même carte tactile que « Pays d'Europe », mais la consigne est un drapeau :
+   l'enfant voit 🇵🇹 et doit toucher le Portugal. Deux compétences d'un coup,
+   reconnaître le drapeau ET situer le pays — et c'est le seul écran où
+   drapeau et géographie se rencontrent vraiment. */
+const MAP_FLAGS={
+  no:'\u{1F1F3}\u{1F1F4}', fr:'\u{1F1EB}\u{1F1F7}', se:'\u{1F1F8}\u{1F1EA}', pl:'\u{1F1F5}\u{1F1F1}',
+  at:'\u{1F1E6}\u{1F1F9}', hu:'\u{1F1ED}\u{1F1FA}', ro:'\u{1F1F7}\u{1F1F4}', de:'\u{1F1E9}\u{1F1EA}',
+  gr:'\u{1F1EC}\u{1F1F7}', ch:'\u{1F1E8}\u{1F1ED}', be:'\u{1F1E7}\u{1F1EA}', nl:'\u{1F1F3}\u{1F1F1}',
+  pt:'\u{1F1F5}\u{1F1F9}', es:'\u{1F1EA}\u{1F1F8}', ie:'\u{1F1EE}\u{1F1EA}', it:'\u{1F1EE}\u{1F1F9}',
+  dk:'\u{1F1E9}\u{1F1F0}', gb:'\u{1F1EC}\u{1F1E7}', cz:'\u{1F1E8}\u{1F1FF}'
+};
+// Repère mémo + capitale : ce que l'enfant lit APRÈS avoir répondu.
+const MAP_FLAG_HINTS={
+  fr:['Paris','Bleu-blanc-rouge : trois bandes verticales.'],
+  de:['Berlin','Noir, rouge, or : trois bandes horizontales.'],
+  it:['Rome','Vert, blanc, rouge — et le pays a la forme d\u2019une botte.'],
+  es:['Madrid','Rouge et jaune, avec les armoiries \u00e0 gauche.'],
+  pt:['Lisbonne','Vert et rouge, avec une sph\u00e8re dor\u00e9e : le Portugal, tout \u00e0 l\u2019ouest.'],
+  gb:['Londres','L\u2019Union Jack : des croix rouges et blanches crois\u00e9es.'],
+  ie:['Dublin','Vert, blanc, orange \u2014 l\u2019\u00eele verte, \u00e0 l\u2019ouest du Royaume-Uni.'],
+  be:['Bruxelles','Noir, jaune, rouge, juste au nord de la France.'],
+  nl:['Amsterdam','Rouge, blanc, bleu horizontal, au bord de la mer du Nord.'],
+  ch:['Berne','Une croix blanche sur fond rouge, carr\u00e9e, au c\u0153ur des Alpes.'],
+  at:['Vienne','Rouge, blanc, rouge \u2014 \u00e0 l\u2019est de la Suisse.'],
+  cz:['Prague','Blanc, rouge et un triangle bleu, entre Allemagne et Pologne.'],
+  pl:['Varsovie','Blanc en haut, rouge en bas, \u00e0 l\u2019est de l\u2019Allemagne.'],
+  hu:['Budapest','Rouge, blanc, vert \u2014 travers\u00e9e par le Danube.'],
+  ro:['Bucarest','Bleu, jaune, rouge, au bord de la mer Noire.'],
+  gr:['Ath\u00e8nes','Bandes bleues et blanches avec une croix \u2014 tout au sud-est.'],
+  dk:['Copenhague','Croix blanche sur fond rouge, entre Allemagne et Su\u00e8de.'],
+  se:['Stockholm','Croix jaune sur fond bleu, en Scandinavie.'],
+  no:['Oslo','Croix bleue bord\u00e9e de blanc sur fond rouge, tout au nord.']
+};
+Object.keys(MAP_FLAGS).forEach(cid=>{
+  const c=MAP_COUNTRIES[cid]; if(!c) return;
+  const base=EX.find(e=>e.id==='mapcy_'+cid);
+  const h=MAP_FLAG_HINTS[cid]||[];
+  EX.push({
+    id:'mapfg_'+cid, lv:'geo-carte-drapeaux', cat:'Drapeaux sur la carte',
+    diff:(base&&base.diff)||3, type:'map-country', target:cid,
+    flag:MAP_FLAGS[cid],
+    q:'\u00c0 quel pays appartient ce drapeau ? Touche-le sur la carte !',
+    se:'C\u2019est '+c.name+(h[0]?', dont la capitale est '+h[0]:'')+'.'+(h[1]?' '+h[1]:''),
+    regle:h[1]||'', sk:'Drapeaux & carte d\u2019Europe'
+  });
+});
+
+/* ══════ DIFFICULTÉ ADAPTATIVE, DOMAINE PAR DOMAINE ══════
+   Le déblocage des paliers est déjà cloisonné par matière
+   (profile.unlocks[matière]) : un enfant fort en maths ouvre les niveaux de
+   maths sans que ça change quoi que ce soit en français. On ajoute ici le
+   second étage, demandé par Julien : DANS un niveau ouvert, viser des
+   questions plus dures quand il excelle DANS CE domaine — et plus douces
+   quand il rame — au lieu d'un tirage uniforme. */
+const MASTERY_WINDOW=8;          // dernières parties de la matière regardées
+const MASTERY_MIN_GAMES=2;       // en dessous, on ne conclut rien
+function subjectAccuracy(subjectId){
+  const su=SUBJECTS.find(x=>x.id===subjectId);
+  if(!su) return null;
+  const lvIds=new Set((su.levels||[]).map(l=>l.id));
+  const ses=profile.sessions||[];
+  let score=0,total=0,games=0;
+  for(let i=ses.length-1;i>=0&&games<MASTERY_WINDOW;i--){
+    const x=ses[i];
+    if(!x||!lvIds.has(x.level)||!x.total) continue;
+    score+=(x.score||0);total+=x.total;games++;
+  }
+  return total>0?{acc:score/total,games:games}:null;
+}
+/* Fourchette de difficulté visée (1..5), ou null = tirage normal.
+   Jamais bloquant : si la fourchette ne donne pas assez de questions,
+   pickExercises complète en dehors plutôt que de rendre une partie courte. */
+function targetDifficulty(subjectId){
+  const m=subjectAccuracy(subjectId);
+  if(!m||m.games<MASTERY_MIN_GAMES) return null;
+  if(m.acc>=0.90) return {min:3,max:5,label:'expert'};
+  if(m.acc>=0.75) return {min:2,max:5,label:'confirme'};
+  if(m.acc<0.50)  return {min:1,max:3,label:'doux'};
+  return null;
+}
+// fin maitrise
 
 function pickExercises(mode,lvId){
   const lv=LEVELS.find(l=>l.id===lvId);
@@ -1600,9 +1760,15 @@ function pickExercises(mode,lvId){
     const lb=profile.exerciseStats[b.id].lastSeen||'';
     return la.localeCompare(lb);
   });
-  // Priorit\u00e9 aux jamais vus, puis les plus anciens
-  let candidates=shuffle(unseen);
-  if(candidates.length<10) candidates=candidates.concat(seen);
+  // Priorit\u00e9 aux jamais vus, puis les plus anciens.
+  // Et à l'intérieur, priorité à la bonne fourchette de difficulté POUR CETTE
+  // MATIÈRE : fort en maths ⇒ questions de maths plus dures, sans rien changer
+  // aux autres royaumes.
+  const band=targetDifficulty(subjectOfLevel(lvId));
+  const inBand=e=>!band||((e.diff||3)>=band.min&&(e.diff||3)<=band.max);
+  let candidates=shuffle(unseen.filter(inBand));
+  if(candidates.length<10) candidates=candidates.concat(shuffle(unseen.filter(e=>!inBand(e))));
+  if(candidates.length<10) candidates=candidates.concat(seen.filter(inBand),seen.filter(e=>!inBand(e)));
   return finalizePick(candidates,10);
 }
 
@@ -1623,7 +1789,7 @@ async function startGame(mode){
   }
   state.battleCode=null; // partie normale : ne jamais soumettre à une battle quittée en route
   state.mode=mode;state.exercises=exercises;state.idx=0;state.selected=null;state.score=0;state.streak=0;state.maxStreak=0;state.results=[];state.timer=60;state.gameOver=false;state.startTime=Date.now();state.detailOpen=false;state.sessionXP=0;state.sessionCristaux=0;state.chestsOpen=[];
-  if(state.level&&state.level!=='cp') maybeAutoGenerate(state.level);
+  if(state.level) maybeAutoGenerate(state.level);
   navigate('game');
 }
 
@@ -2081,7 +2247,7 @@ function finishGame(abandoned){
     });
     d.newDragonnets=newDragonnets;
     // G\u00e9n\u00e9ration auto pour la prochaine session (en arri\u00e8re-plan)
-    if(state.level&&state.level!=='cp'&&!abandoned) maybeAutoGenerate(state.level);
+    if(state.level) maybeAutoGenerate(state.level);
     // \u00c9volution dragon
     const newStage=getCurrentStage();
     d.evolved=newStage>oldStage;
