@@ -73,7 +73,8 @@ const SUBJECTS=[
       {id:"geo-cm2",name:"Le Monde",sub:"CM2 \u2014 Continents & cultures",icon:"\u{1F30F}",color:"#0369a1"},
       {id:"geo-drapeaux",name:"Pays & Drapeaux",sub:"Tous niveaux \u2014 Reconna\u00eetre les drapeaux",icon:"\u{1F6A9}",color:"#0ea5e9"},
       {id:"geo-carte-france",name:"Villes de France",sub:"Place les villes sur la carte",icon:"\u{1F4CD}",color:"#06b6d4",noBattle:true},
-      {id:"geo-carte-europe",name:"Capitales d'Europe",sub:"Place les capitales sur la carte",icon:"\u{1F9ED}",color:"#0891b2",noBattle:true}
+      {id:"geo-carte-europe",name:"Capitales d'Europe",sub:"Place les capitales sur la carte",icon:"\u{1F9ED}",color:"#0891b2",noBattle:true},
+      {id:"geo-carte-payseu",name:"Pays d'Europe",sub:"Touche le pays sur la carte",icon:"\u{1F30D}",color:"#0ea5e9",noBattle:true}
     ]}
 ];
 
@@ -1169,12 +1170,14 @@ async function reqGen(lvId,n){
 function isPlayableEx(e){
   if(!e||e.oral) return false;
   if(e.type==='map') return !!(MAP_POINTS[e.map]&&e.target&&MAP_POINTS[e.map].some(p=>p.id===e.target));
+  if(e.type==='map-country') return !!(e.target&&MAP_COUNTRIES[e.target]);
   if(e.type==='input') return Array.isArray(e.answers)&&e.answers.length>0&&typeof e.q==='string';
   return Array.isArray(e.ch)&&e.ch.length>=2&&e.ch.length<=4&&typeof e.ans==='number'&&e.ans>=0&&e.ans<e.ch.length;
 }
 // Réponse correcte d'un exo, quel que soit son format.
 function exAnswerText(e){
   if(e.type==='map'){const p=((MAP_POINTS[e.map])||[]).find(x=>x.id===e.target);return p?p.name:''}
+  if(e.type==='map-country'){const cy=MAP_COUNTRIES[e.target];return cy?cy.name:''}
   return e.type==='input'?(e.answers&&e.answers[0]||''):(e.ch&&e.ch[e.ans]||'');
 }
 // Normalisation pour comparer une réponse tapée (accents/casse/espaces).
@@ -1221,6 +1224,48 @@ const MAP_POINTS={
 };
 MAP_POINTS.france.forEach(p=>EX.push({id:'mapfr_'+p.id,lv:'geo-carte-france',cat:'Villes de France',diff:p.diff,type:'map',map:'france',target:p.id,q:'Où est '+p.name+' ? Touche le bon point sur la carte !',se:p.se,sk:'Carte de France'}));
 MAP_POINTS.europe.forEach(p=>EX.push({id:'mapeu_'+p.id,lv:'geo-carte-europe',cat:"Capitales d'Europe",diff:p.diff,type:'map',map:'europe',target:p.id,q:'Où est '+p.name+', la capitale '+p.gen+' ? Touche le bon point !',se:p.se,sk:"Capitales d'Europe"}));
+
+/* ════════ PLACER LES PAYS : vraies frontières tappables (Natural Earth) ════════ */
+const MAP_COUNTRIES={
+  no:{name:"la Norvège",path:"M97.9,-38.2 L93.8,-36.6 L91.9,-36.3 L92.9,-39.1 L89.8,-40.7 L86.1,-39.3 L85,-36.4 L82.7,-34.6 L80.1,-35.6 L77,-35.4 L74.4,-37.5 L73,-36.4 L71.5,-36.3 L71.1,-33.6 L66.7,-34.3 L66,-32 L63.7,-32.1 L62.2,-29.2 L59.8,-24.8 L56.1,-19.1 L57,-17.8 L56.1,-16.2 L53.8,-16.3 L52.2,-12.5 L52.4,-7.2 L53.9,-5.2 L53.1,-0.5 L51.1,2.3 L50.1,4.6 L48.5,2.1 L43.8,6.7 L40.6,7.7 L37.3,5.6 L36.4,1.3 L35.7,-7.9 L37.9,-10.5 L44.2,-13.8 L48.9,-17.9 L53.2,-23.5 L59,-31.2 L62.9,-34.3 L69.5,-39.3 L74.7,-41 L78.6,-40.8 L82.3,-44.1 L86.6,-43.9 L90.9,-44.7 L98.3,-41.8 L95.2,-40.7 L97.9,-38.2 Z"},
+  fr:{name:"la France",path:"M38.5,42.1 L39.7,43.2 L43.1,43.9 L41.9,46.7 L41.6,49.5 L40.9,50.2 L39.9,49.8 L39.9,50.9 L38.2,53.1 L38.1,54.9 L39.3,54.3 L40.1,56 L40,57.2 L40.7,58.7 L39.9,59.9 L40.5,63 L41.8,63.5 L41.5,65.2 L39.4,67.5 L34.7,66.4 L31.2,67.7 L30.9,70.1 L28.2,70.6 L25.5,68.8 L24.6,69.7 L20.2,67.9 L19.3,66.3 L20.5,63.9 L21,55.9 L18.5,51.7 L16.8,49.7 L13.1,48.2 L12.9,45.3 L16,44.4 L20,45.4 L19.2,40.9 L21.5,42.6 L27,39.5 L27.7,36.2 L29.8,35.4 L30.1,36.8 L31.2,36.9 L32.4,38.5 L34,40.4 L35.2,40.1 L37.3,41.9 L37.9,42.2 L38.5,42.1 Z"},
+  se:{name:"la Suède",path:"M50.1,4.6 L51.1,2.3 L53.1,-0.5 L53.9,-5.2 L52.4,-7.2 L52.2,-12.5 L53.8,-16.3 L56.1,-16.2 L57,-17.8 L56.1,-19.1 L59.8,-24.8 L62.2,-29.2 L63.7,-32.1 L66,-32 L66.7,-34.3 L71.1,-33.6 L71.5,-36.3 L73,-36.4 L76.1,-34.5 L79.9,-31.7 L79.9,-25.6 L80.7,-24 L76.6,-22.9 L74.3,-20.1 L74.7,-17.7 L70.9,-14.4 L66.3,-11 L64.6,-5.4 L66.3,-2.5 L68.5,-0.3 L66.4,4.2 L63.9,5.1 L63,11.8 L61.6,15.6 L58.7,15.2 L57.4,18.4 L54.6,18.6 L53.9,14.8 L51.9,10.2 L50.1,4.6 Z"},
+  pl:{name:"la Pologne",path:"M79.7,24.4 L79.8,26.1 L80.5,27.6 L80.5,29.2 L79,30.1 L79.8,31.9 L79.8,33.7 L81,37.2 L80.8,38.3 L79.6,38.8 L77.4,42.1 L78,43.9 L77.5,43.7 L75.3,42.1 L73.5,42.7 L72.4,42.3 L71,43.1 L69.8,41.7 L68.8,42.3 L68.7,42 L67.6,40 L65.8,39.8 L65.6,38.5 L64,38.1 L63.6,39.1 L62.3,38.3 L62.5,37.2 L60.7,36.9 L59.6,35.6 L58.6,33 L58.8,31.6 L58.2,29.5 L57.3,28.1 L58,27 L57.4,25 L59.1,23.8 L62.8,21.9 L65.8,20.6 L68.1,21.3 L68.3,22.2 L70.6,22.3 L73.6,22.7 L77.9,22.7 L79.2,23.1 L79.7,24.4 Z"},
+  at:{name:"l'Autriche",path:"M64.2,47.5 L64.1,49.1 L62.7,49.2 L63.2,50 L62.4,52.6 L61.9,53.3 L59.8,53.4 L58.6,54.3 L56.7,54 L53.3,52.9 L52.7,51.5 L50.4,52.2 L50.1,53 L48.7,52.4 L47.5,52.3 L46.4,51.6 L46.7,50.6 L46.7,49.9 L47.4,49.7 L48.6,50.8 L48.9,49.7 L51,49.9 L52.7,49.2 L53.9,49.3 L54.6,50.1 L54.8,49.4 L54.5,46.8 L55.3,46.3 L56.2,44.5 L57.9,45.8 L59.3,44.1 L60.1,43.8 L62,45.1 L63.1,44.9 L64.2,45.6 L64,46.1 L64.2,47.5 Z"},
+  hu:{name:"la Hongrie",path:"M76.4,46.3 L77.7,47.4 L77.9,48.5 L76.4,49.3 L75.3,52 L73.9,54.7 L72,55.5 L70.5,55.3 L68.6,56.4 L67.8,57 L65.8,56.2 L64,54.5 L63.3,54 L62.8,52.6 L62.4,52.6 L63.2,50 L62.7,49.2 L64.1,49.1 L64.2,47.5 L65.4,48.5 L66.3,49 L68.3,48.5 L68.5,47.7 L69.5,47.6 L70.6,46.9 L70.9,47.2 L72,46.7 L72.6,45.7 L73.3,45.5 L75.9,46.7 L76.4,46.3 Z"},
+  ro:{name:"la Roumanie",path:"M91,58 L92.1,58.8 L93.2,58.1 L94.3,58.8 L94.3,59.9 L93.2,60.7 L92.5,60.3 L91.8,65.2 L90.4,64.8 L88.7,63.3 L85.9,64.2 L84.7,65.2 L81.2,65 L79.4,64.4 L78.4,64.7 L77.8,63.1 L77.3,62.4 L77.9,61.7 L77.3,61.2 L76.5,62.1 L75.1,60.9 L75,59.3 L73.5,58.3 L73.2,57.1 L72,55.5 L73.9,54.7 L75.3,52 L76.4,49.3 L77.9,48.5 L78.9,47.6 L80.4,48.1 L81.9,48.1 L83,49.1 L83.8,48.4 L85.6,48.1 L86.2,47.1 L87.2,47.1 L87.9,47.5 L88.6,48.7 L89.4,50.4 L90.8,52.8 L90.9,54.5 L90.6,56.2 L91,58 Z"},
+  de:{name:"l'Allemagne",path:"M57.4,25 L58,27 L57.3,28.1 L58.2,29.5 L58.8,31.6 L58.6,33 L59.6,35.6 L58.5,36 L57.9,35.5 L57.3,36.3 L55.6,37.1 L54.7,38.1 L52.9,38.9 L53.4,40.1 L53.6,41.8 L54.8,42.8 L56.2,44.5 L55.3,46.3 L54.5,46.8 L54.8,49.4 L54.6,50.1 L53.9,49.3 L52.7,49.2 L51,49.9 L48.9,49.7 L48.6,50.8 L47.4,49.7 L46.7,49.9 L44.1,48.7 L43.6,49.5 L41.6,49.5 L41.9,46.7 L43.1,43.9 L39.7,43.2 L38.5,42.1 L38.7,40.4 L38.2,39.5 L38.5,36.8 L38.1,32.6 L39.5,32.6 L40.1,31.1 L40.7,27.4 L40.3,26.1 L40.7,25.2 L42.7,25 L43.2,25.9 L44.8,23.9 L44.2,22.4 L44.1,20.1 L45.9,20.7 L47.4,20.1 L47.5,21.6 L49.9,22.5 L49.9,24 L52.3,23.2 L53.6,22.1 L56.3,23.7 L57.4,25 Z"},
+  gr:{name:"la Grèce",path:"M86.4,98.8 L86.1,100 L82.7,100.3 L82.7,99.7 L79.8,98.9 L80.2,97.2 L81.5,98.5 L83.4,98.3 L85.2,98.6 L85.1,99.3 L86.4,98.8 Z M78.5,74.6 L80.2,74.8 L82.1,73.7 L83.8,75.1 L86,74.7 L86,72.7 L87.1,73.8 L86.4,76.3 L85.8,76.7 L84.4,76.6 L83.2,76.2 L80.3,77.3 L81.9,79.5 L80.7,80.2 L79.4,80.2 L78.1,78.1 L77.7,79 L78.2,81.4 L79.4,83.2 L78.5,84.1 L79.8,86 L81,87.1 L81,89.4 L78.8,88.3 L79.5,90.4 L78,90.8 L78.9,94.3 L77.4,94.4 L75.4,92.6 L74.5,89.4 L74.1,86.8 L73.2,84.9 L71.9,82.6 L71.8,81.5 L72.9,79.6 L73,78.3 L73.8,77.7 L73.9,76.6 L75.4,76.3 L76.3,75.4 L77.6,75.5 L78,74.8 L78.5,74.6 Z"},
+  ch:{name:"la Suisse",path:"M46.7,49.9 L46.7,50.6 L46.4,51.6 L47.5,52.3 L48.7,52.4 L48.5,54.1 L47.4,54.7 L45.7,54.2 L45.2,55.9 L44,56 L43.6,55.3 L42.3,56.7 L41.1,56.9 L40.1,56 L39.3,54.3 L38.1,54.9 L38.2,53.1 L39.9,50.9 L39.9,49.8 L40.9,50.2 L41.6,49.5 L43.6,49.5 L44.1,48.7 L46.7,49.9 Z"},
+  be:{name:"la Belgique",path:"M38.5,36.8 L38.2,39.5 L37.6,39.6 L37.3,41.9 L35.2,40.1 L34,40.4 L32.4,38.5 L31.2,36.9 L30.1,36.8 L29.8,35.4 L31.7,34.6 L33.4,34.9 L35.7,34.1 L37.2,35.8 L38.5,36.8 Z"},
+  nl:{name:"les Pays-Bas",path:"M40.3,26.1 L40.7,27.4 L40.1,31.1 L39.5,32.6 L38.1,32.6 L38.5,36.8 L37.2,35.8 L35.7,34.1 L33.4,34.9 L31.7,34.6 L32.9,33.5 L35,27.6 L38.3,26 L40.3,26.1 Z"},
+  pt:{name:"le Portugal",path:"M2.3,72.5 L3.2,71.5 L4.1,70.9 L4.7,72.8 L6.1,72.8 L6.5,72.3 L7.9,72.5 L8.6,74.5 L7.5,75.6 L7.5,78.7 L7.1,79.3 L7,81.2 L6,81.5 L6.9,83.9 L6.3,86.5 L7.1,87.7 L6.7,88.8 L5.9,90.3 L6.1,91.6 L5.1,92.6 L3.9,92.1 L2.6,92.5 L3,89.4 L2.8,86.9 L1.7,86.6 L1.1,85 L1.3,82.4 L2.3,81 L2.4,79.4 L2.9,77 L2.9,75.3 L2.4,73.8 L2.3,72.5 Z"},
+  es:{name:"l'Espagne",path:"M6.1,91.6 L5.9,90.3 L6.7,88.8 L7.1,87.7 L6.3,86.5 L6.9,83.9 L6,81.5 L7,81.2 L7.1,79.3 L7.5,78.7 L7.5,75.6 L8.6,74.5 L7.9,72.5 L6.5,72.3 L6.1,72.8 L4.7,72.8 L4.1,70.9 L3.2,71.5 L2.3,72.5 L2.4,69.6 L1.4,67.9 L4.8,65 L7.7,65.7 L10.9,65.7 L13.5,66.4 L15.4,66.2 L19.3,66.3 L20.2,67.9 L24.6,69.7 L25.5,68.8 L28.2,70.6 L30.9,70.1 L31,72.4 L28.8,75.1 L25.7,75.9 L25.5,77.3 L24.1,79.5 L23.1,82.8 L24.1,85 L22.7,86.8 L22.2,89.4 L20.4,90.2 L18.7,93.3 L15.7,93.4 L13.4,93.3 L11.9,94.7 L11,96.2 L9.8,95.9 L9,94.5 L8.3,92.2 L6.1,91.6 Z"},
+  ie:{name:"l'Irlande",path:"M9.1,24.5 L9.4,27.4 L7.6,31 L3.4,33.3 L0.1,32.7 L2,28.5 L0.7,24.5 L4,21.3 L5.8,19.5 L6.3,21.6 L5.8,23.8 L7.3,23.7 L9.1,24.5 Z"},
+  it:{name:"l'Italie",path:"M48.7,52.4 L50.1,53 L50.4,52.2 L52.7,51.5 L53.3,52.9 L56.7,54 L56.4,55.9 L57,57.6 L55.1,57.1 L53.2,58.5 L53.3,60.5 L53,61.6 L53.8,63.6 L56,65.7 L57.2,69 L59.9,72.2 L61.7,72.2 L62.3,73 L61.6,73.8 L63.8,75.3 L65.5,76.5 L67.6,78.6 L67.8,79.3 L67.4,80.8 L66,78.9 L64,78.2 L63,80.8 L64.7,82.3 L64.4,84.4 L63.4,84.6 L62.1,88.1 L61.2,88.4 L61.2,87.1 L61.6,85 L62.2,84.1 L61.2,81.8 L60.5,79.8 L59.5,79.3 L58.8,77.6 L57.3,76.9 L56.3,75.2 L54.5,75 L52.6,73.2 L50.5,70.6 L48.8,68.3 L48.1,64.3 L46.9,63.9 L45,62.5 L43.9,63.1 L42.5,64.9 L41.5,65.2 L41.8,63.5 L40.5,63 L39.9,59.9 L40.7,58.7 L40,57.2 L40.1,56 L41.1,56.9 L42.3,56.7 L43.6,55.3 L44,56 L45.2,55.9 L45.7,54.2 L47.4,54.7 L48.5,54.1 L48.7,52.4 Z M59,87.4 L60.8,87.1 L59.9,90.2 L60.3,91.5 L59.8,93.5 L57.9,92 L56.7,91.6 L53.4,89.5 L53.7,87.5 L56.5,87.9 L59,87.4 Z M44.5,76.4 L45.7,75.2 L47.2,78 L46.8,83.3 L45.7,83 L44.8,84.4 L43.9,83.3 L43.8,78.5 L43.2,76.2 L44.5,76.4 Z"},
+  dk:{name:"le Danemark",path:"M47.4,20.1 L45.9,20.7 L44.1,20.1 L43.1,17.9 L43.1,13.8 L43.5,12.8 L44.2,11.6 L46.2,11.3 L47.1,10.2 L49,9.1 L48.9,11.1 L48.2,12.4 L48.5,13.6 L49.8,14.2 L49.2,15.7 L48.5,15.2 L46.8,18.1 L47.4,20.1 Z"},
+  gb:{name:"le Royaume-Uni",path:"M9.1,24.5 L7.3,23.7 L5.8,23.8 L6.3,21.6 L5.8,19.5 L7.8,19.3 L10.3,21.8 L9.1,24.5 Z M16.4,26.4 L16.8,24.1 L15.2,21.6 L12.3,20.8 L11.7,19.8 L12.6,18 L11.8,16.9 L10.5,18.8 L10.4,14.9 L9.2,12.9 L10,8.7 L11.9,5.5 L13.8,5.8 L16.7,5.5 L14.1,9.8 L16.5,9.2 L19.1,9.3 L18.5,12.5 L16.4,16.1 L18.8,16.4 L19,16.8 L21.2,21.5 L22.8,22.1 L24.3,26.7 L24.9,28.3 L27.8,29 L27.5,31.6 L26.3,32.8 L27.3,34.8 L25.1,36.9 L21.9,36.9 L17.9,38 L16.8,37.2 L15.2,39.1 L13,38.6 L11.3,40.2 L10.1,39.4 L13.5,35.2 L15.7,34.3 L11.9,33.6 L11.3,32 L13.8,30.8 L12.5,28.6 L12.9,26 L16.4,26.4 Z"},
+  cz:{name:"la Tchéquie",path:"M59.6,35.6 L60.7,36.9 L62.5,37.2 L62.3,38.3 L63.6,39.1 L64,38.1 L65.6,38.5 L65.8,39.8 L67.6,40 L68.7,42 L68,42 L67.6,42.7 L67.1,42.9 L66.9,43.8 L66.5,44 L66.4,44.4 L65.6,44.8 L64.5,44.7 L64.2,45.6 L63.1,44.9 L62,45.1 L60.1,43.8 L59.3,44.1 L57.9,45.8 L56.2,44.5 L54.8,42.8 L53.6,41.8 L53.4,40.1 L52.9,38.9 L54.7,38.1 L55.6,37.1 L57.3,36.3 L57.9,35.5 L58.5,36 L59.6,35.6 Z"}
+};
+EX.push({id:'mapcy_no',lv:'geo-carte-payseu',cat:"Pays d'Europe",diff:4,type:'map-country',target:'no',q:'Où est '+MAP_COUNTRIES.no.name+' ? Touche le pays sur la carte !',se:"La Norvège est tout au nord — on voit sa pointe sud, autour d'Oslo.",sk:"Pays d'Europe"});
+EX.push({id:'mapcy_fr',lv:'geo-carte-payseu',cat:"Pays d'Europe",diff:1,type:'map-country',target:'fr',q:'Où est '+MAP_COUNTRIES.fr.name+' ? Touche le pays sur la carte !',se:"La France est à l'ouest de l'Europe, entre l'Atlantique et la Méditerranée.",sk:"Pays d'Europe"});
+EX.push({id:'mapcy_se',lv:'geo-carte-payseu',cat:"Pays d'Europe",diff:3,type:'map-country',target:'se',q:'Où est '+MAP_COUNTRIES.se.name+' ? Touche le pays sur la carte !',se:"La Suède est en Scandinavie — sur la carte on voit sa moitié sud.",sk:"Pays d'Europe"});
+EX.push({id:'mapcy_pl',lv:'geo-carte-payseu',cat:"Pays d'Europe",diff:3,type:'map-country',target:'pl',q:'Où est '+MAP_COUNTRIES.pl.name+' ? Touche le pays sur la carte !',se:"La Pologne est à l'est de l'Allemagne.",sk:"Pays d'Europe"});
+EX.push({id:'mapcy_at',lv:'geo-carte-payseu',cat:"Pays d'Europe",diff:4,type:'map-country',target:'at',q:'Où est '+MAP_COUNTRIES.at.name+' ? Touche le pays sur la carte !',se:"L'Autriche est à l'est de la Suisse, dans les Alpes.",sk:"Pays d'Europe"});
+EX.push({id:'mapcy_hu',lv:'geo-carte-payseu',cat:"Pays d'Europe",diff:4,type:'map-country',target:'hu',q:'Où est '+MAP_COUNTRIES.hu.name+' ? Touche le pays sur la carte !',se:"La Hongrie est en Europe centrale, traversée par le Danube.",sk:"Pays d'Europe"});
+EX.push({id:'mapcy_ro',lv:'geo-carte-payseu',cat:"Pays d'Europe",diff:4,type:'map-country',target:'ro',q:'Où est '+MAP_COUNTRIES.ro.name+' ? Touche le pays sur la carte !',se:"La Roumanie est à l'est, au bord de la mer Noire.",sk:"Pays d'Europe"});
+EX.push({id:'mapcy_de',lv:'geo-carte-payseu',cat:"Pays d'Europe",diff:2,type:'map-country',target:'de',q:'Où est '+MAP_COUNTRIES.de.name+' ? Touche le pays sur la carte !',se:"L'Allemagne est au centre de l'Europe, à l'est de la France.",sk:"Pays d'Europe"});
+EX.push({id:'mapcy_gr',lv:'geo-carte-payseu',cat:"Pays d'Europe",diff:2,type:'map-country',target:'gr',q:'Où est '+MAP_COUNTRIES.gr.name+' ? Touche le pays sur la carte !',se:"La Grèce est tout au sud-est, entourée par la mer Méditerranée.",sk:"Pays d'Europe"});
+EX.push({id:'mapcy_ch',lv:'geo-carte-payseu',cat:"Pays d'Europe",diff:3,type:'map-country',target:'ch',q:'Où est '+MAP_COUNTRIES.ch.name+' ? Touche le pays sur la carte !',se:"La Suisse est un petit pays de montagnes au cœur des Alpes.",sk:"Pays d'Europe"});
+EX.push({id:'mapcy_be',lv:'geo-carte-payseu',cat:"Pays d'Europe",diff:3,type:'map-country',target:'be',q:'Où est '+MAP_COUNTRIES.be.name+' ? Touche le pays sur la carte !',se:"La Belgique est un petit pays juste au nord de la France.",sk:"Pays d'Europe"});
+EX.push({id:'mapcy_nl',lv:'geo-carte-payseu',cat:"Pays d'Europe",diff:3,type:'map-country',target:'nl',q:'Où est '+MAP_COUNTRIES.nl.name+' ? Touche le pays sur la carte !',se:"Les Pays-Bas sont au bord de la mer du Nord, au nord de la Belgique.",sk:"Pays d'Europe"});
+EX.push({id:'mapcy_pt',lv:'geo-carte-payseu',cat:"Pays d'Europe",diff:2,type:'map-country',target:'pt',q:'Où est '+MAP_COUNTRIES.pt.name+' ? Touche le pays sur la carte !',se:"Le Portugal est tout à l'ouest, face à l'océan Atlantique.",sk:"Pays d'Europe"});
+EX.push({id:'mapcy_es',lv:'geo-carte-payseu',cat:"Pays d'Europe",diff:2,type:'map-country',target:'es',q:'Où est '+MAP_COUNTRIES.es.name+' ? Touche le pays sur la carte !',se:"L'Espagne occupe la majeure partie de la péninsule Ibérique, au sud-ouest.",sk:"Pays d'Europe"});
+EX.push({id:'mapcy_ie',lv:'geo-carte-payseu',cat:"Pays d'Europe",diff:3,type:'map-country',target:'ie',q:'Où est '+MAP_COUNTRIES.ie.name+' ? Touche le pays sur la carte !',se:"L'Irlande est l'île verte à l'ouest de la Grande-Bretagne.",sk:"Pays d'Europe"});
+EX.push({id:'mapcy_it',lv:'geo-carte-payseu',cat:"Pays d'Europe",diff:1,type:'map-country',target:'it',q:'Où est '+MAP_COUNTRIES.it.name+' ? Touche le pays sur la carte !',se:"L'Italie a la forme d'une botte qui plonge dans la Méditerranée.",sk:"Pays d'Europe"});
+EX.push({id:'mapcy_dk',lv:'geo-carte-payseu',cat:"Pays d'Europe",diff:4,type:'map-country',target:'dk',q:'Où est '+MAP_COUNTRIES.dk.name+' ? Touche le pays sur la carte !',se:"Le Danemark est une presqu'île entre l'Allemagne et la Suède.",sk:"Pays d'Europe"});
+EX.push({id:'mapcy_gb',lv:'geo-carte-payseu',cat:"Pays d'Europe",diff:2,type:'map-country',target:'gb',q:'Où est '+MAP_COUNTRIES.gb.name+' ? Touche le pays sur la carte !',se:"Le Royaume-Uni est une île au nord-ouest de la France.",sk:"Pays d'Europe"});
+EX.push({id:'mapcy_cz',lv:'geo-carte-payseu',cat:"Pays d'Europe",diff:4,type:'map-country',target:'cz',q:'Où est '+MAP_COUNTRIES.cz.name+' ? Touche le pays sur la carte !',se:"La Tchéquie est entre l'Allemagne et la Pologne.",sk:"Pays d'Europe"});
 
 function pickExercises(mode,lvId){
   const lv=LEVELS.find(l=>l.id===lvId);
@@ -1319,8 +1364,11 @@ function renderGame(){
       <span class="stars">${'\u2605'.repeat(ex.diff)}${'\u2606'.repeat(5-ex.diff)}</span>
       ${levelBadge}
     </div>
+    ${ex.flag?`<div style="font-size:clamp(4rem,20vw,6rem);line-height:1.1;text-align:center;margin:4px 0 10px;filter:drop-shadow(0 4px 12px rgba(0,0,0,.35))">${esc(ex.flag)}</div>`:''}
     <p style="font-size:clamp(1rem,2.5vw,1.2rem);color:#faf5ff;line-height:1.7;margin-bottom:24px">${esc(ex.q)}</p>
-    ${ex.type==='map'
+    ${ex.type==='map-country'
+      ?renderCountryMapArea(ex)
+      :ex.type==='map'
       ?renderMapArea(ex)
       :ex.type==='input'
       ?(state.selected===null
@@ -1329,7 +1377,7 @@ function renderGame(){
         :`<div class="choice-btn ${state.results[state.results.length-1]&&state.results[state.results.length-1].correct?'correct':'wrong'}" style="cursor:default">Ta réponse : ${esc(String(state.selected))}</div>
           ${state.results[state.results.length-1]&&state.results[state.results.length-1].correct?'':`<div class="choice-btn correct" style="cursor:default;margin-top:8px">Bonne réponse : ${esc(exAnswerText(ex))}</div>`}`)
       :`<div class="choices-grid">
-      ${ex.ch.map((c,i)=>{let cls='choice-btn';if(state.selected!==null){if(i===ex.ans)cls+=' correct';else if(i===state.selected&&i!==ex.ans)cls+=' wrong'}return `<button class="${cls}" ${state.selected!==null?'disabled':''} onclick="selectAnswer(${i})"><span class="choice-letter">${String.fromCharCode(65+i)}.</span>${esc(c)}</button>`}).join('')}
+      ${ex.ch.map((c,i)=>{let cls='choice-btn';if(state.selected!==null){if(i===ex.ans)cls+=' correct';else if(i===state.selected&&i!==ex.ans)cls+=' wrong'}const flagOnly=/^[\u{1F1E6}-\u{1F1FF}\s]+$/u.test(String(c));return `<button class="${cls}" ${state.selected!==null?'disabled':''} onclick="selectAnswer(${i})"${flagOnly?' style="font-size:2.4rem;text-align:center;line-height:1.2"':''}>${flagOnly?'':`<span class="choice-letter">${String.fromCharCode(65+i)}.</span>`}${esc(c)}</button>`}).join('')}
     </div>`}
     <div id="explanation"></div>
   </div>
@@ -1411,6 +1459,46 @@ function renderMapArea(ex){
     }).join('')
   +'</div>';
 }
+// ── Placer les PAYS : chaque pays est une vraie forme tappable ──────────
+function renderCountryMapArea(ex){
+  const done=state.selected!==null;
+  const shapes=Object.keys(MAP_COUNTRIES).map(cid=>{
+    let cls='map-country';
+    if(done){if(cid===ex.target)cls+=' correct';else if(cid===state.selected)cls+=' wrong'}
+    return '<path class="'+cls+'" d="'+MAP_COUNTRIES[cid].path+'" data-id="'+cid+'" onclick="selectCountryAnswer(this.dataset.id)"/>';
+  }).join('');
+  return '<div class="map-wrap"><svg viewBox="0 0 100 100">'
+    +'<path class="map-land" style="pointer-events:none" d="'+MAP_SVG_PATHS.europe+'"/>'
+    +shapes+'</svg>'
+    +'<p class="sub" style="position:absolute;bottom:6px;left:0;right:0;text-align:center;font-size:.7rem;pointer-events:none">Touche le bon pays !</p>'
+  +'</div>';
+}
+function selectCountryAnswer(id){
+  if(state.selected!==null||state.gameOver) return;
+  if(!MAP_COUNTRIES[id]) return;
+  if(state.timerID){clearInterval(state.timerID);state.timerID=null}
+  const ex=state.exercises[state.idx];
+  const correct=id===ex.target;
+  state.selected=id;
+  state.results.push({ex,choice:id,correct});
+  if(correct){
+    state.score++;state.streak++;
+    if(state.streak>state.maxStreak)state.maxStreak=state.streak;
+    const mult=state.streak>=10?3:state.streak>=5?2:state.streak>=3?1.5:1;
+    state.sessionXP+=Math.round(ex.diff*10*mult);
+    state.sessionCristaux+=ex.diff*2+(state.streak===3||state.streak===5||state.streak===10?10:0);
+  }else{
+    state.streak=0;
+    if(state.mode==='progression')state.gameOver=true;
+  }
+  renderGame();
+  showExplanation(ex,correct);
+  if(correct){
+    if(state.autoNextID)clearTimeout(state.autoNextID);
+    state.autoNextID=setTimeout(()=>{state.autoNextID=null;if(state.screen==='game'&&state.selected!==null)nextQuestion()},1600);
+  }
+}
+
 function selectMapAnswer(id){
   if(state.selected!==null||state.gameOver) return;
   if(state.timerID){clearInterval(state.timerID);state.timerID=null}
@@ -1572,7 +1660,8 @@ function finishGame(abandoned){
       if(!r.correct){
         if(!profile.recentMisses)profile.recentMisses=[];
         const e=r.ex;let given='';
-        if(e.type==='map'){const p=(MAP_POINTS[e.map]||[]).find(x=>x.id===r.choice);given=p?p.name:'(temps écoulé)'}
+        if(e.type==='map-country'){const cy=MAP_COUNTRIES[r.choice];given=cy?cy.name:'(temps écoulé)'}
+        else if(e.type==='map'){const p=(MAP_POINTS[e.map]||[]).find(x=>x.id===r.choice);given=p?p.name:'(temps écoulé)'}
         else if(e.type==='input'){given=String(r.choice||'')||'(vide)'}
         else{given=(typeof r.choice==='number'&&r.choice>=0&&Array.isArray(e.ch))?String(e.ch[r.choice]):'(temps écoulé)'}
         profile.recentMisses.push({id:e.id,q:(e.q||'').length>140?e.q.slice(0,140)+'…':(e.q||''),cat:e.cat||'',lv:e.lv||'',given,ans:exAnswerText(e),date:d.date});
