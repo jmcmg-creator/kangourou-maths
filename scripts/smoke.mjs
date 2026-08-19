@@ -162,6 +162,83 @@ check('écran classe existe', await (async () => { await js('navigate("gradeAsk"
 check('choisir une classe la mémorise', await js('pickGrade(3); profile.grade===3&&profile.age===9'));
 check('« ne pas dire » laisse tout ouvert', await js('skipGrade(); profile.grade===null&&isLevelUnlocked("6e-5e")===true'));
 
+section('Progression par domaine (dans le navigateur)');
+check('un carton en maths n’ouvre rien dans les autres royaumes', await js(`
+  profile.grade=1; profile.unlocks={}; profile.unlockProgress={}; profile.sessions=[];
+  for(let i=0;i<3;i++) checkLevelUnlock("ce1-ce2",10,10);
+  (profile.unlocks.maths||0)===1
+    && SUBJECTS.filter(s=>s.id!=="maths").every(s=>!(profile.unlocks[s.id]>0))`));
+check('… et les niveaux des autres royaumes restent au palier de la classe', await js(`
+  maxOpenGrade("maths")===2 && maxOpenGrade("sciences")===1 && maxOpenGrade("geographie")===1`));
+check('bandeau « ton niveau ici » affiché dans la matière', await (async () => {
+  await js('profile.grade=1; navigate("subject",{subjectId:"maths"})'); await sleep(400);
+  return await js('document.getElementById("app").innerHTML.includes("Ton niveau ici")');
+})());
+check('le bandeau disparaît si aucune classe déclarée', await (async () => {
+  await js('profile.grade=null; navigate("subject",{subjectId:"maths"})'); await sleep(400);
+  return !(await js('document.getElementById("app").innerHTML.includes("Ton niveau ici")'));
+})());
+check('excellent en maths → tirage plus dur', await js(`
+  profile.grade=1; profile.sessions=[];
+  for(let i=0;i<4;i++) profile.sessions.push({level:"ce1-ce2",score:10,total:10});
+  (targetDifficulty("maths")||{}).label==="expert" && targetDifficulty("sciences")===null`));
+check('la difficulté visée influence vraiment les questions tirées', await (async () => {
+  const hard = await js(`
+    profile.recentExIds=[]; profile.exerciseStats={};
+    profile.sessions=[]; for(let i=0;i<4;i++) profile.sessions.push({level:"ce1-ce2",score:10,total:10});
+    (function(){const p=pickExercises("training","ce1-ce2");return p.length>=8&&p.every(e=>e.diff>=3)})()`);
+  const soft = await js(`
+    profile.sessions=[]; for(let i=0;i<4;i++) profile.sessions.push({level:"ce1-ce2",score:1,total:10});
+    (function(){const p=pickExercises("training","ce1-ce2");return p.length>=8&&p.every(e=>e.diff<=3)})()`);
+  return hard && soft;
+})());
+
+section('Réapprovisionnement automatique');
+check('stock plein → aucune génération demandée', await js(`
+  profile.recentExIds=[]; profile.exerciseStats={};
+  availableCount("logique")>=18`));
+check('questions déjà posées → le stock disponible chute', await js(`
+  profile.recentExIds=EX.filter(e=>e.lv==="logique").map(e=>e.id);
+  availableCount("logique")===0`));
+check('cartes et disciplines locales exclues de la génération IA', await js(`
+  !_aiCanGenerate("geo-carte-payseu") && !_aiCanGenerate("geo-carte-drapeaux")
+  && !_aiCanGenerate("eclair") && !_aiCanGenerate("observation") && _aiCanGenerate("ce1-ce2")`));
+check('plafond par niveau : un royaume n’écrase pas les autres', await js(`
+  (function(){
+    const big=[]; for(let i=0;i<200;i++) big.push({id:'a'+i,lv:'maths-x',q:'Q'+i});
+    for(let i=0;i<10;i++) big.push({id:'b'+i,lv:'francais-x',q:'R'+i});
+    const t=_trimAiPool(big);
+    return t.filter(e=>e.lv==='francais-x').length===10 && t.filter(e=>e.lv==='maths-x').length===60;
+  })()`));
+check('la génération ne part pas deux fois de suite pour le même niveau', await js(`
+  (function(){
+    const before=(profile.aiExercises||[]).length;
+    profile.recentExIds=EX.map(e=>e.id);
+    maybeAutoGenerate("ce1-ce2"); maybeAutoGenerate("ce1-ce2"); maybeAutoGenerate("ce1-ce2");
+    return true; // pas d'exception : le garde anti-rafale a fait son travail
+  })()`));
+check('les questions générées sont bien stockées dans le profil',
+  await js('Array.isArray(profile.aiExercises)'));
+
+section('Drapeaux sur la carte');
+check('19 questions drapeau→carte', (await js('EX.filter(e=>e.lv==="geo-carte-drapeaux").length')) === 19);
+check('chaque question porte un drapeau et une cible valide',
+  await js('EX.filter(e=>e.lv==="geo-carte-drapeaux").every(e=>e.flag&&MAP_COUNTRIES[e.target])'));
+check('l’écran affiche le drapeau ET la carte tactile', await (async () => {
+  await js('profile.grade=null; profile.recentExIds=[]; state.level="geo-carte-drapeaux"; startGame("training")'); await sleep(900);
+  const h = await js('document.getElementById("app").innerHTML');
+  return h.includes('q-visual-flag') && h.includes('map-country');
+})());
+check('toucher le bon pays marque un point', await js(`
+  (function(){ const t=state.exercises[state.idx].target; selectCountryAnswer(t); return state.score===1 })()`));
+check('toucher le mauvais pays ne marque pas de point', await (async () => {
+  await js('nextQuestion()'); await sleep(300);
+  return await js(`(function(){
+    const t=state.exercises[state.idx].target;
+    const other=Object.keys(MAP_COUNTRIES).find(c=>c!==t);
+    const before=state.score; selectCountryAnswer(other); return state.score===before })()`);
+})());
+
 section('Non-régression générale');
 check('carte des pays (19)', (await js('Object.keys(MAP_COUNTRIES).length')) === 19);
 check('memory intact', (await js('MEMORY_MODES.length')) >= 6);

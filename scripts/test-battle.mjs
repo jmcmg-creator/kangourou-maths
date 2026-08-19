@@ -131,7 +131,7 @@ ok('« Tous niveaux » jamais verrouillé', G.levelMinGrade({ id: 'geo-drapeaux'
 
 /* ---------- anti-doublon ---------- */
 section('Anti-doublon — jamais deux fois la même question');
-const dsrc = grab('const RECENT_MAX=150;', 'function pickExercises');
+const dsrc = grab('const RECENT_MAX=150;', '// fin anti-doublon');
 const DUP = new Function('profile', dsrc + '\nreturn {_qKey,dedupeExercises,recentExIds,rememberExercises,_applyCooldown,finalizePick};');
 const prof = { recentExIds: [] };
 const A = DUP(prof);
@@ -180,6 +180,55 @@ ok('3 coffres', Q.QUEST_CHESTS.length === 3);
 ok('coffres dans les bornes d’une partie de 10', Q.QUEST_CHESTS.every(i => i >= 0 && i < 10));
 ok('dernier coffre sur la dernière question', Q.QUEST_CHESTS[Q.QUEST_CHESTS.length - 1] === 9);
 ok('coffres strictement croissants', Q.QUEST_CHESTS.every((v, i, a) => i === 0 || v > a[i - 1]));
+
+/* ---------- difficulté adaptative par domaine ---------- */
+section('Difficulté adaptative — domaine par domaine');
+const msrc = grab('const MASTERY_WINDOW=8;', '// fin maitrise');
+const SUB = [
+  { id: 'maths', levels: [{ id: 'ce1-ce2' }, { id: 'cm1-cm2' }] },
+  { id: 'francais', levels: [{ id: 'fr-ce2' }] },
+];
+const prof2 = { sessions: [] };
+const MA = new Function('SUBJECTS', 'profile',
+  msrc + '\nreturn {subjectAccuracy,targetDifficulty,MASTERY_WINDOW};')(SUB, prof2);
+
+const play = (level, score, total, n) => {
+  for (let i = 0; i < n; i++) prof2.sessions.push({ level, score, total });
+};
+ok('sans historique → aucune adaptation', MA.targetDifficulty('maths') === null);
+play('ce1-ce2', 1, 10, 1);
+ok('une seule partie ne suffit pas à conclure', MA.targetDifficulty('maths') === null);
+prof2.sessions = []; play('ce1-ce2', 10, 10, 3);
+ok('excellent en maths → questions plus dures', MA.targetDifficulty('maths').label === 'expert');
+ok('… et la fourchette exclut les plus faciles', MA.targetDifficulty('maths').min === 3);
+ok('le français n’est PAS affecté (cloisonnement)', MA.targetDifficulty('francais') === null);
+prof2.sessions = []; play('fr-ce2', 2, 10, 3);
+ok('en difficulté → questions plus douces', MA.targetDifficulty('francais').label === 'doux');
+ok('… plafonnée à 3 étoiles', MA.targetDifficulty('francais').max === 3);
+ok('les maths restent intacts', MA.targetDifficulty('maths') === null);
+prof2.sessions = []; play('ce1-ce2', 8, 10, 4);
+ok('niveau confirmé → fourchette large', MA.targetDifficulty('maths').label === 'confirme');
+prof2.sessions = []; play('ce1-ce2', 5, 10, 4);
+ok('niveau moyen → tirage normal', MA.targetDifficulty('maths') === null);
+prof2.sessions = []; play('ce1-ce2', 0, 10, 20); play('ce1-ce2', 10, 10, 8);
+ok('seules les dernières parties comptent', MA.targetDifficulty('maths').label === 'expert');
+prof2.sessions = []; play('ce1-ce2', 5, 0, 3);
+ok('parties vides ignorées sans division par zéro', MA.subjectAccuracy('maths') === null);
+ok('matière inconnue → null', MA.subjectAccuracy('zzz') === null);
+
+/* ---------- drapeaux sur la carte ---------- */
+section('Drapeaux sur la carte');
+const fsrc = game.slice(game.indexOf('const MAP_FLAGS='), game.indexOf('Object.keys(MAP_FLAGS)'));
+const F = new Function(fsrc + '\nreturn {MAP_FLAGS,MAP_FLAG_HINTS};')();
+const CC = ['no','fr','se','pl','at','hu','ro','de','gr','ch','be','nl','pt','es','ie','it','dk','gb','cz'];
+ok('un drapeau pour chacun des 19 pays de la carte',
+  CC.every(c => typeof F.MAP_FLAGS[c] === 'string' && F.MAP_FLAGS[c].length > 0), CC.filter(c => !F.MAP_FLAGS[c]).join());
+ok('aucun drapeau en double', new Set(Object.values(F.MAP_FLAGS)).size === CC.length);
+ok('capitale + repère visuel pour chaque pays',
+  CC.every(c => Array.isArray(F.MAP_FLAG_HINTS[c]) && F.MAP_FLAG_HINTS[c][0] && F.MAP_FLAG_HINTS[c][1]),
+  CC.filter(c => !F.MAP_FLAG_HINTS[c]).join());
+ok('drapeaux bien composés de 2 indicateurs régionaux',
+  Object.values(F.MAP_FLAGS).every(f => [...f].length === 2));
 
 console.log('\n══════════════════════════════');
 console.log(`  ${pass} réussis · ${fail} échoués`);
