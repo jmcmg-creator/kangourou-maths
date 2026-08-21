@@ -234,6 +234,42 @@ function esc(s){return s==null?'':String(s).replace(/[&<>"'`]/g,c=>_ESC_MAP[c])}
 // Light sanitizer for values used inside attribute single-quoted JS calls (rare)
 function escAttr(s){return esc(s).replace(/\\/g,'\\\\')}
 
+/* ════════ VALIDATION EXOS IA (défense en profondeur) ════════
+   Le Worker peut renvoyer des exos incohérents (LLM hallucine) : ans hors
+   bornes, ou réponse `ch[ans]` contredite par l'explication `se`. On filtre
+   côté client pour ne jamais servir ça à l'enfant. Règles :
+   - ch tableau de 2 à 6 chaînes non vides
+   - ans est un entier valide dans [0, ch.length[
+   - Si `se` contient un nombre isolé, il DOIT être = ch[ans] (parsé).
+     On ne rejette pas si `se` ne contient aucun nombre isolé (question non
+     numérique). Cette règle attrape typiquement le bug "10−3, ans:0 (=6)
+     avec se: 'il en reste 7'" qu'on a observé en prod. */
+function _extractNumber(s){
+  if(s==null) return null;
+  const m=String(s).match(/-?\d+(?:[.,]\d+)?/);
+  return m?parseFloat(m[0].replace(',','.')):null;
+}
+function isExerciseCoherent(ex){
+  if(!ex||typeof ex!=='object') return false;
+  if(typeof ex.q!=='string'||!ex.q.trim()) return false;
+  if(!Array.isArray(ex.ch)||ex.ch.length<2||ex.ch.length>6) return false;
+  if(ex.ch.some(c=>typeof c!=='string'||!c.trim())) return false;
+  if(typeof ex.ans!=='number'||!Number.isInteger(ex.ans)||ex.ans<0||ex.ans>=ex.ch.length) return false;
+  // Si l'explication porte un nombre isolé ET la bonne réponse est numérique, ils doivent matcher
+  const answerNum=_extractNumber(ex.ch[ex.ans]);
+  const seNum=_extractNumber(ex.se);
+  if(answerNum!==null && seNum!==null){
+    // Tolérance : la 1ère occurrence numérique de `se` doit correspondre à la bonne réponse
+    // On accepte aussi qu'un autre choix numérique corresponde à seNum (ambiguïté du LLM)
+    if(Math.abs(answerNum-seNum)>1e-9){
+      // Ce n'est cohérent que si AUCUN choix ne matche seNum (question non-numérique déguisée)
+      const anyMatch=ex.ch.some(c=>{const n=_extractNumber(c);return n!==null && Math.abs(n-seNum)<1e-9});
+      if(anyMatch) return false;
+    }
+  }
+  return true;
+}
+
 /* ════════ VISUELS PÉDAGOGIQUES ════════
    Un exercice peut porter un champ optionnel `visual` (string court d'emoji,
    ex "🪐 🌍 ⭐") + `visualType` ("emoji" par défaut) + `visualAlt` (texte
@@ -344,9 +380,13 @@ async function generateAIExercises(level,count){
     if(!Array.isArray(data.exercises)||data.exercises.length===0){
       throw new Error('Réponse vide (exercises absent ou []) — niveau "'+level+'" non supporté par le Worker ?');
     }
+    const clean=data.exercises.filter(isExerciseCoherent);
+    if(clean.length===0){
+      throw new Error('Toutes les questions générées ont été rejetées (incohérentes : ans hors bornes, ou réponse contredite par l\'explication).');
+    }
     // Persiste dans le profil pour cross-device + sessions futures
     if(!profile.aiExercises) profile.aiExercises=[];
-    profile.aiExercises=profile.aiExercises.concat(data.exercises);
+    profile.aiExercises=profile.aiExercises.concat(clean);
     // Limité à 200 max pour éviter explosion de taille
     if(profile.aiExercises.length>200) profile.aiExercises=profile.aiExercises.slice(-200);
     saveProfile();
@@ -624,7 +664,21 @@ async function reqGen(lvId,n){
 }
 
 /* ════════ ROTATION INTELLIGENTE ════════ */
+let _aiCleaned=false;
+function _cleanupAIExercises(){
+  if(_aiCleaned) return;
+  _aiCleaned=true;
+  if(!Array.isArray(profile.aiExercises)||profile.aiExercises.length===0) return;
+  const before=profile.aiExercises.length;
+  profile.aiExercises=profile.aiExercises.filter(isExerciseCoherent);
+  if(profile.aiExercises.length!==before){
+    console.warn('[cleanup] Exos IA incohérents retirés :',before-profile.aiExercises.length);
+    saveProfile();
+  }
+}
+
 function pickExercises(mode,lvId){
+  _cleanupAIExercises();
   const lv=LEVELS.find(l=>l.id===lvId);
   const hasStatic=lv&&lv.hasStatic;
   // Inclure les exercices AI générés (persistés dans le profil)
