@@ -544,7 +544,11 @@ function shouldAutoTriggerLesson(level){
   const cg=classGrade(profile.childClass);
   const lg=levelGrade(level);
   if(cg==null || lg==null) return false; // pas de classe déclarée : pas de trigger auto
-  return lg>cg;
+  if(lg<=cg) return false; // niveau égal ou inférieur : pas de leçon auto
+  // Nouvelle règle : la leçon n'apparaît QUE quand la classe est maîtrisée
+  // (toutes les questions statiques de sa classe répondues juste au moins 1x)
+  if(!isChildClassMastered()) return false;
+  return true;
 }
 function requestLessonForLevel(level){
   const subject=getSubjectIdForLevel(level)||'maths';
@@ -805,13 +809,50 @@ function renderSubject(){
 }
 
 const CHILD_CLASSES=[
-  {id:'cp',label:'CP',emoji:'\u{1F95A}',grade:1},
-  {id:'ce1-ce2',label:'CE1 · CE2',emoji:'\u{1F9D9}',grade:2.5},
-  {id:'cm1-cm2',label:'CM1 · CM2',emoji:'⚔️',grade:4.5},
-  {id:'6e-5e',label:'6ᵉ · 5ᵉ',emoji:'\u{1F409}',grade:6.5},
+  {id:'cp',label:'CP',emoji:'\u{1F95A}',grade:1,gradeMin:1,gradeMax:1},
+  {id:'ce1-ce2',label:'CE1 · CE2',emoji:'\u{1F9D9}',grade:2.5,gradeMin:2,gradeMax:3},
+  {id:'cm1-cm2',label:'CM1 · CM2',emoji:'⚔️',grade:4.5,gradeMin:4,gradeMax:5},
+  {id:'6e-5e',label:'6ᵉ · 5ᵉ',emoji:'\u{1F409}',grade:6.5,gradeMin:6,gradeMax:7},
   {id:'skip',label:'Je préfère passer',emoji:'…',grade:null}
 ];
 function classGrade(classId){const c=CHILD_CLASSES.find(x=>x.id===classId);return c?c.grade:null}
+function classRange(classId){const c=CHILD_CLASSES.find(x=>x.id===classId);return c&&c.gradeMin!=null?{min:c.gradeMin,max:c.gradeMax}:null}
+// True ssi tous les exos statiques des niveaux de sa classe ont été répondus
+// juste au moins une fois. Les niveaux sans exos statiques (culture, sciences,
+// hebreu) sont ignorés dans le décompte : ils ne peuvent pas gater.
+function isChildClassMastered(){
+  if(!profile.childClass) return false;
+  const r=classRange(profile.childClass);
+  if(!r) return false;
+  const inClassLevels=LEVELS.filter(lv=>{
+    const g=levelGrade(lv.id);
+    return g!=null && g>=r.min && g<=r.max;
+  });
+  if(inClassLevels.length===0) return false;
+  const staticExos=EX.filter(e=>inClassLevels.some(lv=>lv.id===e.lv));
+  if(staticExos.length===0) return false;
+  return staticExos.every(e=>{
+    const s=profile.exerciseStats[e.id];
+    return s && s.cor>=1;
+  });
+}
+// Combien reste-t-il d'exos statiques de sa classe à répondre juste ?
+function childClassRemaining(){
+  if(!profile.childClass) return null;
+  const r=classRange(profile.childClass);
+  if(!r) return null;
+  const inClassLevels=LEVELS.filter(lv=>{
+    const g=levelGrade(lv.id);
+    return g!=null && g>=r.min && g<=r.max;
+  });
+  const staticExos=EX.filter(e=>inClassLevels.some(lv=>lv.id===e.lv));
+  if(staticExos.length===0) return null;
+  const remaining=staticExos.filter(e=>{
+    const s=profile.exerciseStats[e.id];
+    return !s || s.cor<1;
+  }).length;
+  return {remaining,total:staticExos.length};
+}
 function levelGrade(lvId){
   if(!lvId) return null;
   const s=String(lvId).toLowerCase();
@@ -881,15 +922,32 @@ function renderMode(){
   }
   const lessonSeen=profile.lessonsSeen && profile.lessonsSeen[state.level];
   const suggestLesson=shouldAutoTriggerLesson(state.level);
-  const lessonBannerHTML=suggestLesson
-    ? `<div class="card mb-4 clickable fade-in" onclick="requestLessonForLevel('${state.level}')" style="border-color:#f7a020;background:linear-gradient(145deg,#fff8ec,#fef3c7);animation:breathe 3s infinite">
+  // D\u00e9tail : le niveau est au-dessus de sa classe MAIS elle n'a pas encore
+  // fini sa classe \u2192 on affiche une info bienveillante plut\u00f4t que le CTA.
+  const cg=classGrade(profile.childClass);
+  const lg=levelGrade(state.level);
+  const above=cg!=null && lg!=null && lg>cg;
+  const classDone=isChildClassMastered();
+  const clsLabel=profile.childClass?(CHILD_CLASSES.find(c=>c.id===profile.childClass)||{}).label||'ta classe':'ta classe';
+  const rem=childClassRemaining();
+  let lessonBannerHTML;
+  if(suggestLesson){
+    lessonBannerHTML=`<div class="card mb-4 clickable fade-in" onclick="requestLessonForLevel('${state.level}')" style="border-color:#f7a020;background:linear-gradient(145deg,#fff8ec,#fef3c7);animation:breathe 3s infinite">
         <div class="row" style="gap:14px"><div style="font-size:2.4rem">\u{1F393}</div>
           <div class="flex-1"><h3 class="card-title" style="color:#7a3f04">Nouveau niveau ! Petite le\u00e7on avant ?</h3>
           <p class="sub" style="color:#5a4830">6 mini-slides pour comprendre les concepts. Recommand\u00e9 la 1re fois.</p></div>
-          <div class="arrow" style="color:#f7a020">\u2192</div></div></div>`
-    : (lessonSeen
-      ? `<button class="btn-stone btn-small mb-3" onclick="requestLessonForLevel('${state.level}')" style="width:auto">\u{1F393} Revoir la le\u00e7on</button>`
-      : `<button class="btn-stone btn-small mb-3" onclick="requestLessonForLevel('${state.level}')" style="width:auto">\u{1F393} Voir la le\u00e7on avant</button>`);
+          <div class="arrow" style="color:#f7a020">\u2192</div></div></div>`;
+  }else if(above && !classDone && rem && rem.remaining>0){
+    lessonBannerHTML=`<div class="card mb-4 fade-in" style="border-color:#c4b5fd;background:linear-gradient(145deg,#ede9fe,#e0e7ff)">
+        <div class="row" style="gap:12px"><div style="font-size:2rem">\u{1F3AF}</div>
+          <div class="flex-1"><h3 class="card-title" style="color:#5b21b6;font-size:.95rem">Finis d'abord ${esc(clsLabel)}</h3>
+          <p class="sub" style="color:#5a4830">La le\u00e7on se d\u00e9bloque quand tu as r\u00e9pondu juste \u00e0 toutes les questions de ta classe. Encore <strong>${rem.remaining}/${rem.total}</strong> \u00e0 r\u00e9ussir.</p></div></div></div>
+      <button class="btn-stone btn-small mb-3" onclick="requestLessonForLevel('${state.level}')" style="width:auto">\u{1F393} Voir la le\u00e7on quand m\u00eame</button>`;
+  }else if(lessonSeen){
+    lessonBannerHTML=`<button class="btn-stone btn-small mb-3" onclick="requestLessonForLevel('${state.level}')" style="width:auto">\u{1F393} Revoir la le\u00e7on</button>`;
+  }else{
+    lessonBannerHTML=`<button class="btn-stone btn-small mb-3" onclick="requestLessonForLevel('${state.level}')" style="width:auto">\u{1F393} Voir la le\u00e7on avant</button>`;
+  }
   app.innerHTML=`<div class="text-center py-6 fade-in">
     <div style="font-size:3rem;margin-bottom:12px">${lv.icon}</div>
     <h2 class="title" style="color:${lv.color};font-size:1.5rem">${lv.name}</h2>
@@ -1171,6 +1229,11 @@ function finishGame(abandoned){
       }
       es.lastSeen=d.date;
     });
+    // Détection one-shot du franchissement de la maîtrise de classe
+    if(!profile.classMasteryAchieved && profile.childClass && isChildClassMastered()){
+      profile.classMasteryAchieved=true;
+      profile._classMasteryToastPending=true;
+    }
     // Badges
     const newBadges=[];
     BADGES.forEach(b=>{
@@ -1213,6 +1276,19 @@ function finishGame(abandoned){
 function renderResults(){
   const d=state.gameData;
   if(!d) return navigate('home');
+  // Toast one-shot classe maîtrisée
+  let classMasteryHTML='';
+  if(profile._classMasteryToastPending){
+    delete profile._classMasteryToastPending;
+    saveProfile();
+    const clsLabel=(CHILD_CLASSES.find(c=>c.id===profile.childClass)||{}).label||'';
+    classMasteryHTML=`<div class="card fade-in" style="background:linear-gradient(135deg,#fef3c7,#fde68a);border-color:#fbbf24;text-align:center;margin-bottom:16px">
+      <div style="font-size:4rem" class="bounce">\u{1F3AF}</div>
+      <h3 class="fredoka" style="color:#7a3f04;font-size:1.25rem;margin-top:8px">Classe ${esc(clsLabel)} maîtrisée !</h3>
+      <p style="color:#451a03;margin-top:6px">Tu as répondu juste à toutes les questions de ta classe.</p>
+      <p style="color:#7a3f04;font-size:.9rem;margin-top:6px">Les leçons des niveaux supérieurs sont maintenant débloquées.</p>
+    </div>`;
+  }
   const pct=d.total>0?Math.round(d.score/d.total*100):0;
   let title,sub,emoji;
   if(d.abandoned){title="Qu\u00eate abandonn\u00e9e";sub="Le dragon attend toujours\u2026";emoji="\u{1F3C3}"}
@@ -1257,7 +1333,7 @@ function renderResults(){
     <div class="badge-grid">${d.newBadges.map(b=>`<div class="badge-card unlocked pulse"><div class="badge-ic">${esc(b.icon)}</div><div class="badge-name">${esc(b.name)}</div><div class="badge-desc">${esc(b.desc)}</div></div>`).join('')}</div></div>`:'';
   const questHTML=d.questDone?`<div class="card fade-in" style="background:linear-gradient(135deg,#ede9fe,#ddd6fe);border-color:#a78bfa"><div class="text-center"><div style="font-size:2.5rem">\u{1F3AF}</div><h3 class="fredoka" style="color:#5b21b6;margin-top:6px">Qu\u00eate journali\u00e8re r\u00e9ussie !</h3><p style="color:#2d2018;margin-top:4px">Tu gagnes \u{1F48E} +${d.questReward} cristaux !</p></div></div>`:'';
 
-  app.innerHTML=`<div class="text-center py-8 fade-in"><div class="huge-icon">${emoji}</div>
+  app.innerHTML=`${classMasteryHTML}<div class="text-center py-8 fade-in"><div class="huge-icon">${emoji}</div>
     <h2 class="title" style="font-size:clamp(1.3rem,3.5vw,2rem);color:#7a3f04">${title}</h2><p style="color:#7a5a3a">${sub}</p></div>
   <div class="card mb-4"><div class="stats-grid">
     <div class="stat-card"><div class="stat-val" style="color:#f7a020">${d.score}/${d.total}</div><div class="stat-label">Bonnes r\u00e9ponses</div></div>
