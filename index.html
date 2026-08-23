@@ -105,10 +105,36 @@ body{
 .star.gold{background:#fbbf24}
 .star.purple{background:#a78bfa}
 /* Floating orbs for depth */
-.orb{position:fixed;border-radius:50%;pointer-events:none;z-index:1;filter:blur(60px);opacity:0.4;animation:orbFloat 12s ease-in-out infinite}
+/* blur(60px) sur 300px animé en continu était l'un des postes les plus
+   lourds pour le GPU du téléphone. 42px rend la même impression de halo
+   diffus pour nettement moins cher. */
+.orb{position:fixed;border-radius:50%;pointer-events:none;z-index:1;filter:blur(42px);opacity:0.4;animation:orbFloat 12s ease-in-out infinite}
 .orb-1{width:300px;height:300px;background:rgba(99,102,241,0.15);top:10%;left:-5%;animation-delay:0s}
 .orb-2{width:250px;height:250px;background:rgba(251,191,36,0.08);bottom:20%;right:-5%;animation-delay:-4s}
 .orb-3{width:200px;height:200px;background:rgba(236,72,153,0.08);top:50%;left:50%;animation-delay:-8s}
+
+/* ══ ÉCONOMIE DE BATTERIE ══
+   Le décor (étoiles, halos, braises, rebonds) tournait en boucle sans fin,
+   même app en arrière-plan. Deux garde-fous :
+   1. .anim-paused, posé sur <html> quand l'app n'est plus visible, met tout
+      en pause : plus une image calculée pour un écran que personne ne voit.
+   2. Si le téléphone est réglé sur « Réduire les animations » (Réglages →
+      Accessibilité → Mouvement), le décor est purement supprimé. */
+html.anim-paused .star,
+html.anim-paused .orb,
+html.anim-paused .ember,
+html.anim-paused .bounce,
+html.anim-paused .float,
+html.anim-paused .pulse,
+html.anim-paused .sparkle-anim,
+html.anim-paused .glow-anim,
+html.anim-paused .dragon-emoji{animation-play-state:paused!important}
+
+@media (prefers-reduced-motion: reduce){
+  #stars-bg,#embers{display:none}
+  .orb{animation:none;filter:blur(30px)}
+  .star,.ember,.bounce,.float,.pulse,.sparkle-anim,.glow-anim,.dragon-emoji{animation:none!important}
+}
 
 /* ══ LAYOUT ══ */
 .container{max-width:760px;margin:0 auto;padding:0 16px 100px;position:relative;z-index:10}
@@ -840,7 +866,14 @@ html.light .btn-stone:hover{background:rgba(180,83,9,0.08);border-color:rgba(180
 (function(){
   var bg=document.getElementById('stars-bg');
   if(!bg)return;
-  var n=window.innerWidth<600?50:90;
+  // Réglage « Réduire les animations » du téléphone : pas de ciel étoilé.
+  try{
+    if(window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+  }catch(e){}
+  // Chaque étoile scintille en boucle sans fin : autant d'éléments que le
+  // GPU recompose en permanence. 30 sur téléphone donnent la même impression
+  // de ciel que 50, pour 40 % de travail en moins.
+  var n=window.innerWidth<600?30:60;
   for(var i=0;i<n;i++){
     var s=document.createElement('div');
     s.className='star'+(Math.random()>.75?' gold':Math.random()>.85?' purple':'');
@@ -857,7 +890,7 @@ html.light .btn-stone:hover{background:rgba(180,83,9,0.08);border-color:rgba(180
 <script src="config.js?v=2"></script>
 <script src="supa.js?v=1"></script>
 <script src="qr.js?v=1"></script>
-<script src="game.js?v=47"></script>
+<script src="game.js?v=48"></script>
 <script>
 // Service Worker : enregistré uniquement en HTTPS / localhost (sinon le navigateur refuse).
 if ('serviceWorker' in navigator && (location.protocol === 'https:' || location.hostname === 'localhost' || location.hostname === '127.0.0.1')) {

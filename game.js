@@ -727,16 +727,54 @@ function flushProfileSync(){
 document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='hidden')flushProfileSync();});
 window.addEventListener('pagehide',flushProfileSync);
 
-/* ════════ EMBERS ════════ */
-setInterval(()=>{
-  const e=document.createElement('div');
-  e.className='ember';
-  e.style.left=Math.random()*100+'%';
-  e.style.bottom=(70+Math.random()*30)+'%';
-  e.style.animationDelay=Math.random()*2+'s';
-  $('embers').appendChild(e);
-  setTimeout(()=>e.remove(),2500);
-},500);
+/* ════════ EMBERS ════════
+   Les braises coûtent cher en batterie : chaque une crée puis détruit un
+   élément du DOM, avec deux ombres portées à repeindre. Avant, elles
+   tombaient toutes les 500 ms SANS JAMAIS S'ARRÊTER — y compris quand
+   l'enfant avait quitté l'app. Désormais :
+     - cadence à 900 ms et 6 braises simultanées au maximum ;
+     - tout s'arrête dès que l'app passe en arrière-plan ;
+     - rien ne démarre si le téléphone est réglé sur « animations réduites ».
+   L'effet visuel reste le même à l'écran. */
+function prefersReducedMotion(){
+  try{return window.matchMedia('(prefers-reduced-motion: reduce)').matches}
+  catch(e){return false}
+}
+const EMBER_INTERVAL_MS=900, EMBER_MAX=6;
+let _emberTimer=null;
+function startEmbers(){
+  if(_emberTimer||prefersReducedMotion()) return;
+  _emberTimer=setInterval(()=>{
+    const box=$('embers');
+    if(!box||box.childElementCount>=EMBER_MAX) return;
+    const e=document.createElement('div');
+    e.className='ember';
+    e.style.left=Math.random()*100+'%';
+    e.style.bottom=(70+Math.random()*30)+'%';
+    e.style.animationDelay=Math.random()*2+'s';
+    box.appendChild(e);
+    setTimeout(()=>e.remove(),2500);
+  },EMBER_INTERVAL_MS);
+}
+function stopEmbers(){
+  if(_emberTimer){clearInterval(_emberTimer);_emberTimer=null}
+  const box=$('embers');
+  if(box) box.textContent='';
+}
+
+/* Arrière-plan = plus rien ne bouge. Les étoiles, les halos et les braises
+   continuaient à tourner même app fermée : c'est de la batterie dépensée
+   pour un écran que personne ne regarde. */
+function setDecorPaused(paused){
+  try{document.documentElement.classList.toggle('anim-paused',paused)}catch(e){}
+  if(paused) stopEmbers(); else startEmbers();
+}
+document.addEventListener('visibilitychange',()=>{
+  setDecorPaused(document.visibilityState==='hidden');
+});
+window.addEventListener('pagehide',()=>setDecorPaused(true));
+window.addEventListener('pageshow',()=>setDecorPaused(false));
+if(document.visibilityState!=='hidden') startEmbers();
 
 /* ════════ GARDE-FOUS SÉCURITÉ ENFANTS ════════
    Portail parental + filtre prénoms + consentement micro.
