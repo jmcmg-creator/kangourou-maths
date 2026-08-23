@@ -38,9 +38,9 @@ const SUBJECTS=[
       {id:"chimie-ce2",name:"Chimie",sub:"CE2 \u2014 \u00c9tats mati\u00e8re",icon:"\u{1F9EA}",color:"#10b981"},
       {id:"chimie-cm1",name:"Chimie",sub:"CM1 \u2014 M\u00e9langes/Dissolution",icon:"\u{1F4A7}",color:"#10b981"},
       {id:"chimie-cm2",name:"Chimie",sub:"CM2 \u2014 Transformations",icon:"\u2697\uFE0F",color:"#10b981"},
-      {id:"biologie-ce2",name:"SVT",sub:"CE2 \u2014 Corps/Animaux",icon:"\u{1F9B7}",color:"#84cc16"},
-      {id:"biologie-cm1",name:"SVT",sub:"CM1 \u2014 Nutrition/Reproduction",icon:"\u{1F33F}",color:"#84cc16"},
-      {id:"biologie-cm2",name:"SVT",sub:"CM2 \u2014 \u00c9cosyst\u00e8mes",icon:"\u{1F33B}",color:"#84cc16"}
+      {id:"biologie-ce2",name:"SVT",sub:"CE2 \u2014 Corps/Animaux",icon:"\u{1F9B7}",color:"#84cc16",hasStatic:true,contentPolicy:{avoidSexual:true,avoidHumanReproduction:true}},
+      {id:"biologie-cm1",name:"SVT",sub:"CM1 \u2014 Nutrition/Respiration/Circulation",icon:"\u{1F33F}",color:"#84cc16",hasStatic:true,contentPolicy:{avoidSexual:true,avoidHumanReproduction:true}},
+      {id:"biologie-cm2",name:"SVT",sub:"CM2 \u2014 \u00c9cosyst\u00e8mes",icon:"\u{1F33B}",color:"#84cc16",contentPolicy:{avoidSexual:true}}
     ]}
 ];
 
@@ -353,6 +353,12 @@ function getSyncLink(){
   return window.location.origin+window.location.pathname+'?sync='+AID;
 }
 
+// Récupère la contentPolicy du niveau (garde-fous IA), null si aucune.
+function _levelContentPolicy(lvId){
+  const lv=LEVELS.find(l=>l.id===lvId);
+  return lv&&lv.contentPolicy?lv.contentPolicy:null;
+}
+
 /* ═══════════════════════════════════════════════════════════════════════
    LEÇONS PRÉ-DÉFI (6 slides Singapore-Math style)
 
@@ -364,8 +370,16 @@ function getSyncLink(){
        level: "cm1-cm2",          // niveau visé
        subject: "maths",          // maths | culture | sciences | langues
        childClass: "ce1-ce2",     // classe déclarée de l'enfant (nullable)
-       skills: ["Fractions","Aire du rectangle","..."]  // hints tirés des exos statiques (facultatif)
+       skills: ["Fractions","Aire du rectangle","..."],  // hints tirés des exos statiques (facultatif)
+       contentPolicy: {avoidSexual:true, avoidHumanReproduction:true}  // garde-fous (nullable)
      }
+
+     Le Worker DOIT respecter contentPolicy dans son system prompt :
+       - avoidSexual: aucun contenu à caractère sexuel, aucune anatomie
+         intime, aucune allusion.
+       - avoidHumanReproduction: la reproduction humaine et les organes
+         reproducteurs sont exclus. La reproduction animale/végétale reste
+         acceptable si abordée en contexte scientifique neutre.
 
      Response (200 OK) : {
        slides: [                  // exactement 6, ordre imposé
@@ -409,7 +423,7 @@ async function fetchLesson(level,subject,childClass){
     const r=await fetch(API_BASE+'/lesson',{
       method:'POST',
       headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({level,subject,childClass:childClass||null,skills}),
+      body:JSON.stringify({level,subject,childClass:childClass||null,skills,contentPolicy:_levelContentPolicy(level)}),
       signal:ctrl.signal
     });
     clearTimeout(tid);
@@ -574,7 +588,9 @@ async function generateAIExercises(level,count){
       // (chaîne d'emoji pédagogique, ex "🪐 🌍 ⭐") et éventuellement `visualAlt`
       // aux questions générées. Un Worker qui ne connaît pas ce paramètre
       // l'ignore silencieusement — le client reste fonctionnel.
-      body:JSON.stringify({level,count,wantVisual:true}),
+      // contentPolicy : garde-fous (ex: pas de reproduction humaine sur biologie).
+      // Le Worker doit refléter ces règles dans son system prompt.
+      body:JSON.stringify({level,count,wantVisual:true,contentPolicy:_levelContentPolicy(level)}),
       signal:ctrl.signal
     });
     clearTimeout(tid);
