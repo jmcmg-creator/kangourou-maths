@@ -353,6 +353,210 @@ function getSyncLink(){
   return window.location.origin+window.location.pathname+'?sync='+AID;
 }
 
+/* ═══════════════════════════════════════════════════════════════════════
+   LEÇONS PRÉ-DÉFI (6 slides Singapore-Math style)
+
+   Contrat Worker (à implémenter côté /generate ou nouvel endpoint /lesson) :
+
+     POST /lesson
+     Content-Type: application/json
+     Body: {
+       level: "cm1-cm2",          // niveau visé
+       subject: "maths",          // maths | culture | sciences | langues
+       childClass: "ce1-ce2",     // classe déclarée de l'enfant (nullable)
+       skills: ["Fractions","Aire du rectangle","..."]  // hints tirés des exos statiques (facultatif)
+     }
+
+     Response (200 OK) : {
+       slides: [                  // exactement 6, ordre imposé
+         {role:"hook",     title:"...", body:"...", visual:"🍎🍎🍎"},
+         {role:"pictorial",title:"...", body:"...", visual:"..."},
+         {role:"abstract", title:"...", body:"...", visual:"..."},
+         {role:"worked",   title:"...", body:"...", visual:"..."},
+         {role:"tryit",    title:"...", body:"...", visual:"..."},
+         {role:"recap",    title:"...", body:"...", visual:"..."}
+       ]
+     }
+
+     Erreur : { error: { message: "..." } } ou 404 → le client fait un
+     fallback statique depuis EX (marche pour maths).
+
+   System prompt suggéré (à placer dans le Worker) :
+
+     "Tu es le meilleur professeur possible de {subject}, formé aux méthodes
+     pédagogiques du Singapore Math (Concrete → Pictorial → Abstract, bar
+     models, number bonds, mastery approach). Un enfant de classe {childClass}
+     va découvrir le niveau {level}. Explique en 6 slides très courtes,
+     UNIQUEMENT les concepts qui vont plus loin que sa classe actuelle.
+     Chaque slide fait 2-4 phrases MAXIMUM, langage adapté à l'âge, sans
+     jargon. Le champ `visual` doit contenir 1 à 6 emojis pédagogiques
+     (pas décoratifs) qui illustrent le concept. Structure obligatoire :
+     1. hook (accroche concrète)
+     2. pictorial (représentation visuelle)
+     3. abstract (règle claire)
+     4. worked (exemple guidé pas à pas)
+     5. tryit (une mini-question à essayer mentalement)
+     6. recap (3 points clés à retenir)"
+   ═══════════════════════════════════════════════════════════════════════ */
+
+async function fetchLesson(level,subject,childClass){
+  const ctrl=new AbortController();
+  const tid=setTimeout(()=>ctrl.abort(),20000);
+  try{
+    // On tente d'abord un endpoint dédié /lesson. Si le Worker n'est pas
+    // encore mis à jour, on retombe sur le fallback statique côté client.
+    const skills=Array.from(new Set(EX.filter(e=>e.lv===level).map(e=>e.sk).filter(Boolean))).slice(0,10);
+    const r=await fetch(API_BASE+'/lesson',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({level,subject,childClass:childClass||null,skills}),
+      signal:ctrl.signal
+    });
+    clearTimeout(tid);
+    if(!r.ok) throw new Error('HTTP '+r.status);
+    const data=await r.json();
+    if(data.error) throw new Error(data.error.message||'API error');
+    if(!Array.isArray(data.slides)||data.slides.length===0) throw new Error('slides absent');
+    // On garde jusqu'à 6 slides et on ignore les slides mal formées
+    const clean=data.slides.slice(0,6).filter(s=>s&&typeof s.title==='string'&&typeof s.body==='string');
+    if(clean.length===0) throw new Error('slides vides');
+    return clean;
+  }catch(e){
+    clearTimeout(tid);
+    return null; // signale au caller de basculer sur le fallback
+  }
+}
+
+function buildFallbackLessonFromStatic(level,subject){
+  // Génère 6 slides à partir des exos statiques du niveau.
+  // Marche essentiellement pour les maths (levels avec hasStatic:true).
+  const pool=EX.filter(e=>e.lv===level);
+  if(pool.length===0) return null;
+  // Regroupe par skill
+  const bySkill={};
+  pool.forEach(e=>{const k=e.sk||e.cat||'Divers';(bySkill[k]=bySkill[k]||[]).push(e)});
+  const skills=Object.keys(bySkill).slice(0,4);
+  if(skills.length===0) return null;
+  const previewList=skills.map(s=>'• '+s).join('\n');
+  const s1=bySkill[skills[0]][0];
+  const s2=bySkill[skills[1]]?bySkill[skills[1]][0]:s1;
+  return [
+    {role:'hook',title:'Bienvenue dans ce niveau !',body:'Tu vas découvrir '+skills.length+' notions clés :\n'+previewList,visual:'\u{1F393}'},
+    {role:'pictorial',title:'Représente d\'abord',body:'Avant d\'écrire un calcul, essaie de dessiner ce que dit le problème (barres, groupes, schéma). C\'est la méthode de Singapour : voir avant de calculer.',visual:'\u{1F5FA}️'},
+    {role:'abstract',title:esc(s1.sk||s1.cat)+' — la règle',body:s1.regle||'Applique la règle apprise, étape par étape.',visual:'\u{1F4CF}'},
+    {role:'worked',title:'Exemple guidé',body:(s1.q||'')+'\n\n'+((s1.methode||[]).join('\n')||('Réponse : '+(s1.ch?s1.ch[s1.ans]:''))),visual:'\u{1F50D}'},
+    {role:'tryit',title:'À toi d\'essayer !',body:(s2.q||'Essaie mentalement une question de ce niveau.')+'\n\n(Astuce : prends ton temps, imagine la scène.)',visual:'\u{270F}️'},
+    {role:'recap',title:'À retenir',body:skills.map(s=>'✔️ '+s).join('\n')+'\n\nPrêt(e) à commencer les défis ?',visual:'\u{1F3AF}'}
+  ];
+}
+
+async function ensureLessonAndNav(level,subject,cbOnStart){
+  // Utilisé quand le user demande explicitement la leçon (bouton ou auto-trigger)
+  state._lessonLoading=true;
+  state._lessonError=null;
+  state._lessonSlides=null;
+  state._lessonLevel=level;
+  state._lessonSubject=subject;
+  state._lessonOnStart=cbOnStart||null;
+  navigate('lessonSlides',{step:0});
+  // Essaie le Worker
+  let slides=await fetchLesson(level,subject,profile.childClass||null);
+  if(!slides){
+    slides=buildFallbackLessonFromStatic(level,subject);
+  }
+  state._lessonLoading=false;
+  if(!slides){
+    state._lessonError='La leçon pour ce niveau sera disponible bientôt. Tu peux commencer les défis directement.';
+  }
+  state._lessonSlides=slides;
+  render();
+}
+
+function renderLessonSlides(){
+  if(state._lessonLoading){
+    app.innerHTML='<div class="card text-center" style="margin-top:60px"><div class="dragon-emoji float">\u{1F393}</div><h2 class="title" style="color:#7a3f04">Le meilleur prof prépare ta leçon…</h2><p class="sub">Quelques secondes</p></div>';
+    return;
+  }
+  if(state._lessonError||!state._lessonSlides){
+    app.innerHTML=`<div class="card text-center" style="margin-top:40px">
+      <div style="font-size:2.6rem">\u{1F914}</div>
+      <h2 class="title" style="color:#7a3f04;font-size:1.2rem">Leçon indisponible</h2>
+      <p class="sub" style="margin-top:8px">${esc(state._lessonError||'Impossible de préparer la leçon pour ce niveau.')}</p>
+      <button class="btn-fire mt-4" onclick="finishLessonAndStart()">Commencer les défis →</button>
+      <button class="btn-stone mt-3" onclick="navigate('mode',{level:state._lessonLevel})">← Retour</button>
+    </div>`;
+    return;
+  }
+  const slides=state._lessonSlides;
+  const step=Math.max(0,Math.min(state.step||0,slides.length-1));
+  const s=slides[step];
+  const isLast=step===slides.length-1;
+  const dots=slides.map((_,i)=>`<div class="parent-onboarding-dot ${i===step?'active':''}"></div>`).join('');
+  const primary=isLast
+    ? `<button class="btn-fire" onclick="finishLessonAndStart()">Commencer les défis →</button>`
+    : `<button class="btn-fire" onclick="navigate('lessonSlides',{step:${step+1}})">Suivant</button>`;
+  const backBtn=step>0
+    ? `<button class="btn-stone btn-small" onclick="navigate('lessonSlides',{step:${step-1}})" style="background:transparent;border-color:transparent;color:#9c6f3a">← Retour</button>`
+    : `<button class="btn-stone btn-small" onclick="skipLesson()" style="background:transparent;border-color:transparent;color:#9c6f3a">Passer</button>`;
+  const visualHTML=s.visual?`<div class="ex-visual" style="margin-top:14px;font-size:clamp(2.4rem,8vw,4rem);min-height:80px" role="img" aria-label="${esc(s.visualAlt||s.title||'')}">${esc(String(s.visual).slice(0,120))}</div>`:'';
+  const bodyLines=String(s.body||'').split('\n').map(l=>esc(l)).join('<br>');
+  app.innerHTML=`
+    <div class="lesson-slide fade-in">
+      <div class="lesson-role">${esc((s.role||'').toUpperCase())} • ${step+1}/${slides.length}</div>
+      <h2 class="title" style="color:#7a3f04;font-size:1.35rem;line-height:1.25;margin-top:6px">${esc(s.title||'')}</h2>
+      ${visualHTML}
+      <p style="color:#2d2018;font-size:1rem;line-height:1.6;margin-top:16px;white-space:normal">${bodyLines}</p>
+    </div>
+    <div class="parent-onboarding-nav">
+      <div class="row" style="justify-content:center;gap:8px;margin-bottom:14px">${dots}</div>
+      <div class="row" style="gap:10px;justify-content:space-between;align-items:center">
+        ${backBtn}
+        ${primary}
+      </div>
+    </div>`;
+}
+
+function finishLessonAndStart(){
+  const lv=state._lessonLevel;
+  if(lv){
+    if(!profile.lessonsSeen) profile.lessonsSeen={};
+    profile.lessonsSeen[lv]=Date.now();
+    saveProfile();
+  }
+  const cb=state._lessonOnStart;
+  state._lessonOnStart=null;
+  if(typeof cb==='function'){cb();return}
+  if(lv){navigate('mode',{level:lv});return}
+  navigate('home');
+}
+function skipLesson(){
+  const lv=state._lessonLevel;
+  if(lv){
+    if(!profile.lessonsSeen) profile.lessonsSeen={};
+    profile.lessonsSeen[lv]=Date.now();
+    saveProfile();
+  }
+  navigate('mode',{level:lv});
+}
+function shouldAutoTriggerLesson(level){
+  if(!level) return false;
+  if(profile.lessonsSeen && profile.lessonsSeen[level]) return false;
+  const cg=classGrade(profile.childClass);
+  const lg=levelGrade(level);
+  if(cg==null || lg==null) return false; // pas de classe déclarée : pas de trigger auto
+  return lg>cg;
+}
+function requestLessonForLevel(level){
+  const subject=getSubjectIdForLevel(level)||'maths';
+  ensureLessonAndNav(level,subject,null);
+}
+function getSubjectIdForLevel(lvId){
+  for(const s of SUBJECTS){
+    if(s.levels && s.levels.find(l=>l.id===lvId)) return s.id;
+  }
+  return null;
+}
+
 async function generateAIExercises(level,count){
   state.generating=true;
   const ctrl=new AbortController();
@@ -473,6 +677,7 @@ function render(){
     case 'royaume': renderRoyaume(); break;
     case 'parent': renderParent(); break;
     case 'parentOnboarding': renderParentOnboarding(); break;
+    case 'lessonSlides': renderLessonSlides(); break;
     case 'parentGuidedAccess': renderParentGuidedAccess(); break;
     case 'parentScreenTime': renderParentScreenTime(); break;
     case 'nameAsk': renderNameAsk(); break;
@@ -599,12 +804,47 @@ function renderSubject(){
   <button class="btn-stone mt-4" onclick="navigate('home')">\u2190 Retour</button>`;
 }
 
+const CHILD_CLASSES=[
+  {id:'cp',label:'CP',emoji:'\u{1F95A}',grade:1},
+  {id:'ce1-ce2',label:'CE1 · CE2',emoji:'\u{1F9D9}',grade:2.5},
+  {id:'cm1-cm2',label:'CM1 · CM2',emoji:'⚔️',grade:4.5},
+  {id:'6e-5e',label:'6ᵉ · 5ᵉ',emoji:'\u{1F409}',grade:6.5},
+  {id:'skip',label:'Je préfère passer',emoji:'…',grade:null}
+];
+function classGrade(classId){const c=CHILD_CLASSES.find(x=>x.id===classId);return c?c.grade:null}
+function levelGrade(lvId){
+  if(!lvId) return null;
+  const s=String(lvId).toLowerCase();
+  if(s==='cp'||/(^|-)cp(-|$)/.test(s)) return 1;
+  if(/ce1-ce2/.test(s)) return 2;
+  if(/cm1-cm2/.test(s)) return 4;
+  if(/6e-5e/.test(s)) return 6;
+  if(/(^|-)ce1(-|$)/.test(s)) return 2;
+  if(/(^|-)ce2(-|$)/.test(s)) return 3;
+  if(/(^|-)cm1(-|$)/.test(s)) return 4;
+  if(/(^|-)cm2(-|$)/.test(s)) return 5;
+  if(/(^|-)6e(-|$)/.test(s)) return 6;
+  if(/(^|-)5e(-|$)/.test(s)) return 7;
+  return null;
+}
+function pickClass(id){
+  document.querySelectorAll('.class-chip').forEach(b=>{
+    b.classList.toggle('selected',b.getAttribute('data-cls')===id);
+  });
+  state._pendingChildClass=id;
+}
+
 function renderNameAsk(){
+  const selCls=profile.childClass||'';
+  const classesHTML=CHILD_CLASSES.map(c=>`<button type="button" class="class-chip ${selCls===c.id?'selected':''}" data-cls="${c.id}" onclick="pickClass('${c.id}')"><span style="font-size:1.4rem">${c.emoji}</span><span>${esc(c.label)}</span></button>`).join('');
+  const classPickerHTML=`<h3 class="fredoka" style="color:#7a3f04;font-size:.9rem;margin:22px 0 8px;letter-spacing:.06em;text-transform:uppercase">Tu es en quelle classe ?</h3><p style="color:#5a4830;font-size:.85rem;margin-bottom:12px">Ça aide à te proposer une petite leçon quand tu vas essayer un niveau plus difficile que le tien.</p><div class="class-picker">${classesHTML}</div>`;
+  window._classPickerHTML=classPickerHTML;
   app.innerHTML=`<div class="card fade-in" style="margin-top:40px">
     <h2 class="title" style="color:#7a3f04;font-size:1.3rem">Comment t'appelles-tu, aventuri\u00e8re ?</h2>
     <p style="color:#2d2018;margin-bottom:16px">Ton pr\u00e9nom sera affich\u00e9 dans ton Royaume.</p>
     <input class="name-prompt" id="nameInp" placeholder="Ton pr\u00e9nom" maxlength="20" value="${esc(profile.name||'')}">
-    <button class="btn-fire" onclick="setName()">Entrer dans le Royaume \u2192</button>
+    ${classPickerHTML}
+    <button class="btn-fire mt-3" onclick="setName()">Entrer dans le Royaume \u2192</button>
   </div>`;
   setTimeout(()=>$('nameInp').focus(),100);
 }
@@ -613,6 +853,10 @@ async function setName(){
   const v=$('nameInp').value.replace(/[<>"'`\\\/]/g,'').replace(/[ -]/g,'').trim().slice(0,20);
   if(v.length<1){alert('Entre ton pr\u00e9nom');return}
   profile.name=v;
+  const cls=state._pendingChildClass||profile.childClass||null;
+  if(cls==='skip'){profile.childClass=null}
+  else if(cls){profile.childClass=cls}
+  state._pendingChildClass=null;
   saveProfile();
   navigate('home');
 }
@@ -630,11 +874,29 @@ async function setName(){
 /* ════════ MODE SELECT ════════ */
 function renderMode(){
   const lv=LEVELS.find(l=>l.id===state.level);
+  // Auto-suggestion de le\u00e7on : 1\u00e8re fois, ET niveau > classe d\u00e9clar\u00e9e
+  if(shouldAutoTriggerLesson(state.level)){
+    // On ne redirige pas : on affiche un bandeau prominent au lieu de forcer.
+    // (Force redirect serait intrusif \u2014 l'enfant choisit.)
+  }
+  const lessonSeen=profile.lessonsSeen && profile.lessonsSeen[state.level];
+  const suggestLesson=shouldAutoTriggerLesson(state.level);
+  const lessonBannerHTML=suggestLesson
+    ? `<div class="card mb-4 clickable fade-in" onclick="requestLessonForLevel('${state.level}')" style="border-color:#f7a020;background:linear-gradient(145deg,#fff8ec,#fef3c7);animation:breathe 3s infinite">
+        <div class="row" style="gap:14px"><div style="font-size:2.4rem">\u{1F393}</div>
+          <div class="flex-1"><h3 class="card-title" style="color:#7a3f04">Nouveau niveau ! Petite le\u00e7on avant ?</h3>
+          <p class="sub" style="color:#5a4830">6 mini-slides pour comprendre les concepts. Recommand\u00e9 la 1re fois.</p></div>
+          <div class="arrow" style="color:#f7a020">\u2192</div></div></div>`
+    : (lessonSeen
+      ? `<button class="btn-stone btn-small mb-3" onclick="requestLessonForLevel('${state.level}')" style="width:auto">\u{1F393} Revoir la le\u00e7on</button>`
+      : `<button class="btn-stone btn-small mb-3" onclick="requestLessonForLevel('${state.level}')" style="width:auto">\u{1F393} Voir la le\u00e7on avant</button>`);
   app.innerHTML=`<div class="text-center py-6 fade-in">
     <div style="font-size:3rem;margin-bottom:12px">${lv.icon}</div>
     <h2 class="title" style="color:${lv.color};font-size:1.5rem">${lv.name}</h2>
     <p class="sub">${lv.sub} \u2014 Choisis ton mode</p>
-  </div>${MODES.map((m,i)=>`<div class="card clickable fade-in" style="animation-delay:${i*.1}s" onclick="startGame('${m.id}')">
+  </div>
+  ${lessonBannerHTML}
+  ${MODES.map((m,i)=>`<div class="card clickable fade-in" style="animation-delay:${i*.1}s" onclick="startGame('${m.id}')">
     <div class="row"><div class="mode-icon">${m.icon}</div><div class="flex-1">
       <h3 class="card-title" style="color:#7a3f04">${m.name}</h3>
       <p class="sub">${m.desc}</p></div></div></div>`).join('')}
