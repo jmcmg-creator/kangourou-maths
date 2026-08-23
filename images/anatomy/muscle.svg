@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" role="img" aria-label="Bras plié montrant le biceps contracté">
+  <defs>
+    <linearGradient id="mg" x1="0" x2="1" y1="0" y2="1">
+      <stop offset="0" stop-color="#fed7aa"/>
+      <stop offset="1" stop-color="#c2410c"/>
+    </linearGradient>
+    <linearGradient id="mg2" x1="0" x2="1" y1="0" y2="0">
+      <stop offset="0" stop-color="#f97316"/>
+      <stop offset="1" stop-color="#9a3412"/>
+    </linearGradient>
+  </defs>
+  <path d="M18 78 L 30 60 Q 34 46 46 44 Q 62 42 68 30 L 78 20" stroke="#7c2d12" stroke-width="14" stroke-linecap="round" fill="none" opacity="0"/>
+  <path d="M20 82 L 34 60 Q 38 50 50 50 Q 62 50 66 40 L 76 22" stroke="url(#mg)" stroke-width="16" stroke-linecap="round" fill="none"/>
+  <ellipse cx="46" cy="52" rx="16" ry="12" fill="url(#mg2)" stroke="#7c2d12" stroke-width="2"/>
+  <path d="M36 52 Q 46 45 56 52 Q 46 58 36 52" fill="#c2410c" opacity="0.6"/>
+  <circle cx="76" cy="22" r="6" fill="#fed7aa" stroke="#7c2d12" stroke-width="1.8"/>
+  <circle cx="20" cy="82" r="6" fill="#fed7aa" stroke="#7c2d12" stroke-width="1.8"/>
+</svg>

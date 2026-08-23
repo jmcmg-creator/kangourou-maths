@@ -724,6 +724,9 @@ html.light .grade-chip{background:#fff}
 .q-visual-grid{background:rgba(255,255,255,0.05);border:1px solid var(--border-subtle);border-radius:var(--radius-md);padding:14px 8px}
 .q-grid-row{font-size:clamp(1.5rem,7vw,2.1rem);line-height:1.7;letter-spacing:.12em;white-space:nowrap}
 html.light .q-visual-grid{background:#fff;border-color:rgba(36,27,82,0.12)}
+.q-visual-img{background:rgba(255,255,255,0.05);border:1px solid var(--border-subtle);border-radius:var(--radius-md);padding:12px}
+.q-visual-img img{display:block;margin:0 auto;width:min(200px,55vw);height:auto;max-width:100%}
+html.light .q-visual-img{background:#fff;border-color:rgba(36,27,82,0.12)}
 
 /* ══ PUCES DE DISCIPLINE (contenu des battles) ══ */
 .battle-disc-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
@@ -849,12 +852,12 @@ html.light .btn-stone:hover{background:rgba(180,83,9,0.08);border-color:rgba(180
 </script>
 
 <script src="exercises.js?v=13"></script>
-<script src="exercises_extra.js?v=6"></script>
+<script src="exercises_extra.js?v=7"></script>
 <script src="exercises_logic.js?v=1"></script>
 <script src="config.js?v=2"></script>
 <script src="supa.js?v=1"></script>
 <script src="qr.js?v=1"></script>
-<script src="game.js?v=46"></script>
+<script src="game.js?v=47"></script>
 <script>
 // Service Worker : enregistré uniquement en HTTPS / localhost (sinon le navigateur refuse).
 if ('serviceWorker' in navigator && (location.protocol === 'https:' || location.hostname === 'localhost' || location.hostname === '127.0.0.1')) {

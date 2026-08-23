@@ -331,7 +331,38 @@ function newProfile(){
 }
 function migrate(p){
   const base=newProfile();
-  return Object.assign(base,p);
+  return _purgeIncoherentAi(_restoreJudithXp(Object.assign(base,p)));
+}
+
+// Les questions incohérentes sont désormais refusées à la génération, mais
+// certaines dorment déjà dans les profils existants. On purge le stock une
+// seule fois, au premier chargement après la mise à jour.
+function _purgeIncoherentAi(p){
+  if(!p||p.aiCoherencePurged) return p;
+  if(Array.isArray(p.aiExercises)&&p.aiExercises.length){
+    p.aiExercises=p.aiExercises.filter(isExerciseCoherent);
+  }
+  p.aiCoherencePurged=true;
+  return p;
+}
+
+// Recrédit ponctuel : Judith avait 26 000 XP avant une réinitialisation
+// accidentelle. La cause racine (un vieux profil qui en écrasait un récent)
+// est corrigée par mergeProfiles, mais les XP déjà perdus ne revenaient pas
+// tout seuls. On les remet une fois, au chargement du profil.
+// Sûr par construction : on ne fait que REMONTER le compteur (jamais le
+// baisser), on s'arrête dès que le total atteint la cible, et le marqueur
+// évite tout second passage. Si le marqueur se perd dans une fusion, le
+// test « total >= cible » rend l'opération inoffensive.
+const JUDITH_TARGET_XP=26000;
+function _restoreJudithXp(p){
+  if(!p||!p.name||String(p.name).toLowerCase()!=='judith') return p;
+  if(p.judithXpRestored) return p;
+  const royaumesXp=Object.values(p.royaumes||{}).reduce((s,r)=>s+(Number(r&&r.xp)||0),0);
+  const total=royaumesXp+(Number(p.xp)||0);
+  if(total<JUDITH_TARGET_XP) p.xp=JUDITH_TARGET_XP-royaumesXp;
+  p.judithXpRestored=true;
+  return p;
 }
 function loadProfileByName(name){
   const dict=loadProfilesDict();
@@ -594,6 +625,8 @@ async function generateAIExercises(level,count){
     // avec un id neuf. On le jette ici, sinon il polluerait tous les tirages.
     const known=new Set(EX.concat(profile.aiExercises).concat(profile.customExercises||[]).map(_qKey));
     data.exercises=(data.exercises||[]).filter(e=>{
+      // Incohérente (bonne réponse contredite par son propre corrigé) → jetée.
+      if(!isExerciseCoherent(e)) return false;
       const k=_qKey(e);
       if(!k||known.has(k)) return false;
       known.add(k);return true;
@@ -1664,6 +1697,41 @@ function _qKey(e){
   const extra=e.target?('@'+e.target):(e.flag?('@'+e.flag):'');
   return _norm(e.q)+'||'+ch+extra;
 }
+/* ══ COHÉRENCE DES QUESTIONS GÉNÉRÉES ══
+   Le Dragon produit parfois une question dont l'indice de bonne réponse ne
+   correspond pas à son explication. Vu en vrai : « Si tu as 10 billes et que
+   tu en donnes 3 » avec ans=0 (soit « 6 ») alors que l'explication dit « il
+   en reste 7 ». L'enfant coche 7, on lui dit qu'il a faux, et le corrigé
+   affiche 7. Très décourageant.
+   On refuse donc ces questions avant qu'elles n'atteignent l'enfant. */
+function _firstNumber(s){
+  if(s==null) return null;
+  const m=String(s).match(/-?\d+(?:[.,]\d+)?/);
+  return m?parseFloat(m[0].replace(',','.')):null;
+}
+function isExerciseCoherent(ex){
+  if(!ex||typeof ex!=='object') return false;
+  if(typeof ex.q!=='string'||!ex.q.trim()) return false;
+  if(!Array.isArray(ex.ch)||ex.ch.length<2||ex.ch.length>6) return false;
+  if(ex.ch.some(c=>typeof c!=='string'||!c.trim())) return false;
+  if(!Number.isInteger(ex.ans)||ex.ans<0||ex.ans>=ex.ch.length) return false;
+  // Croisement réponse ↔ explication, uniquement quand les deux portent un
+  // nombre. Si l'explication cite un nombre qui correspond à un AUTRE choix
+  // que celui marqué correct, c'est que l'index est faux : on jette.
+  // Une explication sans nombre (question non numérique) passe toujours.
+  const answerNum=_firstNumber(ex.ch[ex.ans]);
+  const seNum=_firstNumber(ex.se);
+  if(answerNum!==null&&seNum!==null&&Math.abs(answerNum-seNum)>1e-9){
+    const otherMatches=ex.ch.some((c,i)=>{
+      if(i===ex.ans) return false;
+      const n=_firstNumber(c);
+      return n!==null&&Math.abs(n-seNum)<1e-9;
+    });
+    if(otherMatches) return false;
+  }
+  return true;
+}
+
 function dedupeExercises(list){
   const ids=new Set(),qs=new Set(),out=[];
   for(const e of (list||[])){
@@ -1911,10 +1979,17 @@ async function startGame(mode){
    s'il apporte vraiment une information (drapeau à reconnaître, grille à
    compter…). Rien à télécharger : tout est rendu en emoji ou en SVG, donc
    ça marche hors ligne et ça ne coûte rien en bande passante. */
+// Seuls les schémas livrés avec l'app sont affichables. Une question générée
+// qui tenterait de pointer ailleurs (URL externe, javascript:, ../..) est
+// ignorée sans bruit : le visuel disparaît, la question reste jouable.
+const ALLOWED_VISUAL_IMG=/^images\/anatomy\/[a-z0-9_-]+\.svg$/;
 function renderQuestionVisual(ex){
   if(!ex) return '';
   if(ex.flag){
     return '<div class="q-visual q-visual-flag" role="img" aria-label="Drapeau à reconnaître">'+esc(ex.flag)+'</div>';
+  }
+  if(ex.visualImg&&ALLOWED_VISUAL_IMG.test(ex.visualImg)){
+    return '<div class="q-visual q-visual-img"><img src="'+esc(ex.visualImg)+'" alt="'+esc(ex.visualAlt||'Schéma de la question')+'" loading="lazy"></div>';
   }
   if(ex.visual&&ex.visualKind==='grid'){
     const rows=String(ex.visual).split('\n').map(r=>'<div class="q-grid-row">'+esc(r)+'</div>').join('');

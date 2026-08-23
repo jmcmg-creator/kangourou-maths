@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" role="img" aria-label="Squelette humain simplifié">
+  <g fill="#fef9c3" stroke="#78350f" stroke-width="1.8" stroke-linejoin="round">
+    <circle cx="50" cy="14" r="8"/>
+    <circle cx="47" cy="13" r="1.4" fill="#78350f"/>
+    <circle cx="53" cy="13" r="1.4" fill="#78350f"/>
+    <path d="M46 20 Q50 24 54 20" fill="none" stroke-width="1.2"/>
+    <rect x="45" y="22" width="10" height="4" rx="1"/>
+    <path d="M42 30 Q42 44 46 50 L 54 50 Q 58 44 58 30 Z"/>
+    <path d="M43 34 L 57 34 M 43 40 L 57 40 M 43 46 L 57 46" stroke-width="1" opacity="0.8"/>
+    <path d="M42 30 L 30 34 M 58 30 L 70 34" stroke-linecap="round" stroke-width="2"/>
+    <path d="M30 34 L 22 52 M 70 34 L 78 52" stroke-linecap="round" stroke-width="2"/>
+    <circle cx="22" cy="54" r="2.2"/>
+    <circle cx="78" cy="54" r="2.2"/>
+    <path d="M45 50 L 45 58 L 55 58 L 55 50" />
+    <path d="M46 58 L 42 82 M 54 58 L 58 82" stroke-linecap="round" stroke-width="2.4"/>
+    <circle cx="42" cy="84" r="2.2"/>
+    <circle cx="58" cy="84" r="2.2"/>
+    <path d="M40 86 L 38 94 M 44 86 L 46 94 M 60 86 L 62 94 M 56 86 L 54 94" stroke-linecap="round" stroke-width="1.6"/>
+  </g>
+</svg>
