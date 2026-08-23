@@ -1,0 +1,26 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 100" role="img" aria-label="Les cinq sens : œil, oreille, main, langue, nez">
+  <g stroke="#78350f" stroke-width="1.8" stroke-linejoin="round">
+    <g transform="translate(20,50)">
+      <ellipse rx="14" ry="9" fill="#fef9c3"/>
+      <circle r="6" fill="#0369a1"/>
+      <circle r="2.5" fill="#0f172a"/>
+      <circle cx="-2" cy="-2" r="1" fill="#f8fafc"/>
+    </g>
+    <g transform="translate(60,50)">
+      <path d="M-4 -14 C -14 -12, -14 8, -6 14 L 6 8 C 10 4, 10 -8, 4 -14 Z" fill="#fecaca"/>
+      <path d="M-4 -2 C 0 -6, 4 -6, 4 0 C 4 6, 0 8, -2 4" fill="none"/>
+    </g>
+    <g transform="translate(100,50)">
+      <path d="M-12 12 L -12 -4 C -12 -8, -8 -8, -8 -4 L -8 -12 C -8 -16, -4 -16, -4 -12 L -4 -14 C -4 -18, 0 -18, 0 -14 L 0 -10 C 0 -14, 4 -14, 4 -10 L 4 0 L 6 -2 C 10 -6, 14 -2, 12 4 L 8 12 C 6 16, -10 16, -12 12 Z" fill="#fed7aa"/>
+    </g>
+    <g transform="translate(140,50)">
+      <path d="M-12 -4 C -12 -12, 12 -12, 12 -4 C 12 6, 4 12, 0 12 C -4 12, -12 6, -12 -4 Z" fill="#fca5a5"/>
+      <path d="M0 -6 L 0 8" stroke-width="1.2" opacity="0.6"/>
+    </g>
+    <g transform="translate(180,50)">
+      <path d="M-4 -12 C -8 -8, -10 4, -6 10 L 6 10 C 10 4, 8 -8, 4 -12 Z" fill="#fed7aa"/>
+      <circle cx="-3" cy="6" r="1.4" fill="#78350f"/>
+      <circle cx="3" cy="6" r="1.4" fill="#78350f"/>
+    </g>
+  </g>
+</svg>

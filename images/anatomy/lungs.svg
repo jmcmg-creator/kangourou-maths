@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" role="img" aria-label="Deux poumons avec la trachée et les bronches">
+  <defs>
+    <linearGradient id="lg" x1="0" x2="0" y1="0" y2="1">
+      <stop offset="0" stop-color="#fecaca"/>
+      <stop offset="1" stop-color="#e11d48"/>
+    </linearGradient>
+  </defs>
+  <rect x="46" y="8" width="8" height="34" rx="3" fill="#fda4af" stroke="#831843" stroke-width="1.8"/>
+  <path d="M50 40 L 30 55" stroke="#831843" stroke-width="3" fill="none" stroke-linecap="round"/>
+  <path d="M50 40 L 70 55" stroke="#831843" stroke-width="3" fill="none" stroke-linecap="round"/>
+  <path d="M34 50 C 12 50, 8 72, 15 90 C 25 96, 42 90, 44 78 L 44 55 Z" fill="url(#lg)" stroke="#831843" stroke-width="2.2"/>
+  <path d="M66 50 C 88 50, 92 72, 85 90 C 75 96, 58 90, 56 78 L 56 55 Z" fill="url(#lg)" stroke="#831843" stroke-width="2.2"/>
+  <path d="M34 58 Q 28 66, 24 72 M 40 60 Q 34 68, 30 78" stroke="#831843" stroke-width="1.1" fill="none" opacity="0.55"/>
+  <path d="M66 58 Q 72 66, 76 72 M 60 60 Q 66 68, 70 78" stroke="#831843" stroke-width="1.1" fill="none" opacity="0.55"/>
+  <circle cx="26" cy="80" r="2" fill="#fca5a5"/>
+  <circle cx="34" cy="86" r="1.8" fill="#fca5a5"/>
+  <circle cx="74" cy="80" r="2" fill="#fca5a5"/>
+  <circle cx="66" cy="86" r="1.8" fill="#fca5a5"/>
+</svg>

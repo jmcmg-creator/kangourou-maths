@@ -19,7 +19,7 @@ const files = [
   'qr.js', 'config.js', 'supa.js', 'manifest.json', 'sw.js',
   'confidentialite.html'
 ];
-const dirs = ['lecons', 'audio'];
+const dirs = ['lecons', 'audio', 'images'];
 
 for (const f of files) {
   const src = join(root, f);

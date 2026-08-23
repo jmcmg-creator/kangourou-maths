@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" role="img" aria-label="Deux reins avec une goutte d'urine">
+  <defs>
+    <linearGradient id="kg" x1="0" x2="0" y1="0" y2="1">
+      <stop offset="0" stop-color="#c2410c"/>
+      <stop offset="1" stop-color="#7c2d12"/>
+    </linearGradient>
+  </defs>
+  <path d="M22 26 C 8 32, 6 62, 18 78 C 32 82, 44 76, 46 60 C 48 44, 42 26, 30 22 Z" fill="url(#kg)" stroke="#431407" stroke-width="2.2"/>
+  <path d="M25 52 L 46 58" stroke="#431407" stroke-width="1.8" opacity="0.55"/>
+  <path d="M78 26 C 92 32, 94 62, 82 78 C 68 82, 56 76, 54 60 C 52 44, 58 26, 70 22 Z" fill="url(#kg)" stroke="#431407" stroke-width="2.2"/>
+  <path d="M75 52 L 54 58" stroke="#431407" stroke-width="1.8" opacity="0.55"/>
+  <path d="M46 60 C 48 68, 50 75, 50 82" stroke="#431407" stroke-width="1.6" fill="none"/>
+  <path d="M54 60 C 52 68, 50 75, 50 82" stroke="#431407" stroke-width="1.6" fill="none"/>
+  <path d="M50 82 C 44 86, 42 92, 46 96 C 50 98, 54 98, 54 96 C 58 92, 56 86, 50 82 Z" fill="#38bdf8" stroke="#0369a1" stroke-width="1.4"/>
+</svg>
