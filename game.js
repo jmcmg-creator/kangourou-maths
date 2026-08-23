@@ -223,21 +223,21 @@ function migrate(p){
 function saveProfile(){localStorage.setItem(STORAGE_KEY,JSON.stringify(profile))}
 let profile=loadProfile();
 
-/* One-shot : restauration des XP de Judith après reset accidentel.
-   Se déclenche UNE fois pour un profil nommé "judith" avec moins de 5 parties
-   (donc probablement fraîchement réinitialisé). Cible ~26 662 XP total.
-   Marqueur _judithRestored empêche toute re-application. */
+/* Restauration XP Judith. v2 : cible corrigée à 26 000 (v1 avait 26 662).
+   Se ré-applique si Judith a été restaurée en v1 (ajuste à la nouvelle cible)
+   OU si c'est un profil "judith" fraîchement réinitialisé (<5 parties). */
 function _maybeRestoreJudith(){
-  if(profile._judithRestored) return;
   if(!profile.name || profile.name.toLowerCase()!=='judith') return;
-  if((profile.totalGames||0)>=5) return;
-  const target=26662;
+  if(profile._judithRestoredV2) return;
+  const target=26000;
   const royaumesXp=Object.values(profile.royaumes||{}).reduce((s,r)=>s+(r.xp||0),0);
   const currentXp=(profile.xp||0)+royaumesXp;
-  if(currentXp>=target*0.5) return; // déjà >~13k → probablement pas un reset
-  const missing=Math.max(0,target-royaumesXp);
-  profile.xp=missing;
+  const wasV1=!!profile._judithRestored;
+  const isFreshReset=(profile.totalGames||0)<5 && currentXp<target*0.5;
+  if(!wasV1 && !isFreshReset) return;
+  profile.xp=Math.max(0,target-royaumesXp);
   profile._judithRestored=true;
+  profile._judithRestoredV2=true;
   profile._judithRestoreToastPending=true;
   saveProfile();
 }
