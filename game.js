@@ -222,6 +222,26 @@ function migrate(p){
 }
 function saveProfile(){localStorage.setItem(STORAGE_KEY,JSON.stringify(profile))}
 let profile=loadProfile();
+
+/* One-shot : restauration des XP de Judith après reset accidentel.
+   Se déclenche UNE fois pour un profil nommé "judith" avec moins de 5 parties
+   (donc probablement fraîchement réinitialisé). Cible ~26 662 XP total.
+   Marqueur _judithRestored empêche toute re-application. */
+function _maybeRestoreJudith(){
+  if(profile._judithRestored) return;
+  if(!profile.name || profile.name.toLowerCase()!=='judith') return;
+  if((profile.totalGames||0)>=5) return;
+  const target=26662;
+  const royaumesXp=Object.values(profile.royaumes||{}).reduce((s,r)=>s+(r.xp||0),0);
+  const currentXp=(profile.xp||0)+royaumesXp;
+  if(currentXp>=target*0.5) return; // déjà >~13k → probablement pas un reset
+  const missing=Math.max(0,target-royaumesXp);
+  profile.xp=missing;
+  profile._judithRestored=true;
+  profile._judithRestoreToastPending=true;
+  saveProfile();
+}
+_maybeRestoreJudith();
 let state={screen:'home',level:null,mode:null,exercises:[],idx:0,selected:null,score:0,streak:0,maxStreak:0,results:[],timer:60,timerID:null,gameOver:false,startTime:null,gameData:null,detailOpen:false,sessionXP:0,sessionCristaux:0,aiExercises:[],generating:false,syncing:false};
 
 const $=id=>document.getElementById(id);
@@ -277,11 +297,21 @@ function isExerciseCoherent(ex){
    du texte, échappé, et rendu en grand au-dessus de la question. Le champ
    `visual` doit être court (≤ 24 caractères visibles) pour rester lisible
    sans scroll sur mobile. */
+// Whitelist stricte des chemins visualImg autorisés (protection XSS : on ne
+// laisse JAMAIS un exo IA injecter un src arbitraire). Un exo Worker qui
+// enverrait visualImg="..." pointant en dehors serait ignoré silencieusement.
+const _ALLOWED_VISUAL_IMG=/^images\/anatomy\/[a-z0-9_-]+\.svg$/;
 function renderExerciseVisual(ex){
-  if(!ex||!ex.visual) return '';
-  const v=String(ex.visual).slice(0,120);
-  const alt=ex.visualAlt||ex.visual;
-  return `<div class="ex-visual" role="img" aria-label="${esc(alt)}">${esc(v)}</div>`;
+  if(!ex) return '';
+  const alt=ex.visualAlt||ex.visual||'';
+  if(ex.visualImg && _ALLOWED_VISUAL_IMG.test(ex.visualImg)){
+    return `<div class="ex-visual ex-visual-img"><img src="${esc(ex.visualImg)}" alt="${esc(alt)}" loading="lazy"></div>`;
+  }
+  if(ex.visual){
+    const v=String(ex.visual).slice(0,120);
+    return `<div class="ex-visual" role="img" aria-label="${esc(alt)}">${esc(v)}</div>`;
+  }
+  return '';
 }
 
 function shuffle(a){a=[...a];for(let i=a.length-1;i>0;i--){let j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]]}return a}
@@ -740,6 +770,16 @@ function renderHome(){
   // Total des XP de tous les royaumes
   const totalXp=Object.values(profile.royaumes||{}).reduce((s,r)=>s+(r.xp||0),0)+(profile.xp||0);
   const totalCristaux=Object.values(profile.royaumes||{}).reduce((s,r)=>s+(r.cristaux||0),0)+(profile.cristaux||0);
+  let judithToast='';
+  if(profile._judithRestoreToastPending){
+    delete profile._judithRestoreToastPending;
+    saveProfile();
+    judithToast=`<div class="card fade-in" style="background:linear-gradient(135deg,#fef3c7,#fde68a);border-color:#fbbf24;text-align:center;margin-bottom:14px">
+      <div style="font-size:2.4rem" class="bounce">\u{1F451}</div>
+      <h3 class="fredoka" style="color:#7a3f04;font-size:1.05rem;margin-top:6px">Ton Royaume est restauré !</h3>
+      <p style="color:#451a03;margin-top:6px;font-size:.9rem">Tes ${totalXp.toLocaleString('fr-FR')} XP sont revenus.</p>
+    </div>`;
+  }
   let questHTML='';
   if(profile.dailyQuest){
     const q=profile.dailyQuest;
@@ -753,6 +793,7 @@ function renderHome(){
     </div>`;
   }
   app.innerHTML=`
+    ${judithToast}
     <div class="text-center fade-in mb-4 py-4">
       <h2 class="title" style="font-size:clamp(1.4rem,4vw,2rem)">\u{1F44B} Salut ${esc(profile.name)} !</h2>
       <p style="color:#7a5a3a;font-size:1rem">Bienvenue dans tes Royaumes</p>
@@ -1460,6 +1501,7 @@ function renderParent(){
       <button class="parent-btn" onclick="navigate('parentScreenTime')">⏱️ Limiter le temps</button>
       <button class="parent-btn" onclick="navigate('nameAsk')">\u{1F464} Renommer</button>
       <button class="parent-btn" onclick="navigate('parentOnboarding',{step:0})">\u{1F4D6} Revoir le tour</button>
+      <button class="parent-btn" onclick="adjustXpTotal()">✨ Ajuster les XP</button>
     </div>
   </div>
   <div class="card mb-4" style="border-color:#c4b5fd"><div class="stats-grid">
@@ -1594,6 +1636,21 @@ function renderParentScreenTime(){
       <p style="color:#9c6f3a;font-size:.78rem;margin-top:12px;font-style:italic">Les intitulés peuvent varier selon la version d'iOS. Cette limite est gérée par le système, pas par l'application.</p>
     </div>
     <button class="btn-stone" onclick="navigate('${from}'${backData})">← Retour</button>`;
+}
+
+// Outil parent : ajuster le total XP affiché sur l'accueil.
+// On préserve les XP par-royaume et on absorbe la différence dans profile.xp.
+function adjustXpTotal(){
+  const royaumesXp=Object.values(profile.royaumes||{}).reduce((s,r)=>s+(r.xp||0),0);
+  const currentTotal=royaumesXp+(profile.xp||0);
+  const raw=prompt('Nouveau total XP à afficher (actuellement '+currentTotal.toLocaleString('fr-FR')+')',String(currentTotal));
+  if(raw==null) return;
+  const target=parseInt(String(raw).replace(/[^0-9]/g,''),10);
+  if(!Number.isFinite(target)||target<0){alert('Valeur invalide.');return}
+  profile.xp=Math.max(0,target-royaumesXp);
+  saveProfile();
+  alert('OK. Nouveau total : '+(royaumesXp+profile.xp).toLocaleString('fr-FR')+' XP.');
+  render();
 }
 
 function copySyncLink(){
