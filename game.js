@@ -843,7 +843,36 @@ function ensureMicConsent(onYes,onNo){
 }
 
 /* ════════ NAVIGATION ════════ */
-$('headerHome').onclick=()=>navigate('home');
+// Le titre ramène à l'accueil « en haut » : c'est un geste de sortie, pas un
+// retour en arrière — on oublie donc l'ancre.
+$('headerHome').onclick=()=>{_homeAnchor=null;navigate('home')};
+
+/* ── Ancre d'accueil ───────────────────────────────────────────────────
+   L'accueil est long (une dizaine de royaumes). En revenir tout en haut à
+   chaque fois oblige l'enfant à re-scroller pour retrouver là où il était.
+   On retient donc la carte par laquelle il est entré, et on l'y repose.   */
+let _homeAnchor=null;
+// Capture : ce listener doit s'exécuter AVANT le onclick de la carte, qui
+// appelle navigate() et change déjà d'écran.
+app.addEventListener('click',(e)=>{
+  if(state.screen!=='home'||!e.target.closest) return;
+  const card=e.target.closest('[data-anchor]');
+  if(card) _homeAnchor=card.getAttribute('data-anchor');
+},true);
+
+function _scrollToHomeAnchor(){
+  if(!_homeAnchor) return false;
+  let el=null;
+  try{el=app.querySelector('[data-anchor="'+CSS.escape(_homeAnchor)+'"]')}catch(e){}
+  if(!el) return false; // carte disparue (niveau verrouillé, profil changé…) → haut
+  // L'en-tête est sticky : sans cette marge il recouvrirait la carte visée.
+  const head=document.querySelector('header');
+  const offset=(head?head.offsetHeight:0)+12;
+  const y=el.getBoundingClientRect().top+window.pageYOffset-offset;
+  window.scrollTo(0,Math.max(0,y));
+  return true;
+}
+
 function navigate(screen,data){
   if(state.timerID){clearInterval(state.timerID);state.timerID=null}
   if(state.autoNextID){clearTimeout(state.autoNextID);state.autoNextID=null}
@@ -853,7 +882,7 @@ function navigate(screen,data){
   if(data) Object.assign(state,data);
   backArrow.classList.toggle('hidden',screen==='home');
   render();
-  window.scrollTo(0,0);
+  if(!(screen==='home'&&_scrollToHomeAnchor())) window.scrollTo(0,0);
 }
 
 function render(){
@@ -1105,13 +1134,13 @@ function renderHome(){
       const r=ROYAUMES[rid];
       if(!r){
         const target=s.isPoetry?"navigate('poesieHome')":"navigate('subject',{subjectId:'"+s.id+"'})";
-        return `<div class="subject-card fade-in" style="border-color:${s.color};animation-delay:${i*.08}s" onclick="${target}"><div class="subject-emoji bounce">${s.icon}</div><div class="subject-info"><h3 class="subject-name" style="color:${s.color}">${s.name}</h3><p class="subject-desc">${s.desc}</p></div><div class="arrow">\u2192</div></div>`;
+        return `<div class="subject-card fade-in" data-anchor="${s.id}" style="border-color:${s.color};animation-delay:${i*.08}s" onclick="${target}"><div class="subject-emoji bounce">${s.icon}</div><div class="subject-info"><h3 class="subject-name" style="color:${s.color}">${s.name}</h3><p class="subject-desc">${s.desc}</p></div><div class="arrow">\u2192</div></div>`;
       }
       const data=getRoyaumeData(rid);
       const st=getStageInRoyaume(rid);
       const xpBar=st.next?Math.round((data.xp-st.stage.threshold)/(st.next.threshold-st.stage.threshold)*100):100;
       const target=s.isPoetry?"navigate('poesieHome')":"navigate('subject',{subjectId:'"+s.id+"'})";
-      return `<div class="kingdom-gate fade-in" style="animation-delay:${i*.1}s;--k-color:${r.color}" onclick="${target}">
+      return `<div class="kingdom-gate fade-in" data-anchor="${s.id}" style="animation-delay:${i*.1}s;--k-color:${r.color}" onclick="${target}">
         <div class="kingdom-glow" style="background:radial-gradient(ellipse at 30% 50%,${r.color}22,transparent 70%)"></div>
         <div class="kingdom-border-glow" style="--k-color:${r.color}"></div>
         <div class="kingdom-inner">
@@ -1130,7 +1159,7 @@ function renderHome(){
         </div>
       </div>`;
     }).join('')}
-    <div class="kingdom-gate fade-in" style="animation-delay:.95s;--k-color:#22d3ee" onclick="navigate('leconsHome')">
+    <div class="kingdom-gate fade-in" data-anchor="lecons" style="animation-delay:.95s;--k-color:#22d3ee" onclick="navigate('leconsHome')">
       <div class="kingdom-glow" style="background:radial-gradient(ellipse at 30% 50%,rgba(34,211,238,0.12),transparent 70%)"></div>
       <div class="kingdom-border-glow" style="--k-color:#22d3ee"></div>
       <div class="kingdom-inner">
@@ -1166,7 +1195,7 @@ function renderHome(){
         <div class="kingdom-enter" style="color:#fb923c">\u2794</div>
       </div>
     </div>
-    <div class="subject-card fade-in" style="border-color:#34d399;background:rgba(52,211,153,0.07)" onclick="navigate('memoryHome')">
+    <div class="subject-card fade-in" data-anchor="memory" style="border-color:#34d399;background:rgba(52,211,153,0.07)" onclick="navigate('memoryHome')">
       <div class="subject-emoji bounce">\u{1F0CF}</div>
       <div class="subject-info">
         <h3 class="subject-name" style="color:#34d399">Memory</h3>
@@ -1174,7 +1203,7 @@ function renderHome(){
       </div>
       <div class="arrow">\u2192</div>
     </div>
-    <div class="subject-card fade-in" style="border-color:#f472b6;background:rgba(244,114,182,0.07)" onclick="navigate('battleHome')">
+    <div class="subject-card fade-in" data-anchor="battle" style="border-color:#f472b6;background:rgba(244,114,182,0.07)" onclick="navigate('battleHome')">
       <div class="subject-emoji bounce">\u2694\ufe0f</div>
       <div class="subject-info">
         <h3 class="subject-name" style="color:#f472b6">Battle des Amis</h3>
@@ -1182,7 +1211,7 @@ function renderHome(){
       </div>
       <div class="arrow">\u2192</div>
     </div>
-    <div class="subject-card fade-in" style="border-color:#fbbf24;background:rgba(251,191,36,0.06)" onclick="navigate('fichesHome')">
+    <div class="subject-card fade-in" data-anchor="fiches" style="border-color:#fbbf24;background:rgba(251,191,36,0.06)" onclick="navigate('fichesHome')">
       <div class="subject-emoji bounce">\u{1F4D6}</div>
       <div class="subject-info">
         <h3 class="subject-name" style="color:#fbbf24">Fiches bilan</h3>
