@@ -5,6 +5,9 @@ name: Audit sécurité
 #   2. semgrep   : patterns OWASP (XSS, injection, eval, etc.)
 #   3. osv-scanner : vulnérabilités CVE dans les dépendances
 #   4. codeql    : analyse statique sémantique (natif GitHub)
+# Plus un garde-fou local (echappement) qui ne dépend d'aucun service
+# distant : les quatre scanners ci-dessus ont tous besoin du réseau, et
+# l'un d'eux est déjà resté éteint une semaine sans qu'on le voie.
 
 on:
   push:
@@ -57,6 +60,15 @@ jobs:
             --exclude node_modules \
             --exclude iphone-app/ios \
             --metrics off
+
+  echappement:
+    name: 🛡️ Échappement HTML (local, sans réseau)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 20 }
+      - run: node scripts/test-echappement.mjs
 
   osv:
     name: 🐛 osv-scanner (CVE dépendances)
