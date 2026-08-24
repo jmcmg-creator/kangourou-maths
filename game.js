@@ -315,6 +315,13 @@ const STORAGE_KEY="royaume_v3";
 const STORAGE_PROFILES="royaume_profiles_v1";
 const STORAGE_ACTIVE="royaume_active_v1";
 
+/* Numéro de build, affiché en bas de l'Espace Parent. Sans lui, impossible
+   de savoir quelle version tourne réellement sur un téléphone — et donc de
+   distinguer « la fonctionnalité est cassée » de « le téléphone n'a pas
+   encore la mise à jour ».
+   À bumper avec CACHE_VERSION (sw.js) et le ?v= (index.html). */
+const APP_VERSION='v32';
+
 function loadProfilesDict(){
   try{const d=localStorage.getItem(STORAGE_PROFILES); if(d) return JSON.parse(d)||{};}catch(e){}
   return {};
@@ -327,7 +334,7 @@ function newProfile(){
   return {name:"",totalGames:0,totalQuestions:0,totalCorrect:0,bestStreak:0,sessions:[],catStats:{},exerciseStats:{},playDays:[],unlockedBadges:[],
     xp:0,cristaux:0,dragonnets:[],mainDragon:"main",stage:0,
     dailyQuest:null,aiExercises:[],recentMisses:[],aid:"",
-    grade:null,age:null,unlocks:{},unlockProgress:{},recentExIds:[]};
+    grade:null,age:null,unlocks:{},unlockProgress:{},recentExIds:[],lessonsSeen:[]};
 }
 function migrate(p){
   const base=newProfile();
@@ -465,7 +472,7 @@ function mergeProfiles(a,b){
     if(seenM.has(k))return false;seenM.add(k);return true;
   }).sort((x,y)=>String(x.date||'').localeCompare(String(y.date||''))).slice(-50);
   const uni=(k)=>{out[k]=Array.from(new Set([...(a[k]||[]),...(b[k]||[])]))};
-  ['playDays','unlockedBadges','dragonnets','dismissedInvites'].forEach(uni);
+  ['playDays','unlockedBadges','dragonnets','dismissedInvites','lessonsSeen'].forEach(uni);
   // Royaumes : champ à champ, on garde le meilleur de chaque compteur.
   out.royaumes={};
   for(const rid of new Set([...Object.keys(a.royaumes||{}),...Object.keys(b.royaumes||{})])){
@@ -843,7 +850,36 @@ function ensureMicConsent(onYes,onNo){
 }
 
 /* ════════ NAVIGATION ════════ */
-$('headerHome').onclick=()=>navigate('home');
+// Le titre ramène à l'accueil « en haut » : c'est un geste de sortie, pas un
+// retour en arrière — on oublie donc l'ancre.
+$('headerHome').onclick=()=>{_homeAnchor=null;navigate('home')};
+
+/* ── Ancre d'accueil ───────────────────────────────────────────────────
+   L'accueil est long (une dizaine de royaumes). En revenir tout en haut à
+   chaque fois oblige l'enfant à re-scroller pour retrouver là où il était.
+   On retient donc la carte par laquelle il est entré, et on l'y repose.   */
+let _homeAnchor=null;
+// Capture : ce listener doit s'exécuter AVANT le onclick de la carte, qui
+// appelle navigate() et change déjà d'écran.
+app.addEventListener('click',(e)=>{
+  if(state.screen!=='home'||!e.target.closest) return;
+  const card=e.target.closest('[data-anchor]');
+  if(card) _homeAnchor=card.getAttribute('data-anchor');
+},true);
+
+function _scrollToHomeAnchor(){
+  if(!_homeAnchor) return false;
+  let el=null;
+  try{el=app.querySelector('[data-anchor="'+CSS.escape(_homeAnchor)+'"]')}catch(e){}
+  if(!el) return false; // carte disparue (niveau verrouillé, profil changé…) → haut
+  // L'en-tête est sticky : sans cette marge il recouvrirait la carte visée.
+  const head=document.querySelector('header');
+  const offset=(head?head.offsetHeight:0)+12;
+  const y=el.getBoundingClientRect().top+window.pageYOffset-offset;
+  window.scrollTo(0,Math.max(0,y));
+  return true;
+}
+
 function navigate(screen,data){
   if(state.timerID){clearInterval(state.timerID);state.timerID=null}
   if(state.autoNextID){clearTimeout(state.autoNextID);state.autoNextID=null}
@@ -853,7 +889,7 @@ function navigate(screen,data){
   if(data) Object.assign(state,data);
   backArrow.classList.toggle('hidden',screen==='home');
   render();
-  window.scrollTo(0,0);
+  if(!(screen==='home'&&_scrollToHomeAnchor())) window.scrollTo(0,0);
 }
 
 function render(){
@@ -872,6 +908,8 @@ function render(){
     case 'parent': renderParent(); break;
     case 'nameAsk': renderNameAsk(); break;
     case 'gradeAsk': renderGradeAsk(); break;
+    case 'ageAsk': renderAgeAsk(); break;
+    case 'lessonView': renderLesson(); break;
     case 'profilePicker': renderProfilePicker(); break;
     case 'collection': renderCollection(); break;
     case 'leconsHome': renderLecons(); break;
@@ -906,8 +944,8 @@ function toast(msg,kind){
 /* ════════ CLASSE DE L'ENFANT & DÉBLOCAGE PROGRESSIF ════════
    Principe : l'enfant démarre avec les niveaux de SA classe (et en dessous)
    ouverts. Les niveaux supérieurs sont verrouillés 🔒 et s'ouvrent à la
-   performance : 3 parties à 80 % ou plus sur son niveau le plus haut
-   débloquent le palier suivant, matière par matière.
+   maîtrise : quand TOUTES les questions du niveau le plus haut ont été
+   réussies au moins une fois, le palier suivant s'ouvre, matière par matière.
 
    RÈGLE DE NON-RÉGRESSION : un profil qui n'a PAS de classe renseignée
    (tous les profils existants) garde TOUT ouvert, exactement comme avant.
@@ -994,35 +1032,56 @@ function nextLockedLevel(subjectId){
   return locked.reduce((a,b)=>(levelMinGrade(b)<levelMinGrade(a)?b:a));
 }
 
-/* Appelé à la fin de chaque partie : 3 parties à ≥ 80 % sur le niveau le
-   plus haut ouvert débloquent le palier suivant de la matière. */
-const UNLOCK_THRESHOLD=0.8, UNLOCK_GAMES=3, UNLOCK_MIN_QUESTIONS=5;
+/* ════════ MAÎTRISE D'UN NIVEAU ════════
+   Un niveau est maîtrisé quand CHACUNE de ses questions a été réussie au
+   moins une fois. C'est un objectif fini, que l'enfant voit se remplir —
+   là où « 3 parties à 80 % » pouvait s'obtenir en retombant sur les mêmes
+   questions faciles, et ne montrait rien de ce qu'il restait à faire.
+
+   On ne compte que les questions livrées avec l'app. Les questions
+   générées par l'IA arrivent en continu : les inclure ferait reculer
+   l'objectif à chaque génération, et il ne serait jamais atteint. */
+const _staticPoolCache={};
+function staticPoolOf(lvId){
+  if(_staticPoolCache[lvId]) return _staticPoolCache[lvId];
+  const pool=EX.filter(e=>e&&e.lv===lvId&&isPlayableEx(e));
+  _staticPoolCache[lvId]=pool;
+  return pool;
+}
+// {done, total, ratio} — combien de questions du niveau sont déjà réussies.
+function levelMastery(lvId){
+  const pool=staticPoolOf(lvId);
+  const st=profile.exerciseStats||{};
+  let done=0;
+  for(const e of pool){const s=st[e.id]; if(s&&s.cor>0) done++;}
+  return {done,total:pool.length,ratio:pool.length?done/pool.length:0};
+}
+function isLevelMastered(lvId){
+  const m=levelMastery(lvId);
+  return m.total>0&&m.done>=m.total;
+}
+
+/* Appelé à la fin de chaque partie. score/total ne servent plus au calcul —
+   la signature est conservée pour l'appelant. */
 function checkLevelUnlock(lvId,score,total){
   try{
     if(profile.grade==null) return null;              // pas de progression sans classe
-    if(!lvId||total<UNLOCK_MIN_QUESTIONS) return null;
+    if(!lvId) return null;
     const subj=subjectOfLevel(lvId);
     if(!subj) return null;
     const top=topOpenLevel(subj);
     if(!top||top.id!==lvId) return null;              // on ne progresse que sur son plus haut niveau
     const nextLv=nextLockedLevel(subj);
     if(!nextLv) return null;                          // déjà tout ouvert
+    const m=levelMastery(lvId);
     if(!profile.unlockProgress) profile.unlockProgress={};
-    const ratio=total>0?score/total:0;
-    if(ratio<UNLOCK_THRESHOLD){
-      profile.unlockProgress[lvId]=0;                 // il faut 3 bonnes parties d'affilée
-      saveProfile();
-      return null;
-    }
-    const n=(profile.unlockProgress[lvId]||0)+1;
-    profile.unlockProgress[lvId]=n;
-    if(n<UNLOCK_GAMES){ saveProfile(); return {progress:n,need:UNLOCK_GAMES,next:nextLv}; }
+    profile.unlockProgress[lvId]=m.done;              // sert à l'affichage
+    if(m.total===0||m.done<m.total){saveProfile();return {progress:m.done,need:m.total,next:nextLv}}
     if(!profile.unlocks) profile.unlocks={};
     profile.unlocks[subj]=(profile.unlocks[subj]||0)+1;
-    profile.unlockProgress[lvId]=0;
     saveProfile();
     track('level_unlocked',{level:String(nextLv.id).slice(0,30)});
-    return {unlocked:nextLv,progress:UNLOCK_GAMES,need:UNLOCK_GAMES,next:nextLv};
+    return {unlocked:nextLv,progress:m.done,need:m.total,next:nextLv,mastered:lvId};
   }catch(e){console.warn('unlock',e);return null}
 }
 
@@ -1054,6 +1113,11 @@ function renderHome(){
     navigate(Object.keys(loadProfilesDict()).length>0?'profilePicker':'nameAsk');
     return;
   }
+  // Inscription incomplète : on la termine avant tout le reste. Un profil
+  // créé avant l'arrivée des classes passe par ici sans rien perdre de sa
+  // progression — on lui pose seulement les questions manquantes.
+  if(profile.grade==null){ navigate('gradeAsk'); return }
+  if(profile.age==null){ navigate('ageAsk'); return }
   // Lien de battle reçu (?battle=CODE via WhatsApp/QR) : on rejoint direct,
   // maintenant qu'un profil est actif.
   let _pb=null;
@@ -1066,6 +1130,7 @@ function renderHome(){
   checkDailyQuest();
   checkBattleInvites();
   setTimeout(()=>{
+    if(state.screen!=='home') return;
     if(window.Supa&&Supa.enabled()&&!profile.pseudo&&state.screen==='home'&&!document.getElementById('pseudoNudge')){
       const d=document.createElement('div');
       d.innerHTML='<div class="card fade-in" id="pseudoNudge" style="border-color:#f472b6"><div class="row" style="gap:12px"><div style="font-size:2rem">🛡️</div><div class="flex-1"><h3 class="card-title" style="color:#f472b6">Choisis ton pseudo de battle !</h3><p class="sub">Un nom unique pour défier tes amis, protégé par un code secret.</p></div><button class="btn-fire btn-small" onclick="navigate(&quot;pseudoSetup&quot;)">Go !</button></div></div>';
@@ -1105,13 +1170,13 @@ function renderHome(){
       const r=ROYAUMES[rid];
       if(!r){
         const target=s.isPoetry?"navigate('poesieHome')":"navigate('subject',{subjectId:'"+s.id+"'})";
-        return `<div class="subject-card fade-in" style="border-color:${s.color};animation-delay:${i*.08}s" onclick="${target}"><div class="subject-emoji bounce">${s.icon}</div><div class="subject-info"><h3 class="subject-name" style="color:${s.color}">${s.name}</h3><p class="subject-desc">${s.desc}</p></div><div class="arrow">\u2192</div></div>`;
+        return `<div class="subject-card fade-in" data-anchor="${s.id}" style="border-color:${s.color};animation-delay:${i*.08}s" onclick="${target}"><div class="subject-emoji bounce">${s.icon}</div><div class="subject-info"><h3 class="subject-name" style="color:${s.color}">${s.name}</h3><p class="subject-desc">${s.desc}</p></div><div class="arrow">\u2192</div></div>`;
       }
       const data=getRoyaumeData(rid);
       const st=getStageInRoyaume(rid);
       const xpBar=st.next?Math.round((data.xp-st.stage.threshold)/(st.next.threshold-st.stage.threshold)*100):100;
       const target=s.isPoetry?"navigate('poesieHome')":"navigate('subject',{subjectId:'"+s.id+"'})";
-      return `<div class="kingdom-gate fade-in" style="animation-delay:${i*.1}s;--k-color:${r.color}" onclick="${target}">
+      return `<div class="kingdom-gate fade-in" data-anchor="${s.id}" style="animation-delay:${i*.1}s;--k-color:${r.color}" onclick="${target}">
         <div class="kingdom-glow" style="background:radial-gradient(ellipse at 30% 50%,${r.color}22,transparent 70%)"></div>
         <div class="kingdom-border-glow" style="--k-color:${r.color}"></div>
         <div class="kingdom-inner">
@@ -1130,7 +1195,7 @@ function renderHome(){
         </div>
       </div>`;
     }).join('')}
-    <div class="kingdom-gate fade-in" style="animation-delay:.95s;--k-color:#22d3ee" onclick="navigate('leconsHome')">
+    <div class="kingdom-gate fade-in" data-anchor="lecons" style="animation-delay:.95s;--k-color:#22d3ee" onclick="navigate('leconsHome')">
       <div class="kingdom-glow" style="background:radial-gradient(ellipse at 30% 50%,rgba(34,211,238,0.12),transparent 70%)"></div>
       <div class="kingdom-border-glow" style="--k-color:#22d3ee"></div>
       <div class="kingdom-inner">
@@ -1166,7 +1231,7 @@ function renderHome(){
         <div class="kingdom-enter" style="color:#fb923c">\u2794</div>
       </div>
     </div>
-    <div class="subject-card fade-in" style="border-color:#34d399;background:rgba(52,211,153,0.07)" onclick="navigate('memoryHome')">
+    <div class="subject-card fade-in" data-anchor="memory" style="border-color:#34d399;background:rgba(52,211,153,0.07)" onclick="navigate('memoryHome')">
       <div class="subject-emoji bounce">\u{1F0CF}</div>
       <div class="subject-info">
         <h3 class="subject-name" style="color:#34d399">Memory</h3>
@@ -1174,7 +1239,7 @@ function renderHome(){
       </div>
       <div class="arrow">\u2192</div>
     </div>
-    <div class="subject-card fade-in" style="border-color:#f472b6;background:rgba(244,114,182,0.07)" onclick="navigate('battleHome')">
+    <div class="subject-card fade-in" data-anchor="battle" style="border-color:#f472b6;background:rgba(244,114,182,0.07)" onclick="navigate('battleHome')">
       <div class="subject-emoji bounce">\u2694\ufe0f</div>
       <div class="subject-info">
         <h3 class="subject-name" style="color:#f472b6">Battle des Amis</h3>
@@ -1182,7 +1247,7 @@ function renderHome(){
       </div>
       <div class="arrow">\u2192</div>
     </div>
-    <div class="subject-card fade-in" style="border-color:#fbbf24;background:rgba(251,191,36,0.06)" onclick="navigate('fichesHome')">
+    <div class="subject-card fade-in" data-anchor="fiches" style="border-color:#fbbf24;background:rgba(251,191,36,0.06)" onclick="navigate('fichesHome')">
       <div class="subject-emoji bounce">\u{1F4D6}</div>
       <div class="subject-info">
         <h3 class="subject-name" style="color:#fbbf24">Fiches bilan</h3>
@@ -1204,13 +1269,14 @@ function subjectProgressBanner(s){
   const top=topOpenLevel(s.id);
   if(!top) return '';
   const nxt=nextLockedLevel(s.id);
-  const prog=(profile.unlockProgress||{})[top.id]||0;
+  const m=levelMastery(top.id);
+  const pct=Math.round(m.ratio*100);
   const band=targetDifficulty(s.id);
   const hot=band&&band.label==='expert'
     ?'<div class="sub" style="color:#f7a020;margin-top:6px">\u{1F525} Tu cartonnes ici : le Dragon te sort des questions plus costaudes.</div>':'';
   const nextHTML=nxt
-    ?'<div class="sub" style="margin-top:6px">Prochain palier : <b style="color:'+s.color+'">'+esc(nxt.name)+'</b> \u2014 '+prog+'/3 parties r\u00e9ussies</div>'
-      +'<div class="progress-track" style="margin-top:6px"><div class="progress-fill" style="width:'+Math.round(prog/3*100)+'%"></div></div>'
+    ?'<div class="sub" style="margin-top:6px">Prochain palier : <b style="color:'+s.color+'">'+esc(nxt.name)+'</b> \u2014 '+m.done+'/'+m.total+' questions r\u00e9ussies</div>'
+      +'<div class="progress-track" style="margin-top:6px"><div class="progress-fill" style="width:'+pct+'%"></div></div>'
     :'<div class="sub" style="margin-top:6px">Tout est ouvert dans ce royaume \u2705</div>';
   return '<div class="card mb-3" style="border-color:'+s.color+'55">'
     +'<div style="color:#faf5ff;font-weight:700">\u{1F393} Ton niveau ici : <span style="color:'+s.color+'">'+esc(top.name)+'</span></div>'
@@ -1273,16 +1339,30 @@ function renderSubject(){
   ${subjectProgressBanner(s)}
   ${visibleLevels.map((lv,i)=>{
     const open=isLevelUnlocked(lv.id);
-    const prog=(profile.unlockProgress||{})[topOpenLevel(s.id)&&topOpenLevel(s.id).id]||0;
     const isNext=!open&&nextLockedLevel(s.id)&&nextLockedLevel(s.id).id===lv.id;
+    // Barre de progression : l'enfant doit voir COMBIEN il lui reste, pas
+    // seulement qu'il n'y est pas encore.
+    const m=levelMastery(lv.id);
+    const fini=m.total>0&&m.done>=m.total;
+    const barre=(open&&m.total>0)?`<div class="lvl-track"><div class="lvl-fill" style="width:${Math.round(m.ratio*100)}%;background:${lv.color}"></div></div>` : '';
+    let ligne;
+    if(open) ligne=m.total>0?`${fini?'✅ Terminé — ':''}${m.done}/${m.total} questions réussies`:(lv.sub||'');
+    else if(isNext){
+      const prec=topOpenLevel(s.id);
+      const mp=prec?levelMastery(prec.id):null;
+      ligne=mp&&mp.total>0
+        ? `À ouvrir — encore ${mp.total-mp.done} question${mp.total-mp.done>1?'s':''} dans « ${esc(prec.name)} »`
+        : 'À ouvrir';
+    } else ligne='Bientôt…';
     return `<div class="card ${open?'clickable':'level-locked'} fade-in" style="animation-delay:${i*.06}s;border-color:${open?lv.color:'rgba(255,255,255,0.10)'}" onclick="${open?`navigate('mode',{level:'${lv.id}'})`:`showLockedLevel('${lv.id}')`}">
     <div class="row">
-      <div style="font-size:2.2rem">${open?lv.icon:'\u{1F512}'}</div>
+      <div style="font-size:2.2rem">${open?(fini?'\u{1F3C6}':lv.icon):'\u{1F512}'}</div>
       <div class="flex-1">
         <h3 class="card-title" style="color:${open?lv.color:'#8b7ec8'}">${lv.name}${lv.secret?' \u{1F510}':''}</h3>
-        <p class="sub">${open?(lv.sub||''):(isNext?`\u00c0 d\u00e9bloquer \u2014 ${prog}/3 parties r\u00e9ussies`:'Bient\u00f4t\u2026')}</p>
+        <p class="sub">${ligne}</p>
+        ${barre}
       </div>
-      <div class="arrow">${open?'\u2192':''}</div>
+      <div class="arrow">${open?'→':''}</div>
     </div>
   </div>`}).join('')}
   <button class="btn-stone mt-4" onclick="navigate('home')">\u2190 Retour</button>`;
@@ -1293,10 +1373,11 @@ function showLockedLevel(lvId){
   const lv=LEVELS.find(l=>l.id===lvId);
   const subj=subjectOfLevel(lvId);
   const top=topOpenLevel(subj);
-  const prog=(profile.unlockProgress||{})[top&&top.id]||0;
   track('locked_level_tapped');
   if(top){
-    toast('\u{1F512} Ce niveau s\'ouvrira apr\u00e8s 3 belles parties en \u00ab '+top.name+' \u00bb ('+prog+'/3)');
+    const m=levelMastery(top.id);
+    const reste=Math.max(0,m.total-m.done);
+    toast('\u{1F512} Encore '+reste+' question'+(reste>1?'s':'')+' \u00e0 r\u00e9ussir en \u00ab '+top.name+' \u00bb ('+m.done+'/'+m.total+')');
   }else{
     toast('\u{1F512} Continue de progresser pour ouvrir ce niveau !');
   }
@@ -1388,53 +1469,80 @@ async function setName(){
   saveProfilesDict(dict);
   setActiveName(profile.name);
   saveProfile(); // pousse la version fusionnée au cloud (debounced)
-  // Nouveau profil (aucune partie jouée, pas de classe connue) → on demande
-  // l'âge/la classe. Un profil existant n'est jamais réinterrogé.
-  if(profile.grade==null&&!(profile.totalGames>0)){ navigate('gradeAsk'); return }
+  // Classe puis âge : renderHome impose de toute façon ces deux étapes, on
+  // les enchaîne ici pour que l'inscription se déroule d'un seul tenant.
+  if(profile.grade==null){ navigate('gradeAsk'); return }
+  if(profile.age==null){ navigate('ageAsk'); return }
   navigate('home');
 }
 
-/* ════════ ÉCRAN 2 DE L'INSCRIPTION : âge & classe ════════
-   Demandé une seule fois, à la création du profil. Sert à ouvrir les bons
-   niveaux dès le départ (et à verrouiller ceux qui viendront plus tard).
-   Un enfant peut passer l'étape : dans ce cas tout reste ouvert, comme
-   avant — aucune régression pour les profils existants. */
+/* ════════ INSCRIPTION, ÉTAPES 2 ET 3 : LA CLASSE, PUIS L'ÂGE ════════
+   Obligatoire pour tout le monde, anciens profils compris. La classe décide
+   des niveaux ouverts au départ ; sans elle, l'app ouvrait tout, ce qui
+   revenait à proposer de la 5e à un enfant de CE1.
+   La progression déjà acquise n'est jamais touchée : on repose la question,
+   on ne remet pas les compteurs à zéro. */
 function renderGradeAsk(){
   const cur=profile.grade;
   app.innerHTML='<div class="card fade-in" style="margin-top:32px">'
+    +'<p class="sub" style="letter-spacing:.12em;text-transform:uppercase;font-size:.7rem">Étape 2 sur 3</p>'
     +'<h2 class="title" style="color:#fbbf24;font-size:1.3rem">Tu es en quelle classe, '+esc(profile.name)+' ?</h2>'
-    +'<p style="color:#faf5ff;margin-bottom:14px">On ouvrira les niveaux qui te correspondent. Les suivants se débloqueront quand tu progresseras 🔓</p>'
+    +'<p style="color:#faf5ff;margin-bottom:14px">On ouvrira les niveaux qui te correspondent. Les suivants s\'ouvriront quand tu auras réussi toutes les questions du tien 🔓</p>'
     +'<div class="grade-grid">'
     +GRADES.map(g=>'<button class="grade-chip'+(cur===g.rank?' grade-on':'')+'" data-r="'+g.rank+'" onclick="pickGrade(+this.dataset.r)">'
         +'<span class="grade-name">'+g.name+'</span>'
         +'<span class="grade-age">'+g.age+' ans</span>'
       +'</button>').join('')
     +'</div>'
-    +'<button class="btn-fire mt-4" id="gradeGo" onclick="confirmGrade()"'+(cur==null?' disabled style="opacity:.45"':'')+'>C\'est parti ! →</button>'
-    +'<button class="btn-stone" style="width:100%;margin-top:10px" onclick="skipGrade()">Je préfère ne pas dire</button>'
+    +'<button class="btn-fire mt-4" id="gradeGo" onclick="confirmGrade()"'+(cur==null?' disabled style="opacity:.45"':'')+'>Continuer →</button>'
   +'</div>';
 }
 function pickGrade(rank){
   profile.grade=rank;
-  const g=gradeByRank(rank);
-  if(g) profile.age=g.age;
   saveProfile();
-  track('signup_grade_picked',{grade:g?g.id:''});
+  track('signup_grade_picked',{grade:(gradeByRank(rank)||{}).id||''});
   renderGradeAsk();
 }
 function confirmGrade(){
   if(profile.grade==null){toast('Choisis ta classe pour continuer');return}
   if(!profile.unlocks) profile.unlocks={};
   saveProfile();
-  track('signup_completed',{grade:(gradeByRank(profile.grade)||{}).id||''});
-  const g=gradeByRank(profile.grade);
-  toast('\u{1F393} Niveaux ' + (g?g.name:'') + ' ouverts ! Les suivants se débloqueront en jouant.','win');
-  navigate('home');
+  navigate('ageAsk');
 }
-function skipGrade(){
-  profile.grade=null; profile.age=null;
+
+/* Étape 3 : l'âge. Pré-sélectionné sur l'âge habituel de la classe, parce
+   que c'est juste dans la grande majorité des cas — mais modifiable, un
+   enfant en avance ou en retard n'a pas à se voir imposer une valeur. */
+const AGE_MIN=5, AGE_MAX=15;
+function renderAgeAsk(){
+  const g=gradeByRank(profile.grade);
+  const cur=profile.age!=null?profile.age:(g?g.age:null);
+  const ages=[];
+  for(let a=AGE_MIN;a<=AGE_MAX;a++) ages.push(a);
+  app.innerHTML='<div class="card fade-in" style="margin-top:32px">'
+    +'<p class="sub" style="letter-spacing:.12em;text-transform:uppercase;font-size:.7rem">Étape 3 sur 3</p>'
+    +'<h2 class="title" style="color:#fbbf24;font-size:1.3rem">Et tu as quel âge ?</h2>'
+    +'<p style="color:#faf5ff;margin-bottom:14px">'+(g?'En '+esc(g.name)+', on a souvent '+g.age+' ans — mais dis-nous le tien.':'Choisis ton âge.')+'</p>'
+    +'<div class="grade-grid">'
+    +ages.map(a=>'<button class="grade-chip'+(cur===a?' grade-on':'')+'" data-a="'+a+'" onclick="pickAge(+this.dataset.a)">'
+        +'<span class="grade-name">'+a+'</span><span class="grade-age">ans</span>'
+      +'</button>').join('')
+    +'</div>'
+    +'<button class="btn-fire mt-4" id="ageGo" onclick="confirmAge()">C\'est parti ! →</button>'
+    +'<button class="btn-stone" style="width:100%;margin-top:10px" onclick="navigate(\'gradeAsk\')">← Changer de classe</button>'
+  +'</div>';
+}
+function pickAge(a){
+  profile.age=a;
   saveProfile();
-  track('signup_grade_skipped');
+  renderAgeAsk();
+}
+function confirmAge(){
+  const g=gradeByRank(profile.grade);
+  if(profile.age==null) profile.age=g?g.age:null;   // le pré-choix vaut réponse
+  saveProfile();
+  track('signup_completed',{grade:g?g.id:''});
+  toast('\u{1F393} Niveaux '+(g?g.name:'')+' ouverts ! Réussis toutes leurs questions pour ouvrir la suite.','win');
   navigate('home');
 }
 
@@ -1553,7 +1661,18 @@ function renderMode(){
     <div style="font-size:3rem;margin-bottom:12px">${lv.icon}</div>
     <h2 class="title" style="color:${lv.color};font-size:1.5rem">${lv.name}</h2>
     <p class="sub">${lv.sub} \u2014 Choisis ton mode</p>
-  </div>${MODES.map((m,i)=>`<div class="card clickable fade-in" style="animation-delay:${i*.1}s" onclick="startGame('${m.id}')">
+    ${(function(){
+      const m=levelMastery(state.level);
+      if(!m.total) return '';
+      return `<div class="lvl-track" style="max-width:260px;margin:12px auto 4px"><div class="lvl-fill" style="width:${Math.round(m.ratio*100)}%;background:${lv.color}"></div></div>
+        <p class="sub">${m.done}/${m.total} questions r\u00e9ussies</p>`;
+    })()}
+  </div>
+  <div class="card clickable fade-in" style="border-color:#22d3ee" onclick="startLesson('${state.level}')">
+    <div class="row"><div class="mode-icon">\u{1F4D6}</div><div class="flex-1">
+      <h3 class="card-title" style="color:#22d3ee">La le\u00e7on</h3>
+      <p class="sub">Les grandes id\u00e9es de ce niveau, avec un exemple pour chacune</p></div></div></div>
+  ${MODES.map((m,i)=>`<div class="card clickable fade-in" style="animation-delay:${i*.1}s" onclick="startGame('${m.id}')">
     <div class="row"><div class="mode-icon">${m.icon}</div><div class="flex-1">
       <h3 class="card-title" style="color:#fbbf24">${m.name}</h3>
       <p class="sub">${m.desc}</p></div></div></div>`).join('')}
@@ -1941,6 +2060,145 @@ function targetDifficulty(subjectId){
 }
 // fin maitrise
 
+/* ════════ LEÇON D'ACCUEIL D'UN NIVEAU ════════
+   Quand un niveau s'ouvre, l'enfant y entre sans avoir jamais vu les
+   notions qui l'attendent. Six diapos les lui présentent d'abord : une par
+   thème, avec un exemple résolu pris dans les questions du niveau et son
+   corrigé.
+   Le contenu vient des questions elles-mêmes, pas d'une génération en
+   ligne : la leçon dit donc exactement ce qui va être demandé, elle marche
+   hors connexion, et elle ne peut pas raconter autre chose que le niveau. */
+const LESSON_THEMES=4;   // + 1 diapo d'accueil + 1 de départ = 6
+function buildLesson(lvId){
+  const lv=LEVELS.find(l=>l.id===lvId);
+  if(!lv) return null;
+  const pool=staticPoolOf(lvId);
+  if(!pool.length) return null;
+  const parTheme=new Map();
+  for(const e of pool){
+    const c=String(e.cat||'Divers');
+    if(!parTheme.has(c)) parTheme.set(c,[]);
+    parTheme.get(c).push(e);
+  }
+  // Les thèmes les mieux fournis sont ceux que l'enfant rencontrera le
+  // plus : on les retient, puis on les remet dans l'ordre pédagogique.
+  const themes=[...parTheme.entries()]
+    .sort((a,b)=>b[1].length-a[1].length)
+    .slice(0,LESSON_THEMES)
+    .sort((a,b)=>themeRank(a[0])-themeRank(b[0]));
+  const slides=[{kind:'intro',themes:themes.map(t=>t[0]),total:pool.length}];
+  for(const [cat,list] of themes){
+    // L'exemple le plus simple du thème : une leçon commence par le pas le
+    // plus facile, pas par la question la plus impressionnante.
+    const ex=list.slice().sort((a,b)=>((a.diff||3)-(b.diff||3)))[0];
+    slides.push({
+      kind:'theme',cat,count:list.length,
+      q:ex.q||'',
+      answer:(Array.isArray(ex.ch)&&ex.ch[ex.ans]!=null)?String(ex.ch[ex.ans]):'',
+      why:ex.se||''
+    });
+  }
+  slides.push({kind:'outro',total:pool.length});
+  return {level:lvId,name:lv.name,sub:lv.sub||'',color:lv.color||'#fbbf24',slides};
+}
+
+function startLesson(lvId){
+  const l=buildLesson(lvId);
+  if(!l){toast('La leçon de ce niveau n\'est pas encore prête.');return}
+  state.lesson=l; state.lessonIdx=0;
+  track('lesson_opened',{level:String(lvId).slice(0,30)});
+  navigate('lessonView');
+}
+function lessonStep(d){
+  if(!state.lesson) return;
+  const n=state.lessonIdx+d;
+  if(n<0) return;
+  if(n>=state.lesson.slides.length){ lessonDone(); return }
+  state.lessonIdx=n;
+  renderLesson();
+  window.scrollTo(0,0);
+}
+function lessonDone(){
+  const lv=state.lesson?state.lesson.level:null;
+  if(lv){
+    if(!profile.lessonsSeen) profile.lessonsSeen=[];
+    if(!profile.lessonsSeen.includes(lv)) profile.lessonsSeen.push(lv);
+    saveProfile();
+  }
+  state.lesson=null;
+  if(lv) navigate('mode',{level:lv}); else navigate('home');
+}
+
+function renderLesson(){
+  const L=state.lesson;
+  if(!L){navigate('home');return}
+  const i=Math.min(state.lessonIdx||0,L.slides.length-1);
+  const sl=L.slides[i];
+  const points=L.slides.map((_,k)=>'<span class="lesson-dot'+(k===i?' on':'')+'" style="'+(k===i?'background:'+L.color:'')+'"></span>').join('');
+  let corps='';
+  if(sl.kind==='intro'){
+    corps='<div class="lesson-hero">📖</div>'
+      +'<h2 class="title" style="color:'+L.color+';font-size:1.4rem">'+esc(L.name)+'</h2>'
+      +'<p class="sub">'+esc(L.sub)+'</p>'
+      +'<p style="color:#faf5ff;margin-top:14px">Ce niveau contient <b>'+sl.total+' questions</b>. Avant de commencer, voici les grandes idées que tu vas y rencontrer.</p>'
+      +'<div class="lesson-chips">'+sl.themes.map(t=>'<span class="lesson-chip" style="border-color:'+L.color+'66;color:'+L.color+'">'+esc(t)+'</span>').join('')+'</div>';
+  }else if(sl.kind==='theme'){
+    corps='<p class="sub" style="letter-spacing:.12em;text-transform:uppercase;font-size:.7rem">Idée '+i+' sur '+LESSON_THEMES+'</p>'
+      +'<h2 class="title" style="color:'+L.color+';font-size:1.35rem">'+esc(sl.cat)+'</h2>'
+      +'<p class="sub">'+sl.count+' question'+(sl.count>1?'s':'')+' de ce type dans le niveau</p>'
+      +'<div class="lesson-example"><p class="lesson-q">'+esc(sl.q)+'</p>'
+      +(sl.answer?'<p class="lesson-a">Réponse : <b style="color:'+L.color+'">'+esc(sl.answer)+'</b></p>':'')
+      +(sl.why?'<p class="lesson-why">'+esc(sl.why)+'</p>':'')
+      +'</div>';
+  }else{
+    corps='<div class="lesson-hero">🚀</div>'
+      +'<h2 class="title" style="color:'+L.color+';font-size:1.35rem">À toi de jouer !</h2>'
+      +'<p style="color:#faf5ff;margin-top:10px">Réussis les <b>'+sl.total+' questions</b> de ce niveau — chacune au moins une fois — et le niveau suivant s\'ouvrira.</p>'
+      +'<p class="sub" style="margin-top:10px">Tu peux revenir voir cette leçon quand tu veux depuis le niveau.</p>';
+  }
+  app.innerHTML='<div class="card fade-in" style="margin-top:24px;border-color:'+L.color+'55">'
+    +'<div class="lesson-dots">'+points+'</div>'
+    +corps
+    +'<div class="btn-row mt-4">'
+      +(i>0?'<button class="btn-stone" onclick="lessonStep(-1)">← Précédent</button>':'')
+      +'<button class="btn-fire" onclick="lessonStep(1)">'+(i===L.slides.length-1?'Commencer !':'Suivant →')+'</button>'
+    +'</div>'
+    +'<button class="btn-stone" style="width:100%;margin-top:10px" onclick="lessonDone()">Passer la leçon</button>'
+  +'</div>';
+}
+
+/* ════════ ORDRE THÉMATIQUE ════════
+   Sur un niveau au-dessus de sa classe, l'enfant découvre des notions
+   entièrement neuves. Les lui servir en vrac — une fraction, puis un
+   Pythagore, puis un dénombrement — n'apprend rien. On avance donc thème
+   par thème, et dans un ordre qui installe les bases avant ce qui s'appuie
+   dessus. Un thème inconnu de cette liste passe en fin de parcours : en
+   ajouter un ne casse rien. */
+const THEME_ORDER=['Calcul','Calcul mental','Comptage','Dénombrement','Comparaison',
+  'Parité','Suite','Suites','Suites logiques','Séquences','Fractions','Proportion',
+  'Pourcentages','Divisibilité','Équation','Algèbre','Puissances','Calcul astucieux',
+  'Problème','Problème à piège','Mesures','Temps','Vitesse','Repérage',
+  'Géométrie','Pythagore','Logique','Déduction','Stratégie','Combinatoire',
+  'Probabilités','Invariants'];
+const _themeRankCache={};
+function themeRank(cat){
+  const k=String(cat||'');
+  if(_themeRankCache[k]!==undefined) return _themeRankCache[k];
+  const i=THEME_ORDER.indexOf(k);
+  return (_themeRankCache[k]=(i<0?THEME_ORDER.length:i));
+}
+// Vrai quand le niveau demandé dépasse la classe déclarée de l'enfant.
+function isAboveGrade(lvId){
+  if(profile.grade==null) return false;
+  const need=levelMinGrade(LEVELS.find(l=>l.id===lvId));
+  return need!==null&&need>profile.grade;
+}
+// Questions du niveau encore jamais réussies — celles qui restent à conquérir.
+function remainingOf(pool){
+  const st=profile.exerciseStats||{};
+  return pool.filter(e=>{const x=st[e.id];return !x||!(x.cor>0)});
+}
+
 function pickExercises(mode,lvId){
   const lv=LEVELS.find(l=>l.id===lvId);
   // Inclure les exercices AI générés (persistés dans le profil)
@@ -1985,6 +2243,20 @@ function pickExercises(mode,lvId){
   // aux autres royaumes.
   const band=targetDifficulty(subjectOfLevel(lvId));
   const inBand=e=>!band||((e.diff||3)>=band.min&&(e.diff||3)<=band.max);
+  // Au-dessus de sa classe : on regroupe par thème au lieu de piocher au
+  // hasard, et on met devant ce qui n'est pas encore réussi — c'est ce qui
+  // reste pour terminer le niveau.
+  if(isAboveGrade(lvId)){
+    const reste=remainingOf(pool);
+    const dejaFaits=new Set(reste.map(e=>e.id));
+    const source=reste.length>=10?reste:reste.concat(pool.filter(e=>!dejaFaits.has(e.id)));
+    const ordonne=source.slice().sort((a,b)=>
+      themeRank(a.cat)-themeRank(b.cat)
+      ||String(a.cat||'').localeCompare(String(b.cat||''))
+      ||((a.diff||3)-(b.diff||3)));
+    const choisies=finalizePick(ordonne,10);
+    if(choisies.length) return choisies;
+  }
   let candidates=shuffle(unseen.filter(inBand));
   if(candidates.length<10) candidates=candidates.concat(shuffle(unseen.filter(e=>!inBand(e))));
   if(candidates.length<10) candidates=candidates.concat(seen.filter(inBand),seen.filter(e=>!inBand(e)));
@@ -2398,14 +2670,18 @@ function finishGame(abandoned){
   const d={score:state.score,total,maxStreak:state.maxStreak,results:state.results,mode:state.mode,abandoned:!!abandoned,duration,date:new Date().toISOString(),level:state.level,xp:state.sessionXP,cristaux:state.sessionCristaux};
   state.gameData=d;
   if(total>0){
-    // Déblocage progressif : 3 parties à 80 % ouvrent le palier suivant.
+    // Déblocage : toutes les questions du niveau réussies au moins une fois.
     // Une session de révision rejoue des questions déjà ratées : elle aide
     // l'enfant, mais elle ne doit pas servir à ouvrir un palier supérieur.
     const _unlock=state.mode==='revision'?null:checkLevelUnlock(state.level,state.score,total);
     if(_unlock&&_unlock.unlocked){
-      setTimeout(()=>toast('\u{1F389} Nouveau niveau d\u00e9bloqu\u00e9 : '+_unlock.unlocked.name+' !','win'),900);
-    }else if(_unlock&&_unlock.progress){
-      setTimeout(()=>toast('\u{1F525} '+_unlock.progress+'/3 parties r\u00e9ussies \u2014 encore '+(_unlock.need-_unlock.progress)+' pour ouvrir \u00ab '+_unlock.next.name+' \u00bb'),900);
+      // La leçon d'accueil du nouveau niveau est proposée depuis l'écran de
+      // résultats : on ne coupe pas la partie en cours.
+      state.pendingLesson=_unlock.unlocked.id;
+      setTimeout(()=>toast('\u{1F389} Niveau termin\u00e9 ! \u00ab '+_unlock.unlocked.name+' \u00bb s\'ouvre \u00e0 toi','win'),900);
+    }else if(_unlock&&_unlock.need){
+      const reste=_unlock.need-_unlock.progress;
+      setTimeout(()=>toast('\u{1F525} '+_unlock.progress+'/'+_unlock.need+' questions r\u00e9ussies \u2014 encore '+reste+' pour ouvrir \u00ab '+_unlock.next.name+' \u00bb'),900);
     }
     const oldStage=getCurrentStage();
     // Per-royaume stats
@@ -2541,6 +2817,22 @@ function renderResults(){
   else if(pct>=40){title="Apprentie courageuse";sub="Le chemin du savoir est long mais tu progresses.";emoji="\u{1F9D9}"}
   else{title="Le dragon a vaincu\u2026";sub="R\u00e9vise tes sortil\u00e8ges et retente !";emoji="\u{1F525}"}
 
+  // Niveau ouvert \u00e0 l'instant : on propose sa le\u00e7on d'accueil ici plut\u00f4t
+  // qu'en coupant la partie. L'enfant la voit au moment o\u00f9 elle sert.
+  let unlockHTML='';
+  if(state.pendingLesson){
+    const nl=LEVELS.find(l=>l.id===state.pendingLesson);
+    if(nl){
+      unlockHTML='<div class="card mb-4 glow-anim" style="border-color:'+(nl.color||'#fbbf24')+'">'
+        +'<div class="row" style="gap:12px"><div style="font-size:2.4rem">\u{1F513}</div>'
+        +'<div class="flex-1"><h3 class="card-title" style="color:'+(nl.color||'#fbbf24')+'">\u00ab '+esc(nl.name)+' \u00bb s\'ouvre \u00e0 toi !</h3>'
+        +'<p class="sub">Tu as r\u00e9ussi toutes les questions du niveau pr\u00e9c\u00e9dent. D\u00e9couvre ce qui t\'attend.</p></div></div>'
+        +'<button class="btn-fire mt-3" onclick="startLesson(\''+esc(nl.id)+'\')">\u{1F4D6} Voir la le\u00e7on</button>'
+      +'</div>';
+    }
+    state.pendingLesson=null;
+  }
+
   // \u00c9volution
   let evolveHTML='';
   if(d.royaumeEvolved&&d.newRoyaumeStage){
@@ -2586,6 +2878,7 @@ function renderResults(){
       <div class="resource xp">\u2728 +${d.xp} XP</div>
       <div class="resource crystal">\u{1F48E} +${d.cristaux} cristaux</div>
     </div></div>
+  ${unlockHTML}
   ${evolveHTML}
   ${questHTML}
   ${royaumeCompHTML}
@@ -2689,16 +2982,16 @@ function renderParent(){
     const g=gradeByRank(profile.grade);
     const rows=SUBJECTS.filter(su=>(su.levels||[]).some(l=>levelMinGrade(l)!==null)).map(su=>{
       const top=topOpenLevel(su.id), nxt=nextLockedLevel(su.id);
-      const prog=(profile.unlockProgress||{})[top&&top.id]||0;
       if(!top) return '';
+      const m=levelMastery(top.id);
       return '<div class="row-between" style="padding:8px 0;border-top:1px solid rgba(255,255,255,0.06)">'
         +'<div class="flex-1" style="min-width:0"><div style="color:#faf5ff;font-weight:600">'+su.icon+' '+esc(su.name)+'</div>'
-        +'<div class="sub" style="font-size:.72rem">Niveau ouvert : '+esc(top.name)+(nxt?(' \u00b7 prochain : '+esc(nxt.name)+' ('+prog+'/3)'):' \u00b7 tout est ouvert \u2705')+'</div></div></div>';
+        +'<div class="sub" style="font-size:.72rem">Niveau ouvert : '+esc(top.name)+(nxt?(' \u00b7 '+m.done+'/'+m.total+' questions r\u00e9ussies \u2192 '+esc(nxt.name)):' \u00b7 tout est ouvert \u2705')+'</div></div></div>';
     }).join('');
     return '<div class="card mb-4" style="border-color:#fbbf24">'
       +'<h3 class="fredoka" style="font-size:.85rem;color:#fbbf24;margin-bottom:8px;letter-spacing:.1em;text-transform:uppercase">\u{1F393} Niveau et \u00e2ge</h3>'
       +(g
-        ?'<p style="color:#faf5ff;font-size:.85rem;margin-bottom:4px">Classe d\u00e9clar\u00e9e : <b style="color:#fbbf24">'+g.name+'</b> ('+g.age+' ans). Les niveaux sup\u00e9rieurs se d\u00e9bloquent apr\u00e8s 3 parties r\u00e9ussies \u00e0 80 %.</p>'+rows
+        ?'<p style="color:#faf5ff;font-size:.85rem;margin-bottom:4px">Classe d\u00e9clar\u00e9e : <b style="color:#fbbf24">'+g.name+'</b> ('+g.age+' ans). Un niveau s\'ouvre quand toutes les questions du pr\u00e9c\u00e9dent ont \u00e9t\u00e9 r\u00e9ussies.</p>'+rows
         :'<p style="color:#faf5ff;font-size:.85rem">Aucune classe renseign\u00e9e : <b>tous les niveaux sont ouverts</b>. Indiquez la classe pour activer la progression guid\u00e9e.</p>')
       +'<button class="btn-stone btn-small mt-3" onclick="parentalGate(function(){navigate(\'gradeAsk\')})">'+(g?'Changer la classe':'Indiquer la classe')+'</button>'
     +'</div>';
@@ -2793,7 +3086,8 @@ function renderParent(){
   <div class="card mb-4" style="border-color:rgba(255,255,255,0.08)"><h3 class="fredoka" style="font-size:.85rem;color:#8b7ec8;margin-bottom:8px">Donn\u00e9es</h3>
   <button class="btn-stone btn-small" onclick="exportData()">\u{1F4E4} Exporter (JSON)</button>
   <button class="btn-stone btn-small" onclick="resetData()" style="margin-top:8px;background:rgba(239,68,68,0.15);border-color:rgba(239,68,68,0.3);color:#fca5a5">\u{1F5D1}\uFE0F R\u00e9initialiser</button></div>
-  <button class="btn-stone" onclick="navigate('home')">\u2190 Retour</button>`;
+  <button class="btn-stone" onclick="navigate('home')">\u2190 Retour</button>
+  <p class="sub" style="text-align:center;margin-top:14px;font-size:.72rem;opacity:.7">Version ${APP_VERSION}</p>`;
 }
 
 function copySyncLink(){

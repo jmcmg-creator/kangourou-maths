@@ -1,0 +1,82 @@
+name: Livrer une version (tag → TestFlight)
+
+# Pose un tag de version sur main, ce qui déclenche automatiquement le build
+# Codemagic et l'envoi sur TestFlight (voir codemagic.yaml).
+#
+# POURQUOI CE WORKFLOW EXISTE
+# Poser un tag demandait jusqu'ici un terminal avec des identifiants GitHub
+# valides. Ici c'est GitHub qui pose le tag, sur simple demande — depuis le
+# téléphone, depuis Claude Code, depuis n'importe où. Aucun ordinateur requis.
+#
+# COMMENT S'EN SERVIR
+#   Onglet Actions → « Livrer une version » → « Run workflow »
+#   → numéro de version (ex. 1.5) → bouton vert.
+# Ou simplement demander à Claude Code de livrer la version 1.5.
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Numéro de version, sans le v (ex. 1.5)'
+        required: true
+        type: string
+      message:
+        description: "Ce que la version apporte (visible dans l'historique des tags)"
+        required: false
+        type: string
+        default: ''
+
+# Le tag est écrit dans le dépôt : il faut le droit d'écriture.
+permissions:
+  contents: write
+
+jobs:
+  tag:
+    name: Poser le tag et lancer la livraison
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+
+      - name: Vérifier le numéro de version
+        id: check
+        env:
+          RAW: ${{ inputs.version }}
+        run: |
+          # On tolère « 1.5 » comme « v1.5 », et on refuse tout le reste :
+          # un tag mal formé partirait quand même chez les testeurs.
+          version="${RAW#v}"
+          if ! printf '%s' "$version" | grep -Eq '^[0-9]+(\.[0-9]+){0,2}$'; then
+            echo "::error::Version invalide : « $RAW ». Attendu : 1.5, 2.0 ou 1.5.1."
+            exit 1
+          fi
+          tag="v$version"
+          if git rev-parse -q --verify "refs/tags/$tag" >/dev/null; then
+            echo "::error::Le tag $tag existe déjà. Choisissez un numéro supérieur."
+            exit 1
+          fi
+          echo "tag=$tag" >> "$GITHUB_OUTPUT"
+
+      - name: Poser le tag sur main
+        env:
+          TAG: ${{ steps.check.outputs.tag }}
+          MSG: ${{ inputs.message }}
+        run: |
+          git config user.name  'github-actions[bot]'
+          git config user.email 'github-actions[bot]@users.noreply.github.com'
+          git tag -a "$TAG" -m "${MSG:-Version ${TAG#v}}"
+          git push origin "$TAG"
+
+      - name: Récapitulatif
+        env:
+          TAG: ${{ steps.check.outputs.tag }}
+        run: |
+          {
+            echo "## 🚀 $TAG livrée"
+            echo
+            echo "- Commit : \`$(git rev-parse --short "$TAG"^{commit})\`"
+            echo "- Codemagic construit l'app et l'envoie sur TestFlight."
+            echo "- Comptez ~15 min avant qu'elle apparaisse chez les testeurs."
+          } >> "$GITHUB_STEP_SUMMARY"

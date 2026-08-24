@@ -750,6 +750,24 @@ html.light .grade-chip{background:#fff}
 .q-visual-grid{background:rgba(255,255,255,0.05);border:1px solid var(--border-subtle);border-radius:var(--radius-md);padding:14px 8px}
 .q-grid-row{font-size:clamp(1.5rem,7vw,2.1rem);line-height:1.7;letter-spacing:.12em;white-space:nowrap}
 html.light .q-visual-grid{background:#fff;border-color:rgba(36,27,82,0.12)}
+/* Barre de progression d'un niveau : combien de ses questions sont réussies. */
+/* Leçon d'accueil d'un niveau : six diapos, sobres et lisibles. */
+.lesson-dots{display:flex;gap:6px;justify-content:center;margin-bottom:16px}
+.lesson-dot{width:7px;height:7px;border-radius:50%;background:rgba(255,255,255,0.18);transition:background .25s}
+.lesson-hero{font-size:3rem;text-align:center;margin-bottom:6px}
+.lesson-chips{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;margin-top:14px}
+.lesson-chip{border:1px solid;border-radius:999px;padding:4px 12px;font-size:.82rem;font-family:Fredoka,sans-serif}
+.lesson-example{background:rgba(255,255,255,0.05);border:1px solid var(--border-subtle);border-radius:14px;padding:14px 16px;margin-top:14px}
+.lesson-q{color:#faf5ff;font-weight:600;margin:0 0 8px;line-height:1.45}
+.lesson-a{margin:0 0 8px;font-size:.95rem;color:#faf5ff}
+.lesson-why{margin:0;font-size:.88rem;color:var(--text-mid);line-height:1.5;font-style:italic}
+html.light .lesson-example{background:rgba(36,27,82,0.04)}
+html.light .lesson-q,html.light .lesson-a{color:#241b52}
+html.light .lesson-dot{background:rgba(36,27,82,0.16)}
+.lvl-track{height:5px;border-radius:999px;background:rgba(255,255,255,0.10);overflow:hidden;margin-top:7px}
+.lvl-fill{height:100%;border-radius:999px;transition:width .45s ease}
+html.light .lvl-track{background:rgba(36,27,82,0.10)}
+@media (prefers-reduced-motion: reduce){.lvl-fill{transition:none}}
 .q-visual-img{background:rgba(255,255,255,0.05);border:1px solid var(--border-subtle);border-radius:var(--radius-md);padding:12px}
 .q-visual-img img{display:block;margin:0 auto;width:min(200px,55vw);height:auto;max-width:100%}
 html.light .q-visual-img{background:#fff;border-color:rgba(36,27,82,0.12)}
@@ -890,7 +908,7 @@ html.light .btn-stone:hover{background:rgba(180,83,9,0.08);border-color:rgba(180
 <script src="config.js?v=2"></script>
 <script src="supa.js?v=1"></script>
 <script src="qr.js?v=1"></script>
-<script src="game.js?v=48"></script>
+<script src="game.js?v=52"></script>
 <script>
 // Service Worker : enregistré uniquement en HTTPS / localhost (sinon le navigateur refuse).
 if ('serviceWorker' in navigator && (location.protocol === 'https:' || location.hostname === 'localhost' || location.hostname === '127.0.0.1')) {
