@@ -1,0 +1,19 @@
+{
+  "_comment": [
+    "Empreintes de commit des actions GitHub utilisées par les workflows.",
+    "Remplissez le champ « sha » de chaque ligne, puis lancez :",
+    "    node scripts/epingler-actions.mjs",
+    "Mode d'emploi détaillé : docs/EPINGLER-ACTIONS.md",
+    "Une empreinte fait 40 caractères hexadécimaux. Le script refuse tout",
+    "le reste : mieux vaut un refus qu'un workflow cassé."
+  ],
+  "actions/checkout": { "tag": "v4", "sha": "" },
+  "actions/setup-node": { "tag": "v4", "sha": "" },
+  "actions/upload-artifact": { "tag": "v4", "sha": "" },
+  "github/codeql-action/init": { "tag": "v3", "sha": "" },
+  "github/codeql-action/analyze": { "tag": "v3", "sha": "" },
+  "gitleaks/gitleaks-action": { "tag": "v2", "sha": "" },
+  "google/osv-scanner-action/osv-scanner-action": { "tag": "v2.0.2", "sha": "" },
+  "lycheeverse/lychee-action": { "tag": "v2", "sha": "" },
+  "marocchino/sticky-pull-request-comment": { "tag": "v2", "sha": "" }
+}
