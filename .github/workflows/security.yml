@@ -45,10 +45,46 @@ jobs:
       image: semgrep/semgrep:1.174.0
     steps:
       - uses: actions/checkout@v4
+
+      # DEUX PASSES, PARCE QUE LES DEUX ENJEUX N'ONT PAS LE MÊME POIDS.
+      #
+      # 1. Le code livré aux enfants : bloquant. Une faille ici part dans
+      #    l'app. Rien ne doit passer.
+      # 2. L'outillage du dépôt (workflows, scripts de build) : informatif.
+      #    Les alertes y sont réelles mais ne touchent pas l'app, et la seule
+      #    qui compte — épingler les actions à une empreinte de commit —
+      #    demande un travail à part (voir plus bas).
+      #
+      # Sans cette séparation, une alerte d'hygiène du dépôt rendrait le
+      # contrôle rouge en permanence. Or un contrôle toujours rouge ne se lit
+      # plus : c'est précisément ce qui a laissé ce scanner éteint une
+      # semaine sans que personne ne le remarque.
+      #
       # « scan » et non « ci » : seul « scan » accepte --error et --severity.
       # « ci » est prévu pour Semgrep AppSec Platform (avec un jeton) et tire
       # sa configuration du service, pas de la ligne de commande.
-      - run: |
+      - name: Code livré aux enfants (bloquant)
+        run: |
+          semgrep scan \
+            --config p/owasp-top-ten \
+            --config p/javascript \
+            --config p/xss \
+            --config p/security-audit \
+            --error \
+            --severity ERROR \
+            --severity WARNING \
+            --metrics off \
+            game.js index.html sw.js supa.js qr.js config.js \
+            exercises.js exercises_extra.js exercises_logic.js lecons
+
+      # À FAIRE : épingler chaque « uses: … @v4 » à une empreinte de commit
+      # de 40 caractères. Un tag peut être repointé silencieusement par son
+      # auteur — c'est ainsi que trivy-action et kics-github-action ont été
+      # compromis. Tant que ce n'est pas fait, cette passe reste informative
+      # plutôt que d'immobiliser toutes les livraisons.
+      - name: Outillage du dépôt (informatif)
+        continue-on-error: true
+        run: |
           semgrep scan \
             --config p/owasp-top-ten \
             --config p/javascript \
@@ -59,7 +95,8 @@ jobs:
             --severity WARNING \
             --exclude node_modules \
             --exclude iphone-app/ios \
-            --metrics off
+            --metrics off \
+            .github scripts iphone-app supabase
 
   echappement:
     name: 🛡️ Échappement HTML (local, sans réseau)
