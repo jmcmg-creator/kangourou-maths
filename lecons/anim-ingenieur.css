@@ -1,0 +1,153 @@
+/* Animations du Royaume de l'Ingénieur.
+   UNIQUEMENT transform et opacity : ce sont les deux seules propriétés
+   que le téléphone anime sans repeindre. Tout le reste (largeurs,
+   couleurs de fond, ombres) coûte cher en batterie sur un mobile. */
+
+.ai-bloc {
+  background: rgba(255, 255, 255, .04);
+  border: 1px solid rgba(253, 186, 116, .28);
+  border-radius: 16px;
+  padding: 14px 12px 12px;
+  margin-bottom: 18px;
+}
+.ai-svg {
+  width: 100%;
+  max-width: 460px;
+  height: auto;
+  display: block;
+  margin: 0 auto;
+  overflow: visible;
+}
+.ai-legende {
+  color: #e2e8f0;
+  font-size: 14.5px;
+  line-height: 1.55;
+  margin: 12px auto 0;
+  max-width: 46em;
+  text-align: center;
+}
+.ai-svg text { font-family: inherit; }
+.ai-lbl { font-size: 11px; fill: #94a3b8; }
+.ai-lbl-c { font-size: 11.5px; fill: #94a3b8; text-anchor: middle; }
+.ai-lbl-fort { font-size: 13px; fill: #e2e8f0; font-weight: 700; }
+
+/* ── 1. Piston à quatre temps — 8 s, quatre phases de 2 s ────────── */
+@keyframes aiPiston {
+  0%   { transform: translateY(0); }     /* admission : descend */
+  12.5%{ transform: translateY(44px); }
+  25%  { transform: translateY(44px); }  /* compression : remonte */
+  37.5%{ transform: translateY(0); }
+  50%  { transform: translateY(0); }     /* explosion : redescend vite */
+  56%  { transform: translateY(44px); }
+  75%  { transform: translateY(44px); }  /* échappement : remonte */
+  87.5%{ transform: translateY(0); }
+  100% { transform: translateY(0); }
+}
+@keyframes aiVilebrequin { to { transform: rotate(720deg); } }
+@keyframes aiGaz {
+  0%, 24%   { fill: #38bdf8; opacity: .30; }   /* mélange frais */
+  25%, 49%  { fill: #38bdf8; opacity: .55; }   /* comprimé */
+  50%, 56%  { fill: #fb923c; opacity: .95; }   /* explosion */
+  57%, 74%  { fill: #f97316; opacity: .5; }
+  75%, 100% { fill: #64748b; opacity: .45; }   /* gaz brûlés */
+}
+@keyframes aiSoupIn  { 0%,11% { transform: translateY(9px); } 13%,100% { transform: translateY(0); } }
+@keyframes aiSoupEx  { 0%,74% { transform: translateY(0); } 76%,99% { transform: translateY(9px); } 100% { transform: translateY(0); } }
+@keyframes aiEtincelle { 0%, 48% { opacity: 0; transform: scale(.2); } 50% { opacity: 1; transform: scale(1.5); } 56%, 100% { opacity: 0; transform: scale(.2); } }
+@keyframes aiTemps1 { 0%, 24% { opacity: 1; } 25%, 100% { opacity: .28; } }
+@keyframes aiTemps2 { 0%, 24% { opacity: .28; } 25%, 49% { opacity: 1; } 50%, 100% { opacity: .28; } }
+@keyframes aiTemps3 { 0%, 49% { opacity: .28; } 50%, 74% { opacity: 1; } 75%, 100% { opacity: .28; } }
+@keyframes aiTemps4 { 0%, 74% { opacity: .28; } 75%, 100% { opacity: 1; } }
+
+.ai-piston      { animation: aiPiston 8s infinite; }
+.ai-vilebrequin { animation: aiVilebrequin 8s linear infinite; transform-origin: 134px 158px; }
+.ai-gaz         { animation: aiGaz 8s infinite; }
+.ai-soup-in     { animation: aiSoupIn 8s infinite; }
+.ai-soup-ex     { animation: aiSoupEx 8s infinite; }
+.ai-etincelle   { animation: aiEtincelle 8s infinite; transform-origin: 134px 30px; opacity: 0; }
+.ai-temps text  { font-size: 13px; fill: #e2e8f0; font-weight: 600; }
+.ai-t1 { animation: aiTemps1 8s infinite; } .ai-t2 { animation: aiTemps2 8s infinite; }
+.ai-t3 { animation: aiTemps3 8s infinite; fill: #fb923c; } .ai-t4 { animation: aiTemps4 8s infinite; }
+
+/* ── 2. Rotor ────────────────────────────────────────────────────── */
+@keyframes aiRotor { to { transform: rotate(360deg); } }
+@keyframes aiFlux  { 0% { opacity: 0; transform: translateX(-14px); } 25% { opacity: 1; } 100% { opacity: 0; transform: translateX(52px); } }
+.ai-rotor { animation: aiRotor 3s linear infinite; transform-origin: 160px 100px; }
+.ai-flux  { animation: aiFlux 1.5s linear infinite; }
+
+/* ── 3. Circuit : les électrons font le tour de la boucle ────────── */
+@keyframes aiElectron {
+  0%   { transform: translate(60px, 46px); }
+  25%  { transform: translate(260px, 46px); }
+  50%  { transform: translate(260px, 154px); }
+  75%  { transform: translate(60px, 154px); }
+  100% { transform: translate(60px, 46px); }
+}
+@keyframes aiLueur { 0%, 100% { transform: scale(1); opacity: .85; } 50% { transform: scale(1.16); opacity: 1; } }
+.ai-electron { animation: aiElectron 3s linear infinite; }
+.ai-lueur    { animation: aiLueur 1.5s ease-in-out infinite; transform-origin: 254px 100px; }
+
+/* ── 4. Fluide : mêmes trajets, plus lents, couleur qui change ───── */
+@keyframes aiGoutte {
+  0%   { transform: translate(66px, 52px); fill: #38bdf8; }
+  25%  { transform: translate(254px, 52px); fill: #38bdf8; }
+  30%  { fill: #f97316; }
+  50%  { transform: translate(254px, 148px); fill: #f97316; }
+  75%  { transform: translate(66px, 148px); fill: #f97316; }
+  80%  { fill: #38bdf8; }
+  100% { transform: translate(66px, 52px); fill: #38bdf8; }
+}
+@keyframes aiPulse { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.06); } }
+.ai-goutte      { animation: aiGoutte 4s linear infinite; }
+.ai-pulse-froid { animation: aiPulse 2s ease-in-out infinite; transform-origin: 27px 100px; }
+.ai-pulse-chaud { animation: aiPulse 2s ease-in-out infinite 1s; transform-origin: 293px 100px; }
+
+/* ── 5. Ascenseur ────────────────────────────────────────────────── */
+@keyframes aiCabine      { 0%, 8% { transform: translateY(0); } 50%, 58% { transform: translateY(78px); } 100% { transform: translateY(0); } }
+@keyframes aiContrepoids { 0%, 8% { transform: translateY(0); } 50%, 58% { transform: translateY(-78px); } 100% { transform: translateY(0); } }
+@keyframes aiPoulie      { 0%, 8% { transform: rotate(0); } 50%, 58% { transform: rotate(300deg); } 100% { transform: rotate(0); } }
+.ai-cabine      { animation: aiCabine 6s ease-in-out infinite; }
+.ai-contrepoids { animation: aiContrepoids 6s ease-in-out infinite; }
+.ai-poulie      { animation: aiPoulie 6s ease-in-out infinite; transform-origin: 160px 30px; }
+
+/* ── 6. Vélo : le petit pignon tourne deux fois plus vite ────────── */
+@keyframes aiChaine { to { stroke-dashoffset: -28; } }
+.ai-roue-lente { animation: aiRotor 4s linear infinite; transform-origin: 92px 100px; }
+.ai-roue-vite  { animation: aiRotor 2s linear infinite; transform-origin: 236px 100px; }
+.ai-chaine     { animation: aiChaine 1s linear infinite; }
+
+/* ── 7. Micro-ondes ─────────────────────────────────────────────── */
+@keyframes aiOnde     { 0% { opacity: 0; transform: translateX(0); } 20% { opacity: .9; } 100% { opacity: 0; transform: translateX(60px); } }
+@keyframes aiMolecule { 0% { transform: rotate(0); } 50% { transform: rotate(180deg); } 100% { transform: rotate(360deg); } }
+.ai-onde     { animation: aiOnde 1.8s linear infinite; }
+.ai-molecule { animation: aiMolecule 1.1s ease-in-out infinite; transform-box: fill-box; transform-origin: center; }
+
+/* ── 8. Serrure ─────────────────────────────────────────────────── */
+@keyframes aiCle      { 0%, 10% { transform: translateX(-120px); } 45%, 90% { transform: translateX(0); } 100% { transform: translateX(-120px); } }
+@keyframes aiGoupille { 0%, 12% { transform: translateY(0); } 45%, 88% { transform: translateY(var(--h, 24px)); } 100% { transform: translateY(0); } }
+.ai-cle      { animation: aiCle 5s ease-in-out infinite; }
+.ai-goupille { animation: aiGoupille 5s ease-in-out infinite; }
+
+/* ── 9. Chasse d'eau ────────────────────────────────────────────── */
+@keyframes aiEau      { 0%, 10% { transform: scaleY(1); } 35%, 45% { transform: scaleY(.06); } 95%, 100% { transform: scaleY(1); } }
+@keyframes aiFlotteur { 0%, 10% { transform: translateY(0); } 35%, 45% { transform: translateY(92px); } 95%, 100% { transform: translateY(0); } }
+@keyframes aiClapet   { 0%, 10% { transform: translateY(0); } 20%, 45% { transform: translateY(-14px); } 60%, 100% { transform: translateY(0); } }
+@keyframes aiJet      { 0%, 12% { opacity: 0; } 20%, 42% { opacity: 1; } 55%, 100% { opacity: 0; } }
+.ai-eau      { animation: aiEau 7s ease-in-out infinite; transform-origin: 160px 148px; }
+.ai-flotteur { animation: aiFlotteur 7s ease-in-out infinite; }
+.ai-clapet   { animation: aiClapet 7s ease-in-out infinite; }
+.ai-jet      { animation: aiJet 7s ease-in-out infinite; opacity: 0; }
+
+/* ── Économie de batterie et accessibilité ──────────────────────────
+   Une animation qui tourne pour un écran que personne ne regarde ne
+   sert qu'à vider la batterie. */
+html.ai-pause .ai-bloc * { animation-play-state: paused !important; }
+
+@media (prefers-reduced-motion: reduce) {
+  .ai-bloc * { animation: none !important; }
+  /* Sans mouvement, on fige le schéma dans une position PARLANTE plutôt
+     que dans son état de départ, souvent vide de sens. */
+  .ai-gaz { fill: #fb923c; opacity: .9; }
+  .ai-etincelle, .ai-jet { opacity: 1; }
+  .ai-temps text { opacity: 1; }
+}

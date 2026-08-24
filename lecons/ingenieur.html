@@ -68,7 +68,9 @@ body{background:#0a0e27;color:#eaf0ff;font-family:'Trebuchet MS','Verdana',sans-
 </style>
 <style>/* iOS : le bouton Retour etait sous la barre d'etat/encoche -> intappable */
 .back-btn{top:calc(12px + env(safe-area-inset-top,0px))!important;left:calc(12px + env(safe-area-inset-left,0px))!important;z-index:9999!important;min-height:40px;display:inline-flex;align-items:center}
-</style></head>
+</style>
+<link rel="stylesheet" href="anim-ingenieur.css?v=1">
+<script src="anim-ingenieur.js?v=1" defer></script></head>
 <body>
 <a href="../index.html" class="back-btn">← Retour</a>
 
@@ -90,6 +92,11 @@ body{background:#0a0e27;color:#eaf0ff;font-family:'Trebuchet MS','Verdana',sans-
     <p class="detail-sub" id="dSub"></p>
   </div>
   <div class="container">
+    <div class="card" id="dAnimCard" style="display:none">
+      <h3>🎬 Comment ça bouge</h3>
+      <p class="hint">Regarde le mécanisme tourner avant de le démonter.</p>
+      <div id="dAnim"></div>
+    </div>
     <div class="card">
       <h3>🧩 Les pièces (clique pour voir le rôle)</h3>
       <p class="hint">Chaque pièce a un rôle précis. Touche une carte pour lire son explication.</p>
@@ -137,6 +144,12 @@ function safeConcept(s){
                   .replace(/&lt;b&gt;/g,'<b>').replace(/&lt;\/b&gt;/g,'</b>');
 }
 
+// Une animation qui tourne pour un écran que personne ne regarde ne sert
+// qu'à vider la batterie.
+document.addEventListener('visibilitychange', function () {
+  document.documentElement.classList.toggle('ai-pause', document.visibilityState === 'hidden');
+});
+
 function showHome(){
   document.getElementById('detail').classList.remove('active');
   document.getElementById('home').style.display='block';
@@ -155,6 +168,13 @@ function showDetail(i){
   document.getElementById('dEmoji').textContent = m.emoji;
   document.getElementById('dTitle').textContent = m.titre;
   document.getElementById('dSub').textContent = m.sous;
+
+  // Schéma animé — absent pour certaines machines, la fiche reste lisible.
+  const animEl = document.getElementById('dAnim');
+  const animCard = document.getElementById('dAnimCard');
+  const anim = (typeof animIngenieur === 'function') ? animIngenieur(m.id) : '';
+  animEl.innerHTML = anim;
+  animCard.style.display = anim ? '' : 'none';
 
   // Parts
   const partsEl = document.getElementById('dParts');
