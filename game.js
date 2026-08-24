@@ -320,7 +320,7 @@ const STORAGE_ACTIVE="royaume_active_v1";
    distinguer « la fonctionnalité est cassée » de « le téléphone n'a pas
    encore la mise à jour ».
    À bumper avec CACHE_VERSION (sw.js) et le ?v= (index.html). */
-const APP_VERSION='v32';
+const APP_VERSION='v33';
 
 function loadProfilesDict(){
   try{const d=localStorage.getItem(STORAGE_PROFILES); if(d) return JSON.parse(d)||{};}catch(e){}
@@ -899,7 +899,7 @@ function render(){
     case 'mode': renderMode(); break;
     case 'game': renderGame(); break;
     case 'results': renderResults(); break;
-    case 'battleHome': renderBattleHome(); break;
+    case 'battleHome': renderBattleHome(); syncAmis().then(()=>{if(state.screen==='battleHome')renderBattleHome()}); break;
     case 'memoryHome': renderMemoryHome(); break;
     case 'pseudoSetup': renderPseudoSetup(); break;
     case 'memoryGame': renderMemoryGame(); break;
@@ -4018,6 +4018,12 @@ async function sendBattleInvite(friendName,battle){
   if(window.Supa&&Supa.enabled()&&Supa.creds(profile.name)){
     const r=await Supa.sendInvite(profile.name,friendName,battle.code,battle.lvName,battle.count);
     if(r&&r.ok) return true;
+    // Les défis sont réservés aux amitiés acceptées : on le dit, et on
+    // propose le geste qui débloque plutôt que d'échouer en silence.
+    if(r&&r.error==='pas_ami'){
+      toast('Ajoute d\'abord '+friendName+' en ami pour lui envoyer un défi.');
+      return false;
+    }
     if(r&&r.error==='destinataire_inconnu') return false;
   }
   try{
@@ -4079,6 +4085,91 @@ function dismissInvite(code){
   const b=document.getElementById('inviteBanner');
   if(b)b.remove();
 }
+/* ════════ AMIS DÉCLARÉS ════════
+   profile.friends n'était qu'un journal d'anciens adversaires, rempli
+   après la partie : pour défier un ami, il fallait déjà l'avoir défié. La
+   première rencontre passait forcément par un code lu à voix haute ou un
+   lien WhatsApp — donc par un adulte.
+
+   Désormais on se déclare amis une fois pour toutes, et les défis sont
+   réservés aux amitiés acceptées (avant, qui connaissait le pseudo d'un
+   enfant pouvait lui déposer des défis à volonté).
+
+   RÈGLE DE NON-RÉGRESSION : tant que le bloc « AMIS DÉCLARÉS » de
+   supabase/schema.sql n'est pas appliqué, ces fonctions échouent en
+   silence et l'app se comporte exactement comme avant. */
+const MAX_AMIS=100;
+
+// État serveur, rafraîchi à l'ouverture de l'écran Battle.
+let _amisServeur=null;   // {friends:[], incoming:[], outgoing:[]} ou null
+
+function amisConnus(){
+  return _amisServeur?_amisServeur.friends:Object.keys(profile.friends||{});
+}
+
+/* Les anciens adversaires deviennent amis sans rien demander à personne.
+   Chaque enfant envoie une demande à ceux qu'il a déjà affrontés ; comme
+   l'autre fait de même de son côté, la demande croisée vaut acceptation
+   mutuelle et l'amitié se noue toute seule. Personne ne voit d'écran. */
+async function _convertirAnciensAdversaires(){
+  if(!_amisServeur) return;
+  const deja=new Set([].concat(_amisServeur.friends,_amisServeur.outgoing));
+  const legacy=Object.keys(profile.friends||{}).filter(n=>n&&!deja.has(n));
+  if(!legacy.length) return;
+  for(const nom of legacy.slice(0,20)){          // le serveur plafonne à 20 en attente
+    try{await Supa.friendRequest(profile.name,nom)}catch(e){}
+  }
+}
+
+async function syncAmis(){
+  if(!(window.Supa&&Supa.enabled()&&Supa.creds(profile.name))) return null;
+  try{
+    const r=await Supa.listFriends(profile.name);
+    if(!r) return null;                          // schéma pas encore appliqué
+    _amisServeur=r;
+    await _convertirAnciensAdversaires();
+    return r;
+  }catch(e){return null}
+}
+
+async function ajouterAmi(){
+  const inp=document.getElementById('amiPseudoInp');
+  const pseudo=(inp?inp.value:'').trim();
+  if(pseudo.length<3){toast('Entre le pseudo exact de ton ami');return}
+  if(!(window.Supa&&Supa.enabled()&&Supa.creds(profile.name))){
+    toast('Choisis d\'abord ton pseudo de battle');navigate('pseudoSetup');return;
+  }
+  const r=await Supa.friendRequest(profile.name,pseudo);
+  if(r&&r.error==='trop_d_amis'){toast('Tu as déjà '+MAX_AMIS+' amis !');return}
+  if(r&&r.error==='trop_de_demandes'){toast('Trop de demandes en attente — attends leurs réponses.');return}
+  if(r&&r.error==='soi_meme'){toast('C\'est ton propre pseudo 🙂');return}
+  if(r&&r.error){toast('Impossible pour le moment. Réessaie.');return}
+  if(inp) inp.value='';
+  // Réponse volontairement identique si le pseudo n'existe pas : sinon
+  // l'écran devient un testeur d'existence de pseudos.
+  if(r&&r.status==='accepted') toast('🎉 Vous êtes amis avec '+pseudo+' !','win');
+  else toast('Demande envoyée à '+pseudo+' ✉️');
+  await syncAmis();
+  if(state.screen==='battleHome') renderBattleHome();
+}
+
+async function repondreAmi(pseudo,accepter){
+  const r=await Supa.respondFriend(profile.name,pseudo,accepter);
+  if(r&&r.error==='trop_d_amis'){toast('Tu as déjà '+MAX_AMIS+' amis !');return}
+  if(accepter&&r&&r.ok) toast('🎉 '+pseudo+' est ton ami !','win');
+  await syncAmis();
+  if(state.screen==='battleHome') renderBattleHome();
+}
+
+async function retirerAmi(pseudo){
+  if(!window.confirm('Retirer '+pseudo+' de tes amis ?')) return;
+  await Supa.removeFriend(profile.name,pseudo,false);
+  if(profile.friends) delete profile.friends[pseudo];
+  saveProfile();
+  await syncAmis();
+  if(state.screen==='battleHome') renderBattleHome();
+}
+
 // Défi 1-tap depuis la liste d'amis : crée la battle avec le niveau/quantité
 // sélectionnés dans le formulaire, et dépose l'invitation chez l'ami.
 function challengeFriend(name){
@@ -4287,22 +4378,47 @@ function renderBattleHome(){
     +'<button class="btn-fire mt-4" onclick="createBattle(document.getElementById(\'battleLv\').value,window._battleCount||5)">\u2694\ufe0f Cr\u00e9er et obtenir le code</button>'
   +'</div>'
   +(function(){
-    const friends=Object.values(profile.friends||{}).sort((a,b)=>(b.lastBattle||'').localeCompare(a.lastBattle||''));
-    if(friends.length===0) return '';
+    // Amis DÉCLARÉS quand le serveur les connaît, anciens adversaires
+    // sinon : l'écran reste utile avant que le schéma ne soit appliqué.
+    const noms=amisConnus();
+    const entrantes=_amisServeur?_amisServeur.incoming:[];
+    const envoyees=_amisServeur?_amisServeur.outgoing:[];
     const settled=(profile.battleHistory||[]).filter(h=>h.settled&&h.opps);
-    return '<div class="card mb-4" style="border-color:#34d399">'
-      +'<h3 class="fredoka" style="font-size:.85rem;color:#34d399;margin-bottom:4px;letter-spacing:.1em;text-transform:uppercase">\ud83d\udc65 Tes amis</h3>'
+    const bilan=(nom)=>{
+      let w=0,l=0;
+      for(const h of settled){const o=(h.opps||[]).find(x=>x.name===nom);if(o&&h.me){if(h.me.score>o.score)w++;else if(h.me.score<o.score)l++}}
+      return w+'V \u2013 '+l+'D contre toi';
+    };
+    const demandes=entrantes.length?(
+      '<div class="card mb-4 glow-anim" style="border-color:#f472b6">'
+      +'<h3 class="fredoka" style="font-size:.85rem;color:#f472b6;margin-bottom:8px;letter-spacing:.1em;text-transform:uppercase">\u{1F44B} Demandes d\'amis</h3>'
+      +entrantes.map(n=>'<div class="row-between" style="padding:8px 0;border-top:1px solid rgba(255,255,255,0.06)">'
+        +'<div class="flex-1" style="min-width:0;color:#faf5ff;font-weight:600">'+esc(n)+' veut être ton ami</div>'
+        +'<button class="btn-fire btn-small" data-n="'+esc(n)+'" onclick="repondreAmi(this.dataset.n,true)">Accepter</button>'
+        +'<button class="btn-stone btn-small" style="margin-left:6px" data-n="'+esc(n)+'" onclick="repondreAmi(this.dataset.n,false)">Non</button>'
+      +'</div>').join('')
+      +'</div>'):'';
+    const ajout=(window.Supa&&Supa.enabled())?(
+      '<div class="card mb-4" style="border-color:#22d3ee">'
+      +'<h3 class="fredoka" style="font-size:.85rem;color:#22d3ee;margin-bottom:6px;letter-spacing:.1em;text-transform:uppercase">\u2795 Ajouter un ami</h3>'
+      +'<p class="sub" style="font-size:.75rem;margin-bottom:8px">Tape son pseudo exact \u2014 celui qu\'il t\'a donné. Il devra accepter.</p>'
+      +'<input class="name-prompt" id="amiPseudoInp" placeholder="Pseudo de ton ami" maxlength="16">'
+      +'<button class="btn-stone btn-small mt-3" onclick="ajouterAmi()">Envoyer la demande</button>'
+      +(envoyees.length?'<p class="sub" style="font-size:.72rem;margin-top:8px">En attente de r\u00e9ponse : '+envoyees.map(esc).join(', ')+'</p>':'')
+      +'</div>'):'';
+    const liste=noms.length?(
+      '<div class="card mb-4" style="border-color:#34d399">'
+      +'<h3 class="fredoka" style="font-size:.85rem;color:#34d399;margin-bottom:4px;letter-spacing:.1em;text-transform:uppercase">\u{1F465} Tes amis ('+noms.length+'/'+MAX_AMIS+')</h3>'
       +'<p class="sub" style="font-size:.75rem;margin-bottom:8px">D\u00e9fie-les en 1 clic \u2014 ils verront ton d\u00e9fi en ouvrant leur app (niveau et nb de questions choisis ci-dessus).</p>'
-      +friends.slice(0,8).map(f=>{
-        let w=0,l=0;
-        for(const h of settled){const o=(h.opps||[]).find(x=>x.name===f.name);if(o&&h.me){if(h.me.score>o.score)w++;else if(h.me.score<o.score)l++}}
-        return '<div class="row-between" style="padding:8px 0;border-top:1px solid rgba(255,255,255,0.06)">'
-          +'<div class="flex-1" style="min-width:0"><span style="color:#faf5ff;font-weight:600">'+esc(f.name)+'</span>'
-          +' <span class="sub" style="font-size:.72rem">'+w+'V \u2013 '+l+'D contre toi</span></div>'
-          +'<button class="btn-stone btn-small" data-name="'+esc(f.name)+'" onclick="challengeFriend(this.dataset.name)">\u2694\ufe0f D\u00e9fier</button>'
-        +'</div>';
-      }).join('')
-    +'</div>';
+      +noms.slice(0,MAX_AMIS).map(n=>
+        '<div class="row-between" style="padding:8px 0;border-top:1px solid rgba(255,255,255,0.06)">'
+        +'<div class="flex-1" style="min-width:0"><span style="color:#faf5ff;font-weight:600">'+esc(n)+'</span>'
+        +' <span class="sub" style="font-size:.72rem">'+bilan(n)+'</span></div>'
+        +'<button class="btn-stone btn-small" data-name="'+esc(n)+'" onclick="challengeFriend(this.dataset.name)">\u2694\ufe0f D\u00e9fier</button>'
+        +(_amisServeur?'<button class="btn-stone btn-small" style="margin-left:6px;opacity:.6" data-n="'+esc(n)+'" onclick="retirerAmi(this.dataset.n)" aria-label="Retirer">\u2715</button>':'')
+      +'</div>').join('')
+      +'</div>'):'';
+    return demandes+liste+ajout;
   })()
   +'<div class="card mb-4" style="border-color:#60a5fa">'
     +'<h3 class="fredoka" style="font-size:.85rem;color:#60a5fa;margin-bottom:10px;letter-spacing:.1em;text-transform:uppercase">\ud83d\udd11 Rejoindre avec un code</h3>'

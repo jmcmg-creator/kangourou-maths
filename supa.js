@@ -89,6 +89,33 @@
     return Array.isArray(res)?res:[];
   }
 
+  /* ── Amis déclarés ──────────────────────────────────────────────────
+     Ces fonctions n'existent en base qu'une fois le bloc « AMIS DÉCLARÉS »
+     de supabase/schema.sql appliqué. Avant, l'appel renvoie une erreur
+     HTTP 404 que l'appelant traite comme « pas encore disponible » : l'app
+     continue de fonctionner exactement comme avant. */
+  async function supaFriendRequest(profileName,toPseudo){
+    const c=getCreds(profileName);
+    if(!c) return {error:'pas_connecte'};
+    return rpc('send_friend_request',{p_id:c.id,p_token:c.token,p_to_pseudo:toPseudo});
+  }
+  async function supaRespondFriend(profileName,fromPseudo,accept){
+    const c=getCreds(profileName);
+    if(!c) return {error:'pas_connecte'};
+    return rpc('respond_friend_request',{p_id:c.id,p_token:c.token,p_from_pseudo:fromPseudo,p_accept:!!accept});
+  }
+  async function supaListFriends(profileName){
+    const c=getCreds(profileName);
+    if(!c) return null;
+    const res=await rpc('list_friends',{p_id:c.id,p_token:c.token});
+    return (res&&Array.isArray(res.friends))?res:null;
+  }
+  async function supaRemoveFriend(profileName,pseudo,block){
+    const c=getCreds(profileName);
+    if(!c) return {error:'pas_connecte'};
+    return rpc('remove_friend',{p_id:c.id,p_token:c.token,p_pseudo:pseudo,p_block:!!block});
+  }
+
   window.Supa={
     enabled:supaEnabled,
     creds:getCreds,
@@ -99,6 +126,10 @@
     saveProfile:supaSaveProfile,
     loadProfile:supaLoadProfile,
     sendInvite:supaSendInvite,
-    fetchInvites:supaFetchInvites
+    fetchInvites:supaFetchInvites,
+    friendRequest:supaFriendRequest,
+    respondFriend:supaRespondFriend,
+    listFriends:supaListFriends,
+    removeFriend:supaRemoveFriend
   };
 })();
