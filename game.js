@@ -320,7 +320,7 @@ const STORAGE_ACTIVE="royaume_active_v1";
    distinguer « la fonctionnalité est cassée » de « le téléphone n'a pas
    encore la mise à jour ».
    À bumper avec CACHE_VERSION (sw.js) et le ?v= (index.html). */
-const APP_VERSION='v33';
+const APP_VERSION='v35';
 
 function loadProfilesDict(){
   try{const d=localStorage.getItem(STORAGE_PROFILES); if(d) return JSON.parse(d)||{};}catch(e){}
@@ -888,6 +888,10 @@ function navigate(screen,data){
   state.screen=screen;
   if(data) Object.assign(state,data);
   backArrow.classList.toggle('hidden',screen==='home');
+  // Pendant une partie de Memory, le pied de page (changement d'utilisateur)
+  // vole 180 px de hauteur pour rien : l'enfant joue, il ne change pas de
+  // profil. On le retire pour rendre ces pixels aux cartes.
+  try{document.documentElement.classList.toggle('jeu-plein-ecran',screen==='memoryGame')}catch(e){}
   render();
   if(!(screen==='home'&&_scrollToHomeAnchor())) window.scrollTo(0,0);
 }
@@ -2292,11 +2296,36 @@ async function startGame(mode){
 // Seuls les schémas livrés avec l'app sont affichables. Une question générée
 // qui tenterait de pointer ailleurs (URL externe, javascript:, ../..) est
 // ignorée sans bruit : le visuel disparaît, la question reste jouable.
+/* ════════ DRAPEAUX DESSINÉS ════════
+   Les emoji drapeaux s'affichent tout petits, et leur dessin dépend de la
+   police du système : sur certains appareils ils ne s'affichent même pas.
+   On sert donc de vrais dessins vectoriels, identiques partout et nets à
+   n'importe quelle taille.
+   Un emoji drapeau est fait de deux « lettres régionales » : 🇫🇷 = F + R,
+   ce qui donne directement le nom du fichier. */
+const FLAG_FILES=new Set(['ar','au','be','br','ca','ch','cn','de','eg','es','fr','gb','gr','ie','in','it','jp','kr','ma','mx','nl','pl','pt','ru','se','sn','tr','us','za']);
+function flagIso(s){
+  const c=[...String(s||'').trim()];
+  if(c.length<2) return null;
+  const a=c[0].codePointAt(0),b=c[1].codePointAt(0);
+  if(a<0x1F1E6||a>0x1F1FF||b<0x1F1E6||b>0x1F1FF) return null;
+  return String.fromCharCode(a-0x1F1E6+65,b-0x1F1E6+65).toLowerCase();
+}
+// Renvoie null si le pays n'a pas encore de dessin : l'appelant retombe
+// alors sur l'emoji, donc aucune question ne devient injouable.
+function flagImg(emoji,cls,alt){
+  const iso=flagIso(emoji);
+  if(!iso||!FLAG_FILES.has(iso)) return null;
+  return '<img class="'+cls+'" src="images/flags/'+iso+'.svg" alt="'+esc(alt||'')+'" loading="lazy">';
+}
+
 const ALLOWED_VISUAL_IMG=/^images\/anatomy\/[a-z0-9_-]+\.svg$/;
 function renderQuestionVisual(ex){
   if(!ex) return '';
   if(ex.flag){
-    return '<div class="q-visual q-visual-flag" role="img" aria-label="Drapeau à reconnaître">'+esc(ex.flag)+'</div>';
+    const img=flagImg(ex.flag,'flag-big','Drapeau à reconnaître');
+    if(img) return '<div class="q-visual q-visual-flag">'+img+'</div>';
+    return '<div class="q-visual q-visual-flag q-visual-flag-emoji" role="img" aria-label="Drapeau à reconnaître">'+esc(ex.flag)+'</div>';
   }
   if(ex.visualImg&&ALLOWED_VISUAL_IMG.test(ex.visualImg)){
     return '<div class="q-visual q-visual-img"><img src="'+esc(ex.visualImg)+'" alt="'+esc(ex.visualAlt||'Schéma de la question')+'" loading="lazy"></div>';
@@ -2342,6 +2371,14 @@ function renderQuestPath(){
 
 /* Récompense de palier : ouvre le coffre atteint et crédite des cristaux.
    Bonus renforcé si le tronçon depuis le coffre précédent est parfait. */
+/* Coût d'une mauvaise réponse, proportionnel à la difficulté comme le gain.
+   Une question à 3 de difficulté rapporte 30 XP et en coûte 12. */
+const XP_MALUS_PAR_DIFFICULTE=4;
+function xpMalus(ex){
+  const d=(ex&&ex.diff)?ex.diff:3;
+  return Math.round(d*XP_MALUS_PAR_DIFFICULTE);
+}
+
 function questChestAward(){
   const i=state.idx;
   const ci=QUEST_CHESTS.indexOf(i);
@@ -2413,7 +2450,11 @@ function renderGame(){
         :`<div class="choice-btn ${state.results[state.results.length-1]&&state.results[state.results.length-1].correct?'correct':'wrong'}" style="cursor:default">Ta réponse : ${esc(String(state.selected))}</div>
           ${state.results[state.results.length-1]&&state.results[state.results.length-1].correct?'':`<div class="choice-btn correct" style="cursor:default;margin-top:8px">Bonne réponse : ${esc(exAnswerText(ex))}</div>`}`)
       :`<div class="choices-grid">
-      ${ex.ch.map((c,i)=>{let cls='choice-btn';if(state.selected!==null){if(i===ex.ans)cls+=' correct';else if(i===state.selected&&i!==ex.ans)cls+=' wrong'}const flagOnly=/^[\u{1F1E6}-\u{1F1FF}\s]+$/u.test(String(c));return `<button class="${cls}" ${state.selected!==null?'disabled':''} onclick="selectAnswer(${i})"${flagOnly?' style="font-size:2.4rem;text-align:center;line-height:1.2"':''}>${flagOnly?'':`<span class="choice-letter">${String.fromCharCode(65+i)}.</span>`}${esc(c)}</button>`}).join('')}
+      ${ex.ch.map((c,i)=>{let cls='choice-btn';if(state.selected!==null){if(i===ex.ans)cls+=' correct';else if(i===state.selected&&i!==ex.ans)cls+=' wrong'}const flagOnly=/^[\u{1F1E6}-\u{1F1FF}\s]+$/u.test(String(c));
+      // Réponse qui EST un drapeau : on affiche le dessin, pas l'emoji.
+      const flagPic=flagOnly?flagImg(c,'flag-choice','Drapeau'):null;
+      const corps=flagPic||(flagOnly?esc(c):`<span class="choice-letter">${String.fromCharCode(65+i)}.</span>`+esc(c));
+      return `<button class="${cls}${flagPic?' choice-btn-flag':''}" ${state.selected!==null?'disabled':''} onclick="selectAnswer(${i})"${flagOnly&&!flagPic?' style="font-size:2.4rem;text-align:center;line-height:1.2"':''}>${corps}</button>`}).join('')}
     </div>`}
     <div id="explanation"></div>
   </div>
@@ -2460,6 +2501,12 @@ function submitInputAnswer(){
     state.sessionCristaux+=ex.diff*2+(state.streak===3||state.streak===5||state.streak===10?10:0);
   }else{
     state.streak=0;
+    // Une mauvaise réponse COÛTE des XP. Sans coût, répondre au hasard le
+    // plus vite possible est la stratégie la plus rentable : on gagne parfois,
+    // on ne perd jamais, et l'enfant n'apprend rien. Le malus vaut environ
+    // 40 % de ce que la question rapportait, donc lire l'énoncé reste
+    // toujours plus payant que deviner.
+    state.sessionXP-=xpMalus(ex);
     if(state.mode==='progression')state.gameOver=true;
   }
   questChestAward();
@@ -2539,6 +2586,12 @@ function selectCountryAnswer(id){
     state.sessionCristaux+=ex.diff*2+(state.streak===3||state.streak===5||state.streak===10?10:0);
   }else{
     state.streak=0;
+    // Une mauvaise réponse COÛTE des XP. Sans coût, répondre au hasard le
+    // plus vite possible est la stratégie la plus rentable : on gagne parfois,
+    // on ne perd jamais, et l'enfant n'apprend rien. Le malus vaut environ
+    // 40 % de ce que la question rapportait, donc lire l'énoncé reste
+    // toujours plus payant que deviner.
+    state.sessionXP-=xpMalus(ex);
     if(state.mode==='progression')state.gameOver=true;
   }
   questChestAward();
@@ -2565,6 +2618,12 @@ function selectMapAnswer(id){
     state.sessionCristaux+=ex.diff*2+(state.streak===3||state.streak===5||state.streak===10?10:0);
   }else{
     state.streak=0;
+    // Une mauvaise réponse COÛTE des XP. Sans coût, répondre au hasard le
+    // plus vite possible est la stratégie la plus rentable : on gagne parfois,
+    // on ne perd jamais, et l'enfant n'apprend rien. Le malus vaut environ
+    // 40 % de ce que la question rapportait, donc lire l'énoncé reste
+    // toujours plus payant que deviner.
+    state.sessionXP-=xpMalus(ex);
     if(state.mode==='progression')state.gameOver=true;
   }
   questChestAward();
@@ -2595,6 +2654,12 @@ function selectAnswer(i){
     state.sessionCristaux+=crGained;
   }else{
     state.streak=0;
+    // Une mauvaise réponse COÛTE des XP. Sans coût, répondre au hasard le
+    // plus vite possible est la stratégie la plus rentable : on gagne parfois,
+    // on ne perd jamais, et l'enfant n'apprend rien. Le malus vaut environ
+    // 40 % de ce que la question rapportait, donc lire l'énoncé reste
+    // toujours plus payant que deviner.
+    state.sessionXP-=xpMalus(ex);
     if(state.mode==='progression')state.gameOver=true;
   }
   questChestAward();
@@ -2621,7 +2686,11 @@ function showExplanation(ex,correct){
   const hasMethode=Array.isArray(ex.methode)&&ex.methode.length>0;
   const hasDetail=hasMethode||ex.regle||ex.exemple;
   const methodeHTML=hasMethode?ex.methode.map(m=>`<div class="pedago-step">${esc(m)}</div>`).join(''):'';
-  const gainHTML=correct?`<span class="xp-gain">+${Math.round(ex.diff*10*(state.streak>=10?3:state.streak>=5?2:state.streak>=3?1.5:1))} XP</span> <span class="crystal-gain">\u{1F48E} +${ex.diff*2}</span>`:'';
+  // Le coût d'une erreur doit être VISIBLE : une règle qu'on ne voit pas
+  // n'apprend rien, et l'enfant croirait à un bug en voyant ses XP baisser.
+  const gainHTML=correct
+    ?`<span class="xp-gain">+${Math.round(ex.diff*10*(state.streak>=10?3:state.streak>=5?2:state.streak>=3?1.5:1))} XP</span> <span class="crystal-gain">\u{1F48E} +${ex.diff*2}</span>`
+    :`<span class="xp-perte">\u2212${xpMalus(ex)} XP</span>`;
   const isLast=state.gameOver||state.idx>=state.exercises.length-1;
   // Bonne r\u00e9ponse : passage auto (message discret). Mauvaise : bouton Suivant.
   const footerHTML=correct
@@ -2688,6 +2757,16 @@ function finishGame(abandoned){
     const rid=getRoyaumeId(state.level);
     const rdata=getRoyaumeData(rid);
     const oldRStage=getStageInRoyaume(rid).idx;
+    // Un solde négatif ne doit jamais faire reculer l'enfant sous son palier :
+    // perdre son dragon à cause de quelques erreurs serait décourageant, et
+    // ressemblerait à un bug plutôt qu'à une règle.
+    const planchePalier=STAGES[oldStage]?STAGES[oldStage].threshold:0;
+    if(state.sessionXP<0){
+      const maxPerteGlobale=Math.max(0,profile.xp-planchePalier);
+      const maxPerteRoyaume=Math.max(0,rdata.xp||0);
+      const perte=Math.min(-state.sessionXP,maxPerteGlobale,maxPerteRoyaume);
+      state.sessionXP=-perte;
+    }
     rdata.xp+=state.sessionXP;
     rdata.cristaux+=state.sessionCristaux;
     rdata.games++;
@@ -4852,6 +4931,46 @@ function startMemory(modeId){
   navigate('memoryGame');
 }
 
+/* La grille de Memory doit tenir dans l'écran SANS défilement : un enfant
+   qui mémorise des cartes ne peut pas retenir celles qu'il doit faire
+   défiler pour voir. On calcule donc la hauteur restante réelle sous la
+   grille, et on dimensionne l'emoji d'après la CARTE — pas d'après la
+   largeur de la fenêtre, sinon il déborde dès que les cartes rétrécissent. */
+function fitMemoryGrid(){
+  const g=document.getElementById('memGrid');
+  if(!g) return;
+  const haut=g.getBoundingClientRect().top;
+  const dispo=(window.visualViewport&&window.visualViewport.height)||window.innerHeight;
+  // On MESURE ce qui vient après la grille au lieu de deviner une marge :
+  // le bouton « Abandonner » et le pied de page (changement d'utilisateur)
+  // font une centaine de pixels, et une marge devinée les rate.
+  let reserve=24;
+  const btn=g.parentNode?g.parentNode.querySelector('button.btn-stone'):null;
+  if(btn) reserve+=btn.offsetHeight+12;
+  const pied=document.querySelector('footer');
+  if(pied) reserve+=pied.offsetHeight;
+  let h=Math.max(200,dispo-haut-reserve);
+  g.style.height=h+'px';
+  // Deuxième passe : on retire le débordement RÉELLEMENT constaté. Énumérer
+  // les marges (bouton, pied de page, remplissage du conteneur, zones sûres
+  // de l'iPhone) est fragile — il suffit d'en oublier une. Mesurer ce qui
+  // dépasse, en revanche, ne peut pas se tromper.
+  const trop=document.documentElement.scrollHeight-dispo;
+  if(trop>0){h=Math.max(200,h-trop);g.style.height=h+'px'}
+  const carte=g.querySelector('.mem-card');
+  if(!carte) return;
+  const r=carte.getBoundingClientRect();
+  const cote=Math.min(r.width,r.height);
+  if(!cote) return;
+  // Un emoji occupe la moitié de la carte ; un texte (« 6 × 7 ») doit tenir
+  // en largeur, donc il est calé plus petit et sur la largeur.
+  g.style.setProperty('--mem-face',Math.max(20,Math.round(cote*0.52))+'px');
+  g.style.setProperty('--mem-face-txt',Math.max(13,Math.round(r.width*0.26))+'px');
+}
+// Rotation de l'écran ou clavier qui se ferme : on recalcule.
+window.addEventListener('resize',()=>{if(state.screen==='memoryGame')fitMemoryGrid()});
+window.addEventListener('orientationchange',()=>{setTimeout(()=>{if(state.screen==='memoryGame')fitMemoryGrid()},250)});
+
 function renderMemoryGame(){
   const M=state.mem;
   if(!M){navigate('memoryHome');return}
@@ -4868,10 +4987,10 @@ function renderMemoryGame(){
         +'<span class="sub">\u23F1 <b id="memTime" style="color:#60a5fa">'+M.time+'</b>s</span>'
       +'</div>')
   +'</div>'
-  +'<div class="mem-grid" style="grid-template-columns:repeat('+cols+',1fr)">'
+  +'<div class="mem-grid" id="memGrid" style="grid-template-columns:repeat('+cols+',1fr);grid-template-rows:repeat('+Math.ceil(M.cards.length/cols)+',1fr)">'
   +M.cards.map((c,i)=>{
     const st=c.matched?'matched':((preview||M.flipped.includes(i))?'flipped':'');
-    const big=c.animal?'font-size:clamp(1.8rem,8vw,2.6rem)':'';
+    const big=c.animal?'font-size:var(--mem-face,2rem)':'font-size:var(--mem-face-txt,1.2rem)';
     return '<div class="mem-card '+st+'" onclick="memFlip('+i+')"><div class="mem-inner">'
       +'<div class="mem-front">\u2753</div>'
       +'<div class="mem-back" style="'+big+'">'+esc(c.face)+'</div>'
@@ -4879,7 +4998,8 @@ function renderMemoryGame(){
   }).join('')
   +'</div>'
   +'<div id="memWin"></div>'
-  +'<button class="btn-stone mt-4" onclick="navigate(\'memoryHome\')">\u2190 Abandonner</button>';
+  +'<button class="btn-stone mt-3" onclick="navigate(\'memoryHome\')">\u2190 Abandonner</button>';
+  fitMemoryGrid();
   if(state.memTickID)clearInterval(state.memTickID);
   if(preview){
     // Phase de m\u00e9morisation : toutes les cartes visibles, puis elles se
