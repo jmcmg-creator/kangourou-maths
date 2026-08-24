@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 60 40" role="img"><rect width="60" height="40" fill="#fff"/>
+<g transform="rotate(-33.69 30 20)">
+  <circle cx="30" cy="20" r="8" fill="#CD2E3A"/>
+  <path d="M30,12 A8,8 0 0,0 30,28 A4,4 0 0,0 30,20 A4,4 0 0,1 30,12 Z" fill="#0047A0"/>
+</g>
+<g fill="#000">
+<g transform="rotate(-56.31 30 20)"><rect x="10.5" y="18.10" width="7" height="1.05"/><rect x="10.5" y="19.45" width="7" height="1.05"/><rect x="10.5" y="20.80" width="7" height="1.05"/></g><g transform="rotate(56.31 30 20)"><rect x="10.5" y="18.10" width="7" height="1.05"/><rect x="10.5" y="19.45" width="3.05" height="1.05"/><rect x="14.45" y="19.45" width="3.05" height="1.05"/><rect x="10.5" y="20.80" width="7" height="1.05"/></g><g transform="rotate(-123.69 30 20)"><rect x="10.5" y="18.10" width="3.05" height="1.05"/><rect x="14.45" y="18.10" width="3.05" height="1.05"/><rect x="10.5" y="19.45" width="7" height="1.05"/><rect x="10.5" y="20.80" width="7" height="1.05"/></g><g transform="rotate(123.69 30 20)"><rect x="10.5" y="18.10" width="3.05" height="1.05"/><rect x="14.45" y="18.10" width="3.05" height="1.05"/><rect x="10.5" y="19.45" width="3.05" height="1.05"/><rect x="14.45" y="19.45" width="3.05" height="1.05"/><rect x="10.5" y="20.80" width="3.05" height="1.05"/><rect x="14.45" y="20.80" width="3.05" height="1.05"/></g>
+</g></svg>

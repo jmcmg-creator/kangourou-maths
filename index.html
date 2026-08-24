@@ -672,13 +672,20 @@ footer{
 }
 
 /* ══ MEMORY DES TABLES ══ */
-.mem-grid{display:grid;gap:10px;max-width:520px;margin:0 auto}
-.mem-card{aspect-ratio:3/4;perspective:600px;cursor:pointer;-webkit-tap-highlight-color:transparent}
+/* Memory : la grille doit tenir dans l'écran, sans défilement — un enfant
+   ne peut pas mémoriser des cartes qu'il doit faire défiler pour voir. */
+html.jeu-plein-ecran footer{display:none}
+html.jeu-plein-ecran .container{padding-bottom:8px}
+/* Coût d'une mauvaise réponse — lisible sans être punitif. */
+.xp-perte{background:rgba(239,68,68,.14);color:#fca5a5;border:1px solid rgba(239,68,68,.3);border-radius:999px;padding:2px 10px;font-family:Fredoka,sans-serif;font-size:.85rem;font-weight:600;white-space:nowrap}
+html.light .xp-perte{background:rgba(220,38,38,.10);color:#b91c1c;border-color:rgba(220,38,38,.28)}
+.mem-grid{display:grid;gap:8px;max-width:520px;margin:0 auto;width:100%}
+.mem-card{min-height:0;perspective:600px;cursor:pointer;-webkit-tap-highlight-color:transparent}
 .mem-inner{position:relative;width:100%;height:100%;transition:transform .45s cubic-bezier(0.4,0,0.2,1);transform-style:preserve-3d}
 .mem-card.flipped .mem-inner,.mem-card.matched .mem-inner{transform:rotateY(180deg)}
 .mem-front,.mem-back{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;border-radius:14px;backface-visibility:hidden;-webkit-backface-visibility:hidden;font-family:'Fredoka',sans-serif;font-weight:700}
-.mem-front{background:linear-gradient(145deg,#1e1650,#231854);border:2px solid rgba(52,211,153,.35);font-size:1.6rem;color:#34d399}
-.mem-back{background:linear-gradient(145deg,#122a22,#0d3325);border:2px solid #34d399;transform:rotateY(180deg);font-size:clamp(1rem,4.5vw,1.5rem);color:#faf5ff;text-align:center;padding:4px}
+.mem-front{background:linear-gradient(145deg,#1e1650,#231854);border:2px solid rgba(52,211,153,.35);font-size:var(--mem-face-txt,1.4rem);color:#34d399}
+.mem-back{background:linear-gradient(145deg,#122a22,#0d3325);border:2px solid #34d399;transform:rotateY(180deg);font-size:var(--mem-face-txt,1.2rem);line-height:1.1;color:#faf5ff;text-align:center;padding:2px}
 .mem-card.matched .mem-back{background:linear-gradient(145deg,#14432f,#0f5132);border-color:#fbbf24;box-shadow:0 0 18px rgba(251,191,36,.35);color:#fde68a}
 .mem-card.matched{cursor:default;animation:popIn .4s var(--transition-bounce)}
 
@@ -746,7 +753,16 @@ html.light .grade-chip{background:#fff}
 
 /* ══ VISUELS DE QUESTION ══ */
 .q-visual{text-align:center;margin:4px 0 14px}
-.q-visual-flag{font-size:clamp(4rem,20vw,6rem);line-height:1.1;filter:drop-shadow(0 4px 12px rgba(0,0,0,.35))}
+.q-visual-flag{line-height:1.1;display:flex;justify-content:center}
+.q-visual-flag-emoji{font-size:clamp(4rem,20vw,6rem);filter:drop-shadow(0 4px 12px rgba(0,0,0,.35))}
+/* Un drapeau doit se LIRE : grand, net, avec un liseré qui le détache du
+   fond sombre (le blanc de plusieurs drapeaux s'y confondrait). */
+.flag-big{width:min(260px,68vw);height:auto;aspect-ratio:3/2;object-fit:contain;border-radius:6px;
+  box-shadow:0 4px 16px rgba(0,0,0,.4);outline:1px solid rgba(255,255,255,.22);outline-offset:-1px}
+.flag-choice{width:100%;max-width:150px;height:auto;aspect-ratio:3/2;object-fit:contain;border-radius:4px;
+  outline:1px solid rgba(255,255,255,.2);outline-offset:-1px;display:block;margin:0 auto}
+.choice-btn-flag{padding:8px;display:flex;align-items:center;justify-content:center}
+html.light .flag-big,html.light .flag-choice{outline-color:rgba(36,27,82,.25)}
 .q-visual-grid{background:rgba(255,255,255,0.05);border:1px solid var(--border-subtle);border-radius:var(--radius-md);padding:14px 8px}
 .q-grid-row{font-size:clamp(1.5rem,7vw,2.1rem);line-height:1.7;letter-spacing:.12em;white-space:nowrap}
 html.light .q-visual-grid{background:#fff;border-color:rgba(36,27,82,0.12)}
@@ -908,7 +924,7 @@ html.light .btn-stone:hover{background:rgba(180,83,9,0.08);border-color:rgba(180
 <script src="config.js?v=2"></script>
 <script src="supa.js?v=2"></script>
 <script src="qr.js?v=1"></script>
-<script src="game.js?v=53"></script>
+<script src="game.js?v=54"></script>
 <script>
 // Service Worker : enregistré uniquement en HTTPS / localhost (sinon le navigateur refuse).
 if ('serviceWorker' in navigator && (location.protocol === 'https:' || location.hostname === 'localhost' || location.hostname === '127.0.0.1')) {
