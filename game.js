@@ -512,6 +512,8 @@ function mergeProfiles(a,b){
   // Classe et âge : on garde la valeur renseignée (jamais d'écrasement par null).
   out.grade=(b.grade!=null?b.grade:(a.grade!=null?a.grade:null));
   out.age=(b.age!=null?b.age:(a.age!=null?a.age:null));
+  // Rappel de classe écarté sur un appareil : il l'est sur tous les autres.
+  out.gradeNudgeDismissed=!!(a.gradeNudgeDismissed||b.gradeNudgeDismissed);
   // Déblocages : on garde le plus avancé des deux appareils.
   out.unlocks={};
   for(const k of new Set([...Object.keys(a.unlocks||{}),...Object.keys(b.unlocks||{})])){
@@ -1095,6 +1097,10 @@ function renderHome(){
   checkDailyQuest();
   checkBattleInvites();
   setTimeout(()=>{
+    if(state.screen!=='home') return;
+    // Une seule sollicitation à la fois, et la classe passe devant : elle
+    // décide de ce que l'enfant voit, le pseudo n'est qu'un confort.
+    if(nudgeGradeIfNeeded()) return;
     if(window.Supa&&Supa.enabled()&&!profile.pseudo&&state.screen==='home'&&!document.getElementById('pseudoNudge')){
       const d=document.createElement('div');
       d.innerHTML='<div class="card fade-in" id="pseudoNudge" style="border-color:#f472b6"><div class="row" style="gap:12px"><div style="font-size:2rem">🛡️</div><div class="flex-1"><h3 class="card-title" style="color:#f472b6">Choisis ton pseudo de battle !</h3><p class="sub">Un nom unique pour défier tes amis, protégé par un code secret.</p></div><button class="btn-fire btn-small" onclick="navigate(&quot;pseudoSetup&quot;)">Go !</button></div></div>';
@@ -1465,6 +1471,41 @@ function skipGrade(){
   saveProfile();
   track('signup_grade_skipped');
   navigate('home');
+}
+
+/* Rappel de classe pour les profils d'avant le verrouillage par classe.
+   renderNameAsk ne pose la question qu'aux profils neufs (aucune partie
+   jouée) : un enfant inscrit de longue date n'a donc JAMAIS été interrogé,
+   sa classe reste nulle, et la règle de non-régression lui laisse tous les
+   niveaux ouverts — sans que personne ne l'ait décidé. On le signale une
+   fois, et le parent tranche.
+   Renvoie true si la bannière a été posée (l'appelant s'arrête là). */
+function nudgeGradeIfNeeded(){
+  if(profile.grade!=null||profile.gradeNudgeDismissed) return false;
+  if(!(profile.totalGames>0)) return false;      // profil neuf : déjà interrogé à l'inscription
+  if(document.getElementById('gradeNudge')) return false;
+  const d=document.createElement('div');
+  d.innerHTML='<div class="card fade-in" id="gradeNudge" style="border-color:#fbbf24;background:rgba(251,191,36,0.07)">'
+    +'<div class="row" style="gap:12px">'
+      +'<div style="font-size:2rem">\u{1F393}</div>'
+      +'<div class="flex-1"><h3 class="card-title" style="color:#fbbf24">'+esc(profile.name)+' est en quelle classe ?</h3>'
+      +'<p class="sub">Tous les niveaux sont ouverts pour l\'instant. En indiquant la classe, on n\'ouvre que ce qui lui correspond — le reste se débloque en jouant.</p></div>'
+    +'</div>'
+    +'<div class="btn-row mt-3">'
+      +'<button class="btn-fire" onclick="parentalGate(function(){navigate(\'gradeAsk\')})">Indiquer la classe</button>'
+      +'<button class="btn-stone" onclick="dismissGradeNudge()">Laisser tout ouvert</button>'
+    +'</div>'
+  +'</div>';
+  const first=app.firstElementChild;
+  if(!first) return false;
+  app.insertBefore(d.firstElementChild,first);
+  return true;
+}
+function dismissGradeNudge(){
+  profile.gradeNudgeDismissed=true;
+  saveProfile();
+  const b=document.getElementById('gradeNudge');
+  if(b) b.remove();
 }
 
 /* ════════ SÉLECTEUR DE PROFIL (MULTI-UTILISATEUR) ════════ */
