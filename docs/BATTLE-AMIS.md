@@ -1,7 +1,12 @@
 # Battle entre amis — conception
 
-Document de travail. Décrit ce qui existe, ce qui manque, et le découpage
-proposé. Rien n'est implémenté à ce stade : à valider avant de coder.
+Décisions prises et **implémentées** (lots 1 à 3). Le code vit dans
+`supabase/schema.sql`, `supa.js` et `game.js`.
+
+⚠️ **Une étape manuelle reste à faire** : coller le bloc « AMIS DÉCLARÉS »
+de `supabase/schema.sql` dans Supabase → SQL Editor → Run. Tant que ce
+n'est pas fait, l'app se comporte exactement comme avant — les fonctions
+d'amis échouent en silence, rien ne casse.
 
 ---
 
@@ -69,9 +74,8 @@ L'app est utilisée par des enfants. Ces règles priment sur le confort.
 3. **Pseudo et rien d'autre.** Jamais le prénom réel, la classe, l'âge, ni les
    XP détaillés. Un ami voit un pseudo et un score de battle.
 4. **Réversible.** Retirer un ami, bloquer, et ne plus jamais rien recevoir.
-5. **Le parent garde la main.** L'ajout d'un ami passe par le contrôle parental
-   existant (`parentalGate()`). Défier un ami déjà accepté, non — sinon on tue
-   le plaisir.
+5. **Plafonné.** 100 amis, 20 demandes en attente. Au-delà, ce n'est plus un
+   cercle d'amis et ça devient un moyen d'arroser tous les pseudos.
 
 ---
 
@@ -102,8 +106,8 @@ Léa→Judith créent deux lignes qui divergent.
 
 | Fonction | Rôle | Garde-fou |
 |---|---|---|
-| `send_friend_request(id, token, to_pseudo)` | Demande d'ami | Max 10 demandes en attente ; refus silencieux si déjà bloqué |
-| `respond_friend_request(id, token, from_pseudo, accept)` | Accepter / refuser | Le destinataire seul peut répondre |
+| `send_friend_request(id, token, to_pseudo)` | Demande d'ami ; **acceptée d'office si l'autre a déjà demandé** | 100 amis, 20 demandes en attente ; silence si déjà bloqué |
+| `respond_friend_request(id, token, from_pseudo, accept)` | Accepter / refuser | Le destinataire seul peut répondre ; plafond revérifié |
 | `list_friends(id, token)` | Amis + demandes reçues + envoyées | Ne renvoie que des pseudos |
 | `remove_friend(id, token, pseudo)` | Retirer ou bloquer | Immédiat, sans notification |
 
@@ -129,13 +133,19 @@ il ne dépose rien dans la boîte de personne.
 
 ## 5. Parcours
 
-**Ajouter** — Battle des Amis → « ➕ Ajouter un ami » → contrôle parental →
-saisie du pseudo exact → « Demande envoyée à Léa ».
+**Ajouter** — Battle des Amis → « ➕ Ajouter un ami » → saisie du pseudo
+exact → « Demande envoyée à Léa ».
 En cas de pseudo inconnu, message identique à « demande envoyée » : sinon
 l'écran devient un testeur d'existence de pseudos.
 
-**Accepter** — bannière d'accueil, comme les défis :
-« 👋 Léa veut être ton amie » → Accepter / Refuser.
+**Accepter** — en haut de l'écran Battle : « 👋 Léa veut être ton amie »
+→ Accepter / Non.
+
+**Convertir** — les anciens adversaires deviennent amis sans que personne ne
+voie d'écran : chaque enfant envoie une demande à ceux qu'il a déjà
+affrontés, et comme l'autre fait de même, la demande croisée vaut accord
+mutuel. C'est le même mécanisme que l'ajout normal, pas un chemin dérobé —
+aucun client ne peut se déclarer ami unilatéralement.
 
 **Défier** — la liste d'amis existe déjà dans `renderBattleHome()`. Elle se
 remplit désormais d'amis déclarés, pas d'anciens adversaires. Le bouton
@@ -153,33 +163,34 @@ remplit désormais d'amis déclarés, pas d'anciens adversaires. Le bouton
 | **2 — Fermeture** | `send_invite` réservé aux amis ; retrait de la boîte devinable | Lot 1 |
 | **3 — Reprise** | Migration silencieuse des anciens adversaires en amis acceptés | Lot 1 |
 | **4 — Ligue** | Classement entre amis, série de victoires | Lot 1 |
-| **5 — Direct** | Battle en temps réel | à décider, voir §7 |
+| **5 — Direct** | Battle en temps réel | **abandonné** (voir §7) |
 
-Le lot 1 seul débloque déjà ce que tu demandes. Les lots 2 et 3 le rendent
-propre. Le 4 le rend amusant.
-
----
-
-## 7. Décisions à prendre
-
-1. **Contrôle parental à l'ajout d'un ami ?**
-   Recommandé : oui à l'acceptation, non pour défier un ami déjà accepté.
-
-2. **Que faire des amis existants ?**
-   `profile.friends` contient déjà d'anciens adversaires. Recommandé : les
-   convertir en amitiés acceptées sans rien demander — ils ont déjà joué
-   ensemble, le consentement a de fait eu lieu.
-
-3. **Battle en direct, ou en différé ?**
-   Recommandé : rester en différé. Le direct veut dire websockets ouverts,
-   c'est-à-dire exactement le motif de consommation qu'on vient de corriger
-   sur la batterie. Et le différé marche entre deux enfants qui ne jouent pas
-   à la même heure — ce qui est le cas le plus fréquent.
-
-4. **Plafond d'amis ?** Recommandé : 30. Au-delà, ce n'est plus un cercle
-   d'amis, c'est un réseau social.
+Lots 1, 2 et 3 faits. Le lot 4 (classement entre amis) reste ouvert.
 
 ---
+
+## 7. Décisions prises
+
+Tranchées par Julien le 24 août, et implémentées telles quelles.
+
+| Question | Décision |
+|---|---|
+| Contrôle parental à l'ajout d'un ami ? | **Non.** L'accord mutuel suffit. |
+| Que faire des amis existants ? | **Convertis sans rien demander.** Ils ont déjà joué ensemble. |
+| Direct ou différé ? | **Différé.** Deux enfants jouent rarement à la même heure. |
+| Plafond d'amis ? | **100.** |
+
+Sur le premier point, ce qui protège reste en place sans le contrôle
+parental : **aucune découverte** (ni annuaire, ni recherche partielle, ni
+suggestion) et **accord mutuel obligatoire**. Pour entrer dans la liste d'un
+enfant, il faut connaître son pseudo exact — donc l'avoir rencontré — et
+qu'il accepte. Le contrôle parental était une ceinture par-dessus les
+bretelles ; les bretelles tiennent.
+
+Le plafond de 100 se vérifie **à l'envoi ET à l'acceptation**. Le contrôler
+seulement à l'envoi laissait le dépasser en acceptant les demandes reçues —
+100 envoyés + 1 accepté = 101. Trouvé en jouant le scénario sur une vraie
+base Postgres.
 
 ## 8. Ce qu'on ne fera pas
 
