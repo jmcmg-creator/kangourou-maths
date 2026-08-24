@@ -2,6 +2,15 @@ name: Vérif des liens (lychee)
 
 # Scanne tous les liens HTTP du repo (HTML, JS, MD) avec lychee.
 # Détecte les liens 404, redirections cassées, domaines morts.
+#
+# La version de lychee est ÉPINGLÉE. Sans épinglage, l'action prend la
+# dernière version publiée : le jour où une option est renommée en amont,
+# le contrôle tombe en erreur d'usage et ne vérifie plus rien — c'est
+# exactement ce qui est arrivé le 16 août avec --exclude-mail, devenu
+# --include-mail (les mails ne sont plus vérifiés par défaut). Le contrôle
+# a échoué sur tous les commits pendant une semaine sans que personne ne le
+# voie, parce qu'un échec permanent ne se distingue plus d'un vrai
+# problème. Monter la version est désormais un geste délibéré.
 
 on:
   push:
@@ -22,7 +31,14 @@ jobs:
       - name: Vérification des liens
         uses: lycheeverse/lychee-action@v2
         with:
-          # On scanne HTML, JS, MD. On ignore le worker (pas d'endpoint public en GET).
+          lycheeVersion: v0.24.2
+          # On scanne HTML, JS, MD — plus index.html et manifest.json nommément.
+          # Les lockfiles sont volontairement hors champ : './**/*.json'
+          # ramenait 110 liens de financement de dépendances tierces
+          # (patreon, opencollective…), qui tombent au gré de leurs auteurs
+          # et noient les vrais liens morts du projet sous du bruit.
+          # Le Worker et Supabase sont exclus : ce sont des API, pas des
+          # pages consultables en GET.
           args: >-
             --verbose
             --no-progress
@@ -31,15 +47,16 @@ jobs:
             --retry-wait-time 2
             --max-retries 2
             --accept 200,204,301,302,403
-            --exclude-mail
             --exclude-path node_modules
             --exclude-path .git
             --exclude 'royaume-api\.square-paris75\.workers\.dev'
             --exclude 'huggingface\.co/Xenova'
+            --exclude '\.supabase\.co'
             './**/*.html'
             './**/*.js'
             './**/*.md'
-            './**/*.json'
+            './index.html'
+            './manifest.json'
           fail: true
           format: markdown
           output: ./lychee-report.md

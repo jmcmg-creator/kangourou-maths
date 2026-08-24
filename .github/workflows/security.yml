@@ -33,18 +33,30 @@ jobs:
     name: 🧠 semgrep (OWASP)
     runs-on: ubuntu-latest
     container:
-      image: returntocorp/semgrep
+      # Version ÉPINGLÉE. Sans épinglage l'image suit « latest » : le jour où
+      # la ligne de commande change en amont, le scan tombe en erreur d'usage
+      # et ne lit plus une ligne de code — sans que rien ne le signale, un
+      # échec permanent ressemblant à n'importe quel autre échec. C'est ce qui
+      # s'est produit : « semgrep ci » a cessé d'accepter --error et
+      # --severity, et le scanner XSS est resté éteint.
+      image: semgrep/semgrep:1.174.0
     steps:
       - uses: actions/checkout@v4
+      # « scan » et non « ci » : seul « scan » accepte --error et --severity.
+      # « ci » est prévu pour Semgrep AppSec Platform (avec un jeton) et tire
+      # sa configuration du service, pas de la ligne de commande.
       - run: |
-          semgrep ci \
+          semgrep scan \
             --config p/owasp-top-ten \
             --config p/javascript \
             --config p/xss \
             --config p/security-audit \
             --error \
             --severity ERROR \
-            --severity WARNING
+            --severity WARNING \
+            --exclude node_modules \
+            --exclude iphone-app/ios \
+            --metrics off
 
   osv:
     name: 🐛 osv-scanner (CVE dépendances)
