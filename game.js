@@ -315,6 +315,13 @@ const STORAGE_KEY="royaume_v3";
 const STORAGE_PROFILES="royaume_profiles_v1";
 const STORAGE_ACTIVE="royaume_active_v1";
 
+/* Numéro de build, affiché en bas de l'Espace Parent. Sans lui, impossible
+   de savoir quelle version tourne réellement sur un téléphone — et donc de
+   distinguer « la fonctionnalité est cassée » de « le téléphone n'a pas
+   encore la mise à jour ».
+   À bumper avec CACHE_VERSION (sw.js) et le ?v= (index.html). */
+const APP_VERSION='v30';
+
 function loadProfilesDict(){
   try{const d=localStorage.getItem(STORAGE_PROFILES); if(d) return JSON.parse(d)||{};}catch(e){}
   return {};
@@ -2863,7 +2870,8 @@ function renderParent(){
   <div class="card mb-4" style="border-color:rgba(255,255,255,0.08)"><h3 class="fredoka" style="font-size:.85rem;color:#8b7ec8;margin-bottom:8px">Donn\u00e9es</h3>
   <button class="btn-stone btn-small" onclick="exportData()">\u{1F4E4} Exporter (JSON)</button>
   <button class="btn-stone btn-small" onclick="resetData()" style="margin-top:8px;background:rgba(239,68,68,0.15);border-color:rgba(239,68,68,0.3);color:#fca5a5">\u{1F5D1}\uFE0F R\u00e9initialiser</button></div>
-  <button class="btn-stone" onclick="navigate('home')">\u2190 Retour</button>`;
+  <button class="btn-stone" onclick="navigate('home')">\u2190 Retour</button>
+  <p class="sub" style="text-align:center;margin-top:14px;font-size:.72rem;opacity:.7">Version ${APP_VERSION}</p>`;
 }
 
 function copySyncLink(){
