@@ -320,7 +320,7 @@ const STORAGE_ACTIVE="royaume_active_v1";
    distinguer « la fonctionnalité est cassée » de « le téléphone n'a pas
    encore la mise à jour ».
    À bumper avec CACHE_VERSION (sw.js) et le ?v= (index.html). */
-const APP_VERSION='v30';
+const APP_VERSION='v31';
 
 function loadProfilesDict(){
   try{const d=localStorage.getItem(STORAGE_PROFILES); if(d) return JSON.parse(d)||{};}catch(e){}
@@ -519,8 +519,8 @@ function mergeProfiles(a,b){
   // Classe et âge : on garde la valeur renseignée (jamais d'écrasement par null).
   out.grade=(b.grade!=null?b.grade:(a.grade!=null?a.grade:null));
   out.age=(b.age!=null?b.age:(a.age!=null?a.age:null));
-  // Rappel de classe écarté sur un appareil : il l'est sur tous les autres.
-  out.gradeNudgeDismissed=!!(a.gradeNudgeDismissed||b.gradeNudgeDismissed);
+  // « Laisser tout ouvert » choisi sur un appareil vaut pour tous les autres.
+  out.gradeSkipped=!!(a.gradeSkipped||b.gradeSkipped);
   // Déblocages : on garde le plus avancé des deux appareils.
   out.unlocks={};
   for(const k of new Set([...Object.keys(a.unlocks||{}),...Object.keys(b.unlocks||{})])){
@@ -1430,9 +1430,12 @@ async function setName(){
   saveProfilesDict(dict);
   setActiveName(profile.name);
   saveProfile(); // pousse la version fusionnée au cloud (debounced)
-  // Nouveau profil (aucune partie jouée, pas de classe connue) → on demande
-  // l'âge/la classe. Un profil existant n'est jamais réinterrogé.
-  if(profile.grade==null&&!(profile.totalGames>0)){ navigate('gradeAsk'); return }
+  // Pas de classe connue → on la demande, que le profil soit neuf ou non.
+  // L'ancienne règle ne l'exigeait que des profils n'ayant jamais joué : un
+  // enfant inscrit avant l'arrivée des classes n'était donc jamais interrogé,
+  // sa classe restait nulle, et tous les niveaux lui restaient ouverts.
+  // « Je préfère ne pas dire » pose gradeSkipped : on ne redemande plus.
+  if(profile.grade==null&&!profile.gradeSkipped){ navigate('gradeAsk'); return }
   navigate('home');
 }
 
@@ -1474,7 +1477,8 @@ function confirmGrade(){
   navigate('home');
 }
 function skipGrade(){
-  profile.grade=null; profile.age=null;
+  // Choix assumé du parent : on ne repose plus la question.
+  profile.grade=null; profile.age=null; profile.gradeSkipped=true;
   saveProfile();
   track('signup_grade_skipped');
   navigate('home');
@@ -1488,7 +1492,7 @@ function skipGrade(){
    fois, et le parent tranche.
    Renvoie true si la bannière a été posée (l'appelant s'arrête là). */
 function nudgeGradeIfNeeded(){
-  if(profile.grade!=null||profile.gradeNudgeDismissed) return false;
+  if(profile.grade!=null||profile.gradeSkipped) return false;
   if(!(profile.totalGames>0)) return false;      // profil neuf : déjà interrogé à l'inscription
   if(document.getElementById('gradeNudge')) return false;
   const d=document.createElement('div');
@@ -1509,7 +1513,7 @@ function nudgeGradeIfNeeded(){
   return true;
 }
 function dismissGradeNudge(){
-  profile.gradeNudgeDismissed=true;
+  profile.gradeSkipped=true;
   saveProfile();
   const b=document.getElementById('gradeNudge');
   if(b) b.remove();
