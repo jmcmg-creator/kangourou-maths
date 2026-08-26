@@ -76,11 +76,44 @@ PIPER = [
     ('fr_FR-gilles-low',   'fr/fr_FR/gilles/low',   'Piper · Gilles (homme)',   None),
 ]
 def piper():
-    import urllib.request, wave, numpy as np, io
+    import urllib.request, numpy as np
     from piper.voice import PiperVoice
     dossier = os.path.join(RACINE, '.modeles')
     os.makedirs(dossier, exist_ok=True)
     base = 'https://huggingface.co/rhasspy/piper-voices/resolve/main/'
+
+    # On détecte la forme de l'API UNE FOIS, sur la signature. La version
+    # actuelle (piper-tts 1.3+) a fait de synthesize() un générateur et déplacé
+    # le numéro de locuteur dans un objet de configuration. L'appeler à
+    # l'ancienne ne lève rien sur le moment : on récupère un générateur qu'on
+    # n'itère jamais, donc aucun son, et l'erreur ne surgit que bien plus loin.
+    #
+    # Surtout : on n'enveloppe PAS la boucle dans un try/except TypeError.
+    # Un tel filet attrape aussi les erreurs venant de l'INTÉRIEUR du
+    # générateur — qui n'est évalué qu'à l'itération — et bascule en silence
+    # sur un chemin de secours, en masquant la vraie cause.
+    import inspect
+    recente = 'syn_config' in inspect.signature(PiperVoice.synthesize).parameters
+
+    def parler(v, texte, locuteur):
+        if recente:
+            from piper.config import SynthesisConfig
+            cfg = SynthesisConfig(speaker_id=locuteur) if locuteur is not None else None
+            bouts, sr = [], None
+            for ch in v.synthesize(texte, cfg):
+                a = getattr(ch, 'audio_float_array', None)
+                if a is None:
+                    a = np.frombuffer(ch.audio_int16_bytes, dtype='<i2').astype('float32') / 32768.0
+                bouts.append(np.asarray(a, dtype='float32'))
+                sr = ch.sample_rate
+            if not bouts:
+                raise RuntimeError('synthesize() n\'a produit aucun morceau')
+            return np.concatenate(bouts), sr
+        # Versions antérieures : flux d'octets bruts.
+        kw = {'speaker_id': locuteur} if locuteur is not None else {}
+        brut = b''.join(v.synthesize_stream_raw(texte, **kw))
+        return np.frombuffer(brut, dtype='<i2').astype('float32') / 32768.0, v.config.sample_rate
+
     for cle, chemin, etiquette, locuteur in PIPER:
         def un(cle=cle, chemin=chemin, etiquette=etiquette, locuteur=locuteur):
             onnx = os.path.join(dossier, cle + '.onnx')
@@ -90,17 +123,12 @@ def piper():
                 if not os.path.exists(dest):
                     urllib.request.urlretrieve(url, dest)
             v = PiperVoice.load(onnx, config_path=conf)
-            sr = v.config.sample_rate
-            morceaux = []
+            morceaux, sr = [], None
             for p in PHRASES:
-                tampon = io.BytesIO()
-                with wave.open(tampon, 'wb') as w:
-                    kw = {'speaker_id': locuteur} if locuteur is not None else {}
-                    v.synthesize(p, w, **kw)
-                tampon.seek(0)
-                with wave.open(tampon, 'rb') as w:
-                    brut = np.frombuffer(w.readframes(w.getnframes()), dtype='<i2')
-                morceaux.append(brut.astype('float32') / 32768.0)
+                a, sr = parler(v, p, locuteur)
+                if a is None or len(a) == 0:
+                    raise RuntimeError(f'aucun son produit pour « {p} »')
+                morceaux.append(a)
             suffixe = '' if locuteur is None else f'-{locuteur}'
             enregistrer(f'piper-{cle}{suffixe}', etiquette, 'MIT', morceaux, sr)
         essayer(etiquette, un)
