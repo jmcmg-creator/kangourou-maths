@@ -320,7 +320,7 @@ const STORAGE_ACTIVE="royaume_active_v1";
    distinguer « la fonctionnalité est cassée » de « le téléphone n'a pas
    encore la mise à jour ».
    À bumper avec CACHE_VERSION (sw.js) et le ?v= (index.html). */
-const APP_VERSION='v39';
+const APP_VERSION='v40';
 
 function loadProfilesDict(){
   try{const d=localStorage.getItem(STORAGE_PROFILES); if(d) return JSON.parse(d)||{};}catch(e){}
@@ -3663,6 +3663,58 @@ function _direMaintenant(texte,opts,passer){
   }catch(e){passer()}
 }
 
+/* ════════ VOIX ENREGISTRÉE ════════
+   La synthèse du navigateur a un plafond : même en « premium », une voix
+   Apple reste assemblée à partir de morceaux enregistrés, et ça s'entend.
+   Aucun réglage de débit ne fait franchir ce plafond.
+
+   Pour tout ce que l'app dit et qui est CONNU D'AVANCE — les cent lignes des
+   tables de multiplication, les poèmes — on n'a pas besoin de synthèse du
+   tout. On enregistre une fois, avec un vrai modèle neuronal (Kokoro-82M,
+   licence Apache 2.0, tourne sur un simple processeur), et on livre les
+   fichiers avec l'app. Résultat : la meilleure qualité disponible, hors
+   connexion, sans clé d'API, sans un centime, et sans rien calculer sur le
+   téléphone — donc sans toucher à la batterie.
+
+   La synthèse reste le filet : si un fichier manque, l'app parle quand même.
+
+   UN SEUL ÉLÉMENT <audio>, RÉUTILISÉ. iOS n'autorise la lecture que si elle
+   découle d'un geste de l'utilisateur. Fabriquer un nouvel élément pour
+   chaque clip casse cette filiation : la 1re ligne d'une table se dirait, et
+   les neuf suivantes seraient refusées en silence. En réutilisant le même
+   élément, toute la récitation hérite du premier appui. */
+let _lecteurVoix=null;
+function _lecteur(){
+  if(_lecteurVoix) return _lecteurVoix;
+  try{_lecteurVoix=new Audio();_lecteurVoix.preload='auto'}catch(e){_lecteurVoix=null}
+  return _lecteurVoix;
+}
+// Les cent clips des tables existent tous ; en dehors de 1..10, il n'y a rien.
+function _fichierTable(a,b){
+  return (a>=1&&a<=10&&b>=1&&b<=10)?('audio/voix/t-'+a+'-'+b+'.mp3'):null;
+}
+function _jouerFichier(url,ok,echec){
+  const a=_lecteur();
+  if(!a||!url) return echec();
+  let fini=false;
+  const fin=(bon)=>{
+    if(fini)return;fini=true;
+    a.onended=null;a.onerror=null;
+    bon?ok():echec();
+  };
+  a.onended=()=>fin(true);
+  a.onerror=()=>fin(false);          // fichier absent → on retombe sur la synthèse
+  try{a.src=url;a.currentTime=0}catch(e){return fin(false)}
+  try{
+    const p=a.play();
+    if(p&&p.catch) p.catch(()=>fin(false));
+  }catch(e){fin(false)}
+}
+function _arreterFichier(){
+  if(!_lecteurVoix) return;
+  try{_lecteurVoix.onended=null;_lecteurVoix.onerror=null;_lecteurVoix.pause()}catch(e){}
+}
+
 /* Découpe un texte en souffles. Réciter un poème d'un seul tenant donne une
    diction plate : la synthèse ne respire nulle part. Un vers par phrase, avec
    un court silence entre eux, c'est déjà de la récitation. */
@@ -3706,6 +3758,7 @@ function speakText(text){
 }
 function stopSpeaking(){
   _suiteEnCours++;                            // invalide une suite en cours
+  _arreterFichier();                          // et coupe l'enregistrement en cours
   if('speechSynthesis' in window){try{speechSynthesis.cancel()}catch(e){}}
 }
 
@@ -5332,7 +5385,10 @@ function _voixDispo(){return _memVoice&&('speechSynthesis' in window)}
 function direMulti(a,b,fin){
   if(!_voixDispo()){if(fin)setTimeout(fin,900);return}
   stopSpeaking();
-  _prononcer(a+' fois '+b+', égale '+(a*b)+'.',{rate:0.92},fin);
+  // L'enregistrement d'abord — c'est lui qui sonne juste. La synthèse ne sert
+  // que si le fichier manque, pour qu'aucune table ne devienne muette.
+  const secours=()=>_prononcer(a+' fois '+b+', égale '+(a*b)+'.',{rate:0.92},fin);
+  _jouerFichier(_fichierTable(a,b),()=>{if(fin)fin()},secours);
 }
 
 function renderTablesHome(){
@@ -5803,11 +5859,9 @@ function memFlip(i){
     document.querySelectorAll('.mem-card')[a].classList.add('matched');
     document.querySelectorAll('.mem-card')[b2].classList.add('matched');
     const op=M.cards[a].op;
-    // Même moteur que les tables : la voix est choisie, pas subie.
-    if(op&&_memVoice){
-      stopSpeaking();
-      _prononcer(op[0]+' fois '+op[1]+', '+(op[0]*op[1])+'.',{rate:0.98});
-    }
+    // Même voix enregistrée que les tables : une paire trouvée s'entend
+    // exactement comme la ligne qu'on vient d'apprendre.
+    if(op&&_memVoice) direMulti(op[0],op[1]);
     if(M.found===M.cards.length/2)memWin();
   }else{
     // Deux cartes qui ne vont pas ensemble : c'est une erreur, et elle se
