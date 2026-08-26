@@ -82,6 +82,8 @@ jobs:
       # auteur — c'est ainsi que trivy-action et kics-github-action ont été
       # compromis. Tant que ce n'est pas fait, cette passe reste informative
       # plutôt que d'immobiliser toutes les livraisons.
+      # L'outillage est prêt : docs/EPINGLER-ACTIONS.md, puis
+      #   node scripts/epingler-actions.mjs
       - name: Outillage du dépôt (informatif)
         continue-on-error: true
         run: |
@@ -106,6 +108,9 @@ jobs:
       - uses: actions/setup-node@v4
         with: { node-version: 20 }
       - run: node scripts/test-echappement.mjs
+      # Même famille : un contrôle purement local, sans réseau, sur une panne
+      # qui ne se voit pas tant qu'on a du réseau (cache hors connexion cassé).
+      - run: node scripts/test-versions.mjs
 
   osv:
     name: 🐛 osv-scanner (CVE dépendances)
