@@ -1,0 +1,130 @@
+name: Comparer les voix françaises
+
+# Génère les MÊMES phrases avec plusieurs modèles de synthèse vocale, puis
+# dépose les MP3 dans le dépôt pour qu'on puisse les écouter et choisir.
+#
+# POURQUOI ICI ET PAS EN LOCAL
+# Les poids de ces modèles vivent sur Hugging Face, que le réseau de la session
+# Claude Code ne peut pas joindre (403 au proxy). Le runner GitHub sort
+# librement. Ce workflow est donc la seule voie pour comparer autre chose que
+# ce qui est publié en GitHub Release.
+#
+# COMMENT LE DÉCLENCHER
+#   - en poussant une modification de scripts/comparer-voix.py (la voie de
+#     Claude Code : son jeton ne peut pas lancer un workflow à la main) ;
+#   - ou par le bouton « Run workflow ».
+#
+# UN JOB PAR MOTEUR, VOLONTAIREMENT : une bibliothèque qui ne s'installe pas ne
+# doit pas emporter toute la comparaison. Mieux vaut quatre voix sur six que
+# rien du tout.
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - 'scripts/comparer-voix.py'
+      - '.github/workflows/comparer-voix.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  voix:
+    name: ${{ matrix.moteur }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - moteur: piper
+            paquets: piper-tts
+          - moteur: mms
+            paquets: transformers torch --extra-index-url https://download.pytorch.org/whl/cpu
+          - moteur: melo
+            paquets: git+https://github.com/myshell-ai/MeloTTS.git
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.ref_name }}
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Outils communs
+        run: pip install --quiet numpy lameenc
+
+      - name: Installer ${{ matrix.moteur }}
+        run: pip install --quiet ${{ matrix.paquets }}
+
+      - name: Dictionnaire de découpage (MeloTTS seulement)
+        if: matrix.moteur == 'melo'
+        run: python -m unidic download || true
+
+      - name: Générer
+        run: python scripts/comparer-voix.py ${{ matrix.moteur }}
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: voix-${{ matrix.moteur }}
+          path: echantillons/
+          if-no-files-found: warn
+
+  rassembler:
+    name: Rassembler et déposer dans le dépôt
+    needs: voix
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.ref_name }}
+
+      - uses: actions/download-artifact@v4
+        with:
+          path: recolte
+          merge-multiple: true
+
+      - name: Déposer les échantillons
+        run: |
+          mkdir -p echantillons
+          # Les manifestes des différents jobs portent le même nom : on ne
+          # garde donc que les MP3 et on reconstruit la liste ici, sinon le
+          # dernier téléchargé écraserait les voix de tous les autres.
+          find recolte -name '*.mp3' -exec cp {} echantillons/ \; 2>/dev/null || true
+          rm -rf recolte
+          n=$(ls echantillons/*.mp3 2>/dev/null | wc -l)
+          if [ "$n" -eq 0 ]; then
+            echo "::error::Aucun échantillon produit — aucun moteur n'a abouti."
+            exit 1
+          fi
+          python - <<'PY'
+          import json, os
+          d = 'echantillons'
+          fichiers = sorted(f for f in os.listdir(d) if f.endswith('.mp3'))
+          json.dump([{'fichier': f, 'octets': os.path.getsize(os.path.join(d, f))}
+                     for f in fichiers], open(os.path.join(d, 'index.json'), 'w'),
+                    ensure_ascii=False, indent=2)
+          print(f'{len(fichiers)} voix : ' + ', '.join(fichiers))
+          PY
+          git config user.name  'github-actions[bot]'
+          git config user.email 'github-actions[bot]@users.noreply.github.com'
+          git add echantillons
+          git diff --cached --quiet && { echo "rien de neuf"; exit 0; }
+          git commit -m "Échantillons de voix françaises générés en CI
+
+          Les poids vivent sur Hugging Face, inaccessible depuis la session
+          Claude Code. Ce dépôt d'échantillons est la seule façon de les
+          écouter et de choisir."
+          git push origin HEAD:${{ github.ref_name }}
+
+      - name: Récapitulatif
+        run: |
+          {
+            echo "## Voix générées"
+            echo
+            for f in echantillons/*.mp3; do
+              echo "- \`$(basename "$f")\` — $(( $(stat -c%s "$f") / 1024 )) Ko"
+            done
+          } >> "$GITHUB_STEP_SUMMARY"
