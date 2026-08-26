@@ -320,7 +320,7 @@ const STORAGE_ACTIVE="royaume_active_v1";
    distinguer « la fonctionnalité est cassée » de « le téléphone n'a pas
    encore la mise à jour ».
    À bumper avec CACHE_VERSION (sw.js) et le ?v= (index.html). */
-const APP_VERSION='v35';
+const APP_VERSION='v36';
 
 function loadProfilesDict(){
   try{const d=localStorage.getItem(STORAGE_PROFILES); if(d) return JSON.parse(d)||{};}catch(e){}
@@ -2403,7 +2403,16 @@ function questChestAward(){
 function renderGame(){
   // Anti "réponse pré-surlignée" : reset de selected dès que l'index change
   // (équivalent useEffect sur questionIndex).
-  if(state._qIdxRendered!==state.idx){state._qIdxRendered=state.idx;state.selected=null}
+  // Garde-fou iOS : au changement de question, on efface la sélection, sinon
+  // le survol collant de WKWebView laisse une réponse préchauffée en jaune.
+  // Mais si la question a DÉJÀ été répondue — on est en train de la relire —
+  // on restaure la réponse enregistrée : sans ça l'écran redevient jouable
+  // et l'enfant peut se recompter des points.
+  if(state._qIdxRendered!==state.idx){
+    state._qIdxRendered=state.idx;
+    const dejaRepondue=state.results&&state.results[state.idx];
+    state.selected=dejaRepondue?dejaRepondue.choice:null;
+  }
   let ex=state.exercises[state.idx];
   if(!ex) return finishGame();
   // Défense en profondeur : si un exo invalide s'est glissé dans la partie
@@ -2637,6 +2646,10 @@ function selectMapAnswer(id){
 
 function selectAnswer(i){
   if(state.selected!==null||state.gameOver) return;
+  // Une question déjà répondue ne se rejoue pas, quel que soit le chemin par
+  // lequel on arrive ici — l'état de l'écran ne doit pas être la seule
+  // protection contre un double comptage.
+  if(state.results&&state.results[state.idx]) return;
   if(state.timerID){clearInterval(state.timerID);state.timerID=null}
   state.selected=i;
   const ex=state.exercises[state.idx];
@@ -2693,9 +2706,19 @@ function showExplanation(ex,correct){
     :`<span class="xp-perte">\u2212${xpMalus(ex)} XP</span>`;
   const isLast=state.gameOver||state.idx>=state.exercises.length-1;
   // Bonne r\u00e9ponse : passage auto (message discret). Mauvaise : bouton Suivant.
+  // Retour en arrière : possible dès qu'une question précédente a été
+  // répondue. Sans lui, un énoncé lu trop vite était définitivement perdu.
+  const peutRevenir=state.idx>0&&!!state.results[state.idx-1];
+  const retourHTML=peutRevenir
+    ?`<button class="btn-stone" style="width:100%;margin-top:10px" onclick="revoirQuestion(${state.idx-1})">\u2190 Revoir la question pr\u00e9c\u00e9dente</button>`:'';
+  // Le bouton n'apparaît QUE sur une mauvaise réponse. Sur une bonne, l'app
+  // enchaîne toute seule en 1,6 s : le bouton s'afficherait puis
+  // disparaîtrait avant qu'un enfant ait le temps de le toucher — pire que
+  // pas de bouton du tout. Et c'est après une erreur qu'on a besoin de
+  // relire, pas après une réussite.
   const footerHTML=correct
     ?`<p class="sub qp-unlock" style="margin-top:16px;font-style:italic">${isLast?'R\u00e9sultats dans un instant\u2026':'\u{1F513} Tu d\u00e9bloques la question suivante\u2026'}</p>`
-    :`<button class="btn-fire mt-6" onclick="nextQuestion()">${isLast?'Voir mes r\u00e9sultats \u2192':'Question suivante \u2192'}</button>`;
+    :`<button class="btn-fire mt-6" onclick="nextQuestion()">${isLast?'Voir mes r\u00e9sultats \u2192':'Question suivante \u2192'}</button>`+retourHTML;
   el.innerHTML=`<div class="card fade-in mt-6">
     <div class="row gap-2 mb-2"><span style="font-size:1.5rem">${correct?'\u2705':'\u274C'}</span>
     <h4 class="fredoka" style="font-size:1.1rem;font-weight:700;color:${correct?'#22c55e':'#ef4444'};margin:0">${correct?'Excellent !':'Pas cette fois\u2026'}</h4>
@@ -2719,9 +2742,30 @@ function showExplanation(ex,correct){
 }
 function toggleDetail(){state.detailOpen=!state.detailOpen;const p=$('detailPanel');if(p)p.classList.toggle('hidden');const a=document.querySelector('.detail-link');if(a)a.textContent=(state.detailOpen?'Masquer':'Voir')+' la m\u00e9thode pas \u00e0 pas \u2192'}
 
+/* Revenir sur une question déjà répondue.
+   Il n'y avait aucun moyen de relire un énoncé ou un corrigé : une fois
+   « Question suivante » touché, c'était perdu jusqu'à l'écran de résultats.
+   La relecture est en LECTURE SEULE — la réponse enregistrée est réaffichée,
+   les boutons restent désactivés, rien n'est recompté. */
+function revoirQuestion(i){
+  if(i<0||i>=state.exercises.length) return;
+  const r=state.results[i];
+  if(!r) return;                       // pas encore répondue : rien à revoir
+  if(state.autoNextID){clearTimeout(state.autoNextID);state.autoNextID=null}
+  state.idx=i;
+  state.selected=r.choice;
+  state.detailOpen=false;
+  renderGame();
+  showExplanation(state.exercises[i], r.correct);
+  window.scrollTo(0,0);
+}
+
 function nextQuestion(){
   if(state.autoNextID){clearTimeout(state.autoNextID);state.autoNextID=null}
   if(state.gameOver||state.idx>=state.exercises.length-1) return finishGame();
+  // Si la question suivante a déjà été répondue, c'est qu'on est en train de
+  // relire : on la réaffiche telle quelle au lieu de la rouvrir.
+  if(state.results[state.idx+1]) return revoirQuestion(state.idx+1);
   state.idx++;state.selected=null;state.timer=60;state.detailOpen=false;
   navigate('game');
 }
