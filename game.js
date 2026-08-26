@@ -320,7 +320,7 @@ const STORAGE_ACTIVE="royaume_active_v1";
    distinguer « la fonctionnalité est cassée » de « le téléphone n'a pas
    encore la mise à jour ».
    À bumper avec CACHE_VERSION (sw.js) et le ?v= (index.html). */
-const APP_VERSION='v38';
+const APP_VERSION='v39';
 
 function loadProfilesDict(){
   try{const d=localStorage.getItem(STORAGE_PROFILES); if(d) return JSON.parse(d)||{};}catch(e){}
@@ -3375,11 +3375,65 @@ function renderParent(){
       +(list.length>0?'<div style="margin-top:12px">'+items+'</div>':'<p class="sub" style="margin-top:10px;font-style:italic">Aucun exercice personnalisé pour le moment.</p>')
     +'</div>';
   })()}
+  ${blocVoix()}
   <div class="card mb-4" style="border-color:rgba(255,255,255,0.08)"><h3 class="fredoka" style="font-size:.85rem;color:#8b7ec8;margin-bottom:8px">Donn\u00e9es</h3>
   <button class="btn-stone btn-small" onclick="exportData()">\u{1F4E4} Exporter (JSON)</button>
   <button class="btn-stone btn-small" onclick="resetData()" style="margin-top:8px;background:rgba(239,68,68,0.15);border-color:rgba(239,68,68,0.3);color:#fca5a5">\u{1F5D1}\uFE0F R\u00e9initialiser</button></div>
   <button class="btn-stone" onclick="navigate('home')">\u2190 Retour</button>
   <p class="sub" style="text-align:center;margin-top:14px;font-size:.72rem;opacity:.7">Version ${APP_VERSION}</p>`;
+}
+
+/* ── Réglage de la voix (Espace Parent) ───────────────────────────────
+   Les voix installées ne sont pas les mêmes d'un appareil à l'autre, et la
+   « meilleure » se juge à l'oreille. On liste donc ce qui existe ici, avec un
+   bouton pour écouter — plutôt que de deviner à la place du parent.
+
+   Le message sur les voix rehaussées n'est pas un détail : sur iPhone, les
+   voix livrées d'origine sont les versions COMPACTES, calculées pour tenir en
+   quelques mégaoctets. La version rehaussée de la même voix se télécharge
+   gratuitement en deux minutes et change tout. C'est, de loin, le plus grand
+   gain de naturel disponible — bien plus que n'importe quel réglage de débit. */
+function blocVoix(){
+  const fr=voixFrancaises();
+  const cadre='<div class="card mb-4" style="border-color:#60a5fa">'
+    +'<h3 class="fredoka" style="font-size:.85rem;color:#60a5fa;margin-bottom:8px;letter-spacing:.1em;text-transform:uppercase">🔊 La voix de l\'app</h3>';
+  if(!('speechSynthesis' in window)){
+    return cadre+'<p class="sub" style="margin:0">Ce navigateur ne sait pas lire à voix haute.</p></div>';
+  }
+  if(!fr.length){
+    return cadre+'<p class="sub" style="margin:0">Aucune voix française trouvée sur cet appareil. '
+      +'Sur iPhone : Réglages → Accessibilité → Contenu énoncé → Voix → Français.</p></div>';
+  }
+  const actuelle=_pickFrenchVoice();
+  const options=fr.map(v=>{
+    const q=/premium/i.test(v.voiceURI||'')?' — premium'
+      :/enhanced/i.test(v.voiceURI||'')?' — rehaussée'
+      :/super-compact|compact/i.test(v.voiceURI||'')?' — compacte'
+      :'';
+    const sel=actuelle&&v.voiceURI===actuelle.voiceURI?' selected':'';
+    return '<option value="'+esc(v.voiceURI)+'"'+sel+'>'+esc(v.name)+' ('+esc(v.lang)+')'+q+'</option>';
+  }).join('');
+  // Une seule voix, compacte : c'est exactement le cas où le conseil compte.
+  const queCompact=fr.every(v=>/compact/i.test(v.voiceURI||''));
+  return cadre
+    +'<p class="sub" style="margin-bottom:8px">Sert aux poèmes, aux tables de multiplication et au Memory.</p>'
+    +'<select id="voixSelect" class="btn-stone btn-small" style="width:100%;text-align:left" onchange="choisirVoix(this.value);testerVoix()">'+options+'</select>'
+    +'<button class="btn-stone btn-small" style="margin-top:8px" onclick="testerVoix()">▶️ Écouter cette voix</button>'
+    +(queCompact
+      ? '<div style="margin-top:12px;padding:10px;border-radius:10px;background:rgba(251,191,36,.10);border:1px solid rgba(251,191,36,.3)">'
+        +'<p style="color:#fbbf24;font-family:Fredoka,sans-serif;font-size:.85rem;margin:0 0 6px">💡 Une voix bien plus naturelle, gratuite, en 2 minutes</p>'
+        +'<p class="sub" style="margin:0">Cet appareil n\'a que des voix <b>compactes</b> — les versions allégées, livrées d\'origine. '
+        +'La même voix existe en version <b>rehaussée</b>, nettement plus humaine :<br>'
+        +'<b>Réglages → Accessibilité → Contenu énoncé → Voix → Français</b>, puis toucher une voix pour la télécharger. '
+        +'Elle apparaîtra ici juste après.</p></div>'
+      : '')
+  +'</div>';
+}
+function testerVoix(){
+  stopSpeaking();
+  // Une phrase parlée et un calcul : les deux usages réels de la voix.
+  const qui=(profile&&profile.name)?esc(profile.name):'toi';
+  direSuite(['Bonjour '+qui+' !','7 fois 8, égale 56.'],{rate:0.95,pause:300});
 }
 
 function copySyncLink(){
@@ -3461,31 +3515,199 @@ const FABLES=[
 // Retire les balises HTML avant lecture/comparaison (les poèmes ont des <br>).
 function stripHtmlText(t){return String(t).replace(/<br\s*\/?>/gi,'\n').replace(/<[^>]+>/g,'')}
 
-// Choisit la meilleure voix française disponible sur le navigateur/OS courant.
+/* ════════ LA VOIX ════════
+   Tout ce que l'app prononce passe par ici : récitations de poèmes, tables de
+   multiplication, Memory. Trois défauts rendaient ces voix mécaniques, et ils
+   étaient bien réels — vérifiés dans le code, pas supposés :
+
+   1. LES TABLES NE CHOISISSAIENT AUCUNE VOIX. Elles posaient lang='fr-FR' et
+      s'en remettaient au réglage du système, qui sert la voix « compacte » —
+      la plus robotique du lot. Les poèmes, eux, choisissaient. D'où l'écart.
+
+   2. getVoices() REND SOUVENT UNE LISTE VIDE au premier appel : les voix se
+      chargent après coup et le navigateur prévient par « voiceschanged ».
+      Personne n'écoutait cet événement. La toute première lecture partait donc
+      sans voix choisie — celle qu'on entend en découvrant la fonction.
+
+   3. Une voix Apple existe en plusieurs qualités, et cela se lit dans son
+      voiceURI : compact < enhanced < premium. Choisir par le NOM (« Thomas »)
+      ne dit rien de la qualité et pouvait attraper la pire des trois.
+
+   Rien ici ne dépend du réseau ni d'une clé d'API : ce sont les voix déjà
+   installées sur l'appareil, simplement choisies et pilotées correctement.
+*/
+
+const VOIX_CLE='royaume_voix';
+let _voixListe=null;
+let _voixChoisieURI='';
+try{_voixChoisieURI=localStorage.getItem(VOIX_CLE)||''}catch(e){}
+
+function _voixDisponibles(){
+  if(!('speechSynthesis' in window)) return [];
+  // On ne met en cache que si la liste est NON VIDE : mémoriser une liste vide
+  // arrivée trop tôt fige le problème qu'on cherche justement à éviter.
+  if(_voixListe&&_voixListe.length) return _voixListe;
+  const l=speechSynthesis.getVoices()||[];
+  if(l.length) _voixListe=l;
+  return l;
+}
+if('speechSynthesis' in window){
+  try{speechSynthesis.addEventListener('voiceschanged',()=>{_voixListe=null;_voixDisponibles()})}catch(e){}
+  // Certains navigateurs ne déclenchent voiceschanged que si on a demandé la
+  // liste au moins une fois. On amorce donc la pompe au chargement.
+  try{_voixDisponibles()}catch(e){}
+}
+
+/* Note une voix française. Le critère décisif est la QUALITÉ inscrite dans le
+   voiceURI, pas le prénom : « Thomas » compact et « Thomas » premium portent
+   le même nom et ne sonnent pas du tout pareil. */
+function _noterVoix(v){
+  const uri=String(v.voiceURI||v.name||'').toLowerCase();
+  const nom=String(v.name||'').toLowerCase();
+  const lang=String(v.lang||'').replace('_','-');
+  let n=0;
+  // Le français de France d'abord : Amélie et Aurélie sont canadiennes, très
+  // bonnes mais avec un accent qui déroute un enfant scolarisé en France.
+  if(/^fr-FR/i.test(lang)) n+=100;
+  else if(/^fr/i.test(lang)) n+=55;
+  else return -1;                       // pas une voix française : écartée
+  // Qualité déclarée par le système.
+  if(uri.includes('premium')) n+=50;
+  else if(uri.includes('enhanced')) n+=40;
+  else if(uri.includes('siri')||uri.includes('neural')) n+=38;
+  else if(uri.includes('super-compact')) n-=40;
+  else if(uri.includes('compact')) n-=25;
+  // Chrome/Android : la voix « Google français » est nettement au-dessus.
+  if(nom.includes('google')) n+=30;
+  // Une voix locale ne se coupe pas au milieu d'un vers si le réseau faiblit.
+  if(v.localService) n+=10;
+  return n;
+}
+
+// Les voix françaises, de la meilleure à la moins bonne.
+function voixFrancaises(){
+  return _voixDisponibles()
+    .map(v=>({v,n:_noterVoix(v)}))
+    .filter(x=>x.n>=0)
+    .sort((a,b)=>b.n-a.n)
+    .map(x=>x.v);
+}
+
+// La voix retenue : celle que le parent a choisie si elle existe encore sur
+// l'appareil, sinon la mieux notée.
 function _pickFrenchVoice(){
-  if(!('speechSynthesis' in window)) return null;
-  const all=speechSynthesis.getVoices()||[];
-  const fr=all.filter(v=>/^fr/i.test(v.lang));
+  const fr=voixFrancaises();
   if(!fr.length) return null;
-  // Préférences (les voix les plus naturelles sur iOS / macOS / Android)
-  const prefs=['Thomas','Aurélie','Audrey','Marie','Daniel','Amelie','Amélie','Google français'];
-  for(const p of prefs){const v=fr.find(x=>x.name.includes(p));if(v) return v;}
-  // À défaut : la première voix locale (souvent meilleure que les voix réseau).
-  return fr.find(v=>v.localService)||fr[0];
+  if(_voixChoisieURI){
+    const v=fr.find(x=>x.voiceURI===_voixChoisieURI)||fr.find(x=>x.name===_voixChoisieURI);
+    if(v) return v;
+  }
+  return fr[0];
+}
+function choisirVoix(uri){
+  _voixChoisieURI=uri||'';
+  try{uri?localStorage.setItem(VOIX_CLE,uri):localStorage.removeItem(VOIX_CLE)}catch(e){}
+}
+
+/* ── Prononcer ────────────────────────────────────────────────────────
+   Un seul point de passage, pour que personne ne puisse à nouveau oublier
+   de poser la voix. `fin` est appelé quand la phrase est terminée. */
+/* Les voix se chargent après la page. Si on parle avant qu'elles n'arrivent,
+   il n'y a rien à choisir et le système sert sa voix par défaut — la moins
+   bonne. C'est précisément la PREMIÈRE lecture, celle sur laquelle on se fait
+   une opinion. On patiente donc un court instant plutôt que de mal démarrer ;
+   au-delà, on parle quand même : mieux vaut une voix moyenne que le silence. */
+let _voixDejaAttendues=false;
+function _quandLesVoixSontLa(suite){
+  // On n'attend QU'UNE FOIS dans la vie de l'app. Sans ce garde-fou, un
+  // appareil sans voix française retardait chaque phrase de sept dixièmes de
+  // seconde — y compris entre deux vers d'un poème, ce qui hachait la
+  // récitation bien plus sûrement qu'une voix médiocre.
+  if(_voixDejaAttendues||!('speechSynthesis' in window)||voixFrancaises().length) return suite();
+  let fait=false;
+  const go=()=>{if(fait)return;fait=true;_voixDejaAttendues=true;suite()};
+  try{speechSynthesis.addEventListener('voiceschanged',()=>{_voixListe=null;go()},{once:true})}catch(e){}
+  let essais=0;
+  const revoir=()=>{
+    if(fait)return;
+    if(voixFrancaises().length||++essais>12) return go();
+    setTimeout(revoir,60);
+  };
+  setTimeout(revoir,60);
+}
+
+function _prononcer(texte,opts,fin){
+  opts=opts||{};
+  if(!('speechSynthesis' in window)){if(fin)setTimeout(fin,600);return}
+  let passe=false;
+  const passer=()=>{if(passe)return;passe=true;if(fin)fin()};
+  _quandLesVoixSontLa(()=>_direMaintenant(texte,opts,passer));
+  // Filet : sur un appareil où l'API existe sans aucune voix installée,
+  // speak() ne dit rien et ne déclenche jamais onend. On avance quand même.
+  if(fin)setTimeout(passer,Math.max(2500,String(texte).length*90));
+}
+
+function _direMaintenant(texte,opts,passer){
+  try{
+    const u=new SpeechSynthesisUtterance(String(texte));
+    u.lang='fr-FR';
+    // 0.8 traînait et donnait ce débit d'automate. 0.95 reste très lisible
+    // pour un enfant tout en gardant une ligne mélodique naturelle.
+    u.rate=opts.rate!=null?opts.rate:0.95;
+    u.pitch=opts.pitch!=null?opts.pitch:1;
+    u.volume=1;
+    const v=_pickFrenchVoice();
+    if(v) u.voice=v;
+    u.onend=passer;u.onerror=passer;
+    speechSynthesis.speak(u);
+  }catch(e){passer()}
+}
+
+/* Découpe un texte en souffles. Réciter un poème d'un seul tenant donne une
+   diction plate : la synthèse ne respire nulle part. Un vers par phrase, avec
+   un court silence entre eux, c'est déjà de la récitation. */
+function _souffles(texte){
+  return String(texte)
+    .split(/\n+/)
+    .map(l=>l.replace(/\s+/g,' ').trim())
+    .filter(Boolean)
+    // Un vers sans ponctuation finale se termine sur une intonation qui reste
+    // en suspens. La virgule ajoutée referme la ligne sans en faire une phrase.
+    .map(l=>/[.!?…,;:]$/.test(l)?l:l+',');
+}
+
+/* Enchaîne des phrases avec un silence entre chacune. On enchaîne sur la FIN
+   réelle de la phrase précédente, jamais sur un minuteur : la durée dépend de
+   la voix installée, et un minuteur fixe finit toujours par couper la parole. */
+let _suiteEnCours=0;
+function direSuite(morceaux,opts,fin){
+  opts=opts||{};
+  const jeton=++_suiteEnCours;
+  const pause=opts.pause!=null?opts.pause:260;
+  let i=0;
+  const suivant=()=>{
+    if(jeton!==_suiteEnCours) return;         // une autre lecture a pris la main
+    if(i>=morceaux.length){if(fin)fin();return}
+    const m=morceaux[i++];
+    if(opts.avant) opts.avant(i-1);
+    _prononcer(m,opts,()=>{
+      if(jeton!==_suiteEnCours) return;
+      setTimeout(suivant,pause);
+    });
+  };
+  try{speechSynthesis.cancel()}catch(e){}
+  setTimeout(suivant,60);
 }
 
 function speakText(text){
   if(!('speechSynthesis' in window)){alert('Synthèse vocale non disponible sur ce navigateur');return}
-  speechSynthesis.cancel();
-  const u=new SpeechSynthesisUtterance(stripHtmlText(text));
-  u.lang='fr-FR';
-  u.rate=0.82;     // un peu plus lent pour la poésie
-  u.pitch=1.05;    // légèrement plus chaleureux
-  const v=_pickFrenchVoice();
-  if(v) u.voice=v;
-  speechSynthesis.speak(u);
+  // Un poème se dit vers par vers, un peu plus posément qu'une consigne.
+  direSuite(_souffles(stripHtmlText(text)),{rate:0.88,pause:300});
 }
-function stopSpeaking(){if('speechSynthesis' in window)speechSynthesis.cancel()}
+function stopSpeaking(){
+  _suiteEnCours++;                            // invalide une suite en cours
+  if('speechSynthesis' in window){try{speechSynthesis.cancel()}catch(e){}}
+}
 
 // Lecteur audio unifié : MP3 studio si disponible (f.audioUrl), sinon
 // synthèse vocale du navigateur. Géré via un singleton <audio>.
@@ -5101,22 +5323,16 @@ function tableApprise(n){const s=tablesStats()[n];return !!(s&&s.sansFaute)}
 /* La voix est partagée avec le Memory : un seul réglage, un seul endroit où
    la couper. Sans elle, tout le reste continue de fonctionner. */
 function _voixDispo(){return _memVoice&&('speechSynthesis' in window)}
+/* « 3 fois 4 égale 12 » sans ponctuation se dit d'une traite, sur un ton qui
+   ne retombe jamais — c'est ce qui sonne mécanique. La virgule marque le temps
+   d'arrêt qu'un maître laisse avant le résultat, et le point fait redescendre
+   la voix à la fin. Deux caractères, et la phrase s'entend autrement.
+   Tout passe désormais par _prononcer(), qui pose la voix : l'oubli d'origine
+   ne peut plus se reproduire ici. */
 function direMulti(a,b,fin){
   if(!_voixDispo()){if(fin)setTimeout(fin,900);return}
-  let passe=false;
-  const passer=()=>{if(passe||!fin)return;passe=true;fin()};
-  try{
-    speechSynthesis.cancel();
-    const u=new SpeechSynthesisUtterance(a+' fois '+b+' égale '+(a*b));
-    u.lang='fr-FR';u.rate=0.8;
-    u.onend=passer;u.onerror=passer;
-    speechSynthesis.speak(u);
-  }catch(e){}
-  // Filet de sécurité. Sur un appareil où l'API existe mais où AUCUNE voix
-  // n'est installée, speak() ne dit rien et ne déclenche jamais onend : la
-  // récitation resterait figée sur la première ligne, sans rien annoncer.
-  // On avance quand même — le surlignage défile, l'enfant peut suivre.
-  if(fin)setTimeout(passer,3000);
+  stopSpeaking();
+  _prononcer(a+' fois '+b+', égale '+(a*b)+'.',{rate:0.92},fin);
 }
 
 function renderTablesHome(){
@@ -5587,13 +5803,10 @@ function memFlip(i){
     document.querySelectorAll('.mem-card')[a].classList.add('matched');
     document.querySelectorAll('.mem-card')[b2].classList.add('matched');
     const op=M.cards[a].op;
-    if(op&&_memVoice&&'speechSynthesis' in window){
-      try{
-        speechSynthesis.cancel();
-        const u=new SpeechSynthesisUtterance(op[0]+' fois '+op[1]+', '+(op[0]*op[1]));
-        u.lang='fr-FR';u.rate=0.95;
-        speechSynthesis.speak(u);
-      }catch(e){}
+    // Même moteur que les tables : la voix est choisie, pas subie.
+    if(op&&_memVoice){
+      stopSpeaking();
+      _prononcer(op[0]+' fois '+op[1]+', '+(op[0]*op[1])+'.',{rate:0.98});
     }
     if(M.found===M.cards.length/2)memWin();
   }else{
