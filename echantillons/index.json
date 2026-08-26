@@ -6,5 +6,25 @@
   {
     "fichier": "mms-fra.mp3",
     "octets": 101664
+  },
+  {
+    "fichier": "piper-fr_FR-gilles-low.mp3",
+    "octets": 105120
+  },
+  {
+    "fichier": "piper-fr_FR-siwis-medium.mp3",
+    "octets": 86935
+  },
+  {
+    "fichier": "piper-fr_FR-tom-medium.mp3",
+    "octets": 103235
+  },
+  {
+    "fichier": "piper-fr_FR-upmc-medium-0.mp3",
+    "octets": 90697
+  },
+  {
+    "fichier": "piper-fr_FR-upmc-medium-1.mp3",
+    "octets": 87980
   }
 ]
