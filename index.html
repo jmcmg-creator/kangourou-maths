@@ -688,6 +688,14 @@ html.light .xp-perte{background:rgba(220,38,38,.10);color:#b91c1c;border-color:r
 .mem-back{background:linear-gradient(145deg,#122a22,#0d3325);border:2px solid #34d399;transform:rotateY(180deg);font-size:var(--mem-face-txt,1.2rem);line-height:1.1;color:#faf5ff;text-align:center;padding:2px}
 .mem-card.matched .mem-back{background:linear-gradient(145deg,#14432f,#0f5132);border-color:#fbbf24;box-shadow:0 0 18px rgba(251,191,36,.35);color:#fde68a}
 .mem-card.matched{cursor:default;animation:popIn .4s var(--transition-bounce)}
+/* Super-bonus du sans-faute : il doit se distinguer du « bravo » ordinaire au
+   premier coup d'œil, sinon zéro erreur ne vaut visuellement pas plus que
+   deux. Animation sur transform/opacity uniquement (pas de repeinte). */
+.mem-superbonus{font-family:Fredoka,sans-serif;font-weight:700;font-size:1.1rem;
+  color:#f472b6;margin:10px 0;line-height:1.35;animation:superPulse 1.4s ease-in-out 3}
+.mem-superbonus span{display:inline-block;font-size:.82rem;font-weight:600;color:var(--text-dim);margin-top:2px}
+@keyframes superPulse{0%,100%{transform:scale(1)}50%{transform:scale(1.09)}}
+@media (prefers-reduced-motion:reduce){.mem-superbonus{animation:none}}
 
 /* ══ TABLES DE MULTIPLICATION ══
    Gros caractères et grandes zones tactiles : la cible visée a 6 ans, un
@@ -950,12 +958,12 @@ html.light .btn-stone:hover{background:rgba(180,83,9,0.08);border-color:rgba(180
 </script>
 
 <script src="exercises.js?v=15"></script>
-<script src="exercises_extra.js?v=8"></script>
+<script src="exercises_extra.js?v=9"></script>
 <script src="exercises_logic.js?v=1"></script>
 <script src="config.js?v=2"></script>
 <script src="supa.js?v=2"></script>
 <script src="qr.js?v=1"></script>
-<script src="game.js?v=57"></script>
+<script src="game.js?v=58"></script>
 <script>
 // Service Worker : enregistré uniquement en HTTPS / localhost (sinon le navigateur refuse).
 if ('serviceWorker' in navigator && (location.protocol === 'https:' || location.hostname === 'localhost' || location.hostname === '127.0.0.1')) {

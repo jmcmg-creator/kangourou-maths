@@ -8,7 +8,7 @@
  *
  * Bump CACHE_VERSION pour forcer une mise à jour du shell.
  */
-const CACHE_VERSION = 'royaume-v37';
+const CACHE_VERSION = 'royaume-v38';
 const SHELL_CACHE = CACHE_VERSION + '-shell';
 const RUNTIME_CACHE = CACHE_VERSION + '-runtime';
 
@@ -17,12 +17,12 @@ const SHELL_URLS = [
   './index.html',
   './manifest.json',
   './exercises.js?v=15',
-  './exercises_extra.js?v=8',
+  './exercises_extra.js?v=9',
   './exercises_logic.js?v=1',
   './config.js?v=2',
   './supa.js?v=2',
   './qr.js?v=1',
-  './game.js?v=57',
+  './game.js?v=58',
   // Schémas du corps humain : 44 Ko au total, mis en cache avec le shell pour
   // que les questions de SVT restent illustrées hors connexion.
   // Les 29 drapeaux dessinés : 124 Ko, mis en cache pour que le quiz de
@@ -56,6 +56,23 @@ const SHELL_URLS = [
   './images/flags/tr.svg',
   './images/flags/us.svg',
   './images/flags/za.svg',
+  './images/flags/at.svg',
+  './images/flags/ci.svg',
+  './images/flags/co.svg',
+  './images/flags/dk.svg',
+  './images/flags/dz.svg',
+  './images/flags/fi.svg',
+  './images/flags/hu.svg',
+  './images/flags/il.svg',
+  './images/flags/kp.svg',
+  './images/flags/ne.svg',
+  './images/flags/no.svg',
+  './images/flags/nz.svg',
+  './images/flags/pk.svg',
+  './images/flags/th.svg',
+  './images/flags/tn.svg',
+  './images/flags/uy.svg',
+  './images/flags/vn.svg',
   './images/anatomy/heart.svg',
   './images/anatomy/brain.svg',
   './images/anatomy/lungs.svg',

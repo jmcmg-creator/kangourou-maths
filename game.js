@@ -320,7 +320,7 @@ const STORAGE_ACTIVE="royaume_active_v1";
    distinguer « la fonctionnalité est cassée » de « le téléphone n'a pas
    encore la mise à jour ».
    À bumper avec CACHE_VERSION (sw.js) et le ?v= (index.html). */
-const APP_VERSION='v37';
+const APP_VERSION='v38';
 
 function loadProfilesDict(){
   try{const d=localStorage.getItem(STORAGE_PROFILES); if(d) return JSON.parse(d)||{};}catch(e){}
@@ -2462,7 +2462,17 @@ async function startGame(mode){
    n'importe quelle taille.
    Un emoji drapeau est fait de deux « lettres régionales » : 🇫🇷 = F + R,
    ce qui donne directement le nom du fichier. */
-const FLAG_FILES=new Set(['ar','au','be','br','ca','ch','cn','de','eg','es','fr','gb','gr','ie','in','it','jp','kr','ma','mx','nl','pl','pt','ru','se','sn','tr','us','za']);
+/* La liste doit rester EXACTEMENT celle des fichiers présents dans
+   images/flags : un pays déclaré ici sans dessin donne une image cassée, un
+   pays dessiné mais absent d'ici retombe silencieusement sur l'emoji — c'est
+   ce qui s'est passé pour les 17 pays qui n'apparaissaient que dans les
+   RÉPONSES (« Quel est le drapeau du Japon ? »), jamais dans l'énoncé.
+   scripts/test-drapeaux.mjs compare les deux à chaque npm test. */
+const FLAG_FILES=new Set([
+  'ar','at','au','be','br','ca','ch','ci','cn','co','de','dk','dz','eg','es',
+  'fi','fr','gb','gr','hu','ie','il','in','it','jp','kp','kr','ma','mx','ne',
+  'nl','no','nz','pk','pl','pt','ru','se','sn','th','tn','tr','us','uy','vn','za'
+]);
 function flagIso(s){
   const c=[...String(s||'').trim()];
   if(c.length<2) return null;
@@ -4901,7 +4911,10 @@ async function createMemoryBattle(inviteName){
 function startMemoryBattle(battle){
   const cards=(battle.deck||[]).map(c=>({pair:c.pair,face:c.face,animal:true}));
   if(cards.length<4){alert('Battle Memory illisible — recréez-en une.');return}
-  state.mem={modeId:'battle',label:'🃏 Battle '+battle.code,cards,flipped:[],found:0,moves:0,lock:false,start:Date.now(),time:0,preview:10,battleCode:battle.code};
+  // Même barème de mémorisation qu'en solo : les deux joueurs d'une battle
+  // doivent voir les cartes aussi longtemps, quel que soit le nombre de paires.
+  state.mem={modeId:'battle',label:'🃏 Battle '+battle.code,cards,flipped:[],found:0,moves:0,
+    erreurs:0,lock:false,start:Date.now(),time:0,preview:memoryPreview(cards.length/2),battleCode:battle.code};
   navigate('memoryGame');
 }
 // Points battle Memory : 1000 de base, -40 par coup au-dessus du parfait, -3 par seconde.
@@ -5365,6 +5378,15 @@ const MEMORY_MODES=[
 let _memVoice=true;
 try{_memVoice=localStorage.getItem('royaume_mem_voice')!=='0'}catch(e){}
 
+/* Temps de mémorisation : 5 secondes de plus à chaque palier de difficulté.
+   10 s suffisent pour 12 cartes, mais pas pour 20 : le plateau grandit, le
+   temps de le parcourir des yeux aussi. Sans ça, les modes experts ne
+   récompensaient plus la mémoire mais la chance. */
+function memoryPreview(pairs){
+  const n=Number(pairs)||6;
+  return 10+5*Math.max(0,Math.floor((n-6)/2));
+}
+
 function renderMemoryHome(){
   const stats=profile.memoryStats||{};
   const tableChips=[2,3,4,5,6,7,8,9].map(t=>
@@ -5372,15 +5394,22 @@ function renderMemoryHome(){
   app.innerHTML='<div class="text-center py-6 fade-in">'
     +'<div style="font-size:3.5rem">\u{1F0CF}</div>'
     +'<h2 class="title" style="color:#34d399;font-size:1.6rem">Memory</h2>'
-    +'<p class="sub">Toutes les cartes s\'affichent 10 secondes : m\u00e9morise-les bien, puis retrouve les paires ! Animaux pour tous \u2014 et tables de multiplication pour les champions.</p>'
+    +'<p class="sub">Les cartes s\'affichent quelques secondes \u2014 plus il y en a, plus tu as de temps. M\u00e9morise-les, puis retrouve les paires. Aucune erreur \u2192 \u{1F451} super-bonus !</p>'
   +'</div>'
   +MEMORY_MODES.map((m,i)=>{
+    const secs=memoryPreview(m.pairs);
     const best=stats[m.id];
-    const bestTxt=best?('Record : '+best.moves+' coups \u00b7 '+best.time+'s'):'Pas encore jou\u00e9';
+    // Les anciens records ne retenaient que les coups : on en d\u00e9duit les
+    // erreurs (coups \u2212 paires) pour ne pas afficher \u00ab undefined \u00bb \u00e0 ceux qui
+    // jouaient d\u00e9j\u00e0 avant.
+    const bestErr=best?(best.erreurs!==undefined?best.erreurs:Math.max(0,(best.moves||0)-m.pairs)):null;
+    const bestTxt=best
+      ?((best.sansFaute||bestErr===0?'\u{1F451} Sans faute':'Record : '+bestErr+' erreur'+(bestErr>1?'s':''))+' \u00b7 '+best.time+'s')
+      :'Pas encore jou\u00e9';
     return '<div class="card clickable fade-in" style="animation-delay:'+(i*.07)+'s;border-color:'+m.color+'" onclick="startMemory(\''+m.id+'\')">'
       +'<div class="row"><div style="font-size:2.2rem">'+m.icon+'</div>'
       +'<div class="flex-1"><h3 class="card-title" style="color:'+m.color+'">'+m.name+'</h3>'
-      +'<p class="sub">'+m.sub+' \u2014 '+bestTxt+'</p></div>'
+      +'<p class="sub">'+m.sub+' \u00b7 '+secs+'s pour m\u00e9moriser \u2014 '+bestTxt+'</p></div>'
       +'<div class="arrow">\u2192</div></div></div>';
   }).join('')
   +'<div class="card mb-4"><h3 class="fredoka" style="font-size:.85rem;color:#8b7ec8;margin-bottom:10px;letter-spacing:.1em;text-transform:uppercase">\u{1F3AF} Ou entra\u00eene UNE table pr\u00e9cise</h3>'
@@ -5435,7 +5464,8 @@ function _memBuildPairs(modeId){
 
 function startMemory(modeId){
   const built=_memBuildPairs(modeId);
-  state.mem={modeId,label:built.label,cards:built.cards,flipped:[],found:0,moves:0,lock:false,start:Date.now(),time:0,preview:10};
+  state.mem={modeId,label:built.label,cards:built.cards,flipped:[],found:0,moves:0,
+    erreurs:0,lock:false,start:Date.now(),time:0,preview:memoryPreview(built.cards.length/2)};
   navigate('memoryGame');
 }
 
@@ -5489,9 +5519,13 @@ function renderMemoryGame(){
     +'<h2 class="title" style="color:#34d399;font-size:1.3rem">\u{1F0CF} '+esc(M.label)+'</h2>'
     +(preview
       ?'<p class="sub" style="margin-top:6px;font-size:1rem">\u{1F440} M\u00e9morise les cartes\u2026 <b id="memPrev" style="color:#fbbf24;font-size:1.2rem">'+M.preview+'</b>s</p>'
-      :'<div class="row" style="justify-content:center;gap:16px;margin-top:6px">'
+      // \u00AB Coups \u00BB ne dit rien \u00E0 un enfant : il en faut forc\u00E9ment autant que de
+      // paires. Ce qu'il peut faire baisser, ce sont les ERREURS \u2014 et tant
+      // qu'elles sont \u00E0 z\u00E9ro, le super-bonus est encore \u00E0 port\u00E9e, donc on
+      // l'affiche en or plut\u00F4t qu'en rouge.
+      :'<div class="row" style="justify-content:center;gap:14px;margin-top:6px;flex-wrap:wrap">'
         +'<span class="sub">Paires : <b id="memFound" style="color:#34d399">'+M.found+'</b>/'+total+'</span>'
-        +'<span class="sub">Coups : <b id="memMoves" style="color:#fbbf24">'+M.moves+'</b></span>'
+        +'<span class="sub">Erreurs : <b id="memErr" style="color:'+((M.erreurs||0)===0?'#fbbf24':'#f87171')+'">'+(M.erreurs||0)+'</b></span>'
         +'<span class="sub">\u23F1 <b id="memTime" style="color:#60a5fa">'+M.time+'</b>s</span>'
       +'</div>')
   +'</div>'
@@ -5544,7 +5578,6 @@ function memFlip(i){
   if(el)el.classList.add('flipped');
   if(M.flipped.length<2)return;
   M.moves++;
-  const mv=document.getElementById('memMoves');if(mv)mv.textContent=M.moves;
   const [a,b2]=M.flipped;
   if(M.cards[a].pair===M.cards[b2].pair){
     // Paire trouvée : on la récite à voix haute pour ancrer la table.
@@ -5564,6 +5597,12 @@ function memFlip(i){
     }
     if(M.found===M.cards.length/2)memWin();
   }else{
+    // Deux cartes qui ne vont pas ensemble : c'est une erreur, et elle se
+    // compte tout de suite — pas au retournement, sinon l'enfant la verrait
+    // apparaître une seconde plus tard, détachée de son geste.
+    M.erreurs=(M.erreurs||0)+1;
+    const er=document.getElementById('memErr');
+    if(er){er.textContent=M.erreurs;er.style.color='#f87171'}
     M.lock=true;
     setTimeout(()=>{
       M.flipped=[];M.lock=false;
@@ -5578,16 +5617,30 @@ function memWin(){
   const M=state.mem;
   if(state.memTickID){clearInterval(state.memTickID);state.memTickID=null}
   const total=M.cards.length/2;
-  const perfect=total; // minimum théorique de coups
-  const stars=M.moves<=perfect+2?3:M.moves<=perfect+5?2:1;
-  const xp=total*5+stars*10;
-  const cr=total*2;
+  const erreurs=Number(M.erreurs)||0;
+  // Un coup, c'est deux cartes retournées ; il en faut forcément au moins
+  // autant que de paires. Ce qui distingue les parties, ce sont les erreurs.
+  const stars=erreurs<=2?3:erreurs<=5?2:1;
+  let xp=total*5+stars*10;
+  let cr=total*2;
+  // SUPER-BONUS : parcours sans la moindre erreur. Trois étoiles s'obtiennent
+  // déjà avec deux erreurs — il fallait donc une récompense à part, sinon le
+  // sans-faute ne valait rien de plus que « presque ». On triple les cristaux
+  // et on double les XP : c'est rare, ça doit se voir.
+  const sansFaute=erreurs===0;
+  if(sansFaute){xp+=total*5+30;cr+=total*4}
   profile.xp=(Number(profile.xp)||0)+xp;
   profile.cristaux=(Number(profile.cristaux)||0)+cr;
   if(!profile.memoryStats)profile.memoryStats={};
   const prev=profile.memoryStats[M.modeId];
-  if(!prev||M.moves<prev.moves||(M.moves===prev.moves&&M.time<prev.time)){
-    profile.memoryStats[M.modeId]={moves:M.moves,time:M.time,date:today()};
+  // Le record se juge d'abord aux erreurs, puis au temps. Avant, il se jugeait
+  // aux coups — mais deux parties sans faute ont toujours le même nombre de
+  // coups, et la plus rapide ne pouvait jamais devenir le record.
+  const errPrec=prev?(prev.erreurs!==undefined?prev.erreurs:Math.max(0,(prev.moves||0)-total)):null;
+  if(!prev||erreurs<errPrec||(erreurs===errPrec&&M.time<prev.time)){
+    profile.memoryStats[M.modeId]={erreurs,moves:M.moves,time:M.time,date:today(),sansFaute:sansFaute||!!(prev&&prev.sansFaute)};
+  }else if(sansFaute&&!prev.sansFaute){
+    prev.sansFaute=true;   // le record ne bouge pas, mais l'exploit est acquis
   }
   saveProfile();
   // Battle Memory : on envoie les points et on renvoie vers l'\u00e9cran battle.
@@ -5598,21 +5651,42 @@ function memWin(){
     if(w2)w2.innerHTML='<div class="card fade-in glow-anim text-center mt-4" style="border-color:#34d399">'
       +'<div style="font-size:3rem">\ud83c\udccf</div>'
       +'<h3 class="title" style="color:#34d399">'+pts+' points !</h3>'
-      +'<p class="sub">'+M.moves+' coups \u00b7 '+M.time+'s \u00b7 +'+xp+' XP \u00b7 \ud83d\udc8e +'+cr+'</p>'
+      +'<p class="sub">'+(sansFaute?'aucune erreur':erreurs+' erreur'+(erreurs>1?'s':''))+' \u00b7 '+M.time+'s \u00b7 +'+xp+' XP \u00b7 \ud83d\udc8e +'+cr+'</p>'
+      +(sansFaute?'<p class="mem-superbonus">\u2728 SUPER-BONUS sans faute \u2728</p>':'')
       +'<button class="btn-fire mt-3" data-code="'+esc(M.battleCode)+'" onclick="navigate(\'battleResults\',{battleViewCode:this.dataset.code})">\u2694\ufe0f Voir la battle</button>'
     +'</div>';
+    _montrerMemWin();
     return;
   }
   const w=document.getElementById('memWin');
-  if(w)w.innerHTML='<div class="card fade-in glow-anim text-center mt-4" style="border-color:#fbbf24">'
-    +'<div style="font-size:3rem">'+(stars===3?'\u{1F3C6}':'\u{1F389}')+'</div>'
-    +'<h3 class="title" style="color:#fbbf24">Bravo !</h3>'
+  if(w)w.innerHTML='<div class="card fade-in glow-anim text-center mt-4" style="border-color:'+(sansFaute?'#f472b6':'#fbbf24')+'">'
+    +'<div style="font-size:3rem">'+(sansFaute?'\u{1F451}':stars===3?'\u{1F3C6}':'\u{1F389}')+'</div>'
+    +'<h3 class="title" style="color:'+(sansFaute?'#f472b6':'#fbbf24')+'">'+(sansFaute?'PARFAIT !':'Bravo !')+'</h3>'
     +'<p style="font-size:1.6rem;margin:6px 0">'+'\u2B50'.repeat(stars)+'</p>'
-    +'<p class="sub">'+M.moves+' coups \u00b7 '+M.time+'s \u00b7 +'+xp+' XP \u00b7 \u{1F48E} +'+cr+'</p>'
+    +(sansFaute
+      ?'<p class="mem-superbonus">\u2728 SUPER-BONUS \u2728<br><span>Pas une seule erreur</span></p>'
+      :'<p class="sub">'+erreurs+' erreur'+(erreurs>1?'s':'')+(erreurs<=2?' \u2014 vise le z\u00e9ro pour le super-bonus !':'')+'</p>')
+    +'<p class="sub">'+M.time+'s \u00b7 +'+xp+' XP \u00b7 \u{1F48E} +'+cr+'</p>'
     +'<div class="btn-row mt-3">'
       +'<button class="btn-fire" onclick="startMemory(\''+esc(M.modeId)+'\')">\u{1F504} Rejouer</button>'
       +'<button class="btn-stone" onclick="navigate(\'memoryHome\')">Autres niveaux</button>'
     +'</div></div>';
+  _montrerMemWin();
+}
+
+/* La grille de Memory est dimensionnée pour remplir l'écran : la carte de
+   victoire naît donc TOUJOURS sous la ligne de flottaison. Un enfant qui
+   gagne voit son plateau se figer et rien d'autre — le super-bonus passait
+   inaperçu. On l'amène à l'écran. */
+function _montrerMemWin(){
+  const w=document.getElementById('memWin');
+  if(!w) return;
+  const aller=()=>{
+    try{w.scrollIntoView({block:'center',behavior:'smooth'})}
+    catch(e){window.scrollTo(0,document.documentElement.scrollHeight)}
+  };
+  aller();
+  try{requestAnimationFrame(aller)}catch(e){}
 }
 
 render();

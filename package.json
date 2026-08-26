@@ -7,7 +7,7 @@
   "scripts": {
     "verify:questions": "node scripts/verify-questions.mjs",
     "verify:questions:sample": "LIMIT=20 node scripts/verify-questions.mjs",
-    "test": "node scripts/test-battle.mjs && node scripts/test-echappement.mjs && node scripts/test-versions.mjs",
+    "test": "node scripts/test-battle.mjs && node scripts/test-echappement.mjs && node scripts/test-versions.mjs && node scripts/test-drapeaux.mjs",
     "test:echappement": "node scripts/test-echappement.mjs"
   },
   "devDependencies": {
