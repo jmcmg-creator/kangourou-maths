@@ -694,7 +694,7 @@ function navigate(screen,data){
   if(state.timerID){clearInterval(state.timerID);state.timerID=null}
   state.screen=screen;
   if(data) Object.assign(state,data);
-  backArrow.classList.toggle('hidden',screen==='home');
+  backArrow.classList.toggle('hidden',screen==='home'||screen==='codeMigration');
   render();
   window.scrollTo(0,0);
 }
@@ -709,6 +709,7 @@ function render(){
     case 'royaume': renderRoyaume(); break;
     case 'parent': renderParent(); break;
     case 'nameAsk': renderNameAsk(); break;
+    case 'codeMigration': renderCodeMigration(); break;
     case 'profilePicker': renderProfilePicker(); break;
     case 'collection': renderCollection(); break;
     case 'leconsHome': renderLecons(); break;
@@ -746,12 +747,58 @@ function checkDailyQuest(){
   }
 }
 
+/* ════════ MIGRATION : CODE PARENT POUR LES ANCIENS PROFILS ════════ */
+// Les profils créés avant la correction de sécurité ont un aid dérivé du seul
+// prénom, donc devinable. On ne le réutilise pas et on ne choisit pas de code
+// par défaut à leur place : un code connu (1234 ou autre) serait public et
+// rouvrirait exactement la faille. Le parent choisit donc son code une fois.
+// La progression locale n'est jamais touchée — seule la synchro cloud attend.
+function needsCodeMigration(){
+  return !!profile.name && profile.aidV!==2 && !isValidParentCode(getCode(profile.name));
+}
+
+function renderCodeMigration(){
+  app.innerHTML=`<div class="card fade-in" style="margin-top:40px">
+    <h2 class="title" style="color:#fbbf24;font-size:1.3rem">🔒 Un code pour protéger ${esc(profile.name)}</h2>
+    <p style="color:#faf5ff;margin-bottom:12px">Le Royaume de <strong>${esc(profile.name)}</strong> est bien là, avec toute sa progression. Pour le protéger et pouvoir le retrouver sur un autre appareil, un adulte choisit maintenant un <strong>code à 6 chiffres</strong>.</p>
+    <p style="color:#a78bfa;font-size:.8rem;margin-bottom:16px">Évite une date de naissance ou une suite simple. Note-le : sans lui, la progression ne pourra pas être récupérée sur un nouvel appareil.</p>
+    <input class="name-prompt" id="migCodeInp" placeholder="6 chiffres" inputmode="numeric" pattern="[0-9]*" maxlength="6" autocomplete="off" value="">
+    <button class="btn-fire" onclick="setMigrationCode()">Protéger mon Royaume →</button>
+    <button class="btn-stone" style="width:100%;margin-top:12px" onclick="skipCodeMigration()">Plus tard (jouer hors ligne)</button>
+  </div>`;
+  setTimeout(()=>{const i=$('migCodeInp');if(i)i.focus();},100);
+}
+
+async function setMigrationCode(){
+  const code=($('migCodeInp')?$('migCodeInp').value:'').replace(/\D/g,'');
+  if(!isValidParentCode(code)){alert('Le code parent doit faire exactement 6 chiffres.');return}
+  if(/^(\d)\1{5}$/.test(code)||code==='123456'||code==='012345'){alert('Ce code est trop simple. Choisis-en un autre.');return}
+  const aid=await aidFromPseudoAndCode(profile.name,code);
+  saveCode(profile.name,code);
+  app.innerHTML='<div class="card text-center fade-in" style="margin-top:60px"><div class="big-icon">🔍</div><h2 class="title">Mise à l\'abri du Royaume…</h2></div>';
+  // Un profil peut déjà exister dans le cloud sous ce nouvel aid (autre appareil
+  // déjà migré avec le même code). On garde le plus avancé des deux.
+  const remote=await fetchProfileByAid(aid);
+  if(remote&&remote.name&&(remote.totalGames||0)>(profile.totalGames||0)){
+    profile=migrate(remote);
+  }
+  profile.aid=aid;profile.aidV=2;
+  saveProfile();
+  navigate('home');
+}
+
+// Refus explicite : on ne redemande pas à chaque écran, mais au prochain
+// démarrage. Le profil reste local, rien n'est publié.
+let _codeMigrationSkipped=false;
+function skipCodeMigration(){_codeMigrationSkipped=true;navigate('home');}
+
 /* ════════ HOME ════════ */
 function renderHome(){
   if(!profile.name){
     navigate(Object.keys(loadProfilesDict()).length>0?'profilePicker':'nameAsk');
     return;
   }
+  if(needsCodeMigration()&&!_codeMigrationSkipped){navigate('codeMigration');return}
   checkDailyQuest();
   // Total des XP de tous les royaumes
   const totalXp=Object.values(profile.royaumes||{}).reduce((s,r)=>s+(r.xp||0),0)+(profile.xp||0);
@@ -1036,7 +1083,7 @@ function deleteProfile(name){
 function updateFooter(){
   const sw=$('userSwitch');
   if(!sw) return;
-  const show=!!profile.name && state.screen!=='nameAsk' && state.screen!=='profilePicker';
+  const show=!!profile.name && state.screen!=='nameAsk' && state.screen!=='profilePicker' && state.screen!=='codeMigration';
   sw.classList.toggle('hidden',!show);
   if(show){const nm=$('footerUserName');if(nm)nm.textContent=profile.name;}
 }
