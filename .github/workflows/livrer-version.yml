@@ -4,20 +4,36 @@ name: Livrer une version (tag → TestFlight)
 # Codemagic et l'envoi sur TestFlight (voir codemagic.yaml).
 #
 # POURQUOI CE WORKFLOW EXISTE
-# Poser un tag demandait jusqu'ici un terminal avec des identifiants GitHub
-# valides. Ici c'est GitHub qui pose le tag, sur simple demande — depuis le
-# téléphone, depuis Claude Code, depuis n'importe où. Aucun ordinateur requis.
+# Poser un tag demandait un terminal avec des identifiants GitHub valides.
+# Ici c'est GitHub qui pose le tag — depuis le téléphone, depuis Claude Code,
+# depuis n'importe où. Aucun ordinateur requis.
 #
-# COMMENT S'EN SERVIR
-#   Onglet Actions → « Livrer une version » → « Run workflow »
-#   → numéro de version (ex. 1.5) → bouton vert.
-# Ou simplement demander à Claude Code de livrer la version 1.5.
+# DEUX PORTES D'ENTRÉE, PARCE QUE TOUT LE MONDE N'A PAS LES MÊMES DROITS
+#
+#   1. LE FICHIER VERSION (la porte de Claude Code)
+#      Modifier le fichier `VERSION` à la racine et pousser sur main suffit :
+#      ce workflow lit le numéro et pose le tag correspondant.
+#      C'est la seule voie ouverte à Claude Code : son jeton GitHub peut
+#      fusionner une pull request et pousser une branche, mais il ne peut NI
+#      pousser un tag (403) NI déclencher un workflow à la main (403
+#      « Resource not accessible by integration »). Passer par un fichier
+#      contourne les deux, sans élargir aucun droit.
+#
+#   2. LE BOUTON (la porte de Julien, depuis le téléphone)
+#      Onglet Actions → « Livrer une version » → « Run workflow » → 1.9.
+#
+# GARDE-FOUS
+#   - Le numéro doit ressembler à 1.9, 2.0 ou 1.9.1. Tout le reste est refusé.
+#   - Un tag qui existe déjà n'est jamais réécrit : le workflow s'arrête en
+#     disant qu'il n'y a rien à faire. Repousser le même VERSION ne relivre
+#     donc RIEN — c'est ce qui rend la porte n°1 sans danger.
+#   - Le tag est toujours posé sur main, jamais sur une branche.
 
 on:
   workflow_dispatch:
     inputs:
       version:
-        description: 'Numéro de version, sans le v (ex. 1.5)'
+        description: 'Numéro de version, sans le v (ex. 1.9)'
         required: true
         type: string
       message:
@@ -25,6 +41,10 @@ on:
         required: false
         type: string
         default: ''
+  push:
+    branches: [main]
+    paths:
+      - 'VERSION'
 
 # Le tag est écrit dans le dépôt : il faut le droit d'écriture.
 permissions:
@@ -39,27 +59,54 @@ jobs:
         with:
           ref: main
           fetch-depth: 0
+          # Un tag poussé avec le GITHUB_TOKEN par défaut ne redéclenche AUCUN
+          # workflow GitHub Actions (règle anti-boucle de GitHub). Les webhooks
+          # vers les services tiers comme Codemagic partent normalement — mais
+          # si jamais Codemagic ne démarrait pas, ajouter un secret TAG_PAT
+          # (jeton personnel, portée « repo ») lève le doute sans toucher à ce
+          # fichier : il est utilisé dès qu'il existe.
+          token: ${{ secrets.TAG_PAT || secrets.GITHUB_TOKEN }}
 
-      - name: Vérifier le numéro de version
+      - name: Déterminer le numéro de version
         id: check
         env:
           RAW: ${{ inputs.version }}
         run: |
-          # On tolère « 1.5 » comme « v1.5 », et on refuse tout le reste :
-          # un tag mal formé partirait quand même chez les testeurs.
-          version="${RAW#v}"
+          # Deux portes, une seule source de vérité ensuite.
+          if [ -n "$RAW" ]; then
+            source="le formulaire"
+            version="${RAW#v}"
+          else
+            if [ ! -f VERSION ]; then
+              echo "::error::Le fichier VERSION est introuvable à la racine."
+              exit 1
+            fi
+            source="le fichier VERSION"
+            # tr -d : un retour à la ligne ou une espace parasite suffirait à
+            # faire échouer le contrôle de format juste en dessous.
+            version="$(tr -d ' \t\r\n' < VERSION)"
+            version="${version#v}"
+          fi
+
           if ! printf '%s' "$version" | grep -Eq '^[0-9]+(\.[0-9]+){0,2}$'; then
-            echo "::error::Version invalide : « $RAW ». Attendu : 1.5, 2.0 ou 1.5.1."
+            echo "::error::Version invalide dans $source : « $version ». Attendu : 1.9, 2.0 ou 1.9.1."
             exit 1
           fi
+
           tag="v$version"
+          echo "Version « $version » lue depuis $source."
+
+          # Rien à faire n'est pas une erreur : c'est le cas normal quand on
+          # pousse sur main sans avoir changé de version.
           if git rev-parse -q --verify "refs/tags/$tag" >/dev/null; then
-            echo "::error::Le tag $tag existe déjà. Choisissez un numéro supérieur."
-            exit 1
+            echo "::notice::$tag existe déjà — rien à livrer."
+            echo "rien=1" >> "$GITHUB_OUTPUT"
+          else
+            echo "tag=$tag" >> "$GITHUB_OUTPUT"
           fi
-          echo "tag=$tag" >> "$GITHUB_OUTPUT"
 
       - name: Poser le tag sur main
+        if: steps.check.outputs.rien != '1'
         env:
           TAG: ${{ steps.check.outputs.tag }}
           MSG: ${{ inputs.message }}
@@ -72,7 +119,17 @@ jobs:
       - name: Récapitulatif
         env:
           TAG: ${{ steps.check.outputs.tag }}
+          RIEN: ${{ steps.check.outputs.rien }}
         run: |
+          if [ "$RIEN" = "1" ]; then
+            {
+              echo "## Rien à livrer"
+              echo
+              echo "Le tag correspondant au fichier \`VERSION\` existe déjà."
+              echo "Pour livrer une nouvelle version, changez le numéro dans \`VERSION\`."
+            } >> "$GITHUB_STEP_SUMMARY"
+            exit 0
+          fi
           {
             echo "## 🚀 $TAG livrée"
             echo

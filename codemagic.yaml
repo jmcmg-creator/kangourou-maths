@@ -8,10 +8,12 @@
 #   - ios-testflight-manual : signature via CLI — EXIGE la variable secrète
 #     CERTIFICATE_PRIVATE_KEY (clé RSA 2048) dans le groupe d'env "signing"
 #
-# LIVRER UNE VERSION AUX TESTEURS — deux chemins équivalents :
-#   - sans ordinateur : onglet Actions → « Livrer une version » → Run workflow
-#     (voir .github/workflows/livrer-version.yml)
-#   - en local        : git tag v1.5 && git push origin v1.5
+# LIVRER UNE VERSION AUX TESTEURS — mode d'emploi : docs/LIVRER-UNE-VERSION.md
+#   - changer le numéro dans le fichier VERSION et pousser sur main
+#     (la seule voie ouverte à Claude Code : son jeton ne peut ni pousser un
+#      tag ni déclencher un workflow, mais il peut pousser un fichier)
+#   - ou sans ordinateur : onglet Actions → « Livrer une version » → Run workflow
+#   - ou en local        : git tag v1.9 && git push origin v1.9
 # Dans les deux cas ios-testflight démarre tout seul et envoie sur TestFlight.
 # Un merge sur main ne déclenche aucun build : les minutes ne partent que pour
 # les versions qu'on décide vraiment de livrer.
