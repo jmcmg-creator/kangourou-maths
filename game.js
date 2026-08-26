@@ -414,15 +414,55 @@ async function sha256Bytes(bytes){
   }
   return _sha256Fallback(bytes);
 }
-async function aidFromName(name){
-  const norm=String(name||'').toLowerCase().trim().replace(/\s+/g,'');
-  if(!norm) return '';
-  const buf=await sha256Bytes(new TextEncoder().encode('royaume:'+norm));
+// ── Identifiant de profil (aid) ────────────────────────────────────────────
+// AVANT (faille, audit sécurité) : aid = SHA-256('royaume:' + prénom).
+// Le sel 'royaume:' est une constante publique du source client, donc l'aid
+// était entièrement prédictible à partir du prénom. Un dictionnaire de
+// prénoms suffisait à lire ET écraser le profil de n'importe quel enfant via
+// GET/PUT /profile/<aid>, qui ne demandent aucune authentification.
+//
+// MAINTENANT : aid = SHA-256('royaume:v2:' + pseudo + ':' + codeParent).
+// Le code parent (6 chiffres) est le seul secret. Il n'est JAMAIS envoyé au
+// serveur ni stocké dans l'objet profil — il vit uniquement en local, sous une
+// clé séparée (voir loadCodes/saveCode).
+//
+// ⚠️ Le pseudo est destiné à devenir public (battles, classements). L'entropie
+// repose donc entièrement sur le code : 10^6 possibilités. Cela n'est sûr QUE
+// si le Worker applique un rate limiting strict sur /profile/<aid>
+// (ex. 10 tentatives / heure / IP + backoff). Sans ça, un attaquant qui voit
+// un pseudo dans une battle épuise l'espace des codes en quelques heures.
+const AID_VERSION='royaume:v2:';
+function normPseudo(name){return String(name||'').toLowerCase().trim().replace(/\s+/g,'');}
+function isValidParentCode(code){return /^[0-9]{6}$/.test(String(code||''));}
+
+async function aidFromPseudoAndCode(name,code){
+  const norm=normPseudo(name);
+  if(!norm||!isValidParentCode(code)) return '';
+  const buf=await sha256Bytes(new TextEncoder().encode(AID_VERSION+norm+':'+String(code)));
   return Array.from(buf).map(b=>b.toString(16).padStart(2,'0')).join('').slice(0,32);
 }
-// Garantit que profile.aid est renseigné (dérivé du nom si absent).
+
+// Codes parents : stockage local uniquement, hors de l'objet `profile` pour
+// qu'ils ne partent jamais dans pushProfileToCloud().
+const CODES_KEY='royaume.parentCodes';
+function loadCodes(){try{return JSON.parse(localStorage.getItem(CODES_KEY)||'{}')}catch(e){return {}}}
+function saveCode(name,code){const d=loadCodes();d[name]=String(code);try{localStorage.setItem(CODES_KEY,JSON.stringify(d))}catch(e){}}
+function getCode(name){return loadCodes()[name]||''}
+// Garantit que profile.aid est renseigné. Sans code parent connu en local, on
+// ne dérive rien : le profil reste purement local (pas de sync cloud) plutôt
+// que d'être publié sous un identifiant devinable.
 async function ensureAid(){
-  if(!profile.aid&&profile.name){profile.aid=await aidFromName(profile.name);}
+  // Migration v1 → v2 : un aid sans marqueur aidV=2 vient de l'ancienne
+  // dérivation depuis le seul prénom. Il est devinable, donc on le jette :
+  // le profil redevient local tant qu'un code parent n'a pas été saisi.
+  // Les données locales ne sont jamais perdues, seule la sync cloud s'arrête.
+  if(profile.aid&&profile.aidV!==2){delete profile.aid;delete profile.aidV;}
+  if(profile.aid) return profile.aid;
+  const code=getCode(profile.name);
+  if(profile.name&&isValidParentCode(code)){
+    profile.aid=await aidFromPseudoAndCode(profile.name,code);
+    profile.aidV=2;
+  }
   return profile.aid;
 }
 
@@ -459,10 +499,14 @@ async function pushProfileToCloud(){
   await ensureAid();
   if(!profile.name||!profile.aid) return;
   try{
+    // Filet de sécurité : jamais de code parent dans le payload cloud, même si
+    // un futur refactor venait à en poser un sur l'objet profil.
+    const safe={...profile};
+    delete safe.parentCode; delete safe.code; delete safe.pin;
     await fetch(API_BASE+'/profile/'+profile.aid,{
       method:'PUT',
       headers:{'Content-Type':'application/json'},
-      body:JSON.stringify(profile),
+      body:JSON.stringify(safe),
       keepalive:true
     });
   }catch(e){}
@@ -485,7 +529,7 @@ function processIncomingSyncLink(){
     const dict=loadProfilesDict();
     const exists=!!dict[remote.name];
     if(!confirm((exists?'Mettre à jour':'Importer')+' le profil « '+remote.name+' » depuis l\'autre appareil ?')) return;
-    remote.aid=incoming;
+    remote.aid=incoming;remote.aidV=2;
     dict[remote.name]=remote;
     saveProfilesDict(dict);
     setActiveName(remote.name);
@@ -726,7 +770,7 @@ function renderHome(){
   }
   app.innerHTML=`
     <div class="text-center fade-in mb-4 py-4">
-      <h2 class="title" style="font-size:clamp(1.4rem,4vw,2rem)">\u{1F44B} Salut ${profile.name} !</h2>
+      <h2 class="title" style="font-size:clamp(1.4rem,4vw,2rem)">\u{1F44B} Salut ${esc(profile.name)} !</h2>
       <p style="color:var(--text-mid);font-size:1rem">Bienvenue dans tes Royaumes</p>
       <div class="resources-row">
         <div class="resource flame">\u{1F525} ${profile.totalGames||0} parties</div>
@@ -869,8 +913,10 @@ function renderNameAsk(){
   const hasProfiles=Object.keys(loadProfilesDict()).length>0;
   app.innerHTML=`<div class="card fade-in" style="margin-top:40px">
     <h2 class="title" style="color:#fbbf24;font-size:1.3rem">${hasProfiles?'Nouvel aventurier':"Comment t'appelles-tu ?"}</h2>
-    <p style="color:#faf5ff;margin-bottom:16px">Ton prénom sera affiché dans ton Royaume.</p>
-    <input class="name-prompt" id="nameInp" placeholder="Ton prénom" maxlength="20" value="${esc(profile.name||'')}">
+    <p style="color:#faf5ff;margin-bottom:16px">Ton pseudo sera affiché dans ton Royaume et vu par les autres joueurs.</p>
+    <input class="name-prompt" id="nameInp" placeholder="Ton pseudo" maxlength="20" value="${esc(profile.name||'')}">
+    <p style="color:#faf5ff;margin:16px 0 8px;font-size:.85rem">🔒 <strong>Code parent</strong> — 6 chiffres, choisis par un adulte. Il protège la progression et permet de la retrouver sur un autre appareil. Ne le communique à personne.</p>
+    <input class="name-prompt" id="codeInp" placeholder="6 chiffres" inputmode="numeric" pattern="[0-9]*" maxlength="6" autocomplete="off" value="">
     <button class="btn-fire" onclick="setName()">Entrer dans le Royaume →</button>
     ${hasProfiles?`<button class="btn-stone" style="width:100%;margin-top:12px" onclick="navigate('profilePicker')">← Choisir un profil existant</button>`:''}
   </div>`;
@@ -881,13 +927,18 @@ async function setName(){
   const v=$('nameInp').value.replace(/[<>"'&]/g,'').trim().slice(0,20);
   if(v.length<1){alert('Entre ton prénom');return}
   if(!isCleanName(v)){alert('Ce prénom contient un mot interdit. Choisis-en un autre.');return}
-  const aid=await aidFromName(v);
+  const code=($('codeInp')?$('codeInp').value:'').replace(/\D/g,'');
+  if(!isValidParentCode(code)){alert('Le code parent doit faire exactement 6 chiffres.');return}
+  if(/^(\d)\1{5}$/.test(code)||code==='123456'||code==='012345'){alert('Ce code est trop simple. Choisis-en un autre.');return}
+  const aid=await aidFromPseudoAndCode(v,code);
+  saveCode(v,code);
+  // aidV=2 marque la dérivation sécurisée (pseudo + code parent).
   app.innerHTML='<div class="card text-center fade-in" style="margin-top:60px"><div class="big-icon">🔍</div><h2 class="title">Recherche de ton Royaume…</h2></div>';
   const remote=await fetchProfileByAid(aid);
   const dict=loadProfilesDict();
   if(remote&&remote.name){
     // Profil déjà présent dans le cloud (cet appareil ou un autre).
-    remote.aid=aid;
+    remote.aid=aid;remote.aidV=2;
     profile=migrate(remote);
     dict[profile.name]=profile;
     saveProfilesDict(dict);
@@ -895,13 +946,13 @@ async function setName(){
   }else if(dict[v]){
     // Présent en local mais pas dans le cloud → on l'adopte et on le pousse.
     profile=migrate(dict[v]);
-    profile.aid=aid;
+    profile.aid=aid;profile.aidV=2;
     saveProfile();
   }else{
     // Tout nouveau profil.
     profile=newProfile();
     profile.name=v;
-    profile.aid=aid;
+    profile.aid=aid;profile.aidV=2;
     saveProfile();
   }
   navigate('home');
@@ -948,7 +999,7 @@ function renderProfilePicker(){
 
 async function switchProfile(name){
   profile=loadProfileByName(name);
-  if(!profile.aid) profile.aid=await aidFromName(profile.name||name);
+  if(!profile.aid) await ensureAid();
   setActiveName(profile.name);
   navigate('home');
   // Sync cloud en arrière-plan : restaure si le cloud est plus avancé,
@@ -1024,7 +1075,7 @@ async function reqGen(lvId,n){
     if(st){st.innerHTML='\u2705 <strong>'+exos.length+' nouveaux exercices</strong> ajout\u00e9s ! Lance n\'importe quel mode pour les d\u00e9couvrir.'}
     if(btn){btn.textContent='\u{1F525} G\u00e9n\u00e9rer 10 de plus';btn.disabled=false}
   }catch(e){
-    if(st){st.innerHTML='\u274C Erreur : '+e.message}
+    if(st){st.textContent='\u274C Erreur : '+e.message}
     if(btn){btn.textContent='\u{1F525} R\u00e9essayer';btn.disabled=false}
   }
 }
@@ -1126,9 +1177,9 @@ function renderGame(){
       <span class="stars">${'\u2605'.repeat(ex.diff)}${'\u2606'.repeat(5-ex.diff)}</span>
       ${levelBadge}
     </div>
-    <p style="font-size:clamp(1rem,2.5vw,1.2rem);color:#faf5ff;line-height:1.7;margin-bottom:24px">${ex.q}</p>
+    <p style="font-size:clamp(1rem,2.5vw,1.2rem);color:#faf5ff;line-height:1.7;margin-bottom:24px">${esc(ex.q)}</p>
     <div class="choices-grid">
-      ${ex.ch.map((c,i)=>{let cls='choice-btn';if(state.selected!==null){if(i===ex.ans)cls+=' correct';else if(i===state.selected&&i!==ex.ans)cls+=' wrong'}return `<button class="${cls}" ${state.selected!==null?'disabled':''} onclick="selectAnswer(${i})"><span class="choice-letter">${String.fromCharCode(65+i)}.</span>${c}</button>`}).join('')}
+      ${ex.ch.map((c,i)=>{let cls='choice-btn';if(state.selected!==null){if(i===ex.ans)cls+=' correct';else if(i===state.selected&&i!==ex.ans)cls+=' wrong'}return `<button class="${cls}" ${state.selected!==null?'disabled':''} onclick="selectAnswer(${i})"><span class="choice-letter">${String.fromCharCode(65+i)}.</span>${esc(c)}</button>`}).join('')}
     </div>
     <div id="explanation"></div>
   </div>
@@ -1208,7 +1259,7 @@ function showExplanation(ex,correct){
     <div class="row gap-2 mb-2"><span style="font-size:1.5rem">${correct?'\u2705':'\u274C'}</span>
     <h4 class="fredoka" style="font-size:1.1rem;font-weight:700;color:${correct?'#22c55e':'#ef4444'};margin:0">${correct?'Excellent !':'Pas cette fois\u2026'}</h4>
     ${gainHTML}</div>
-    ${ex.se?`<p style="color:#faf5ff;margin-bottom:12px;line-height:1.6;font-weight:600">${ex.se}</p>`:''}
+    ${ex.se?`<p style="color:#faf5ff;margin-bottom:12px;line-height:1.6;font-weight:600">${esc(ex.se)}</p>`:''}
     ${!correct&&ex.pourquoi?`<div class="error-box"><p style="font-size:.9rem;margin:0"><span class="error-label">\u{1F914} L'erreur probable : </span><span style="color:#faf5ff">${ex.pourquoi}</span></p></div>`:''}
     ${ex.regle?`<div class="tip-box"><p style="font-size:.9rem;margin:0"><span class="tip-label">\u{1F4A1} \u00c0 retenir : </span><span class="tip-text">${ex.regle}</span></p></div>`:''}
     ${hasDetail?`<a class="detail-link mt-3" style="display:inline-block;margin-top:10px" onclick="toggleDetail()">${state.detailOpen?'Masquer':'Voir'} la m\u00e9thode pas \u00e0 pas \u2192</a>
@@ -1398,8 +1449,8 @@ function renderResults(){
   <div class="card mb-6"><h3 class="fredoka" style="font-size:.85rem;color:#f7a020;margin-bottom:12px;letter-spacing:.1em;text-transform:uppercase">R\u00e9capitulatif</h3>
     <div class="recap-scroll">${d.results.map(r=>`<div class="recap-item">
       <span class="recap-icon">${r.correct?'\u2705':'\u274C'}</span>
-      <div class="flex-1"><p class="recap-q">${r.ex.q.length>110?r.ex.q.slice(0,110)+'\u2026':r.ex.q}</p>
-      ${!r.correct?`<p class="recap-answer">R\u00e9ponse : ${r.ex.ch[r.ex.ans]}</p>`:''}</div></div>`).join('')}</div></div>
+      <div class="flex-1"><p class="recap-q">${esc(r.ex.q.length>110?r.ex.q.slice(0,110)+'\u2026':r.ex.q)}</p>
+      ${!r.correct?`<p class="recap-answer">R\u00e9ponse : ${esc(r.ex.ch[r.ex.ans])}</p>`:''}</div></div>`).join('')}</div></div>
   <div class="btn-row">
     <button class="btn-fire" onclick="startGame('${d.mode}')">Rejouer</button>
     <button class="btn-stone" onclick="navigate('royaume')">Mon Royaume</button>
@@ -1418,7 +1469,7 @@ function renderRoyaume(){
   app.innerHTML=`<div class="text-center py-6 fade-in">
     <div style="font-size:3rem">\u2728</div>
     <h2 class="title sparkle-anim" style="color:#fbbf24;font-size:1.8rem">Mon Royaume</h2>
-    <p class="sub">${profile.name}, voici ta progression</p></div>
+    <p class="sub">${esc(profile.name)}, voici ta progression</p></div>
   <div class="dragon-card">
     <div class="dragon-emoji float">${stage.emoji}</div>
     <div class="dragon-name">${stage.name}</div>
@@ -1481,7 +1532,7 @@ function renderParent(){
   app.innerHTML=`<div class="text-center py-6 fade-in">
     <div style="font-size:3rem">\u{1F464}</div>
     <h2 class="title" style="color:#c4b5fd;font-size:1.6rem">Espace Parent</h2>
-    <p class="sub">Suivi de ${profile.name}</p></div>
+    <p class="sub">Suivi de ${esc(profile.name)}</p></div>
   <div class="card mb-4" style="border-color:#c4b5fd"><div class="stats-grid">
     <div class="stat-card"><div class="stat-val" style="color:#c4b5fd">${profile.totalGames}</div><div class="stat-label">Parties</div></div>
     <div class="stat-card"><div class="stat-val" style="color:${pct>=60?'#22c55e':'#ef4444'}">${pct}%</div><div class="stat-label">R\u00e9ussite</div></div>
@@ -1493,11 +1544,11 @@ function renderParent(){
   ${strong.length>0?`<div class="card mb-4"><h3 class="fredoka" style="font-size:.85rem;color:#22c55e;margin-bottom:12px;letter-spacing:.1em;text-transform:uppercase">\u2B50 Points forts</h3>
   ${strong.map(([c,s])=>{const p=Math.round(s.cor/s.att*100);return `<div class="strong-cat"><div><div style="color:#bbf7d0;font-weight:700">${c}</div><div style="font-size:.75rem;color:#8b7ec8">${s.cor}/${s.att} bonnes r\u00e9ponses</div></div><div style="color:#22c55e;font-weight:700;font-family:'Cinzel'">${p}%</div></div>`}).join('')}</div>`:''}
   ${failedEx.length>0?`<div class="card mb-4"><h3 class="fredoka" style="font-size:.85rem;color:#f7a020;margin-bottom:12px;letter-spacing:.1em;text-transform:uppercase">Exercices \u00e0 refaire ensemble</h3>
-  <div class="recap-scroll">${failedEx.map(e=>`<div class="recap-item"><span class="recap-icon">\u{1F4DD}</span><div class="flex-1"><p class="recap-q"><strong>${e.cat}</strong> \u2014 ${e.q.length>120?e.q.slice(0,120)+'\u2026':e.q}</p><p style="color:#22c55e;font-size:.75rem;margin-top:4px">R\u00e9ponse : ${e.ch[e.ans]}</p></div></div>`).join('')}</div></div>`:''}
+  <div class="recap-scroll">${failedEx.map(e=>`<div class="recap-item"><span class="recap-icon">\u{1F4DD}</span><div class="flex-1"><p class="recap-q"><strong>${esc(e.cat)}</strong> \u2014 ${esc(e.q.length>120?e.q.slice(0,120)+'\u2026':e.q)}</p><p style="color:#22c55e;font-size:.75rem;margin-top:4px">R\u00e9ponse : ${esc(e.ch[e.ans])}</p></div></div>`).join('')}</div></div>`:''}
   ${recentSessions.length>0?`<div class="card mb-4"><h3 class="fredoka" style="font-size:.85rem;color:#f7a020;margin-bottom:12px;letter-spacing:.1em;text-transform:uppercase">10 derni\u00e8res sessions</h3>
   ${recentSessions.map(s=>{const p=s.total>0?Math.round(s.score/s.total*100):0;const lv=LEVELS.find(l=>l.id===s.level);const dt=new Date(s.date);const dtStr=dt.toLocaleDateString('fr-FR',{day:'2-digit',month:'2-digit'})+' '+dt.toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'});return `<div class="session-item"><div><div style="color:#faf5ff">${lv?lv.icon+' '+lv.sub:s.level} \u00b7 ${s.mode}</div><div style="font-size:.7rem;color:#8b7ec8">${dtStr} \u00b7 ${Math.round((s.duration||0)/60)}min</div></div><div style="color:${p>=60?'#22c55e':'#ef4444'};font-weight:700;font-family:'Cinzel'">${s.score}/${s.total}</div></div>`}).join('')}</div>`:''}
   <div class="card mb-4" style="border-color:#c4b5fd"><h3 class="fredoka" style="font-size:.85rem;color:#c4b5fd;margin-bottom:8px">\u{1F517} Sync sur un autre appareil</h3>
-  <p style="color:#faf5ff;font-size:.8rem;margin-bottom:10px">Ouvrez ce lien sur l'autre téléphone/tablette pour récupérer le Royaume de ${profile.name}. <strong>Ne le partagez avec personne d'autre</strong> (équivaut à un mot de passe).</p>
+  <p style="color:#faf5ff;font-size:.8rem;margin-bottom:10px">Ouvrez ce lien sur l'autre téléphone/tablette pour récupérer le Royaume de ${esc(profile.name)}. <strong>Ne le partagez avec personne d'autre</strong> (équivaut à un mot de passe).</p>
   <button class="btn-stone btn-small" onclick="copySyncLink()">\u{1F4CB} Copier le lien</button>
   <button class="btn-stone btn-small" onclick="shareSyncLink()" style="margin-left:8px">\u{1F4F2} Partager (WhatsApp...)</button>
   <div id="syncMsg" style="margin-top:8px;font-size:.75rem;color:#22c55e"></div></div>
@@ -2070,12 +2121,12 @@ function renderFichesTopics(){
     <h2 class="title" style="color:${lv.color}">${lv.name}</h2>
     <p class="sub">${lv.sub||''} \u2014 Choisis un th\u00e8me</p>
   </div>
-  ${state.topics.map((t,i)=>`<div class="card clickable fade-in" style="animation-delay:${i*.05}s" onclick="loadFiche('${(t.id||'').replace(/[^a-z0-9-]/gi,'')}','${(t.title||'').replace(/'/g,'').replace(/\"/g,'')}')">
+  ${state.topics.map((t,i)=>`<div class="card clickable fade-in" style="animation-delay:${i*.05}s" onclick="loadFiche('${(t.id||'').replace(/[^a-z0-9-]/gi,'')}','${esc((t.title||'').replace(/[\\'"<>&]/g,''))}')">
     <div class="row">
-      <div style="font-size:2rem">${t.emoji||'\u{1F4D6}'}</div>
+      <div style="font-size:2rem">${esc(t.emoji||'\u{1F4D6}')}</div>
       <div class="flex-1">
-        <h3 class="card-title">${t.title}</h3>
-        <p class="sub">${t.desc||''}</p>
+        <h3 class="card-title">${esc(t.title)}</h3>
+        <p class="sub">${esc(t.desc||'')}</p>
       </div>
       <div class="arrow">\u2192</div>
     </div>
@@ -2116,15 +2167,15 @@ function renderFichesView(){
     <p class="sub">${lv?lv.sub||lv.name:''}</p>
   </div>
   <div class="fiche-card fade-in">
-    <h1 class="fiche-h1">${f.titre||state.ficheTopic.title}</h1>
-    ${f.intro?`<p class="fiche-intro">${f.intro}</p>`:''}
-    ${(f.essentiel&&f.essentiel.length>0)?`<div class="fiche-section"><h3>\u2728 L'essentiel</h3><ul class="fiche-list">${f.essentiel.map(p=>`<li>${p}</li>`).join('')}</ul></div>`:''}
-    ${(f.dates&&f.dates.length>0)?`<div class="fiche-section"><h3>\u{1F4C5} Dates cl\u00e9s</h3>${f.dates.map(d=>`<div class="fiche-mini"><b>${d.date}</b> \u2014 ${d.evenement}</div>`).join('')}</div>`:''}
-    ${(f.personnalites&&f.personnalites.length>0)?`<div class="fiche-section"><h3>\u{1F464} Personnalit\u00e9s</h3>${f.personnalites.map(p=>`<div class="fiche-mini"><b>${p.nom}</b> \u2014 ${p.role}</div>`).join('')}</div>`:''}
-    ${(f.vocabulaire&&f.vocabulaire.length>0)?`<div class="fiche-section"><h3>\u{1F4DA} Vocabulaire</h3>${f.vocabulaire.map(v=>`<div class="fiche-mini"><b>${v.mot}</b> : ${v.definition}</div>`).join('')}</div>`:''}
-    ${f.anecdote?`<div class="fiche-anecdote">\u{1F4A1} <b>Le savais-tu ?</b> ${f.anecdote}</div>`:''}
-    ${f.retiens_bien?`<div class="fiche-retiens">\u{1F31F} ${f.retiens_bien}</div>`:''}
-    ${(f.quiz_rapide&&f.quiz_rapide.length>0)?`<div class="fiche-section"><h3>\u{1F3AF} Quiz \u00e9clair</h3>${f.quiz_rapide.map((q,i)=>`<div class="fiche-mini" onclick="this.querySelector('span').classList.toggle('hidden')" style="cursor:pointer"><b>Q${i+1} :</b> ${q.q}<br><span class="hidden" style="color:#34d399;font-weight:600">\u279c ${q.r}</span><br><small style="color:#8b7ec8">(clique pour voir la r\u00e9ponse)</small></div>`).join('')}</div>`:''}
+    <h1 class="fiche-h1">${esc(f.titre||state.ficheTopic.title)}</h1>
+    ${f.intro?`<p class="fiche-intro">${esc(f.intro)}</p>`:''}
+    ${(f.essentiel&&f.essentiel.length>0)?`<div class="fiche-section"><h3>\u2728 L'essentiel</h3><ul class="fiche-list">${f.essentiel.map(p=>`<li>${esc(p)}</li>`).join('')}</ul></div>`:''}
+    ${(f.dates&&f.dates.length>0)?`<div class="fiche-section"><h3>\u{1F4C5} Dates cl\u00e9s</h3>${f.dates.map(d=>`<div class="fiche-mini"><b>${esc(d.date)}</b> \u2014 ${esc(d.evenement)}</div>`).join('')}</div>`:''}
+    ${(f.personnalites&&f.personnalites.length>0)?`<div class="fiche-section"><h3>\u{1F464} Personnalit\u00e9s</h3>${f.personnalites.map(p=>`<div class="fiche-mini"><b>${esc(p.nom)}</b> \u2014 ${esc(p.role)}</div>`).join('')}</div>`:''}
+    ${(f.vocabulaire&&f.vocabulaire.length>0)?`<div class="fiche-section"><h3>\u{1F4DA} Vocabulaire</h3>${f.vocabulaire.map(v=>`<div class="fiche-mini"><b>${esc(v.mot)}</b> : ${esc(v.definition)}</div>`).join('')}</div>`:''}
+    ${f.anecdote?`<div class="fiche-anecdote">\u{1F4A1} <b>Le savais-tu ?</b> ${esc(f.anecdote)}</div>`:''}
+    ${f.retiens_bien?`<div class="fiche-retiens">\u{1F31F} ${esc(f.retiens_bien)}</div>`:''}
+    ${(f.quiz_rapide&&f.quiz_rapide.length>0)?`<div class="fiche-section"><h3>\u{1F3AF} Quiz \u00e9clair</h3>${f.quiz_rapide.map((q,i)=>`<div class="fiche-mini" onclick="this.querySelector('span').classList.toggle('hidden')" style="cursor:pointer"><b>Q${i+1} :</b> ${esc(q.q)}<br><span class="hidden" style="color:#34d399;font-weight:600">\u279c ${esc(q.r)}</span><br><small style="color:#8b7ec8">(clique pour voir la r\u00e9ponse)</small></div>`).join('')}</div>`:''}
   </div>
   <div class="btn-row">
     <button class="btn-stone" onclick="loadFiche(state.ficheTopic.id,state.ficheTopic.title)">\u{1F504} R\u00e9g\u00e9n\u00e9rer</button>

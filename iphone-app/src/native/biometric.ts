@@ -1,48 +1,38 @@
 /**
- * Face ID / Touch ID pour l'Espace Parent.
- * Ne remplace jamais le PIN : il l'accélère uniquement.
+ * Face ID / Touch ID pour l'Espace Parent — DÉSACTIVÉ.
  *
- * Utilise @capgo/capacitor-native-biometric. No-op sur le web (dev).
+ * Historique (audit sécurité) :
+ *   @capgo/capacitor-native-biometric 6.0.4 était installé et porte l'advisory
+ *   GHSA-vx5f-vmr6-32wf — « Authentication Bypass ». Toutes les versions
+ *   corrigées (>= 8.3.6) exigent @capacitor/core >= 8 ; ce projet est en
+ *   Capacitor 6. Il n'existe donc aucun correctif en place.
+ *
+ *   Comme biometricPrompt() n'était appelé nulle part (l'Espace Parent n'est
+ *   pas encore branché), la dépendance a été retirée plutôt que conservée
+ *   vulnérable.
+ *
+ * Pour réactiver : migrer le projet en Capacitor 8, réinstaller le plugin en
+ * >= 8.6.7, restaurer les appels ci-dessous, puis repasser
+ * VITE_FEATURE_PARENT_BIOMETRIC à true dans .env.
+ *
+ * IMPORTANT : ces stubs échouent en position FERMÉE. La version précédente
+ * renvoyait `true` hors natif (web/dev), ce qui ouvrait l'Espace Parent sans
+ * aucune authentification dès que Capacitor n'était pas détecté.
+ * Le PIN parent reste le seul garde-fou tant que la biométrie est absente.
  */
 
 export type BiometricResult =
-  | { available: false; reason: 'not_native' | 'not_available' | 'not_enrolled' }
+  | { available: false; reason: 'not_native' | 'not_available' | 'not_enrolled' | 'disabled' }
   | { available: true; type: 'faceId' | 'touchId' | 'unknown' };
 
 export async function biometricAvailable(): Promise<BiometricResult> {
-  if (!globalThis.Capacitor?.isNativePlatform?.()) {
-    return { available: false, reason: 'not_native' };
-  }
-  try {
-    const { NativeBiometric, BiometryType } = await import('@capgo/capacitor-native-biometric');
-    const info = await NativeBiometric.isAvailable();
-    if (!info.isAvailable) {
-      return { available: false, reason: 'not_available' };
-    }
-    const type = info.biometryType === BiometryType.FACE_ID
-      ? 'faceId'
-      : info.biometryType === BiometryType.TOUCH_ID
-        ? 'touchId'
-        : 'unknown';
-    return { available: true, type };
-  } catch {
-    return { available: false, reason: 'not_available' };
-  }
+  return { available: false, reason: 'disabled' };
 }
 
-/** Demande l'auth biométrique avant d'exposer l'Espace Parent. */
-export async function biometricPrompt(reason: string): Promise<boolean> {
-  if (!globalThis.Capacitor?.isNativePlatform?.()) return true;
-  try {
-    const { NativeBiometric } = await import('@capgo/capacitor-native-biometric');
-    await NativeBiometric.verifyIdentity({
-      reason,
-      title: 'Espace Parent',
-      subtitle: 'Authentifie-toi pour continuer',
-      description: reason
-    });
-    return true;
-  } catch {
-    return false;
-  }
+/**
+ * Renvoie toujours false : aucune authentification biométrique n'est possible.
+ * L'appelant DOIT retomber sur le PIN parent, jamais laisser passer.
+ */
+export async function biometricPrompt(_reason: string): Promise<boolean> {
+  return false;
 }
