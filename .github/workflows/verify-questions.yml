@@ -37,12 +37,37 @@ jobs:
       - name: Install
         run: npm install @anthropic-ai/sdk@latest
 
+      # Sans le secret ANTHROPIC_API_KEY, ce contrôle ne peut rien relire. Il
+      # échouait alors sur CHAQUE pull request : un rouge permanent, qui a
+      # exactement la même couleur qu'un vrai problème et qu'on finit par ne
+      # plus lire. C'est ce qui a déjà laissé semgrep éteint une semaine.
+      # Il dit désormais clairement qu'il n'a rien vérifié, et laisse passer :
+      # « personne n'a relu les questions » est une information, pas une panne.
+      # Pour l'allumer : Settings → Secrets and variables → Actions →
+      # New repository secret → nom ANTHROPIC_API_KEY.
       - name: Vérification
         env:
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
           LIMIT: ${{ github.event.inputs.limit }}
           ONLY_CHANGED: ${{ github.event_name == 'pull_request' && 'true' || 'false' }}
-        run: node scripts/verify-questions.mjs
+        run: |
+          if [ -z "$ANTHROPIC_API_KEY" ]; then
+            {
+              echo "### 🤖 Vérif factuelle des questions — NON exécutée"
+              echo
+              echo "Le secret \`ANTHROPIC_API_KEY\` n'est pas configuré sur ce dépôt."
+              echo "**Aucune question n'a été relue par l'IA dans cette PR.**"
+              echo
+              echo "Les contrôles mécaniques (\`npm test\`) sont passés, mais ils ne"
+              echo "vérifient pas qu'une réponse est factuellement juste."
+              echo
+              echo "Pour l'activer : Settings → Secrets and variables → Actions →"
+              echo "New repository secret → nom \`ANTHROPIC_API_KEY\`."
+            } > verify-report.md
+            echo "::warning::ANTHROPIC_API_KEY absent — les questions n'ont pas été relues."
+            exit 0
+          fi
+          node scripts/verify-questions.mjs
 
       - name: Upload report
         if: always()

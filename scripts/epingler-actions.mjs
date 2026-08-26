@@ -29,6 +29,18 @@ const verifierSeulement = process.argv.includes('--verifier');
 
 const SHA = /^[0-9a-f]{40}$/;
 const USES = /uses:\s*([A-Za-z0-9._-]+\/[A-Za-z0-9._/-]+)@([A-Za-z0-9._-]+)/g;
+// Une référence d'action ou un tag ne peut contenir que ces caractères. On le
+// VÉRIFIE avant de s'en servir, au lieu de faire confiance au fichier JSON.
+const REF = /^[A-Za-z0-9._/-]+$/;
+
+/* Tout ce qui vient du fichier de configuration et finit dans une expression
+   régulière doit être échappé. Sans ça, un tag contenant « ( » ou « [ » —
+   par accident ou parce que quelqu'un a modifié le JSON — construit une regex
+   différente de celle qu'on croit écrire, voire invalide : c'est une injection
+   d'expression régulière, et CodeQL la classe en gravité haute. Ce fichier
+   décide de ce qui s'exécute dans les workflows, jusqu'à l'envoi TestFlight :
+   il n'y a aucune raison de lui faire confiance sur parole. */
+const echapper = (s) => String(s).replace(/[.*+?^${}()|[\]\\/-]/g, '\\$&');
 
 const fichiers = readdirSync(dossier).filter(f => /\.ya?ml$/.test(f));
 const conf = JSON.parse(readFileSync(config, 'utf8'));
@@ -58,6 +70,12 @@ for (const action of utilisees.keys()) {
 const aEpingler = [];
 for (const [action, v] of Object.entries(conf)) {
   if (action.startsWith('_')) continue;
+  // Refuser AVANT d'écrire, pas rattraper après : une valeur inattendue ici
+  // se retrouverait dans une expression régulière puis dans un workflow.
+  if (!REF.test(action) || !REF.test(v && v.tag || '')) {
+    console.log(`  ❌ ${action} — nom d'action ou tag invalide dans actions-epinglees.json`);
+    bloquant++; continue;
+  }
   const refs = utilisees.get(action);
   if (!refs) { console.log(`  ⚠️  ${action} est listée mais plus utilisée — ligne inutile`); continue; }
   if ([...refs].every(r => SHA.test(r))) { console.log(`  ✅ ${action} déjà épinglée`); continue; }
@@ -93,7 +111,7 @@ for (const f of fichiers) {
   for (const [action, v] of aEpingler) {
     // On garde le tag en commentaire : sans lui, plus personne ne sait
     // quelle version tourne, et la mise à jour devient un déchiffrage.
-    const re = new RegExp(`(uses:\\s*${action.replace(/[.*+?^${}()|[\]\\/]/g, '\\$&')})@${v.tag.replace(/\./g, '\\.')}(?![\\w.-])`, 'g');
+    const re = new RegExp(`(uses:\\s*${echapper(action)})@${echapper(v.tag)}(?![\\w.-])`, 'g');
     src = src.replace(re, (_, debut) => { n++; return `${debut}@${v.sha} # ${v.tag}`; });
   }
   if (n) { writeFileSync(chemin, src); console.log(`  ${f} — ${n} épinglage(s)`); total += n; }
