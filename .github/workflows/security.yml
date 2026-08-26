@@ -108,6 +108,9 @@ jobs:
       - uses: actions/setup-node@v4
         with: { node-version: 20 }
       - run: node scripts/test-echappement.mjs
+      # Même famille : un contrôle purement local, sans réseau, sur une panne
+      # qui ne se voit pas tant qu'on a du réseau (cache hors connexion cassé).
+      - run: node scripts/test-versions.mjs
 
   osv:
     name: 🐛 osv-scanner (CVE dépendances)

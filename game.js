@@ -320,7 +320,7 @@ const STORAGE_ACTIVE="royaume_active_v1";
    distinguer « la fonctionnalité est cassée » de « le téléphone n'a pas
    encore la mise à jour ».
    À bumper avec CACHE_VERSION (sw.js) et le ?v= (index.html). */
-const APP_VERSION='v36';
+const APP_VERSION='v37';
 
 function loadProfilesDict(){
   try{const d=localStorage.getItem(STORAGE_PROFILES); if(d) return JSON.parse(d)||{};}catch(e){}
@@ -850,9 +850,61 @@ function ensureMicConsent(onYes,onNo){
 }
 
 /* ════════ NAVIGATION ════════ */
-// Le titre ramène à l'accueil « en haut » : c'est un geste de sortie, pas un
-// retour en arrière — on oublie donc l'ancre.
-$('headerHome').onclick=()=>{_homeAnchor=null;navigate('home')};
+/* La flèche ← et le titre partagent le même clic, mais ce sont deux gestes
+   différents :
+   · la FLÈCHE est un retour — elle remonte d'un cran et redonne à l'enfant
+     la place qu'il avait quitté ;
+   · le TITRE est une sortie — on rentre à l'accueil, en haut.
+   Les confondre renvoyait tout en haut de la page à chaque retour. */
+$('headerHome').onclick=(e)=>{
+  const surFleche=!!(e&&e.target&&e.target.closest&&e.target.closest('#backArrow'));
+  if(surFleche) return retourArriere();
+  _homeAnchor=null;
+  _positions={};
+  navigate('home');
+};
+
+/* Mémoire de la position de défilement, par écran.
+   Sans elle, revenir d'un niveau vers son royaume repartait du haut, et il
+   fallait re-parcourir toute la liste. */
+let _positions={};
+let _retourEnCours=false;
+function _clePosition(){
+  // La clé ne retient que ce qui identifie VRAIMENT l'écran. state.subjectId
+  // et state.level persistent d'un écran à l'autre : les inclure partout
+  // donnait une clé différente à l'aller et au retour, et la position
+  // mémorisée n'était jamais retrouvée.
+  const s=state.screen;
+  if(s==='subject') return 'subject|'+(state.subjectId||'');
+  if(s==='mode')    return 'mode|'+(state.level||'');
+  if(s==='tablesLearn') return 'tablesLearn|'+(state.tableN||'');
+  return s;
+}
+
+/* Un vrai retour : d'un niveau on remonte à son royaume, d'un royaume à
+   l'accueil. Auparavant la flèche sautait toujours à l'accueil, ce qui
+   faisait perdre deux crans d'un coup. */
+function retourArriere(){
+  const s=state.screen;
+  if((s==='mode'||s==='lessonView')&&state.subjectId){
+    _retourEnCours=true;
+    return navigate('subject',{subjectId:state.subjectId});
+  }
+  if(s==='fichesTopics'||s==='fichesView'){
+    _retourEnCours=true;
+    return navigate('fichesSubject');
+  }
+  if(s==='tablesLearn'){
+    _retourEnCours=true;
+    return navigate('tablesHome');
+  }
+  if(s==='tablesQuiz'){
+    _retourEnCours=true;
+    return navigate('tablesLearn',{tableN:state.tableN});
+  }
+  _retourEnCours=true;
+  navigate('home');
+}
 
 /* ── Ancre d'accueil ───────────────────────────────────────────────────
    L'accueil est long (une dizaine de royaumes). En revenir tout en haut à
@@ -881,10 +933,15 @@ function _scrollToHomeAnchor(){
 }
 
 function navigate(screen,data){
+  // On note où on en était AVANT de changer d'écran.
+  try{if(state.screen) _positions[_clePosition()]=window.scrollY}catch(e){}
   if(state.timerID){clearInterval(state.timerID);state.timerID=null}
   if(state.autoNextID){clearTimeout(state.autoNextID);state.autoNextID=null}
   if(state.battlePollID){clearTimeout(state.battlePollID);state.battlePollID=null}
   if(state.memTickID){clearInterval(state.memTickID);state.memTickID=null}
+  // Une table en cours de récitation continuerait de parler par-dessus
+  // l'écran suivant : la voix survit au changement de page.
+  if(typeof arreterRecitation==='function')arreterRecitation();
   state.screen=screen;
   if(data) Object.assign(state,data);
   backArrow.classList.toggle('hidden',screen==='home');
@@ -893,6 +950,28 @@ function navigate(screen,data){
   // profil. On le retire pour rendre ces pixels aux cartes.
   try{document.documentElement.classList.toggle('jeu-plein-ecran',screen==='memoryGame')}catch(e){}
   render();
+  // Retour en arrière : on redonne la place exacte qu'on occupait.
+  // Sinon on essaie l'ancre de l'accueil, sinon on repart du haut.
+  const revenir=_retourEnCours;
+  _retourEnCours=false;
+  const memo=revenir?_positions[_clePosition()]:undefined;
+  if(memo!==undefined&&memo>0){
+    // On applique la position, puis on la RÉAPPLIQUE une fois la mise en
+    // page stabilisée. Sans ça, le navigateur la déplace tout seul : son
+    // « ancrage de défilement » repousse la page quand du contenu situé
+    // au-dessus grandit après coup (polices web, images), et on atterrit
+    // à côté. On borne à chaque fois, la page pouvant être plus courte.
+    const poser=()=>{
+      const max=Math.max(0,document.documentElement.scrollHeight-window.innerHeight);
+      window.scrollTo(0,Math.min(memo,max));
+    };
+    poser();
+    try{
+      requestAnimationFrame(()=>{poser();requestAnimationFrame(poser)});
+      setTimeout(poser,120);   // filet pour les polices qui arrivent tard
+    }catch(e){}
+    return;
+  }
   if(!(screen==='home'&&_scrollToHomeAnchor())) window.scrollTo(0,0);
 }
 
@@ -905,6 +984,9 @@ function render(){
     case 'results': renderResults(); break;
     case 'battleHome': renderBattleHome(); syncAmis().then(()=>{if(state.screen==='battleHome')renderBattleHome()}); break;
     case 'memoryHome': renderMemoryHome(); break;
+    case 'tablesHome': renderTablesHome(); break;
+    case 'tablesLearn': renderTablesLearn(); break;
+    case 'tablesQuiz': renderTablesQuiz(); break;
     case 'pseudoSetup': renderPseudoSetup(); break;
     case 'memoryGame': renderMemoryGame(); break;
     case 'battleResults': renderBattleResults(); break;
@@ -1235,6 +1317,14 @@ function renderHome(){
         <div class="kingdom-enter" style="color:#fb923c">\u2794</div>
       </div>
     </div>
+    <div class="subject-card fade-in" data-anchor="tables" style="border-color:#f59e0b;background:rgba(245,158,11,0.07)" onclick="navigate('tablesHome')">
+      <div class="subject-emoji bounce">\u{1F522}</div>
+      <div class="subject-info">
+        <h3 class="subject-name" style="color:#f59e0b">Les tables par cœur</h3>
+        <p class="subject-desc">Voir, écouter, réciter — les tables de 1 à 10, sans chrono</p>
+      </div>
+      <div class="arrow">→</div>
+    </div>
     <div class="subject-card fade-in" data-anchor="memory" style="border-color:#34d399;background:rgba(52,211,153,0.07)" onclick="navigate('memoryHome')">
       <div class="subject-emoji bounce">\u{1F0CF}</div>
       <div class="subject-info">
@@ -1369,6 +1459,20 @@ function renderSubject(){
       <div class="arrow">${open?'→':''}</div>
     </div>
   </div>`}).join('')}
+  ${(function(){
+    // Réviser par thème : un thème traverse les niveaux (les fractions
+    // commencent en CE2 et continuent en 5e), donc il a sa place ici et non
+    // dans un niveau. Seuls les niveaux ouverts alimentent le tirage.
+    const th=themesDuSujet(s.id);
+    if(!th.length) return '';
+    return '<div class="card mb-4" style="border-color:#c4b5fd">'
+      +'<h3 class="fredoka" style="font-size:.85rem;color:#c4b5fd;margin-bottom:4px;letter-spacing:.1em;text-transform:uppercase">\u{1F3AF} R\u00e9viser un th\u00e8me</h3>'
+      +'<p class="sub" style="font-size:.75rem;margin-bottom:10px">10 questions sur un seul sujet. Celles que tu n\'as pas encore r\u00e9ussies passent en premier.</p>'
+      +'<div class="theme-chips">'
+      +th.map(([cat,n])=>'<button class="theme-chip" data-s="'+esc(s.id)+'" data-c="'+esc(cat)+'" onclick="startTheme(this.dataset.s,this.dataset.c)">'
+          +esc(cat)+' <span class="theme-n">'+n+'</span></button>').join('')
+      +'</div></div>';
+  })()}
   <button class="btn-stone mt-4" onclick="navigate('home')">\u2190 Retour</button>`;
 }
 
@@ -2197,6 +2301,31 @@ function isAboveGrade(lvId){
   const need=levelMinGrade(LEVELS.find(l=>l.id===lvId));
   return need!==null&&need>profile.grade;
 }
+// Les niveaux d'une matière que l'enfant peut réellement jouer.
+function niveauxDuSujet(subjectId){
+  const su=SUBJECTS.find(x=>x.id===subjectId);
+  const out=new Set();
+  if(!su) return out;
+  for(const l of (su.levels||[])){
+    if(l.secret&&String(profile.name||'').toLowerCase()!=='joseph') continue;
+    if(isLevelUnlocked(l.id)) out.add(l.id);
+  }
+  return out;
+}
+
+/* Thèmes disponibles dans une matière, avec le nombre de questions.
+   Sous six questions, une révision tournerait toujours sur les mêmes : on
+   ne propose pas le thème plutôt que d'offrir une répétition. */
+function themesDuSujet(subjectId){
+  const niv=niveauxDuSujet(subjectId);
+  const compte={};
+  for(const e of EX){
+    if(!e.cat||!niv.has(e.lv)||!isPlayableEx(e)) continue;
+    compte[e.cat]=(compte[e.cat]||0)+1;
+  }
+  return Object.entries(compte).filter(([,n])=>n>=6).sort((x,y)=>y[1]-x[1]);
+}
+
 // Questions du niveau encore jamais réussies — celles qui restent à conquérir.
 function remainingOf(pool){
   const st=profile.exerciseStats||{};
@@ -2214,10 +2343,30 @@ function pickExercises(mode,lvId){
   const staticPool=EX.filter(e=>e.lv===lvId);
   const pool=staticPool.concat(aiPool).concat(customPool).filter(isPlayableEx);
   if(mode==='progression'){
+    // La Quête piochait dans TOUTES les matières : on tombait sur des
+    // questions de maths dans le Royaume des Explorateurs. Elle reste
+    // désormais dans le royaume où l'enfant se trouve — c'est bien la
+    // difficulté qui monte, pas le sujet qui change.
+    const nivSujet=niveauxDuSujet(subjectOfLevel(lvId));
+    const dansSujet=EX.filter(e=>nivSujet.has(e.lv)&&isPlayableEx(e));
+    const source=dansSujet.length>=6?dansSujet:EX.filter(e=>e.lv!=='cp'&&isPlayableEx(e));
     // finalizePick d'abord (dédoublonnage + cooldown), tri par difficulté ensuite :
     // l'ordre croissant doit rester vrai sur les 10 questions réellement tirées.
-    return finalizePick(shuffle(EX.filter(e=>e.lv!=='cp'&&isPlayableEx(e))),10)
-      .sort((a,b)=>a.diff-b.diff);
+    return finalizePick(shuffle(source),10).sort((a,b)=>a.diff-b.diff);
+  }
+  // ── Révision d'un thème ────────────────────────────────────────────
+  // Un thème traverse les niveaux : les fractions commencent en CE2 et se
+  // poursuivent en 5e. On ne prend QUE les niveaux ouverts à l'enfant, pour
+  // ne pas contourner le verrouillage par classe.
+  if(mode==='theme'){
+    const nivSujet=niveauxDuSujet(state.themeSubject);
+    const pool=EX.concat(profile.aiExercises||[])
+      .filter(e=>nivSujet.has(e.lv)&&e.cat===state.themeCat&&isPlayableEx(e));
+    const reste=remainingOf(pool);
+    const dejaVues=new Set(reste.map(e=>e.id));
+    // Ce qui n'est pas encore réussi passe devant : c'est ça, réviser.
+    const source=shuffle(reste).concat(shuffle(pool.filter(e=>!dejaVues.has(e.id))));
+    return finalizePick(source,10);
   }
   if(mode==='adaptive'){
     // Priorise les exercices rat\u00e9s ou jamais vus.
@@ -2265,6 +2414,16 @@ function pickExercises(mode,lvId){
   if(candidates.length<10) candidates=candidates.concat(shuffle(unseen.filter(e=>!inBand(e))));
   if(candidates.length<10) candidates=candidates.concat(seen.filter(inBand),seen.filter(e=>!inBand(e)));
   return finalizePick(candidates,10);
+}
+
+function startTheme(subjectId,cat){
+  state.themeSubject=subjectId;
+  state.themeCat=cat;
+  const niv=niveauxDuSujet(subjectId);
+  const unLv=[...niv][0]||null;
+  state.level=unLv;                 // pour les statistiques par royaume
+  track('theme_started',{sujet:String(subjectId).slice(0,20),theme:String(cat).slice(0,24)});
+  startGame('theme');
 }
 
 async function startGame(mode){
@@ -4885,6 +5044,308 @@ function addPhotoExercises(){
   navigate('parent');
 }
 
+/* ════════ APPRENDRE LES TABLES PAR CŒUR ════════
+   Le Memory ci-dessous est un JEU : il entretient des tables déjà connues.
+   Ici, on les APPREND — c'est autre chose, et pour un enfant de 6 ans ça ne
+   commence pas par réciter. À cet âge un nombre n'est pas encore une idée
+   abstraite : il faut le voir avant de le dire. L'espace suit donc trois
+   temps, dans cet ordre, et on ne peut pas sauter le premier :
+
+     1. DÉCOUVRIR — la table s'affiche en entier. Toucher une ligne la dit à
+        voix haute ET déplie la quantité en points rangés : « 3 × 4 », ce
+        sont 3 rangées de 4 points, qu'on peut compter du doigt.
+     2. ÉCOUTER   — l'app récite la table entière, ligne après ligne, en
+        surlignant celle qu'elle prononce. C'est la mémoire auditive, celle
+        qui fait qu'on « entend » 7 × 8 avant de le calculer.
+     3. RÉCITER   — 10 questions de CETTE table, sans chrono. Le chrono
+        pousse à répondre au hasard ; ici on veut la bonne réponse, pas la
+        rapide. Une table n'est marquée « apprise » qu'après un sans-faute :
+        c'est la définition de « par cœur », et c'est aussi ce qui décourage
+        de cliquer au hasard — une seule erreur, et il faut recommencer.
+*/
+const TABLES=[
+  {n:1, color:'#a3e635', astuce:"Multiplier par 1, c'est ne rien changer du tout : 1 × 7, c'est 7."},
+  {n:2, color:'#34d399', astuce:"Multiplier par 2, c'est doubler : 2 × 6, c'est 6 + 6."},
+  {n:3, color:'#22d3ee', astuce:"On avance de 3 en 3 : 3, 6, 9, 12… comme des bonds de kangourou."},
+  {n:4, color:'#60a5fa', astuce:"C'est le double du double : 6 doublé fait 12, et 12 doublé fait 24. Donc 4 × 6 = 24."},
+  {n:5, color:'#a78bfa', astuce:"Les résultats finissent toujours par 0 ou par 5. Comme les doigts de tes mains."},
+  {n:6, color:'#f472b6', astuce:"6 × 4, c'est pareil que 4 × 6 : si tu connais la table de 4, tu connais déjà la moitié de celle-ci."},
+  {n:7, color:'#fb923c', astuce:"La plus dure — mais 7 × 1, 7 × 2, 7 × 5 et 7 × 10 sont faciles. Commence par celles-là."},
+  {n:8, color:'#f59e0b', astuce:"C'est le double de la table de 4 : 4 × 3 = 12, donc 8 × 3 = 24."},
+  {n:9, color:'#ef4444', astuce:"Un truc magique : 9 × 4, c'est 10 × 4 (40) moins 4, donc 36."},
+  {n:10,color:'#fbbf24', astuce:"On ajoute juste un zéro : 10 × 7, c'est 70."}
+];
+// Par où commencer quand on a 6 ans : ces quatre-là s'apprennent sans effort
+// (règle visible), les six autres demandent de la répétition.
+const TABLES_FACILES=[1,2,5,10];
+
+function tablesStats(){
+  if(!profile.tablesStats||typeof profile.tablesStats!=='object')profile.tablesStats={};
+  return profile.tablesStats;
+}
+function tableApprise(n){const s=tablesStats()[n];return !!(s&&s.sansFaute)}
+
+/* La voix est partagée avec le Memory : un seul réglage, un seul endroit où
+   la couper. Sans elle, tout le reste continue de fonctionner. */
+function _voixDispo(){return _memVoice&&('speechSynthesis' in window)}
+function direMulti(a,b,fin){
+  if(!_voixDispo()){if(fin)setTimeout(fin,900);return}
+  let passe=false;
+  const passer=()=>{if(passe||!fin)return;passe=true;fin()};
+  try{
+    speechSynthesis.cancel();
+    const u=new SpeechSynthesisUtterance(a+' fois '+b+' égale '+(a*b));
+    u.lang='fr-FR';u.rate=0.8;
+    u.onend=passer;u.onerror=passer;
+    speechSynthesis.speak(u);
+  }catch(e){}
+  // Filet de sécurité. Sur un appareil où l'API existe mais où AUCUNE voix
+  // n'est installée, speak() ne dit rien et ne déclenche jamais onend : la
+  // récitation resterait figée sur la première ligne, sans rien annoncer.
+  // On avance quand même — le surlignage défile, l'enfant peut suivre.
+  if(fin)setTimeout(passer,3000);
+}
+
+function renderTablesHome(){
+  const st=tablesStats();
+  const apprises=TABLES.filter(t=>tableApprise(t.n)).length;
+  const pct=Math.round(apprises/TABLES.length*100);
+  app.innerHTML='<div class="text-center py-6 fade-in">'
+    +'<div style="font-size:3.5rem">\u{1F522}</div>'
+    +'<h2 class="title" style="color:#f59e0b;font-size:1.6rem">Les tables par cœur</h2>'
+    +'<p class="sub">Choisis une table. Tu la regardes, tu l\'écoutes, puis tu la récites. Sans chrono : ici on prend son temps.</p>'
+  +'</div>'
+  +'<div class="card mb-4" style="border-color:#f59e0b">'
+    +'<div class="row" style="justify-content:space-between;align-items:center">'
+      +'<span class="fredoka" style="color:#fbbf24">'+apprises+' table'+(apprises>1?'s':'')+' sur '+TABLES.length+' apprise'+(apprises>1?'s':'')+'</span>'
+      +'<span class="sub">'+pct+'%</span></div>'
+    +'<div class="progress-track mt-2"><div class="progress-fill" style="width:'+pct+'%;background:linear-gradient(90deg,#f59e0b,#fbbf24)"></div></div>'
+  +'</div>'
+  +TABLES.map((t,i)=>{
+    const s=st[t.n]||{};
+    const apprise=tableApprise(t.n);
+    const facile=TABLES_FACILES.includes(t.n);
+    const bonds=[1,2,3,4,5].map(k=>t.n*k).join(', ')+'…';
+    const etat=apprise
+      ?'<span style="color:#fbbf24">⭐ Apprise par cœur</span>'
+      :(s.meilleur?('Meilleur score : '+s.meilleur+'/10'):(facile?'Facile — commence par ici !':'Pas encore travaillée'));
+    return '<div class="card clickable fade-in" style="animation-delay:'+(i*.05)+'s;border-color:'+t.color+'" onclick="ouvrirTable('+t.n+')">'
+      +'<div class="row"><div class="fredoka" style="font-size:1.9rem;color:'+t.color+';min-width:56px;text-align:center">×'+t.n+'</div>'
+      +'<div class="flex-1"><h3 class="card-title" style="color:'+t.color+'">Table de '+t.n+'</h3>'
+      +'<p class="sub">'+bonds+' — '+etat+'</p></div>'
+      +'<div class="arrow">→</div></div></div>';
+  }).join('')
+  +'<button class="btn-stone mb-2" onclick="toggleMemVoice()" id="memVoiceBtn">'+(_memVoice?'\u{1F50A} Voix : activée':'\u{1F507} Voix : coupée')+'</button>'
+  +'<button class="btn-stone" onclick="navigate(\'home\')">← Retour</button>';
+}
+
+function ouvrirTable(n){
+  arreterRecitation();
+  state.tableN=n;
+  state.tableLigne=0;      // ligne dépliée (0 = aucune)
+  navigate('tablesLearn');
+}
+
+/* Les points sont rangés en n rangées de k : c'est ce qui rend « 3 × 4 »
+   lisible sans savoir lire. On les dimensionne d'après le plus grand côté
+   pour que la plus lourde (10 × 10 = 100 points) tienne encore en largeur. */
+function _pointsMulti(n,k,couleur){
+  const cote=Math.max(6,Math.min(18,Math.round(230/Math.max(n,k,4))));
+  let h='<div class="tbl-points" style="--pt:'+cote+'px;grid-template-columns:repeat('+k+',var(--pt))">';
+  for(let i=0;i<n*k;i++)h+='<span class="tbl-point" style="background:'+couleur+'"></span>';
+  return h+'</div>';
+}
+
+function renderTablesLearn(){
+  const n=state.tableN;
+  const t=TABLES.find(x=>x.n===n);
+  if(!t){navigate('tablesHome');return}
+  const ouverte=state.tableLigne||0;
+  const apprise=tableApprise(n);
+  const lignes=[];
+  for(let k=1;k<=10;k++){
+    const deplie=ouverte===k;
+    lignes.push('<div class="tbl-ligne'+(deplie?' ouverte':'')+'" data-k="'+k+'" onclick="toucherLigne('+k+')">'
+      +'<div class="tbl-calcul"><b style="color:'+t.color+'">'+n+'</b> × <b>'+k+'</b> = <b style="color:#fbbf24">'+(n*k)+'</b></div>'
+      +(deplie?_pointsMulti(n,k,t.color)+'<p class="sub" style="margin-top:6px">'+n+' rangées de '+k+', ça fait '+(n*k)+'.</p>':'')
+    +'</div>');
+  }
+  app.innerHTML='<div class="text-center py-4 fade-in">'
+    +'<h2 class="title" style="color:'+t.color+';font-size:1.5rem">Table de '+n+(apprise?' ⭐':'')+'</h2>'
+    +'<p class="sub">Touche une ligne pour l\'entendre et voir les points.</p>'
+  +'</div>'
+  +'<div class="card mb-3" style="border-color:'+t.color+'"><p class="sub" style="margin:0">\u{1F4A1} '+esc(t.astuce)+'</p></div>'
+  +'<div class="card mb-3"><h3 class="fredoka" style="font-size:.8rem;color:#8b7ec8;margin-bottom:8px;letter-spacing:.1em;text-transform:uppercase">La suite des bonds</h3>'
+    +'<div class="row" style="flex-wrap:wrap;gap:6px">'
+    +[1,2,3,4,5,6,7,8,9,10].map(k=>'<span class="tbl-bond" style="border-color:'+t.color+';color:'+t.color+'">'+(n*k)+'</span>').join('')
+    +'</div></div>'
+  +'<div class="tbl-liste">'+lignes.join('')+'</div>'
+  +'<button class="btn-stone mt-3" id="tblReciteBtn" onclick="reciterTable('+n+')">\u{1F50A} Écouter toute la table</button>'
+  +'<button class="btn-fire mt-2" onclick="startTableQuiz('+n+')">✍️ Réciter la table</button>'
+  +'<button class="btn-stone mt-2" onclick="retourArriere()">← Autres tables</button>';
+  _majBoutonRecite();
+}
+
+function toucherLigne(k){
+  arreterRecitation();
+  state.tableLigne=(state.tableLigne===k?0:k);
+  renderTablesLearn();
+  if(state.tableLigne===k)direMulti(state.tableN,k);
+}
+
+/* ── Récitation de la table entière ────────────────────────────────────
+   On enchaîne sur la FIN de chaque phrase (onend), pas sur un minuteur :
+   la durée d'une phrase dépend de la voix installée, et un minuteur fixe
+   finit toujours par couper la parole ou par laisser un blanc. Sans voix
+   disponible, direMulti() rappelle quand même la suite : le surlignage
+   défile seul, ce qui reste utile pour suivre du doigt. */
+let _tblRecite=null;
+function reciterTable(n){
+  if(_tblRecite!==null)return arreterRecitation();
+  _tblRecite=1;
+  _majBoutonRecite();
+  const suite=()=>{
+    if(_tblRecite===null)return;
+    if(_tblRecite>10)return arreterRecitation();
+    const k=_tblRecite;
+    _surlignerLigne(k);
+    direMulti(n,k,()=>{
+      if(_tblRecite===null)return;
+      _tblRecite++;
+      setTimeout(suite,350);
+    });
+  };
+  setTimeout(suite,120);
+}
+function arreterRecitation(){
+  if(_tblRecite===null&&!_voixDispo())return;
+  _tblRecite=null;
+  try{if('speechSynthesis' in window)speechSynthesis.cancel()}catch(e){}
+  _surlignerLigne(0);
+  _majBoutonRecite();
+}
+function _surlignerLigne(k){
+  document.querySelectorAll('.tbl-ligne').forEach(el=>{
+    const dit=Number(el.dataset.k)===k;
+    el.classList.toggle('dite',dit);
+    if(dit&&el.scrollIntoView)try{el.scrollIntoView({block:'center',behavior:'smooth'})}catch(e){}
+  });
+}
+function _majBoutonRecite(){
+  const b=document.getElementById('tblReciteBtn');
+  if(!b)return;
+  b.textContent=_tblRecite!==null?'⏹ Arrêter':'\u{1F50A} Écouter toute la table';
+}
+
+/* ── Réciter : 10 questions de la table, sans chrono ──────────────────── */
+function _choixMulti(n,k){
+  const bon=n*k;
+  // Les leurres sont les VOISINS dans la table : c'est l'erreur naturelle
+  // (« je me suis décalé d'un cran »). Des nombres au hasard se repèrent
+  // sans connaître sa table, et n'apprennent donc rien.
+  const ordre=[n*(k-1),n*(k+1)].concat(shuffle([1,2,3,4,5,6,7,8,9,10].map(j=>n*j)),[bon+1,bon+2,bon+n]);
+  const autres=[];
+  for(const v of ordre){
+    if(v===bon||v<=0||autres.includes(v))continue;
+    autres.push(v);
+    if(autres.length===3)break;
+  }
+  return shuffle([bon].concat(autres));
+}
+function startTableQuiz(n){
+  arreterRecitation();
+  const q=shuffle([1,2,3,4,5,6,7,8,9,10]).map(k=>({k,ch:_choixMulti(n,k)}));
+  state.tblQuiz={n,q,i:0,score:0,choisi:null,fautes:[]};
+  navigate('tablesQuiz');
+}
+function renderTablesQuiz(){
+  const Q=state.tblQuiz;
+  if(!Q){navigate('tablesHome');return}
+  const t=TABLES.find(x=>x.n===Q.n)||TABLES[0];
+  if(Q.i>=Q.q.length)return _finTableQuiz(t);
+  const cur=Q.q[Q.i];
+  const bon=Q.n*cur.k;
+  const repondu=Q.choisi!==null;
+  app.innerHTML='<div class="text-center py-4 fade-in">'
+    +'<p class="sub">Table de '+Q.n+' · question '+(Q.i+1)+'/'+Q.q.length+'</p>'
+    +'<div class="progress-track mt-2" style="max-width:280px;margin:8px auto"><div class="progress-fill" style="width:'+Math.round(Q.i/Q.q.length*100)+'%;background:'+t.color+'"></div></div>'
+    // var(--text-main) et non #fff : en mode clair, un chiffre blanc sur fond
+    // clair disparaît — et c'est LA question.
+    +'<div class="fredoka" style="font-size:2.6rem;margin:18px 0;color:var(--text-bright)">'+Q.n+' × '+cur.k+' = <span style="color:'+t.color+'">?</span></div>'
+  +'</div>'
+  +'<div class="tbl-choix">'
+  +cur.ch.map(v=>{
+    let cls='tbl-rep';
+    if(repondu){
+      if(v===bon)cls+=' juste';
+      else if(v===Q.choisi)cls+=' faux';
+      else cls+=' pale';
+    }
+    return '<button class="'+cls+'"'+(repondu?' disabled':'')+' onclick="repondreTable('+v+')">'+v+'</button>';
+  }).join('')
+  +'</div>'
+  +(repondu
+    ?'<div class="card mt-3 fade-in" style="border-color:'+(Q.choisi===bon?'#34d399':'#ef4444')+'">'
+      +'<h3 class="card-title" style="color:'+(Q.choisi===bon?'#34d399':'#ef4444')+'">'
+      +(Q.choisi===bon?'✅ Bravo !':'❌ '+Q.n+' × '+cur.k+' = '+bon)+'</h3>'
+      +_pointsMulti(Q.n,cur.k,t.color)
+      +'<p class="sub" style="margin-top:8px">'+Q.n+' rangées de '+cur.k+' points, ça fait '+bon+'.</p>'
+      +'<button class="btn-fire mt-3" onclick="suivantTable()">'+(Q.i+1>=Q.q.length?'Voir le résultat':'Question suivante')+'</button>'
+    +'</div>'
+    :'<button class="btn-stone mt-3" onclick="retourArriere()">← Revoir la table</button>');
+}
+function repondreTable(v){
+  const Q=state.tblQuiz;
+  if(!Q||Q.choisi!==null)return;
+  const cur=Q.q[Q.i];
+  const bon=Q.n*cur.k;
+  Q.choisi=v;
+  if(v===bon)Q.score++;
+  else Q.fautes.push(cur.k);
+  renderTablesQuiz();
+  direMulti(Q.n,cur.k);
+}
+function suivantTable(){
+  const Q=state.tblQuiz;
+  if(!Q)return;
+  Q.i++;Q.choisi=null;
+  renderTablesQuiz();
+  window.scrollTo(0,0);
+}
+function _finTableQuiz(t){
+  const Q=state.tblQuiz;
+  const sansFaute=Q.score===Q.q.length;
+  // Une table n'est « apprise » qu'au sans-faute. Le score partiel rapporte
+  // quand même des XP — il a fallu travailler — mais il ne pose pas l'étoile.
+  const xp=Q.score*4+(sansFaute?20:0);
+  const cr=sansFaute?5:1;
+  profile.xp=(Number(profile.xp)||0)+xp;
+  profile.cristaux=(Number(profile.cristaux)||0)+cr;
+  const st=tablesStats();
+  const prec=st[Q.n]||{};
+  st[Q.n]={
+    meilleur:Math.max(Number(prec.meilleur)||0,Q.score),
+    sansFaute:!!prec.sansFaute||sansFaute,
+    essais:(Number(prec.essais)||0)+1,
+    date:today()
+  };
+  saveProfile();
+  const rate=Q.fautes.length?[...new Set(Q.fautes)].sort((a,b)=>a-b).map(k=>Q.n+' × '+k).join(' · '):'';
+  app.innerHTML='<div class="text-center py-6 fade-in">'
+    +'<div style="font-size:4rem">'+(sansFaute?'⭐':'\u{1F4AA}')+'</div>'
+    +'<h2 class="title" style="color:'+(sansFaute?'#fbbf24':t.color)+'">'+Q.score+'/'+Q.q.length+'</h2>'
+    +'<p class="sub">'+(sansFaute
+      ?'Table de '+Q.n+' apprise par cœur !'
+      :'Presque ! Il faut un sans-faute pour gagner l\'étoile.')+'</p>'
+    +'<p class="sub" style="margin-top:8px">+'+xp+' XP · \u{1F48E} +'+cr+'</p>'
+    +(rate?'<div class="card mt-3" style="border-color:#ef4444"><p class="sub" style="margin:0">À revoir : '+rate+'</p></div>':'')
+  +'</div>'
+  +'<button class="btn-fire" onclick="startTableQuiz('+Q.n+')">\u{1F501} Recommencer</button>'
+  +'<button class="btn-stone mt-2" onclick="ouvrirTable('+Q.n+')">\u{1F441} Revoir la table de '+Q.n+'</button>'
+  +'<button class="btn-stone mt-2" onclick="navigate(\'tablesHome\')">← Toutes les tables</button>';
+  state.tblQuiz=null;
+}
+
 /* ════════ MEMORY DES TABLES ════════
    Jeu de paires : associer « 7 × 8 » à « 56 ». Trois niveaux calés sur
    les programmes (Apprenti tables 2-5, Chevalier 3-7, Maître 6-9) ou une
@@ -4930,6 +5391,9 @@ function renderMemoryHome(){
 function toggleMemVoice(){
   _memVoice=!_memVoice;
   try{localStorage.setItem('royaume_mem_voice',_memVoice?'1':'0')}catch(e){}
+  // Le m\u00eame r\u00e9glage sert au Memory et aux tables ; l'\u00e9tiquette du bouton
+  // n'est pas la m\u00eame des deux c\u00f4t\u00e9s, on la reprend donc de l'\u00e9cran courant.
+  if(state.screen==='tablesHome'){arreterRecitation();return renderTablesHome()}
   const b=document.getElementById('memVoiceBtn');
   if(b)b.textContent=_memVoice?'\u{1F50A} R\u00e9citation vocale : activ\u00e9e':'\u{1F507} R\u00e9citation vocale : coup\u00e9e';
 }
