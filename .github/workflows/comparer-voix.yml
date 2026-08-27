@@ -32,7 +32,7 @@ jobs:
   voix:
     name: ${{ matrix.moteur }}
     runs-on: ubuntu-latest
-    timeout-minutes: 40
+    timeout-minutes: 75
     strategy:
       fail-fast: false
       matrix:
@@ -43,6 +43,15 @@ jobs:
             paquets: transformers torch --extra-index-url https://download.pytorch.org/whl/cpu
           - moteur: melo
             paquets: git+https://github.com/myshell-ai/MeloTTS.git
+          # Les deux suivants sont des modèles autorégressifs : ils construisent
+          # la parole morceau par morceau, ce qui leur donne des intonations que
+          # les petits modèles ci-dessus ne peuvent pas produire. Ils pèsent
+          # plusieurs gigaoctets et prennent des minutes par phrase sur
+          # processeur — d'où le temps de job plus long.
+          - moteur: xtts
+            paquets: coqui-tts
+          - moteur: chatterbox
+            paquets: chatterbox-tts
     steps:
       - uses: actions/checkout@v4
         with:
@@ -62,7 +71,16 @@ jobs:
         if: matrix.moteur == 'melo'
         run: python -m unidic download || true
 
+      - name: Faire de la place (les gros modèles pèsent plusieurs Go)
+        if: matrix.moteur == 'xtts' || matrix.moteur == 'chatterbox'
+        run: |
+          sudo rm -rf /usr/share/dotnet /opt/ghc /usr/local/share/boost \
+                      "$AGENT_TOOLSDIRECTORY" /usr/local/lib/android || true
+          df -h / | tail -1
+
       - name: Générer
+        env:
+          COQUI_TOS_AGREED: '1'   # sinon XTTS attend une réponse au clavier et le job expire
         run: python scripts/comparer-voix.py ${{ matrix.moteur }}
 
       - uses: actions/upload-artifact@v4

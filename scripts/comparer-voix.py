@@ -160,12 +160,57 @@ def melo():
     enregistrer('melo-fr', 'MeloTTS · Français', 'MIT', morceaux,
                 t.hps.data.sampling_rate)
 
+
+# ── Les gros modèles ─────────────────────────────────────────────────
+# Piper, MeloTTS, MMS et Kokoro appartiennent tous à la même famille : de
+# petits modèles rapides, qui prédisent le son d'un bloc. Ils partagent le même
+# plafond de naturel. Les modèles ci-dessous sont autorégressifs — ils
+# construisent la parole morceau par morceau, comme un modèle de langue écrit
+# un texte — et c'est ce qui leur donne des intonations et des respirations que
+# les précédents ne peuvent pas produire. En échange ils sont cent fois plus
+# lourds : hors de question de les faire tourner sur un téléphone, mais très
+# bien pour enregistrer une fois pour toutes.
+
+def xtts():
+    """XTTS-v2 de Coqui. ATTENTION à la licence : Coqui Public Model License,
+    NON COMMERCIALE. À trancher avant de livrer, pas après."""
+    import numpy as np
+    os.environ['COQUI_TOS_AGREED'] = '1'   # sans ça, il attend une réponse au clavier
+    from TTS.api import TTS
+    t = TTS('tts_models/multilingual/multi-dataset/xtts_v2', progress_bar=False)
+    sr = t.synthesizer.output_sample_rate
+    locuteurs = list(getattr(t, 'speakers', None) or [])
+    # Trois timbres suffisent à juger ; au-delà on encombre la page d'écoute.
+    for nom in (locuteurs[:3] or [None]):
+        def un(nom=nom):
+            morceaux = [np.asarray(t.tts(text=p, speaker=nom, language='fr'), dtype='float32')
+                        for p in PHRASES]
+            etiq = f'XTTS-v2 · {nom}' if nom else 'XTTS-v2'
+            cle = 'xtts-' + (str(nom).replace(' ', '_') if nom else 'defaut')
+            enregistrer(cle, etiq, 'Coqui CPML — NON COMMERCIALE', morceaux, sr)
+        essayer(f'XTTS · {nom}', un)
+
+def chatterbox():
+    """Chatterbox multilingue de Resemble AI. Licence MIT : utilisable sans
+    réserve, contrairement à XTTS."""
+    import numpy as np, torch
+    from chatterbox.mtl_tts import ChatterboxMultilingualTTS
+    m = ChatterboxMultilingualTTS.from_pretrained(device='cpu')
+    morceaux = []
+    for p in PHRASES:
+        w = m.generate(p, language_id='fr')
+        a = w.detach().cpu().numpy() if hasattr(w, 'detach') else np.asarray(w)
+        morceaux.append(np.asarray(a, dtype='float32').reshape(-1))
+    enregistrer('chatterbox-fr', 'Chatterbox · Resemble AI', 'MIT', morceaux, m.sr)
+
 if __name__ == '__main__':
     quoi = sys.argv[1] if len(sys.argv) > 1 else 'tous'
     print(f'\n── Génération des échantillons ({quoi}) ──', flush=True)
     if quoi in ('tous', 'piper'): piper()
     if quoi in ('tous', 'mms'):   essayer('MMS · Meta', mms)
     if quoi in ('tous', 'melo'):  essayer('MeloTTS', melo)
+    if quoi in ('tous', 'xtts'):  xtts()
+    if quoi in ('tous', 'chatterbox'): essayer('Chatterbox', chatterbox)
 
     # On FUSIONNE avec ce qui existe déjà : chaque moteur tourne dans son
     # propre job, et un manifeste écrasé perdrait les voix des autres.
