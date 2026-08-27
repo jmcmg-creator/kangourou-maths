@@ -13,7 +13,7 @@ import json, subprocess
 # Le texte est extrait de game.js par un script à part : l'écrire à la main ici
 # le ferait diverger du texte que l'app affiche, sans que rien ne le signale.
 POEMES = json.loads(subprocess.run(
-    ['node', '/tmp/extraire-poemes.js'], capture_output=True, text=True, check=True).stdout)
+    ['node', '/home/user/kangourou-maths/scripts/extraire-poemes.js'], capture_output=True, text=True, check=True).stdout)
 
 def secondes(t):
     return max(15, round(len(t.split()) / 2.2))
@@ -127,9 +127,9 @@ h1{font-family:Fraunces,ui-serif,Georgia,serif;font-weight:600;font-size:clamp(1
   transition:color .18s,border-color .18s}
 .onglets button[aria-selected="true"]{color:var(--accent);border-bottom-color:var(--accent)}
 .onglets button:focus-visible{outline:3px solid var(--accent);outline-offset:-3px;border-radius:6px}
-#vue-tables,#vue-poesies{display:flex;flex-direction:column;gap:1rem}
+#vue-clone,#vue-tables,#vue-poesies{display:flex;flex-direction:column;gap:1rem}
 [hidden]{display:none!important}
-.poeme{background:var(--surface);border:1px solid var(--trait);border-left:5px solid var(--c);
+.poeme,.fiche{background:var(--surface);border:1px solid var(--trait);border-left:5px solid var(--c);
   border-radius:14px;padding:1.05rem 1.15rem;box-shadow:var(--ombre)}
 .poeme.faite{opacity:.5}
 .texte{display:flex;flex-direction:column;gap:.35rem}
@@ -146,9 +146,19 @@ h1{font-family:Fraunces,ui-serif,Georgia,serif;font-weight:600;font-size:clamp(1
   <header>
     <span class="oeil">Le Royaume des Savoirs</span>
     <h1>Le Royaume, dans ta voix</h1>
-    <p class="intro">Cent lignes de tables et neuf poésies. Aucun modèle ne sonnera jamais comme toi, et pour Judith et Joseph ce ne sera pas la même chose du tout.</p>
+    <p class="intro">Quarante-cinq secondes de ta voix suffisent : le reste se génère avec ton timbre. Et si tu veux enregistrer toi-même, tout est là aussi.</p>
     <div class="marche">
-      <h2>Comment faire — les tables</h2>
+      <h2>Le plus court chemin</h2>
+      <ol>
+        <li><strong>Lis les 45 secondes de l’onglet « Ta voix, une fois ».</strong> Une pièce calme, ton posé.</li>
+        <li><strong>Envoie-moi le fichier.</strong> Je génère les cent lignes et les neuf poésies avec ton timbre.</li>
+        <li>Tu écoutes. Si un passage sonne mal, tu me le dis et on l’enregistre pour de vrai.</li>
+      </ol>
+      <p style="margin:.85rem 0 0;color:var(--encre-2);font-size:.92rem">Les deux onglets suivants restent là si tu préfères enregistrer toi-même — pour une poésie qui compte, une vraie lecture reste au-dessus de tout.</p>
+    </div>
+
+    <div class="marche">
+      <h2>Si tu enregistres toi-même — les tables</h2>
       <ol>
         <li><strong>Une table = un enregistrement.</strong> Dix courtes prises de 40 secondes, pas une longue. Si une table se rate, tu ne refais que celle-là.</li>
         <li><strong>Ouvre Dictaphone</strong> (ou n’importe quel enregistreur), lance, et lis les dix lignes.</li>
@@ -163,11 +173,40 @@ h1{font-family:Fraunces,ui-serif,Georgia,serif;font-weight:600;font-size:clamp(1
   </header>
 
   <nav class="onglets" role="tablist">
-    <button role="tab" aria-selected="true"  aria-controls="vue-tables"  id="ong-tables">Les tables</button>
+    <button role="tab" aria-selected="true"  aria-controls="vue-clone"   id="ong-clone">Ta voix, une fois</button>
+    <button role="tab" aria-selected="false" aria-controls="vue-tables"  id="ong-tables">Les tables</button>
     <button role="tab" aria-selected="false" aria-controls="vue-poesies" id="ong-poesies">Les poésies</button>
   </nav>
 
-  <div id="vue-tables" role="tabpanel" aria-labelledby="ong-tables">
+  <div id="vue-clone" role="tabpanel" aria-labelledby="ong-clone">
+    <section class="fiche" id="p-reference" style="--c:#B45309">
+      <header class="t-tete">
+        <span class="t-titre" style="padding-left:0">Lis ce texte une seule fois</span>
+        <span class="t-etat" style="padding-left:0">87 mots · environ 45 secondes</span>
+      </header>
+      <div class="note" style="margin:0 0 1rem">
+        <b>C’est tout ce que j’ai besoin d’entendre.</b> À partir de ces 45 secondes,
+        le modèle génère les cent lignes des tables ET les neuf poésies avec ton
+        timbre. Tu n’enregistres qu’une fois.
+      </div>
+      <div class="texte"><p class="vers">Judith, Joseph, écoutez-moi bien.</p><p class="vers">Aujourd'hui on va apprendre quelque chose d'important,</p><p class="vers">et je vais vous le dire tranquillement, sans se presser.</p><p class="vers">Une table de multiplication, ce n'est pas une liste à retenir par cœur :</p><p class="vers">c'est une suite de bonds.</p><p class="vers">Trois, six, neuf, douze, quinze.</p><p class="vers">Vous entendez le rythme ?</p><p class="vers">Quand on compte de trois en trois, on avance toujours du même pas.</p><p class="vers">Sept fois huit, égale cinquante-six.</p><p class="vers">Neuf fois quatre, égale trente-six.</p><p class="vers">On respire, on prend son temps,</p><p class="vers">et petit à petit, ça rentre tout seul.</p></div>
+      <div class="note" style="margin-top:1rem">
+        <b>Ce texte n’est pas choisi au hasard.</b> Il est dans le ton qu’on veut
+        (posé, adressé à eux — le modèle imite l’intonation autant que le timbre),
+        il couvre les sons du français, et il contient des <b>nombres</b> : la moitié
+        de ce que je vais générer en est.
+      </div>
+      <div class="note" style="margin-top:.7rem;border-left-color:#0F766E">
+        <b>Ce que ça donnera, honnêtement.</b> Ce sera ta voix, reconnaissable.
+        L’intonation, elle, sera celle du modèle guidé par ton ton : très bien pour
+        les tables, un peu moins vivant qu’une vraie lecture pour les poésies.
+        Si une poésie compte pour toi, enregistre-la vraiment — onglet
+        « Les poésies ». Les deux se mélangent sans problème.
+      </div>
+    </section>
+  </div>
+
+  <div id="vue-tables" role="tabpanel" aria-labelledby="ong-tables" hidden>
     <div class="avance">
       <span>Tables enregistrées</span>
       <span class="barre"><span class="plein" id="plein"></span></span>
