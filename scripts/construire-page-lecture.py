@@ -6,6 +6,36 @@ g = u.module_from_spec(spec); spec.loader.exec_module(g)
 
 COULEURS = ['#a3e635','#34d399','#22d3ee','#60a5fa','#a78bfa','#f472b6','#fb923c','#f59e0b','#ef4444','#fbbf24']
 
+# Les poésies sont lues d'un trait : aucun découpage, donc aucune contrainte de
+# pause. On extrait le texte depuis game.js pour qu'il soit rigoureusement
+# celui que l'app affiche — un vers réécrit à la main finirait par diverger.
+import json, subprocess
+# Le texte est extrait de game.js par un script à part : l'écrire à la main ici
+# le ferait diverger du texte que l'app affiche, sans que rien ne le signale.
+POEMES = json.loads(subprocess.run(
+    ['node', '/tmp/extraire-poemes.js'], capture_output=True, text=True, check=True).stdout)
+
+def secondes(t):
+    return max(15, round(len(t.split()) / 2.2))
+
+blocs = []
+for i, po in enumerate(POEMES):
+    vers = ''.join(f'<p class="vers">{l.strip()}</p>'
+                   for l in po['texte'].split('\n') if l.strip())
+    d = secondes(po['texte'])
+    blocs.append(f'''<section class="poeme" id="p-{po['id']}" style="--c:{COULEURS[i % 10]}">
+  <header class="t-tete">
+    <label class="coche">
+      <input type="checkbox" data-poeme="{po['id']}">
+      <span class="case" aria-hidden="true"></span>
+      <span class="t-titre">{po['titre']}</span>
+    </label>
+    <span class="t-etat">{po['auteur']}{' · ' if po['auteur'] else ''}environ {d} secondes · <b>{po['id']}</b></span>
+  </header>
+  <div class="texte">{vers}</div>
+</section>''')
+POEMES_HTML = '\n'.join(blocs)
+
 sections = []
 for a in range(1, 11):
     lignes = ''.join(
@@ -24,7 +54,7 @@ for a in range(1, 11):
 </section>''')
 CORPS = '\n'.join(sections)
 
-HTML = '''<title>Les tables, dans ta voix</title>
+HTML = '''<title>Le Royaume, dans ta voix</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600&family=Karla:wght@400;500;700&display=swap">
@@ -90,6 +120,21 @@ h1{font-family:Fraunces,ui-serif,Georgia,serif;font-weight:600;font-size:clamp(1
 .num{flex:0 0 1.5rem;text-align:right;font-size:.82rem;color:var(--encre-2);
   font-variant-numeric:tabular-nums}
 .dire{font-size:clamp(1.15rem,4.6vw,1.4rem);font-weight:500;letter-spacing:.005em}
+.onglets{display:flex;gap:.5rem;border-bottom:1px solid var(--trait);padding-bottom:.1rem}
+.onglets button{flex:1;background:none;border:none;border-bottom:3px solid transparent;
+  font-family:Karla,sans-serif;font-size:1rem;font-weight:700;color:var(--encre-2);
+  padding:.7rem .4rem;cursor:pointer;-webkit-tap-highlight-color:transparent;
+  transition:color .18s,border-color .18s}
+.onglets button[aria-selected="true"]{color:var(--accent);border-bottom-color:var(--accent)}
+.onglets button:focus-visible{outline:3px solid var(--accent);outline-offset:-3px;border-radius:6px}
+#vue-tables,#vue-poesies{display:flex;flex-direction:column;gap:1rem}
+[hidden]{display:none!important}
+.poeme{background:var(--surface);border:1px solid var(--trait);border-left:5px solid var(--c);
+  border-radius:14px;padding:1.05rem 1.15rem;box-shadow:var(--ombre)}
+.poeme.faite{opacity:.5}
+.texte{display:flex;flex-direction:column;gap:.35rem}
+.vers{margin:0;font-size:clamp(1.08rem,4.3vw,1.28rem);font-weight:500;line-height:1.5}
+.t-etat b{color:var(--encre);font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:.8rem}
 .pied{border-top:1px solid var(--trait);padding-top:1.6rem;display:flex;flex-direction:column;gap:.9rem}
 .pied h2{font-family:Fraunces,ui-serif,Georgia,serif;font-weight:600;font-size:1.2rem;margin:0}
 .note{background:var(--surface);border:1px solid var(--trait);border-left:3px solid var(--accent);
@@ -100,33 +145,55 @@ h1{font-family:Fraunces,ui-serif,Georgia,serif;font-weight:600;font-size:clamp(1
 <div class="env">
   <header>
     <span class="oeil">Le Royaume des Savoirs</span>
-    <h1>Les tables, dans ta voix</h1>
-    <p class="intro">Cent lignes à lire. Aucun modèle ne sonnera jamais comme toi, et pour Judith et Joseph ce ne sera pas la même chose du tout.</p>
+    <h1>Le Royaume, dans ta voix</h1>
+    <p class="intro">Cent lignes de tables et neuf poésies. Aucun modèle ne sonnera jamais comme toi, et pour Judith et Joseph ce ne sera pas la même chose du tout.</p>
     <div class="marche">
-      <h2>Comment faire</h2>
+      <h2>Comment faire — les tables</h2>
       <ol>
         <li><strong>Une table = un enregistrement.</strong> Dix courtes prises de 40 secondes, pas une longue. Si une table se rate, tu ne refais que celle-là.</li>
         <li><strong>Ouvre Dictaphone</strong> (ou n’importe quel enregistreur), lance, et lis les dix lignes.</li>
         <li><strong>Marque une pause d’une seconde entre chaque ligne.</strong> C’est ce qui me permet de découper proprement — c’est le seul point vraiment important.</li>
         <li><strong>Envoie-moi le fichier</strong> en disant simplement « table 3 ». Coche la table ici pour t’y retrouver.</li>
       </ol>
+      <p style="margin:.85rem 0 0;color:var(--encre-2);font-size:.92rem"><b>Les poésies, c’est plus simple encore :</b> pas de pause à respecter, tu lis d’un trait. Onglet « Les poésies ».</p>
     </div>
     <div class="note" style="margin-top:.9rem">
       <b>Pour que ça sonne bien :</b> pièce calme, téléphone à 20 cm de la bouche, ton posé et régulier — comme si tu récitais à côté d’eux. Pas besoin d’articuler exagérément.
     </div>
   </header>
 
-  <div class="avance">
-    <span>Tables enregistrées</span>
-    <span class="barre"><span class="plein" id="plein"></span></span>
-    <span><b id="compte">0</b>/10</span>
+  <nav class="onglets" role="tablist">
+    <button role="tab" aria-selected="true"  aria-controls="vue-tables"  id="ong-tables">Les tables</button>
+    <button role="tab" aria-selected="false" aria-controls="vue-poesies" id="ong-poesies">Les poésies</button>
+  </nav>
+
+  <div id="vue-tables" role="tabpanel" aria-labelledby="ong-tables">
+    <div class="avance">
+      <span>Tables enregistrées</span>
+      <span class="barre"><span class="plein" id="plein"></span></span>
+      <span><b id="compte">0</b>/10</span>
+    </div>
+CORPS_ICI
   </div>
 
-CORPS_ICI
+  <div id="vue-poesies" role="tabpanel" aria-labelledby="ong-poesies" hidden>
+    <div class="avance">
+      <span>Poésies enregistrées</span>
+      <span class="barre"><span class="plein" id="pleinP"></span></span>
+      <span><b id="compteP">0</b>/9</span>
+    </div>
+    <div class="note" style="margin:.9rem 0 1.2rem">
+      <b>Rien à découper ici.</b> Une poésie se lit d'un trait, sans pause imposée :
+      tu la dis comme tu la dirais à Judith et Joseph, avec tes respirations et
+      tes silences à toi. C'est même tout l'intérêt. Un fichier par poésie,
+      envoie-le en disant son nom court (en gras sous le titre).
+    </div>
+POESIES_ICI
+  </div>
 
   <footer class="pied">
     <h2>Ensuite, je m’occupe de tout</h2>
-    <p style="margin:0;color:var(--encre-2)">Je découpe chaque enregistrement en dix clips, je vérifie qu’il y en a bien dix, j’égalise le volume et je les range dans l’app. Si une table n’en donne que neuf, je te le dis et tu refais celle-là seulement.</p>
+    <p style="margin:0;color:var(--encre-2)"><b>Les tables :</b> je découpe chaque enregistrement en dix clips, je vérifie qu’il y en a bien dix, j’égalise le volume et je les range. Si une table n’en donne que neuf, je te le dis et tu refais celle-là seulement.<br><b>Les poésies :</b> rien à découper — j’égalise le volume et je les range telles quelles.</p>
     <div class="note">
       <b>Tu peux t’arrêter quand tu veux.</b> Les cases cochées sont gardées sur ton téléphone : reviens sur cette page plus tard, tu reprendras où tu en étais. Et une table livrée, c’est déjà une table qui marche dans l’app — pas besoin des dix pour commencer.
     </div>
@@ -137,28 +204,46 @@ CORPS_ICI
   var CLE='royaume_tables_enregistrees';
   var faites={};
   try{ faites=JSON.parse(localStorage.getItem(CLE)||'{}')||{}; }catch(e){ faites={}; }
-  var cases=[].slice.call(document.querySelectorAll('input[data-table]'));
-  function majuscule(){
-    var n=cases.filter(function(c){return c.checked}).length;
-    document.getElementById('compte').textContent=n;
-    document.getElementById('plein').style.width=(n*10)+'%';
+  function brancher(selecteur, champ, bloc, idCompte, idBarre, total){
+    var cases=[].slice.call(document.querySelectorAll(selecteur));
+    function maj(){
+      var n=cases.filter(function(c){return c.checked}).length;
+      document.getElementById(idCompte).textContent=n;
+      document.getElementById(idBarre).style.width=(n/total*100)+'%';
+    }
+    cases.forEach(function(c){
+      var k=champ+':'+c.dataset[champ];
+      c.checked=!!faites[k];
+      c.closest(bloc).classList.toggle('faite', c.checked);
+      c.addEventListener('change', function(){
+        faites[k]=c.checked;
+        c.closest(bloc).classList.toggle('faite', c.checked);
+        try{ localStorage.setItem(CLE, JSON.stringify(faites)); }catch(e){}
+        maj();
+      });
+    });
+    maj();
   }
-  cases.forEach(function(c){
-    var t=c.dataset.table;
-    c.checked=!!faites[t];
-    c.closest('.table').classList.toggle('faite', c.checked);
-    c.addEventListener('change', function(){
-      faites[t]=c.checked;
-      c.closest('.table').classList.toggle('faite', c.checked);
-      try{ localStorage.setItem(CLE, JSON.stringify(faites)); }catch(e){}
-      majuscule();
+  brancher('input[data-table]','table','.table','compte','plein',10);
+  brancher('input[data-poeme]','poeme','.poeme','compteP','pleinP',9);
+
+  // Onglets : deux listes qui ne se lisent pas de la même façon.
+  var onglets=[].slice.call(document.querySelectorAll('.onglets button'));
+  onglets.forEach(function(b){
+    b.addEventListener('click', function(){
+      onglets.forEach(function(x){
+        var actif = x===b;
+        x.setAttribute('aria-selected', actif ? 'true' : 'false');
+        document.getElementById(x.getAttribute('aria-controls')).hidden = !actif;
+      });
+      window.scrollTo(0,0);
     });
   });
-  majuscule();
 })();
 </script>
 '''
 out='/tmp/claude-0/-home-user-kangourou-maths/54893b74-d62e-546e-8b60-496f7bcf7d36/scratchpad/art/studio.html'
-open(out,'w',encoding='utf-8').write(HTML.replace('CORPS_ICI', CORPS))
+open(out,'w',encoding='utf-8').write(
+    HTML.replace('CORPS_ICI', CORPS).replace('POESIES_ICI', POEMES_HTML))
 print('page : %.0f Ko' % (os.path.getsize(out)/1024))
 print('exemple de ligne :', g.phrase_table(7,8))

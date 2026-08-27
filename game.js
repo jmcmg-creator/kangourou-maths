@@ -3762,8 +3762,19 @@ function stopSpeaking(){
   if('speechSynthesis' in window){try{speechSynthesis.cancel()}catch(e){}}
 }
 
-// Lecteur audio unifié : MP3 studio si disponible (f.audioUrl), sinon
-// synthèse vocale du navigateur. Géré via un singleton <audio>.
+/* Chaque poème livré avec l'app peut avoir son enregistrement, nommé d'après
+   son identifiant. Contrairement aux tables, il n'y a RIEN à découper : un
+   poème se lit d'un trait, avec les respirations de celui qui le dit — c'est
+   même tout l'intérêt. Un poème ajouté par un enfant n'a pas d'enregistrement
+   et retombe sur la synthèse, comme avant. */
+function _fichierPoeme(f){
+  if(!f) return null;
+  if(f.audioUrl) return f.audioUrl;
+  return FABLES.some(x=>x.id===f.id) ? 'audio/voix/p-'+f.id+'.mp3' : null;
+}
+
+// Lecteur audio unifié : enregistrement si disponible, sinon synthèse vocale
+// du navigateur. Géré via un singleton <audio>.
 let _poesieAudio=null;
 function playPoesie(){
   const f=getPoemById(state.fableId);
@@ -3774,22 +3785,27 @@ function playPoesie(){
   // (entités HTML décodées, sauts de ligne respectés), avec fallback sur stripHtmlText.
   const ftEl=$('fableText');
   const cleanText=ftEl?ftEl.innerText:stripHtmlText(f.text);
-  if(f.audioUrl){
-    _poesieAudio=new Audio(f.audioUrl);
+  const fichier=_fichierPoeme(f);
+  if(fichier){
+    _poesieAudio=new Audio(fichier);
     _poesieAudio.preload='auto';
     _poesieAudio.addEventListener('ended',()=>{_poesieAudio=null;if(btn)btn.textContent='▶️ Écouter';});
+    _poesieAudio.addEventListener('playing',()=>_direSource('\u{1F3A4} La voix de papa.'));
     _poesieAudio.addEventListener('error',()=>{
       _poesieAudio=null;
       if(btn)btn.textContent='▶️ Écouter';
+      _direSource('\u{1F916} Voix de synthèse — l\'enregistrement n\'est pas encore là.');
       speakText(cleanText);
     });
-    _poesieAudio.play().catch(()=>speakText(cleanText));
+    _poesieAudio.play().catch(()=>{_direSource('\u{1F916} Voix de synthèse.');speakText(cleanText)});
     if(btn)btn.textContent='⏸ Pause';
   }else{
+    _direSource('\u{1F916} Voix de synthèse du navigateur.');
     speakText(cleanText);
     if(btn)btn.textContent='⏸ En lecture…';
   }
 }
+function _direSource(t){const e=$('poesieSource');if(e)e.textContent=t}
 function stopPoesie(){
   if(_poesieAudio){try{_poesieAudio.pause()}catch(e){};_poesieAudio=null;}
   stopSpeaking();
@@ -4035,7 +4051,7 @@ function renderPoesieFable(){
   </div>
   <div class="card mb-4" style="border-color:#a78bfa">
     <h3 class="card-title" style="color:#5b21b6;margin-bottom:6px">\u{1F3A7} Écoute</h3>
-    <p class="sub mb-2">${f.audioUrl?'\u{1F3A4} Lecture studio (voix expressive d\'un conteur).':'\u{1F916} Voix de synthèse du navigateur (intonation limitée).'}</p>
+    <p class="sub mb-2" id="poesieSource">\u{1F3A7} Touche « Écouter » pour entendre la poésie.</p>
     <div class="btn-row">
       <button class="btn-fire" id="playBtn" onclick="playPoesie()">\u25B6\uFE0F Écouter</button>
       <button class="btn-stone" onclick="stopPoesie()">\u23F9\uFE0F Stop</button>
