@@ -60,12 +60,20 @@ def enregistrer(nom, etiquette, licence, morceaux, sr):
                       'octets': taille})
     print(f'  ✅ {etiquette:38s} {taille/1024:6.0f} Ko', flush=True)
 
+echecs = []
+
 def essayer(etiquette, fn):
+    """Tolère l'échec d'un moteur sans emporter les autres — mais ne le CACHE
+    pas. La version précédente coupait la trace à trois lignes et le script
+    sortait en succès dès que le manifeste global contenait quelque chose : un
+    moteur pouvait planter à l'import, en zéro seconde, et le job passait au
+    vert. C'est exactement ce qui est arrivé à Chatterbox."""
     try:
         fn()
     except Exception as e:
+        echecs.append(f'{etiquette} → {type(e).__name__}: {e}')
         print(f'  ❌ {etiquette:38s} {type(e).__name__}: {e}', flush=True)
-        traceback.print_exc(limit=3)
+        traceback.print_exc()
 
 # ── Piper : MIT, plusieurs voix françaises dont deux masculines ───────
 PIPER = [
@@ -193,9 +201,25 @@ def xtts():
 def chatterbox():
     """Chatterbox multilingue de Resemble AI. Licence MIT : utilisable sans
     réserve, contrairement à XTTS."""
-    import numpy as np, torch
-    from chatterbox.mtl_tts import ChatterboxMultilingualTTS
-    m = ChatterboxMultilingualTTS.from_pretrained(device='cpu')
+    import numpy as np, torch, importlib
+    # Le chemin du module a changé d'une version à l'autre. On essaie les
+    # formes connues et on annonce celle qui répond, au lieu de tomber sur un
+    # ImportError opaque.
+    M = None
+    for mod, cls in (('chatterbox.mtl_tts', 'ChatterboxMultilingualTTS'),
+                     ('chatterbox.tts', 'ChatterboxMultilingualTTS'),
+                     ('chatterbox', 'ChatterboxMultilingualTTS')):
+        try:
+            M = getattr(importlib.import_module(mod), cls)
+            print(f'     module trouvé : {mod}.{cls}', flush=True)
+            break
+        except (ImportError, AttributeError):
+            continue
+    if M is None:
+        import chatterbox
+        raise ImportError('ChatterboxMultilingualTTS introuvable ; contenu de chatterbox : '
+                          + ', '.join(a for a in dir(chatterbox) if not a.startswith('_')))
+    m = M.from_pretrained(device='cpu')
     morceaux = []
     for p in PHRASES:
         w = m.generate(p, language_id='fr')
@@ -224,5 +248,10 @@ if __name__ == '__main__':
     tout = sorted(par_fichier.values(), key=lambda r: r['fichier'])
     json.dump(tout, open(fiche, 'w'), ensure_ascii=False, indent=2)
     print(f'\n  {len(resultats)} voix générées · {len(tout)} au total dans {SORTIE}')
-    if not tout:
-        sys.exit('Aucune voix générée — rien à comparer.')
+    # On juge sur CE passage, pas sur le manifeste global : celui-ci contient
+    # déjà les voix des passages précédents, et sortir en succès parce qu'elles
+    # sont là reviendrait à déclarer bon un moteur qui n'a rien produit.
+    if not resultats:
+        for e in echecs:
+            print(f'  · {e}')
+        sys.exit(f'Aucune voix produite par « {quoi} » lors de ce passage.')

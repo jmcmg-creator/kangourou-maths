@@ -61,11 +61,31 @@ jobs:
         with:
           python-version: '3.11'
 
-      - name: Outils communs
-        run: pip install --quiet numpy lameenc
+      # UNE SEULE commande pip pour le moteur ET nos outils. Installés
+      # séparément, le moteur emportait numpy avec lui : coqui-tts a désinstallé
+      # numpy 2 pour poser sa propre version, a échoué, et a laissé
+      # l'environnement sans numpy du tout. Le job est allé jusqu'à la
+      # génération avant de tomber sur « No module named numpy ». Une seule
+      # commande laisse le résolveur réconcilier les contraintes.
+      - name: Installer ${{ matrix.moteur }} et les outils
+        run: pip install --quiet ${{ matrix.paquets }} numpy lameenc
 
-      - name: Installer ${{ matrix.moteur }}
-        run: pip install --quiet ${{ matrix.paquets }}
+      # On CONTRÔLE que tout répond avant de lancer une génération qui peut
+      # durer une heure. Un import manquant doit se voir ici, avec son nom,
+      # pas après le téléchargement de trois gigaoctets de poids.
+      - name: Contrôler l'installation
+        run: |
+          python - <<'PY'
+          import importlib, sys
+          manque = []
+          for m in ('numpy', 'lameenc'):
+              try: importlib.import_module(m)
+              except Exception as e: manque.append(f'{m} : {e}')
+          if manque:
+              sys.exit('Outils indisponibles APRÈS installation :\n  ' + '\n  '.join(manque))
+          import numpy, lameenc
+          print(f'  numpy {numpy.__version__} · lameenc OK')
+          PY
 
       - name: Dictionnaire de découpage (MeloTTS seulement)
         if: matrix.moteur == 'melo'
