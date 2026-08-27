@@ -1,5 +1,9 @@
 [
   {
+    "fichier": "chatterbox-fr.mp3",
+    "octets": 110208
+  },
+  {
     "fichier": "melo-fr.mp3",
     "octets": 82546
   },
@@ -13,18 +17,18 @@
   },
   {
     "fichier": "piper-fr_FR-siwis-medium.mp3",
-    "octets": 89861
+    "octets": 84845
   },
   {
     "fichier": "piper-fr_FR-tom-medium.mp3",
-    "octets": 103235
+    "octets": 100937
   },
   {
     "fichier": "piper-fr_FR-upmc-medium-0.mp3",
-    "octets": 86308
+    "octets": 86726
   },
   {
     "fichier": "piper-fr_FR-upmc-medium-1.mp3",
-    "octets": 87144
+    "octets": 88607
   }
 ]
