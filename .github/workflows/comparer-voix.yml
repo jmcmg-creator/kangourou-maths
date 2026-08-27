@@ -91,12 +91,13 @@ jobs:
         if: matrix.moteur == 'melo'
         run: python -m unidic download || true
 
-      - name: Faire de la place (les gros modèles pèsent plusieurs Go)
-        if: matrix.moteur == 'xtts' || matrix.moteur == 'chatterbox'
-        run: |
-          sudo rm -rf /usr/share/dotnet /opt/ghc /usr/local/share/boost \
-                      "$AGENT_TOOLSDIRECTORY" /usr/local/lib/android || true
-          df -h / | tail -1
+      # PAS d'étape « faire de la place ». Elle a coûté deux passages de CI :
+      # la recette habituelle supprime "$AGENT_TOOLSDIRECTORY", c'est-à-dire
+      # /opt/hostedtoolcache — précisément là où actions/setup-python installe
+      # Python ET tous les paquets pip. Le contrôle d'installation passait au
+      # vert, puis l'étape suivante effaçait l'interpréteur, et la génération
+      # tombait sur « No module named numpy » sans que rien ne relie les deux.
+      # Le runner a de toute façon 105 Go libres : il n'y avait rien à libérer.
 
       - name: Générer
         env:
