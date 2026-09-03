@@ -2,9 +2,12 @@
 <html lang="fr">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
 <title>🚀 Les Grandes Inventions</title>
 <style>
+/* Pas de zoom au double-appui : un enfant qui tapote vite une tuile faisait
+   grossir la page sans savoir la ramener. Le pincement reste possible. */
+html,body{touch-action:manipulation}
 *{box-sizing:border-box;margin:0;padding:0}
 body{background:#0a0e27;color:#eaf0ff;font-family:'Trebuchet MS','Verdana',sans-serif;min-height:100vh;overflow-x:hidden;line-height:1.6}
 .back-btn{position:fixed;top:16px;left:16px;z-index:100;background:rgba(251,146,60,.15);border:2px solid #fb923c;color:#fdba74;border-radius:30px;padding:8px 18px;font-size:14px;font-weight:700;cursor:pointer;text-decoration:none;font-family:inherit}
@@ -70,10 +73,10 @@ body{background:#0a0e27;color:#eaf0ff;font-family:'Trebuchet MS','Verdana',sans-
 .btn.primary{background:#fb923c;color:#0a0e27}
 </style>
 <style>/* iOS : le bouton Retour etait sous la barre d'etat/encoche -> intappable */
-.back-btn{top:calc(12px + env(safe-area-inset-top,0px))!important;left:calc(12px + env(safe-area-inset-left,0px))!important;z-index:9999!important;min-height:40px;display:inline-flex;align-items:center}
+.back-btn{top:calc(12px + env(safe-area-inset-top,0px))!important;left:calc(12px + env(safe-area-inset-left,0px))!important;z-index:9999!important;min-height:44px;min-width:44px;display:inline-flex;align-items:center}
 </style></head>
 <body>
-<a href="../index.html" class="back-btn">← Retour</a>
+<a href="../index.html" class="back-btn" data-liste="Les inventions">← Retour</a>
 
 <div id="home">
   <div class="header">
@@ -116,6 +119,7 @@ body{background:#0a0e27;color:#eaf0ff;font-family:'Trebuchet MS','Verdana',sans-
   </div>
 </div>
 
+<script src="fiche-retour.js"></script>
 <script>
 // Chaque étape = [titre, visuel (schéma emoji mémorisable), explication].
 // ➜ = flux animé. Le visuel se lit de gauche à droite comme une BD.
@@ -555,6 +559,7 @@ function showInv(id){
   currentIdx=list.findIndex(i=>i.id===id);
   if(currentIdx<0){currentIdx=0}
   const inv=list[currentIdx];
+  FicheRetour.ouvrir(_fermerFiche);   // AVANT de masquer la grille : sinon scrollY vaut déjà 0
   document.getElementById('home').style.display='none';
   document.getElementById('detail').classList.add('active');
   document.getElementById('dEmoji').textContent=inv.emoji;
@@ -591,11 +596,13 @@ function answerQ(btn,qi,ci){
   });
   document.getElementById('expl-'+qi).classList.add('show');
 }
-function showHome(){
+function _fermerFiche(){
   document.getElementById('detail').classList.remove('active');
   document.getElementById('home').style.display='block';
-  window.scrollTo(0,0);
 }
+// Passe par l'historique : le bouton du bas, le bouton fixe du haut et le
+// geste « retour » d'iOS referment la fiche exactement de la même façon.
+function showHome(){ FicheRetour.retour(); }
 function nextInv(){
   const list=visibleList();
   currentIdx=(currentIdx+1)%list.length;
