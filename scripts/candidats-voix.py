@@ -87,7 +87,12 @@ def references():
                 crete = float(np.max(np.abs(arr))) if len(arr) else 0
                 if crete < 0.05 or crete > 0.99: continue
                 vus.add(loc)
-                tag = re.sub(r'[^a-z0-9]+', '', f'{nom.split("/")[-1]}{loc}'.lower())[:24]
+                # Nom court + identifiant COMPLET du locuteur. Une troncature à 24
+                # caractères ne gardait que le premier chiffre de l'identifiant :
+                # sept locuteurs sur huit se sont retrouvés sous le même nom et se
+                # sont écrasés les uns les autres — sept cartes pour un seul son.
+                prefixe = 'mls' if 'librispeech' in nom else 'fleurs'
+                tag = prefixe + '-' + re.sub(r'[^a-z0-9]+', '', loc.lower())
                 chemin = os.path.join(REFS, tag + '.wav')
                 sf.write(chemin, arr, sr)
                 retenues.append({'nom': tag, 'wav': chemin, 'texte': str(ex.get(cle_txt, '')), 'duree': round(dur, 1), 'source': licence})
@@ -145,10 +150,39 @@ def note_dnsmos(a16):
     return {k: round(float(r[k]), 3) for k in ('ovrl_mos', 'sig_mos', 'bak_mos', 'p808_mos') if k in r}
 
 _whisper = None
+_U = {'zero':0,'un':1,'une':1,'deux':2,'trois':3,'quatre':4,'cinq':5,'six':6,'sept':7,'huit':8,'neuf':9,'dix':10,
+      'onze':11,'douze':12,'treize':13,'quatorze':14,'quinze':15,'seize':16,'vingt':20,'trente':30,'quarante':40,
+      'cinquante':50,'soixante':60,'cent':100}
+def _nombres_en_chiffres(mots):
+    """« cinquante six » → « 56 », « soixante dix sept » → « 77 », « quatre vingt un » → « 81 ».
+    Whisper transcrit les nombres en chiffres ; le texte attendu les écrit en
+    lettres. Sans cette étape, chaque nombre comptait comme un mot faux et le
+    taux d'erreur était gonflé de moitié."""
+    out, acc, en_cours = [], 0, False
+    for m in mots + ['\x00']:
+        if m in _U:
+            v = _U[m]
+            if v == 100 and en_cours: acc = (acc or 1) * 100
+            elif v == 20 and en_cours and acc in (4,): acc = 80          # quatre vingt(s)
+            elif v == 20 and en_cours and acc % 100 == 4: acc = acc - 4 + 80
+            else: acc += v
+            en_cours = True
+        elif m in ('et', 'vingts') and en_cours:
+            if m == 'vingts': acc = acc - 4 + 80 if acc % 100 == 4 else acc
+            continue
+        else:
+            if en_cours: out.append(str(acc)); acc, en_cours = 0, False
+            if m != '\x00': out.append(m)
+    return out
+
 def normaliser(t):
     t = unicodedata.normalize('NFKD', t.lower())
     t = ''.join(c for c in t if not unicodedata.combining(c))
-    return re.sub(r'[^a-z0-9 ]+', ' ', t).split()
+    t = re.sub(r'[^a-z0-9 ]+', ' ', t)
+    mots = t.split()
+    # « x » et « fois » disent la même chose : on ne pénalise pas la graphie.
+    mots = ['fois' if m == 'x' else m for m in mots]
+    return _nombres_en_chiffres(mots)
 
 def note_wer(a16):
     global _whisper
