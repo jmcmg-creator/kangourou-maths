@@ -1,0 +1,83 @@
+name: Générer toute la voix avec la référence choisie
+
+# Génère les cent lignes des tables et les neuf poésies avec Chatterbox, en
+# imitant la voix de référence désignée dans audio/references/CHOIX.txt
+# (nom du fichier .wav, sans le chemin). Résultat dans audio/voix/.
+#
+# Déclenché en poussant CHOIX.txt — la seule porte ouverte à Claude Code, qui
+# ne peut pas lancer un workflow à la main. Trois jobs en parallèle : un
+# processeur met une quinzaine de secondes par phrase, et 109 fichiers d'un
+# seul tenant dépasseraient l'heure.
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - 'audio/references/CHOIX.txt'
+      - '.github/workflows/generer-voix-clonee.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  generer:
+    name: ${{ matrix.lot }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 80
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { lot: tables-1-5,  args: "--quoi tables --tables 1 2 3 4 5" }
+          - { lot: tables-6-10, args: "--quoi tables --tables 6 7 8 9 10" }
+          - { lot: poemes,      args: "--quoi poemes" }
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.ref_name }}
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Installer
+        run: pip install --quiet chatterbox-tts numpy lameenc soundfile
+      - name: Contrôler l'installation
+        run: python -c "import numpy, lameenc, soundfile, chatterbox; print('  outils OK · numpy', numpy.__version__)"
+      - name: Générer
+        run: |
+          ref="audio/references/$(tr -d ' \r\n' < audio/references/CHOIX.txt)"
+          test -f "$ref" || { echo "::error::Référence introuvable : $ref"; exit 1; }
+          echo "  référence : $ref"
+          python scripts/cloner-voix.py "$ref" ${{ matrix.args }} --force
+      - uses: actions/upload-artifact@v4
+        with:
+          name: voix-${{ matrix.lot }}
+          path: audio/voix/
+          if-no-files-found: error
+
+  deposer:
+    name: Rassembler et déposer
+    needs: generer
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.ref_name }}
+      - uses: actions/download-artifact@v4
+        with:
+          path: recolte
+          merge-multiple: true
+      - name: Déposer
+        run: |
+          mkdir -p audio/voix
+          cp recolte/*.mp3 audio/voix/ && rm -rf recolte
+          n=$(ls audio/voix/t-*.mp3 | wc -l); p=$(ls audio/voix/p-*.mp3 | wc -l)
+          echo "  $n clips de tables · $p poèmes"
+          # 100 tables et 9 poèmes attendus : un lot incomplet ne doit pas
+          # partir chez les enfants avec des trous silencieux.
+          [ "$n" -eq 100 ] && [ "$p" -eq 9 ] || { echo "::error::Lot incomplet ($n/100 tables, $p/9 poèmes)"; exit 1; }
+          git config user.name  'github-actions[bot]'
+          git config user.email 'github-actions[bot]@users.noreply.github.com'
+          git add audio/voix
+          git diff --cached --quiet && { echo "rien de neuf"; exit 0; }
+          git commit -m "Voix clonée : 100 lignes de tables et 9 poésies (Chatterbox, référence $(cat audio/references/CHOIX.txt))"
+          git push origin HEAD:${{ github.ref_name }}
