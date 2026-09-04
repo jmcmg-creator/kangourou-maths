@@ -1,9 +1,12 @@
 <!DOCTYPE html>
 <html lang="fr">
 <head>
-<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
 <title>🌈 La Lumière et les Couleurs</title>
 <style>
+/* Pas de zoom au double-appui : un enfant qui tapote vite une tuile faisait
+   grossir la page sans savoir la ramener. Le pincement reste possible. */
+html,body{touch-action:manipulation}
 *{box-sizing:border-box;margin:0;padding:0}
 body{background:#080812;color:#f0e8ff;font-family:'Trebuchet MS',sans-serif;min-height:100vh}
 .back-btn{position:fixed;top:16px;left:16px;z-index:100;background:rgba(255,200,40,.12);border:2px solid #ffc828;color:#ffe080;border-radius:30px;padding:8px 18px;font-size:14px;font-weight:700;cursor:pointer;text-decoration:none}
@@ -30,7 +33,7 @@ body{background:#080812;color:#f0e8ff;font-family:'Trebuchet MS',sans-serif;min-
 .wave-item .name{font-size:11px;color:#8a7a60}
 </style>
 <style>/* iOS : le bouton Retour etait sous la barre d'etat/encoche -> intappable */
-.back-btn{top:calc(12px + env(safe-area-inset-top,0px))!important;left:calc(12px + env(safe-area-inset-left,0px))!important;z-index:9999!important;min-height:40px;display:inline-flex;align-items:center}
+.back-btn{top:calc(12px + env(safe-area-inset-top,0px))!important;left:calc(12px + env(safe-area-inset-left,0px))!important;z-index:9999!important;min-height:44px;min-width:44px;display:inline-flex;align-items:center}
 </style></head>
 <body>
 <a class="back-btn" href="../index.html">← Retour</a>
