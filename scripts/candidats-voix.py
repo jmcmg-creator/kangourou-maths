@@ -47,9 +47,23 @@ def references():
     """Livres audio du domaine public lus par des francophones (MLS, CC BY 4.0).
     On prend des extraits de 7 à 13 s, un par locuteur, et on s'arrête à NB_VOIX.
     Si MLS ne se charge pas, on retombe sur FLEURS (Google, CC BY 4.0)."""
-    import numpy as np, soundfile as sf
-    from datasets import load_dataset
+    import io, numpy as np, soundfile as sf
+    from datasets import load_dataset, Audio
     retenues = []
+
+    def decoder(a):
+        """datasets ne décode plus l'audio sans torchcodec — une dépendance lourde,
+        liée à une version précise de torch et de ffmpeg. On lui demande les
+        octets bruts (decode=False) et on décode nous-mêmes avec libsndfile, qui
+        lit flac, wav et mp3 sans rien d'autre."""
+        if isinstance(a, dict) and a.get('array') is not None:
+            return np.asarray(a['array'], dtype='float32'), int(a['sampling_rate'])
+        octets = a.get('bytes') if isinstance(a, dict) else None
+        if octets is None and isinstance(a, dict) and a.get('path'):
+            octets = open(a['path'], 'rb').read()
+        arr, sr = sf.read(io.BytesIO(octets), dtype='float32', always_2d=False)
+        if getattr(arr, 'ndim', 1) == 2: arr = arr.mean(axis=1)
+        return arr, int(sr)
     sources = [
         ('facebook/multilingual_librispeech', 'french', 'train', 'speaker_id', 'transcript', 'MLS (livres audio LibriVox), CC BY 4.0'),
         ('google/fleurs', 'fr_fr', 'train', 'id', 'transcription', 'FLEURS (Google), CC BY 4.0'),
@@ -58,9 +72,13 @@ def references():
         try:
             log(f'  source : {nom} / {cfg}')
             ds = load_dataset(nom, cfg, split=split, streaming=True)
+            ds = ds.cast_column('audio', Audio(decode=False))
             vus = set()
             for ex in ds:
-                a = ex['audio']; arr = np.asarray(a['array'], dtype='float32'); sr = int(a['sampling_rate'])
+                try:
+                    arr, sr = decoder(ex['audio'])
+                except Exception as e:
+                    log(f'    (extrait illisible : {type(e).__name__})'); continue
                 dur = len(arr) / sr
                 if not (7.0 <= dur <= 13.0): continue
                 loc = str(ex.get(cle_loc, len(vus)))

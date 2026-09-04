@@ -14,7 +14,6 @@ on:
   push:
     paths:
       - 'audio/references/CHOIX.txt'
-      - '.github/workflows/generer-voix-clonee.yml'
 
 permissions:
   contents: write
