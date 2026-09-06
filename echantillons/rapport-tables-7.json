@@ -2,24 +2,195 @@
  "7": [
   {
    "prise": 1,
-   "duree": 20.9,
-   "entendu": "table de 7, 7 fois 1, 7 fois 2, 14, 7 fois 3, 21, 7 fois 4, 28, 7 fois 5, 35, 7 fois 6, 42, 7 fois 7, 49, 7 fois 8, 56, 7 fois 8, 63, 7 fois 10, 70.",
+   "duree": 18.5,
+   "entendu": "table de 7, 7 fois 1, 7, 7 fois 2, 14, 7 fois 3, 20 et 1, 7 fois 4, 28, 7 fois 5, 35, 7 fois 6, 42, 7 fois 7, 49, 7 fois 8, 56, 7 fois 9, 63, 7 fois 10, 70, 70.",
    "decoupages": [
     {
      "methode": "mots",
-     "lignes_fausses": [],
+     "lignes_fausses": [
+      3,
+      4,
+      6,
+      8
+     ],
+     "entendu": [
+      "7 fois 1, 7",
+      "7 fois 2, 14...",
+      "7 x 3, 20 et 1",
+      "7x4, 28",
+      "7 x 5, 35",
+      "Cette fois -ci, 42.",
+      "7x7 49",
+      "7 .856",
+      "7x9, 63",
+      "7 x 10, 70, 70."
+     ]
+    }
+   ]
+  },
+  {
+   "prise": 2,
+   "duree": 20.9,
+   "entendu": "table de 7, 7 fois 1, 7, 7 fois 2, 14, 7 fois 3, 20 et 1, 7 fois 4, 28, 7 fois 5, 35, 7 fois 6, 42, 7 fois 7, 49, 7 fois 8, 56, 7 fois 9, 63, 7 fois 10, 70.",
+   "decoupages": [
+    {
+     "methode": "mots",
+     "lignes_fausses": [
+      3,
+      4,
+      6
+     ],
+     "entendu": [
+      "7 fois 1, 7",
+      "7 fois 2, 14",
+      "7 fois 3, 20 et 1.",
+      "7 × 4, 28",
+      "7 x 5, 35",
+      "Cette fois -ci c 'est 42",
+      "7x7 49",
+      "7 x 8, 56",
+      "7 .9 .63",
+      "7 x 10, 70"
+     ]
+    },
+    {
+     "methode": "structure 0.18",
+     "lignes_fausses": [
+      4,
+      5,
+      6,
+      7
+     ],
      "entendu": [
       "7 fois 1.",
-      "7 x 2 14",
-      "7 x 3, 21",
-      "7x4 28",
-      "Cette fois 5, 35.",
-      "Cette fois 6, 42",
-      "7x7, 49",
+      "7, 7 fois 2, 14",
+      "7 fois 3",
+      "20 et 1.",
+      "7 x 4 28",
+      "7 x 5, 35",
+      "7 x 6, 42. 7 x 7, 49.",
       "7 x 8, 56",
-      "7 x 8, 63",
-      "7 fois 10, 70."
+      "7 .9 .63",
+      "7 x 10, 70"
      ]
+    }
+   ]
+  },
+  {
+   "prise": 3,
+   "duree": 34.0,
+   "entendu": "Table de 7, 7 fois 1, 7, 7 fois 2, 14, 7 fois 3, 20 et 1, 7 fois 4, 28, 7 fois 5, 35, 7 fois 6, 42, 7 fois 7, 49, 7 fois 8, 56, 7 fois 8, 56, 7 fois 10, 70. Sous -titres réalisés par la communauté d 'Amara .org",
+   "decoupages": [
+    {
+     "methode": "mots",
+     "lignes_fausses": [
+      3,
+      4,
+      6,
+      9
+     ],
+     "entendu": [
+      "7 fois 1, 7",
+      "7 fois 2, 14",
+      "7 x 3, 20 et 1",
+      "7x4 28",
+      "7 fois 5, 35.",
+      "7x642",
+      "7x7 49",
+      "7 x 8, 56",
+      "7 x 8, 56",
+      "7 x 10, 70"
+     ]
+    },
+    {
+     "methode": "structure 0.18",
+     "lignes_fausses": [
+      2,
+      3,
+      4,
+      5,
+      6,
+      7,
+      8,
+      9,
+      10
+     ],
+     "entendu": [
+      "7 fois 1, 7",
+      "7 fois 2, 14. 7 fois 3, 20 et 1.",
+      "7x4 28",
+      "7 fois 5, 35. 7 fois 6, 42. 7 fois 7, 49.",
+      "7 x 8, 56, 7 x 8",
+      "7 x 10",
+      "70",
+      "",
+      "Sous -titres réalisés par la communauté d 'Amara .org",
+      ""
+     ]
+    }
+   ]
+  },
+  {
+   "ligne_par_ligne": [
+    {
+     "ligne": 1,
+     "essais": 1,
+     "juste": true,
+     "entendu": "7x1, 7"
+    },
+    {
+     "ligne": 2,
+     "essais": 1,
+     "juste": true,
+     "entendu": "7 fois 2, 14"
+    },
+    {
+     "ligne": 3,
+     "essais": 3,
+     "juste": false,
+     "entendu": "Cette fois, 3, 20 et 1."
+    },
+    {
+     "ligne": 4,
+     "essais": 3,
+     "juste": false,
+     "entendu": "7 fois 4, 28."
+    },
+    {
+     "ligne": 5,
+     "essais": 2,
+     "juste": true,
+     "entendu": "7 fois 5, 35 fois"
+    },
+    {
+     "ligne": 6,
+     "essais": 1,
+     "juste": true,
+     "entendu": "7 fois 6, 42."
+    },
+    {
+     "ligne": 7,
+     "essais": 1,
+     "juste": true,
+     "entendu": "7 fois 7, 49."
+    },
+    {
+     "ligne": 8,
+     "essais": 1,
+     "juste": true,
+     "entendu": "7 fois 8, 56."
+    },
+    {
+     "ligne": 9,
+     "essais": 1,
+     "juste": true,
+     "entendu": "7 fois 9, 63"
+    },
+    {
+     "ligne": 10,
+     "essais": 1,
+     "juste": true,
+     "entendu": "7 x 10, 70"
     }
    ]
   }

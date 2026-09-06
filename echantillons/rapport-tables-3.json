@@ -2,73 +2,142 @@
  "3": [
   {
    "prise": 1,
-   "duree": 20.9,
-   "entendu": "table de 3, 3 fois 1, 3, 3 fois 2, 6, 3 fois 3, 9, 3 fois 4, 12, 3 fois 5, 15, 3 fois 6, 18, 3 fois 7, 21, 3 fois 8, 24, 3 fois 9, 27, 3 fois 10, 30, 2, 3...",
+   "duree": 22.0,
+   "entendu": "table de trois, 3 fois 1, 3, 3 fois 2, 6, 3 fois 3, 9, 3 fois 4, 12, 3 fois 5, 15, 3 fois 6, 18, 3 fois 7, 21, 3 fois 8, 24, 3 fois 9, 27, 3 fois 10, 30.",
    "decoupages": [
     {
      "methode": "mots",
      "lignes_fausses": [
-      3
-     ],
-     "entendu": [
-      "Trois fois un, trois.",
-      "Trois fois deux, six.",
-      "3x39",
-      "3x4, 12",
-      "Trois fois cinq, quinze.",
-      "3 x 6 18",
-      "Trois fois sept, vingt et un.",
-      "3x8 24",
-      "Trois fois neuf, vingt -sept.",
-      "3x10, 30D"
-     ]
-    },
-    {
-     "methode": "structure 0.12",
-     "lignes_fausses": [
-      1,
-      2,
-      3,
-      4,
       5,
-      6,
-      7
+      8
      ],
      "entendu": [
-      "Trois, trois, four...",
-      "4 .1",
-      "3. 3 fois 2.",
-      "6. 3x39.",
-      "3x4, 12",
-      "Trois fois cinq, quinze.",
-      "Trois fois six, dix -huit. Trois fois sept.",
-      "21, 3 x 8, 24",
-      "Trois fois neuf, vingt -sept.",
-      "3x10, 30D"
+      "Trois fois, hein ? Trois !",
+      "Trois fois deux, six...",
+      "Trois fois trois, neuf.",
+      "3 x 4, 12",
+      "Plus qu 'à cinq, c 'est bon.",
+      "3 x 6 18",
+      "3 x 7, 21",
+      "338 24",
+      "3 .9. 27.",
+      "3 soit 10, 30"
      ]
     }
    ]
   },
   {
    "prise": 2,
-   "duree": 19.6,
-   "entendu": "table de 3, 3 fois 1, 3, 3 fois 2, 6, 3 fois 3, 9, 3 fois 4, 12, 3 fois 5, 15, 3 fois 6, 18, 3 fois 7, 21, 3 fois 8, 24, 3 fois 9, 27, 3 fois 10, 30.",
+   "duree": 30.0,
+   "entendu": "table de trois, trois fois un, trois, trois fois deux, six, trois fois trois, neuf, trois fois quatre, douze, trois fois cinq, quinze, trois fois six, dix -huit, trois fois sept, vingt et un. Trois fois huit, vingt -quatre, trois fois dix, trois fois dix, trente.",
    "decoupages": [
     {
      "methode": "mots",
-     "lignes_fausses": [],
+     "lignes_fausses": [
+      9,
+      10
+     ],
      "entendu": [
-      "Trois fois un, trois...",
-      "3 x 2, 6",
+      "Trois four, un, trois.",
+      "Trois fois deux, six.",
       "Trois fois trois, neuf.",
-      "3x4, 12",
+      "3x4 12",
       "Trois, trois, cinq, quinze.",
+      "3 fois 6, 18.",
+      "Trois fois sept, vingt et un.",
+      "3 fois 8, 24",
+      "Waouh, 4Ds",
+      "Trois fois distrente."
+     ]
+    }
+   ]
+  },
+  {
+   "prise": 3,
+   "duree": 24.8,
+   "entendu": "table de 3, 3 fois 1, 3, 3 fois 2, 6, 3 fois 3 à 9, 3 fois 4, 12, 3 fois 5, 15, 3 fois 6, 18, 3 fois 7, 21, 3 fois 8, 24, 3 fois 9, 27, 3 fois 10, 30.",
+   "decoupages": [
+    {
+     "methode": "mots",
+     "lignes_fausses": [
+      9
+     ],
+     "entendu": [
+      "Trois fois un, trois.",
+      "Trois fois deux, six...",
+      "Trois fois trois à neuf.",
+      "3 x 4, 12",
+      "Trois fois cinq, quinze.",
       "Trois fois six, dix -huit.",
       "Trois fois sept, vingt et un.",
       "3x8 24",
-      "3x9, 27.",
-      "3x10x30"
+      "Trois trois neuf, vingt -sept.",
+      "3 soit 10, 30."
      ]
+    }
+   ]
+  },
+  {
+   "ligne_par_ligne": [
+    {
+     "ligne": 1,
+     "essais": 1,
+     "juste": true,
+     "entendu": "Trois fois, un, trois."
+    },
+    {
+     "ligne": 2,
+     "essais": 1,
+     "juste": true,
+     "entendu": "Trois fois deux, six."
+    },
+    {
+     "ligne": 3,
+     "essais": 1,
+     "juste": true,
+     "entendu": "Trois fois trois, neuf."
+    },
+    {
+     "ligne": 4,
+     "essais": 1,
+     "juste": true,
+     "entendu": "3 x 4, 12"
+    },
+    {
+     "ligne": 5,
+     "essais": 1,
+     "juste": true,
+     "entendu": "3 x 5, 15"
+    },
+    {
+     "ligne": 6,
+     "essais": 1,
+     "juste": true,
+     "entendu": "Trois fois six, dix -huit."
+    },
+    {
+     "ligne": 7,
+     "essais": 1,
+     "juste": true,
+     "entendu": "Trois fois sept, vingt et un."
+    },
+    {
+     "ligne": 8,
+     "essais": 1,
+     "juste": true,
+     "entendu": "3 x 8 x 24"
+    },
+    {
+     "ligne": 9,
+     "essais": 1,
+     "juste": true,
+     "entendu": "Trois fois neuf, vingt -sept."
+    },
+    {
+     "ligne": 10,
+     "essais": 2,
+     "juste": true,
+     "entendu": "Trois fois dix, trente."
     }
    ]
   }
