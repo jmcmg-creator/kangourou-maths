@@ -75,8 +75,14 @@ const SUBJECTS=[
       {id:"geo-drapeaux",name:"Pays & Drapeaux",sub:"Tous niveaux \u2014 Reconna\u00eetre les drapeaux",icon:"\u{1F6A9}",color:"#0ea5e9",alwaysOpen:true},
       {id:"geo-carte-drapeaux",name:"Drapeaux sur la carte",sub:"Vois le drapeau, touche le pays",icon:"\u{1F6A9}",color:"#22d3ee",noBattle:true,alwaysOpen:true},
       {id:"geo-carte-france",name:"Villes de France",sub:"Place les villes sur la carte",icon:"\u{1F4CD}",color:"#06b6d4",noBattle:true,alwaysOpen:true},
-      {id:"geo-carte-europe",name:"Capitales d'Europe",sub:"Place les capitales sur la carte",icon:"\u{1F9ED}",color:"#0891b2",noBattle:true,alwaysOpen:true},
-      {id:"geo-carte-payseu",name:"Pays d'Europe",sub:"Touche le pays sur la carte",icon:"\u{1F30D}",color:"#0ea5e9",noBattle:true,alwaysOpen:true}
+      {id:"geo-carte-europe",name:"Capitales d'Europe",sub:"Touche le pays de chaque capitale",icon:"\u{1F9ED}",color:"#0891b2",noBattle:true,alwaysOpen:true},
+      {id:"geo-carte-payseu",name:"Pays d'Europe",sub:"Touche le pays sur la carte",icon:"\u{1F30D}",color:"#0ea5e9",noBattle:true,alwaysOpen:true},
+      // Les autres continents s'ouvrent l'un après l'autre : chacun exige que
+      // le précédent soit TERMINÉ (toutes ses questions réussies au moins une
+      // fois). L'Europe compte pour deux niveaux — pays et capitales.
+      {id:"geo-carte-asie",name:"L'Asie",sub:"Pays et capitales sur la carte",icon:"\u{1F30F}",color:"#f59e0b",noBattle:true,alwaysOpen:true,map:'asie',requires:["geo-carte-payseu","geo-carte-europe"]},
+      {id:"geo-carte-afrique",name:"L'Afrique",sub:"Pays et capitales sur la carte",icon:"\u{1F30D}",color:"#22c55e",noBattle:true,alwaysOpen:true,map:'afrique',requires:["geo-carte-asie"]},
+      {id:"geo-carte-amerique",name:"L'Amérique",sub:"Pays et capitales sur la carte",icon:"\u{1F30E}",color:"#a78bfa",noBattle:true,alwaysOpen:true,map:'amerique',requires:["geo-carte-afrique"]}
     ]}
 ];
 
@@ -320,7 +326,7 @@ const STORAGE_ACTIVE="royaume_active_v1";
    distinguer « la fonctionnalité est cassée » de « le téléphone n'a pas
    encore la mise à jour ».
    À bumper avec CACHE_VERSION (sw.js) et le ?v= (index.html). */
-const APP_VERSION='v41';
+const APP_VERSION='v42';
 
 function loadProfilesDict(){
   try{const d=localStorage.getItem(STORAGE_PROFILES); if(d) return JSON.parse(d)||{};}catch(e){}
@@ -1154,6 +1160,9 @@ function _lowestLevelOf(subjectId){
 function isLevelUnlocked(lvId){
   const lv=LEVELS.find(l=>l.id===lvId);
   if(!lv) return true;
+  // Une chaîne explicite (Europe → Asie → Afrique → Amérique) passe avant la
+  // classe : on ne saute pas un continent, quel que soit l'âge.
+  if(Array.isArray(lv.requires)&&lv.requires.length&&!lv.requires.every(isLevelMastered)) return false;
   if(profile.grade==null) return true;               // non-régression
   const need=levelMinGrade(lv);
   if(need===null) return true;                       // contenu transverse
@@ -1501,6 +1510,14 @@ function renderSubject(){
     const barre=(open&&m.total>0)?`<div class="lvl-track"><div class="lvl-fill" style="width:${Math.round(m.ratio*100)}%;background:${lv.color}"></div></div>` : '';
     let ligne;
     if(open) ligne=m.total>0?`${fini?'✅ Terminé — ':''}${m.done}/${m.total} questions réussies`:(lv.sub||'');
+    else if(Array.isArray(lv.requires)&&lv.requires.length){
+      // Continent verrouillé : on nomme ce qu'il reste à terminer, question par question.
+      const manque=lv.requires.map(id=>LEVELS.find(l=>l.id===id)).filter(Boolean)
+        .map(l=>({l,m:levelMastery(l.id)})).filter(x=>x.m.total>0&&x.m.done<x.m.total);
+      ligne=manque.length
+        ? 'À ouvrir — termine '+manque.map(x=>'« '+esc(x.l.name)+' » (encore '+(x.m.total-x.m.done)+')').join(' et ')
+        : 'À ouvrir';
+    }
     else if(isNext){
       const prec=topOpenLevel(s.id);
       const mp=prec?levelMastery(prec.id):null;
@@ -1877,14 +1894,14 @@ async function reqGen(lvId,n){
 function isPlayableEx(e){
   if(!e||e.oral) return false;
   if(e.type==='map') return !!(MAP_POINTS[e.map]&&e.target&&MAP_POINTS[e.map].some(p=>p.id===e.target));
-  if(e.type==='map-country') return !!(e.target&&MAP_COUNTRIES[e.target]);
+  if(e.type==='map-country') return !!(e.target&&mapSetOf(e).pays[e.target]);
   if(e.type==='input') return Array.isArray(e.answers)&&e.answers.length>0&&typeof e.q==='string';
   return Array.isArray(e.ch)&&e.ch.length>=2&&e.ch.length<=4&&typeof e.ans==='number'&&e.ans>=0&&e.ans<e.ch.length;
 }
 // Réponse correcte d'un exo, quel que soit son format.
 function exAnswerText(e){
   if(e.type==='map'){const p=((MAP_POINTS[e.map])||[]).find(x=>x.id===e.target);return p?p.name:''}
-  if(e.type==='map-country'){const cy=MAP_COUNTRIES[e.target];return cy?cy.name:''}
+  if(e.type==='map-country'){const cy=mapSetOf(e).pays[e.target];return cy?cy.name:''}
   return e.type==='input'?(e.answers&&e.answers[0]||''):(e.ch&&e.ch[e.ans]||'');
 }
 // Normalisation pour comparer une réponse tapée (accents/casse/espaces).
@@ -1930,7 +1947,6 @@ const MAP_POINTS={
   ]
 };
 MAP_POINTS.france.forEach(p=>EX.push({id:'mapfr_'+p.id,lv:'geo-carte-france',cat:'Villes de France',diff:p.diff,type:'map',map:'france',target:p.id,q:'Où est '+p.name+' ? Touche le bon point sur la carte !',se:p.se,sk:'Carte de France'}));
-MAP_POINTS.europe.forEach(p=>EX.push({id:'mapeu_'+p.id,lv:'geo-carte-europe',cat:"Capitales d'Europe",diff:p.diff,type:'map',map:'europe',target:p.id,q:'Où est '+p.name+', la capitale '+p.gen+' ? Touche le bon point !',se:p.se,sk:"Capitales d'Europe"}));
 
 /* ════════ PLACER LES PAYS : vraies frontières tappables (Natural Earth) ════════ */
 const MAP_COUNTRIES={
@@ -2112,6 +2128,35 @@ EX.push({id:'mapcy_by',lv:'geo-carte-payseu',cat:"Pays d'Europe",diff:4,type:'ma
 EX.push({id:'mapcy_md',lv:'geo-carte-payseu',cat:"Pays d'Europe",diff:5,type:'map-country',target:'md',q:'O\u00f9 est '+MAP_COUNTRIES.md.name+' ? Touche le pays sur la carte !',se:"La Moldavie est un petit pays entre la Roumanie et l\u2019Ukraine.",sk:"Pays d'Europe"});
 EX.push({id:'mapcy_ua',lv:'geo-carte-payseu',cat:"Pays d'Europe",diff:3,type:'map-country',target:'ua',q:'O\u00f9 est '+MAP_COUNTRIES.ua.name+' ? Touche le pays sur la carte !',se:"L\u2019Ukraine est le plus grand pays enti\u00e8rement europ\u00e9en, \u00e0 l\u2019est.",sk:"Pays d'Europe"});
 EX.push({id:'mapcy_lu',lv:'geo-carte-payseu',cat:"Pays d'Europe",diff:5,type:'map-country',target:'lu',q:'O\u00f9 est '+MAP_COUNTRIES.lu.name+' ? Touche le pays sur la carte !',se:"Le Luxembourg est minuscule, entre la France, la Belgique et l\u2019Allemagne.",sk:"Pays d'Europe"});
+
+/* Capitales d'Europe — SUR LE PAYS. Avant, l'enfant choisissait parmi cinq
+   points dont quatre villes-leurres : un QCM déguisé, pas un placement. Il
+   touche désormais le pays dont c'est la capitale, et le point s'affiche à sa
+   vraie place une fois répondu. Les identifiants sont conservés : ce que Judith
+   avait déjà réussi reste réussi. */
+const CAP_EUROPE={paris:'fr',londres:'gb',madrid:'es',rome:'it',berlin:'de',bruxelles:'be',amsterdam:'nl',lisbonne:'pt',athenes:'gr',berne:'ch',vienne:'at',prague:'cz',varsovie:'pl',copenhague:'dk',oslo:'no',stockholm:'se',dublin:'ie',budapest:'hu',bucarest:'ro',kiev:'ua',zagreb:'hr',belgrade:'rs',sofia:'bg',bratislava:'sk',ljubljana:'si',vilnius:'lt',riga:'lv',tallinn:'ee',minsk:'by',luxembourg:'lu'};
+MAP_POINTS.europe.forEach(p=>{
+  const cid=CAP_EUROPE[p.id];
+  if(!cid||!MAP_COUNTRIES[cid]) return;            // pays absent de la carte : pas de question
+  EX.push({id:'mapeu_'+p.id,lv:'geo-carte-europe',cat:"Capitales d'Europe",diff:p.diff,type:'map-country',map:'europe',cap:p.name,target:cid,
+    q:'Où est '+p.name+' ? Touche le pays dont c\'est la capitale.',se:p.se,sk:"Capitales d'Europe"});
+});
+
+/* Les autres continents : pays ET capitales, générés depuis cartes-monde.js.
+   La difficulté suit la taille : un grand pays se voit, un petit se cherche. */
+if(typeof MAP_SETS_MONDE!=='undefined'){
+  for(const [mid,set] of Object.entries(MAP_SETS_MONDE)){
+    const lvId='geo-carte-'+mid;
+    const ordre=Object.entries(set.pays).sort((a,b)=>b[1].km2-a[1].km2);
+    ordre.forEach(([cid,c],i)=>{
+      const diff=i<ordre.length*0.25?1:i<ordre.length*0.5?2:i<ordre.length*0.75?3:4;
+      EX.push({id:'mapc_'+mid+'_'+cid,lv:lvId,cat:'Pays — '+set.nom,diff,type:'map-country',map:mid,target:cid,
+        q:ouEst(c.name)+' Touche le pays sur la carte !',se:c.nom+' — sa capitale est '+c.cap+'.',sk:'Pays — '+set.nom});
+      if(c.cap) EX.push({id:'mapk_'+mid+'_'+cid,lv:lvId,cat:'Capitales — '+set.nom,diff:Math.min(5,diff+1),type:'map-country',map:mid,cap:c.cap,target:cid,
+        q:'Où est '+c.cap+' ? Touche le pays dont c\'est la capitale.',se:c.cap+' est la capitale '+deNom(c.name)+'.',sk:'Capitales — '+set.nom});
+    });
+  }
+}
 
 /* ── Drapeaux SUR LA CARTE (ÉTAPE demandée par Julien) ──
    Même carte tactile que « Pays d'Europe », mais la consigne est un drapeau :
@@ -2781,18 +2826,46 @@ function renderMapArea(ex){
     }).join('')
   +'</div>';
 }
+/* Le jeu de cartes d'un exercice. L'Europe est dessinée à la main (MAP_COUNTRIES,
+   avec le fond MAP_SVG_PATHS.europe) ; les autres continents viennent de
+   cartes-monde.js, généré depuis Natural Earth. Même format de pays :
+   { name (avec article), path, cx, cy, w, h } — et cap pour la capitale. */
+function mapSetOf(ex){
+  const m=ex&&ex.map;
+  if(m&&m!=='europe'&&typeof MAP_SETS_MONDE!=='undefined'&&MAP_SETS_MONDE[m]) return {id:m,pays:MAP_SETS_MONDE[m].pays,land:null};
+  return {id:'europe',pays:MAP_COUNTRIES,land:MAP_SVG_PATHS.europe};
+}
+// « Où est la France ? » mais « Où sont les Pays-Bas ? ».
+function ouEst(nom){return (/^les /.test(nom)?'Où sont ':'Où est ')+nom+' ?'}
+// « la capitale DU Kazakhstan, DE LA France, DE L'Iran, DES États-Unis, D'Israël, DE Cuba ».
+function deNom(nom){
+  if(/^le /.test(nom)) return 'du '+nom.slice(3);
+  if(/^les /.test(nom)) return 'des '+nom.slice(4);
+  if(/^la /.test(nom)) return 'de '+nom;
+  if(/^l'/.test(nom)) return 'de '+nom;
+  return (/^[AEIOUÉÈÊÎÔÛH]/i.test(nom)?"d'":'de ')+nom;
+}
+
 // ── Placer les PAYS : chaque pays est une vraie forme tappable ──────────
 /* En dessous de cette largeur (en unités du viewBox 0-100), un pays reçoit une
    zone tactile ronde en plus de son tracé. */
 const TINY_COUNTRY=5, TINY_HIT_R=3.2;
 function renderCountryMapArea(ex){
   const done=state.selected!==null;
+  const SET=mapSetOf(ex);const MAP_COUNTRIES=SET.pays;
   const ids=Object.keys(MAP_COUNTRIES);
   const shapes=ids.map(cid=>{
     let cls='map-country';
     if(done){if(cid===ex.target)cls+=' correct';else if(cid===state.selected)cls+=' wrong'}
     return '<path class="'+cls+'" d="'+MAP_COUNTRIES[cid].path+'" data-id="'+cid+'" onclick="selectCountryAnswer(this.dataset.id)"/>';
   }).join('');
+  // Capitale : une fois répondu, on POSE le point sur la carte quand on connaît
+  // sa position (Europe). Ailleurs, le pays s'allume et le corrigé la nomme.
+  let point='';
+  if(done&&ex.cap&&SET.id==='europe'){
+    const pt=(MAP_POINTS.europe||[]).find(x=>normAnswer(x.name)===normAnswer(ex.cap));
+    if(pt) point='<circle class="map-cap" cx="'+pt.x+'" cy="'+pt.y+'" r="1.6"/>';
+  }
   /* Zone tactile de secours pour les tout petits pays (Luxembourg, Monténégro,
      Slovénie…) : sur un iPhone, un tracé de 2 px est intouchable avec un doigt.
      On pose un disque invisible sur leur centre, le plus petit pays en dernier
@@ -2803,14 +2876,14 @@ function renderCountryMapArea(ex){
     .map(cid=>'<circle class="map-hit" cx="'+MAP_COUNTRIES[cid].cx+'" cy="'+MAP_COUNTRIES[cid].cy
       +'" r="'+TINY_HIT_R+'" data-id="'+cid+'" onclick="selectCountryAnswer(this.dataset.id)"/>').join('');
   return '<div class="map-wrap"><svg viewBox="0 0 100 100">'
-    +'<path class="map-land" style="pointer-events:none" d="'+MAP_SVG_PATHS.europe+'"/>'
-    +shapes+(done?'':tiny)+'</svg>'
-    +'<p class="sub" style="position:absolute;bottom:6px;left:0;right:0;text-align:center;font-size:.7rem;pointer-events:none">Touche le bon pays !</p>'
+    +(SET.land?'<path class="map-land" style="pointer-events:none" d="'+SET.land+'"/>':'')
+    +shapes+(done?'':tiny)+point+'</svg>'
+    +'<p class="sub" style="position:absolute;bottom:6px;left:0;right:0;text-align:center;font-size:.7rem;pointer-events:none">'+(ex.cap?'Touche le pays de cette capitale !':'Touche le bon pays !')+'</p>'
   +'</div>';
 }
 function selectCountryAnswer(id){
   if(state.selected!==null||state.gameOver) return;
-  if(!MAP_COUNTRIES[id]) return;
+  if(!mapSetOf(state.exercises[state.idx]).pays[id]) return;
   if(state.timerID){clearInterval(state.timerID);state.timerID=null}
   const ex=state.exercises[state.idx];
   const correct=id===ex.target;
@@ -3082,7 +3155,7 @@ function finishGame(abandoned){
       if(!r.correct){
         if(!profile.recentMisses)profile.recentMisses=[];
         const e=r.ex;let given='';
-        if(e.type==='map-country'){const cy=MAP_COUNTRIES[r.choice];given=cy?cy.name:'(temps écoulé)'}
+        if(e.type==='map-country'){const cy=mapSetOf(e).pays[r.choice];given=cy?cy.name:'(temps écoulé)'}
         else if(e.type==='map'){const p=(MAP_POINTS[e.map]||[]).find(x=>x.id===r.choice);given=p?p.name:'(temps écoulé)'}
         else if(e.type==='input'){given=String(r.choice||'')||'(vide)'}
         else{given=(typeof r.choice==='number'&&r.choice>=0&&Array.isArray(e.ch))?String(e.ch[r.choice]):'(temps écoulé)'}
