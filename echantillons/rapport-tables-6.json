@@ -2,10 +2,160 @@
  "6": [
   {
    "prise": 1,
-   "duree": 19.9,
-   "fois": 10,
-   "entendu": "table de 6, 6 fois 1, 6 fois 2, 12, 6 fois 3, 18, 6 fois 10, 4, 24, 6 fois 5, 30, 6 fois 6, 36, 6 fois 7, 42, 6 fois 8, 48, 6 fois 9, 54, 6 fois 10, 60.",
-   "decoupee": true
+   "duree": 20.9,
+   "entendu": "table de 6, 6x1, 6, 6x2, 12, 6x3, 18, 6x4, 24, 6x5, 30, 6x6, 36, 6x7, 42, 6x8, 42, 6x8, 6x9, 54, 6x10, 60.",
+   "decoupages": [
+    {
+     "methode": "structure 0.35",
+     "lignes_fausses": [
+      2,
+      3,
+      4,
+      5,
+      6,
+      7,
+      8,
+      9
+     ],
+     "entendu": [
+      "6x1",
+      "C 'est...",
+      "6 x 2, 12",
+      "6 x 3, 18",
+      "6x4 24",
+      "6 x 5, 30",
+      "6 x 6, 36",
+      "6 x 7, 42.",
+      "6 x 8, 42, 6 x 8, 6 x 9, 54",
+      "6 × 10 × 60"
+     ]
+    }
+   ]
+  },
+  {
+   "prise": 2,
+   "duree": 20.7,
+   "entendu": "table de 6, 6x1, 6, 6x2, 12, 6x3, 18, 6x4, 24, 6x5, 30, 6x6, 36, 6x7, 42, 6x8, 48, 6x9, 54, 6x10, 60.",
+   "decoupages": [
+    {
+     "methode": "mots",
+     "lignes_fausses": [
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7,
+      8,
+      9
+     ],
+     "entendu": [
+      "6, 6 x 1",
+      "6, 6 x 2",
+      "12, 6 x 3",
+      "18, 6 x 4",
+      "24, 6 x 5",
+      "Tente, six fois six.",
+      "36, 6 x 7",
+      "42, 6 x 8",
+      "48, 6 .9",
+      "54, 6x10, 60"
+     ]
+    },
+    {
+     "methode": "structure 0.12",
+     "lignes_fausses": [
+      2,
+      3,
+      6,
+      7,
+      8
+     ],
+     "entendu": [
+      "6 x 1, 6",
+      "6 x 2, 12, 6 x 3",
+      "18",
+      "6x4, 24",
+      "6x5 tente",
+      "6x6, 36, 6x7",
+      "42, 6 x 8",
+      "48.",
+      "6 .9 54",
+      "6x10, 60."
+     ]
+    }
+   ]
+  },
+  {
+   "prise": 3,
+   "duree": 22.3,
+   "entendu": "table de 6, 6x1, 6, 6x2, 12, 6x3, 18, 6x4, 24, 6x5, 30, 6x6, 36, 6x7, 42, 6x8, 42, 6x8, 6x9, 54, 6x10, 60.",
+   "decoupages": []
+  },
+  {
+   "ligne_par_ligne": [
+    {
+     "ligne": 1,
+     "essais": 1,
+     "juste": true,
+     "entendu": "6 x 1, 6"
+    },
+    {
+     "ligne": 2,
+     "essais": 1,
+     "juste": true,
+     "entendu": "6 x 2 12"
+    },
+    {
+     "ligne": 3,
+     "essais": 1,
+     "juste": true,
+     "entendu": "Six fois trois, dix -huit."
+    },
+    {
+     "ligne": 4,
+     "essais": 1,
+     "juste": true,
+     "entendu": "six fois quatre, vingt -quatre, vingt -quatre."
+    },
+    {
+     "ligne": 5,
+     "essais": 1,
+     "juste": true,
+     "entendu": "6 fois 5, 30"
+    },
+    {
+     "ligne": 6,
+     "essais": 1,
+     "juste": true,
+     "entendu": "6 x 6, 36"
+    },
+    {
+     "ligne": 7,
+     "essais": 1,
+     "juste": true,
+     "entendu": "6 x 7, 42"
+    },
+    {
+     "ligne": 8,
+     "essais": 1,
+     "juste": true,
+     "entendu": "6x8, 48"
+    },
+    {
+     "ligne": 9,
+     "essais": 1,
+     "juste": true,
+     "entendu": "6 fois 9, 54, 54"
+    },
+    {
+     "ligne": 10,
+     "essais": 1,
+     "juste": true,
+     "entendu": "6 x 10, 60, 60..."
+    }
+   ]
   }
  ]
 }

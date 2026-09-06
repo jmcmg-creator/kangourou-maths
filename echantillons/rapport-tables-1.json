@@ -2,17 +2,219 @@
  "1": [
   {
    "prise": 1,
-   "duree": 30.1,
-   "fois": 9,
-   "entendu": "table de 1, 1 fois 1, 1 fois 2, 2, 1 fois 3, 3, 1 fois 4, 4, 1 fois 5, 5, 1 fois 6, 6, 1 fois 7, 7, 1 fois 8, 8, 1 fois 9, 9 oui et fixé, si si",
-   "decoupee": false
+   "duree": 15.0,
+   "entendu": "table de 1, 1 fois 1, 1 fois 2, 2, 2, 1 fois 3, 3, 1 fois 4, 4, 1 fois 5, 5, 1 fois 6, 6, 1 fois 7, 7, 1 fois 8, 8, 1 fois 9, 9, 1 fois 10, 10.",
+   "decoupages": [
+    {
+     "methode": "mots",
+     "lignes_fausses": [
+      1,
+      4,
+      5,
+      8
+     ],
+     "entendu": [
+      "À foie, hein.",
+      "un fois deux, deux, deux.",
+      "1 fois 3, 3",
+      "1x44",
+      "à 4, 5, 5.",
+      "1 x 6 6",
+      "1 fois 7 7",
+      "Un fois vite, vite !",
+      "1 fois 9, 9",
+      "1 fois 10, 10."
+     ]
+    },
+    {
+     "methode": "structure 0.12",
+     "lignes_fausses": [
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7,
+      8
+     ],
+     "entendu": [
+      "...en... ...à f...",
+      "",
+      "3 2 2 2",
+      "1 fois 3",
+      "3, 1 x 4, 4",
+      "1 fois 5, 5, 1 fois 6",
+      "6 ,1 fois 7",
+      "7, 1 fois 8",
+      "8, 1 fois 9, 9",
+      "1 fois 10, 10."
+     ]
+    }
+   ]
   },
   {
    "prise": 2,
-   "duree": 20.0,
-   "fois": 10,
-   "entendu": "table de 1, 1 fois 1, 1 fois 2, 2, 1 fois 3, 3, 3, 1 fois 4, 4, 1 fois 5, 5, 1 fois 6, 6, 1 fois 7, 7, 1 fois 8, 8, 1 fois 9, 9, 1 fois 10, 10.",
-   "decoupee": true
+   "duree": 17.9,
+   "entendu": "table de 1, 1 fois 1, 1 fois 2, 2, 1 fois 3, 3, 3, 1 fois 4, 4, 1 fois 5, 5, 1 fois 6, 6, 1 fois 7, 7, 1 fois 8, 8, 1 fois 9, 1 fois 10, 10.",
+   "decoupages": [
+    {
+     "methode": "mots",
+     "lignes_fausses": [
+      5,
+      8,
+      9
+     ],
+     "entendu": [
+      "1 fois 1.",
+      "1 fois 2, 2",
+      "1 fois droit, 3, 3",
+      "Un fois quatre, quatre ...",
+      "à 4, 5, 5",
+      "1 fois 6, 6",
+      "1 fois 7, 7",
+      "8, 8, 8",
+      "en point neuf.",
+      "1 fois 10, 10."
+     ]
+    },
+    {
+     "methode": "structure 0.25",
+     "lignes_fausses": [
+      3,
+      4,
+      5,
+      6,
+      7,
+      8,
+      9
+     ],
+     "entendu": [
+      "1 fois 1.",
+      "1 fois 2",
+      "deux",
+      "un fois droit.",
+      "Toi.",
+      "Toi ?",
+      "1x4",
+      "4",
+      "1 fois 5, 5, 1 fois 6, 6, 1 fois 7, 7, 1 fois 8, 8, 1 fois 9.",
+      "1 fois 10, 10."
+     ]
+    }
+   ]
+  },
+  {
+   "prise": 3,
+   "duree": 15.7,
+   "entendu": "Table de 1, 1 fois 1, 1 fois 2, 2, 1 fois 3, 3, 3, 1 fois 4, 4, 1 fois 5, 5, 1 fois 6, 6, 1 fois 7, 7, 1 fois 8, 8, 1 fois 9, 9, 1 fois 10, 10.",
+   "decoupages": [
+    {
+     "methode": "mots",
+     "lignes_fausses": [
+      5,
+      8
+     ],
+     "entendu": [
+      "un fois un.",
+      "1 fois 2, 2",
+      "1 fois 3, 3, 3",
+      "1 fois 4, 4",
+      "Au revoir, cinq, cinq.",
+      "1 fois 6, 6.",
+      "1 fois 7, 7.",
+      "et pour 8, 8",
+      "1 .9 9",
+      "un poids, 10, 10"
+     ]
+    },
+    {
+     "methode": "structure 0.25",
+     "lignes_fausses": [
+      5,
+      7,
+      8,
+      9,
+      10
+     ],
+     "entendu": [
+      "un fois un.",
+      "1 fois 2, 2",
+      "1x3 3",
+      "3, 1 fois 4, 4...",
+      "Au revoir, cinq, cinq.",
+      "un fois six, six.",
+      "1 fois 7, 7, 1 fois 8, 8",
+      "1 .9 9",
+      "un poids 10",
+      "10"
+     ]
+    }
+   ]
+  },
+  {
+   "ligne_par_ligne": [
+    {
+     "ligne": 1,
+     "essais": 1,
+     "juste": true,
+     "entendu": "Un fois un, un."
+    },
+    {
+     "ligne": 2,
+     "essais": 1,
+     "juste": true,
+     "entendu": "1 fois 2, 2"
+    },
+    {
+     "ligne": 3,
+     "essais": 1,
+     "juste": true,
+     "entendu": "Un fois trois, trois, trois..."
+    },
+    {
+     "ligne": 4,
+     "essais": 1,
+     "juste": true,
+     "entendu": "Un fois quatre, quatre."
+    },
+    {
+     "ligne": 5,
+     "essais": 1,
+     "juste": true,
+     "entendu": "Un fois, cinq, cinq, cinq..."
+    },
+    {
+     "ligne": 6,
+     "essais": 1,
+     "juste": true,
+     "entendu": "1 fois 6. 6."
+    },
+    {
+     "ligne": 7,
+     "essais": 1,
+     "juste": true,
+     "entendu": "1 fois 7, 7."
+    },
+    {
+     "ligne": 8,
+     "essais": 2,
+     "juste": true,
+     "entendu": "1 x 8"
+    },
+    {
+     "ligne": 9,
+     "essais": 1,
+     "juste": true,
+     "entendu": "Un fois neuf, neuf, neuf."
+    },
+    {
+     "ligne": 10,
+     "essais": 1,
+     "juste": true,
+     "entendu": "un fois, dix, dix"
+    }
+   ]
   }
  ]
 }

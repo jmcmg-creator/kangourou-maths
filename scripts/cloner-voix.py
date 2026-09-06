@@ -134,6 +134,39 @@ def main():
             return mots
 
         rapport = {}
+        # CHAQUE LIGNE EST RÉÉCOUTÉE AVANT D'ÊTRE GARDÉE. Un découpage décalé
+        # d'une respiration met le résultat d'une ligne au début de la
+        # suivante (« 32, huit fois cinq ») : Whisper l'a entendu sur un
+        # premier lot. Aucune coupe n'est donc crue sur parole : le morceau
+        # doit dire « T fois k, T×k » (à un mot écorché près), sinon on
+        # essaie un autre découpage, puis une autre prise.
+        _sv = _u.spec_from_file_location('vv', os.path.join(RACINE, 'scripts', 'verifier-voix.py'))
+        _vv = _u.module_from_spec(_sv); _sv.loader.exec_module(_vv)
+
+        def distance(x, y):
+            d = list(range(len(y) + 1))
+            for i, xi in enumerate(x, 1):
+                prec, d[0] = d[0], i
+                for j, yj in enumerate(y, 1):
+                    prec, d[j] = d[j], min(d[j] + 1, d[j - 1] + 1, prec + (xi != yj))
+            return d[-1]
+
+        def ligne_juste(morceau, sr, t, b):
+            mots_ = ecouter(morceau, sr)
+            ent = ' '.join(x for x, _, _ in mots_)
+            att = _vv.normaliser(phrase_table(t, b)); e = _vv.normaliser(ent)
+            return distance(att, e) <= 1, ent
+
+        def candidats(a, sr, mots):
+            vus, out = [], []
+            l = _dv.decouper_par_mots(a, sr, mots)
+            if l: out.append(('mots', l)); vus.append(l)
+            for sm in (0.12, 0.18, 0.25, 0.35):
+                l = _dv.decouper_par_structure(a, sr, silence_min=sm)
+                if l and all(sum(abs(x - y) for p, q in zip(l, v) for x, y in zip(p, q)) > sr * 0.5 for v in vus):
+                    out.append((f'structure {sm}', l)); vus.append(l)
+            return out
+
         for t in (args.tables or range(1, 11)):
             noms = [f't-{t}-{b}.mp3' for b in range(1, 11)]
             if not args.force and all(os.path.exists(os.path.join(SORTIE, x)) for x in noms):
@@ -141,26 +174,43 @@ def main():
             # « Table de sept. » en tête : si le modèle mange l'attaque, c'est
             # ces trois mots qu'il abîme, et on les jette au découpage.
             texte = f"Table de {mot(t)}. " + ' '.join(phrase_table(t, b) for b in range(1, 11))
-            lignes = None
+            retenu = None
             for essai in range(1, 4):
                 w = m.generate(texte, language_id='fr', audio_prompt_path=ref)
                 a = np.asarray(w.detach().cpu().numpy() if hasattr(w, 'detach') else w, dtype='float32').reshape(-1)
                 mots = ecouter(a, m.sr)
-                lignes = _dv.decouper_par_mots(a, m.sr, mots)
                 entendu = ' '.join(x for x, _, _ in mots)
-                nf = sum(1 for x, _, _ in mots if re.sub(r"[^a-zà-ÿ]", '', x.lower()) in ('fois', 'foi', 'foie', 'x'))
-                rapport.setdefault(str(t), []).append({'prise': essai, 'duree': round(len(a)/m.sr, 1), 'fois': nf, 'entendu': entendu, 'decoupee': bool(lignes)})
-                if lignes:
+                compte = {'prise': essai, 'duree': round(len(a)/m.sr, 1), 'entendu': entendu, 'decoupages': []}
+                rapport.setdefault(str(t), []).append(compte)
+                for nom_dec, lignes in candidats(a, m.sr, mots):
+                    verdicts = [ligne_juste(a[d:f], m.sr, t, b) for b, (d, f) in enumerate(lignes, 1)]
+                    fautes = [b for b, (ok, _) in enumerate(verdicts, 1) if not ok]
+                    compte['decoupages'].append({'methode': nom_dec, 'lignes_fausses': fautes, 'entendu': [e for _, e in verdicts]})
+                    if not fautes:
+                        retenu = (nom_dec, lignes); break
+                    print(f"  ↩  table de {t}, prise {essai}, découpage « {nom_dec} » : lignes {fautes} fausses", flush=True)
+                if retenu:
                     break
-                print(f"  ⚠️  table de {t}, prise {essai} ({len(a)/m.sr:.0f}s) : {nf} « fois » entendus au lieu de 10, on refait\n      entendu : {entendu}", flush=True)
-            if lignes:
+                print(f"  ⚠️  table de {t}, prise {essai} ({len(a)/m.sr:.0f}s) : aucun découpage juste, on refait\n      entendu : {entendu}", flush=True)
+            if retenu:
+                nom_dec, lignes = retenu
                 for nom, (d, f) in zip(noms, lignes):
                     total += encoder(os.path.join(SORTIE, nom), a[d:f], m.sr); n += 1
-                print(f"  ✅ table de {t} : une prise de {len(a)/m.sr:.0f}s, dix lignes\n      entendu : {entendu}", flush=True)
+                print(f"  ✅ table de {t} : une prise de {len(a)/m.sr:.0f}s, dix lignes réécoutées justes (découpage « {nom_dec} »)", flush=True)
             else:
+                # Ligne par ligne, chacune réécoutée aussi, trois essais au plus.
                 print(f"  ⚠️  table de {t} : trois prises inexploitables, générée ligne par ligne", flush=True)
+                lpl = []
                 for b in range(1, 11):
-                    faire(f't-{t}-{b}.mp3', phrase_table(t, b))
+                    for essai in range(1, 4):
+                        w = m.generate(phrase_table(t, b), language_id='fr', audio_prompt_path=ref)
+                        morceau = np.asarray(w.detach().cpu().numpy() if hasattr(w, 'detach') else w, dtype='float32').reshape(-1)
+                        ok, ent = ligne_juste(morceau, m.sr, t, b)
+                        if ok: break
+                        print(f"  ↩  {t}×{b} entendu « {ent} », on refait", flush=True)
+                    lpl.append({'ligne': b, 'essais': essai, 'juste': ok, 'entendu': ent})
+                    total += encoder(os.path.join(SORTIE, f't-{t}-{b}.mp3'), morceau, m.sr); n += 1
+                rapport[str(t)].append({'ligne_par_ligne': lpl})
             # Le compte rendu voyage avec les clips : sans lui, impossible de
             # savoir depuis ici quelle table a eu droit à sa prise entière.
             json.dump(rapport, open(os.path.join(SORTIE, f'rapport-tables-{t}.json'), 'w'), ensure_ascii=False, indent=1)

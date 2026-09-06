@@ -6,6 +6,9 @@ name: Vérifier la voix générée
 on:
   workflow_dispatch:
   push:
+    # Jamais sur main : la fusion d'une branche voix y rejouerait toute la
+    # génération et redéposerait des clips par-dessus la version livrée.
+    branches-ignore: [main]
     paths:
       - 'scripts/verifier-voix.py'
       - '.github/workflows/verifier-voix.yml'
@@ -35,4 +38,4 @@ jobs:
         run: |
           git config user.name 'github-actions[bot]'; git config user.email 'github-actions[bot]@users.noreply.github.com'
           git add echantillons/verification.json 2>/dev/null || true
-          git diff --cached --quiet || { git commit -m "Rapport de vérification de la voix (Whisper)"; git push origin HEAD:${{ github.ref_name }}; }
+          git diff --cached --quiet || { git commit -m "Rapport de vérification de la voix (Whisper)"; git pull --rebase --autostash origin ${{ github.ref_name }}; git push origin HEAD:${{ github.ref_name }}; }

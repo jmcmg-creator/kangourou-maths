@@ -2,17 +2,131 @@
  "10": [
   {
    "prise": 1,
-   "duree": 19.0,
-   "fois": 11,
-   "entendu": "table de 10, 10 fois 1, 10, 10 fois 2, 20, 10 fois 3, 30, 10 fois 4, 40, 10 fois 5, 50, 10 fois 6, 60, 10 fois 7, 70, 10 fois 8, 80, 10 fois 8, 80, 10 fois 9, 90, 10 fois 10, 100.",
-   "decoupee": false
+   "duree": 6.7,
+   "entendu": "table de 10, 10 x 1, 10 x 2, 20, 10 x 3, 30",
+   "decoupages": []
   },
   {
    "prise": 2,
-   "duree": 20.8,
-   "fois": 10,
+   "duree": 21.1,
    "entendu": "table de 10, 10 x 1, 10 x 2, 20, 10 x 3, 30, 10 x 4, 40, 10 x 5, 50, 10 x 6, 60, 10 x 7, 70, 10 x 8, 80, 10 x 9, 90, 10 x 10, 100.",
-   "decoupee": true
+   "decoupages": [
+    {
+     "methode": "mots",
+     "lignes_fausses": [
+      10
+     ],
+     "entendu": [
+      "dix fois un.",
+      "10, 10 fois 2, 20.",
+      "dix fois trois, trente.",
+      "dix fois quatre, quarante",
+      "10 x 5, 50",
+      "dix fois six, soixante.",
+      "10x7, 70",
+      "10 x 8, 80",
+      "dix fois neuf, quatre -vingt -dix.",
+      "dix fois dix cent."
+     ]
+    }
+   ]
+  },
+  {
+   "prise": 3,
+   "duree": 20.7,
+   "entendu": "table de 10, 10x1, 10x2, 20, 10x3, 30, 10x4, 40, 10x5, 50, 10x6, 60, 10x7, 70, 10x8, 80, 10x9, 90, 10x10.",
+   "decoupages": [
+    {
+     "methode": "mots",
+     "lignes_fausses": [
+      1,
+      2,
+      3,
+      4,
+      5,
+      7,
+      8,
+      9,
+      10
+     ],
+     "entendu": [
+      "dix.",
+      "10 x 1, 10 x 2",
+      "20, 10 x 3",
+      "30, 10 x 4",
+      "40, 10 x 5",
+      "dix fois six",
+      "60, 10 x 7",
+      "70, 10x8",
+      "80, 10x9",
+      "90, 10x10"
+     ]
+    }
+   ]
+  },
+  {
+   "ligne_par_ligne": [
+    {
+     "ligne": 1,
+     "essais": 1,
+     "juste": true,
+     "entendu": "dix fois un, dix."
+    },
+    {
+     "ligne": 2,
+     "essais": 1,
+     "juste": true,
+     "entendu": "dix fois deux, vingt."
+    },
+    {
+     "ligne": 3,
+     "essais": 3,
+     "juste": false,
+     "entendu": "dix fois trois trente"
+    },
+    {
+     "ligne": 4,
+     "essais": 1,
+     "juste": true,
+     "entendu": "dix fois quatre, quarante."
+    },
+    {
+     "ligne": 5,
+     "essais": 2,
+     "juste": true,
+     "entendu": "10 x 5, 50"
+    },
+    {
+     "ligne": 6,
+     "essais": 1,
+     "juste": true,
+     "entendu": "Dix fois six, soixante, soixante..."
+    },
+    {
+     "ligne": 7,
+     "essais": 1,
+     "juste": true,
+     "entendu": "10 x 7, 70"
+    },
+    {
+     "ligne": 8,
+     "essais": 1,
+     "juste": true,
+     "entendu": "10 x 8, 80"
+    },
+    {
+     "ligne": 9,
+     "essais": 1,
+     "juste": true,
+     "entendu": "dix fois neuf, quatre -vingt -dix."
+    },
+    {
+     "ligne": 10,
+     "essais": 1,
+     "juste": true,
+     "entendu": "dix fois dix, cinq"
+    }
+   ]
   }
  ]
 }

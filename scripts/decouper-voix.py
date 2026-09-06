@@ -90,6 +90,61 @@ def decouper(a, sr, attendus=10, silence_min=0.35, marge=0.12):
     return [(max(0, d - m) * n, min(len(a), (f + m) * n)) for d, f in zones], seuil, fond
 
 
+def creux_de_volume(a, sr, silence_min=0.12):
+    """Tous les passages calmes d'au moins silence_min secondes, en secondes,
+    hors bord de l'enregistrement : [(début, fin)]. Le seuil vient de
+    l'enregistrement lui-même, comme dans decouper()."""
+    import numpy as np
+    env, n = enveloppe(a, sr)
+    fond = np.percentile(env, 20); voix = np.percentile(env, 95)
+    seuil = max(fond * 3.0, fond + (voix - fond) * 0.10)
+    calme = env <= seuil
+    creux, debut = [], None
+    for i, c in enumerate(list(calme) + [False]):
+        if c and debut is None: debut = i
+        elif not c and debut is not None:
+            if (i - debut) * 0.02 >= silence_min and debut > 0 and i < len(calme):
+                creux.append((debut * n / sr, i * n / sr))
+            debut = None
+    return creux, seuil
+
+
+def _ebarber(a, sr, coupes, seuil, marge):
+    """Chaque ligne entre deux coupes, débarrassée de son silence à une marge près."""
+    import numpy as np
+    lignes, m = [], int(marge * sr)
+    for d, f in zip(coupes, coupes[1:]):
+        d, f = int(d * sr), int(f * sr)
+        e, nn = enveloppe(a[d:f], sr)
+        parle = np.where(e > seuil)[0]
+        if len(parle) == 0:
+            return None
+        lignes.append((max(d, d + parle[0] * nn - m), min(f, d + (parle[-1] + 1) * nn + m)))
+    return lignes
+
+
+def decouper_par_structure(a, sr, attendus=10, silence_min=0.12, marge=0.12):
+    """Coupe une table dite d'une traite en s'appuyant sur sa forme, sans
+    horodatage : « Table de sept. » puis dix lignes « sept fois k, résultat. ».
+    Chaque ligne a deux respirations, la virgule et le point ; on attend donc
+    2 × attendus creux de volume (l'en-tête, puis virgule et point de chaque
+    ligne sauf le point final), et on coupe aux creux de rang pair. Si la
+    virgule ne fait pas de creux à ce seuil, on en attend attendus tout court,
+    et on coupe à chacun. Tout autre compte : None, à l'appelant d'essayer un
+    autre seuil ou une autre prise. Un décalage d'une respiration mettrait le
+    résultat d'une ligne au début de la suivante — c'est pour ça que chaque
+    morceau est ensuite réécouté par l'appelant."""
+    creux, seuil = creux_de_volume(a, sr, silence_min)
+    if len(creux) == 2 * attendus:
+        bornes = creux[0::2]
+    elif len(creux) == attendus:
+        bornes = creux
+    else:
+        return None
+    coupes = [(d + f) / 2 for d, f in bornes] + [len(a) / sr]
+    return _ebarber(a, sr, coupes, seuil, marge)
+
+
 def decouper_par_mots(a, sr, mots, attendus=10, marge=0.12):
     """Coupe une table dite d'une traite en dix lignes, guidé par ce que
     Whisper a entendu — et affiné par le silence.

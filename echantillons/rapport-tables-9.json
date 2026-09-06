@@ -2,10 +2,138 @@
  "9": [
   {
    "prise": 1,
-   "duree": 20.8,
-   "fois": 10,
-   "entendu": "table de 9, 9x1, 9x2, 18, 9x3, 27, 9x4, 36, 9x5, 45, 9x6, 54, 9x7, 63, 9x8, 72, 9x9, 81, 9x10, 90.",
-   "decoupee": true
+   "duree": 29.8,
+   "entendu": "table de 9. 9 x 1 9. 9 x 2 18. 9 x 3 27. 9 x 4 36. 9 x 5 45. 9 x 6 54. 9 x 7 63. 9 x 8 72. 9 x 9 81.",
+   "decoupages": [
+    {
+     "methode": "structure 0.35",
+     "lignes_fausses": [
+      4,
+      5,
+      6,
+      7,
+      8,
+      9,
+      10
+     ],
+     "entendu": [
+      "9 x 1 9",
+      "9 x 2, 18",
+      "9x3",
+      "27",
+      "9x4 36",
+      "9 x 5, 45. 9 x 6, 54. 9 x 7, 63. 9 x 8, 72. 9 x 9, 41.",
+      "Sous -titres réalisés par la communauté d 'Amara .org",
+      "Sous -titres réalisés par la communauté d 'Amara .org",
+      "Sous -titres réalisés par la communauté d 'Amara .org",
+      "Sous -titres réalisés par la communauté d 'Amara .org"
+     ]
+    }
+   ]
+  },
+  {
+   "prise": 2,
+   "duree": 30.0,
+   "entendu": "table de neuf, neuf fois un, neuf fois deux, dix -huit, neuf fois trois, vingt -sept, neuf fois quatre, trente -six, neuf fois cinq, quarante -cinq, neuf fois six, cinquante -quatre, neuf fois sept, soixante -trois, neuf fois huit, soixante -douze, neuf fois neuf, quatre -vingt -un, chapeau de rindice,",
+   "decoupages": []
+  },
+  {
+   "prise": 3,
+   "duree": 19.6,
+   "entendu": "table de 9, 9x1, 9, 9x2, 18, 9x3, 27, 9x4, 36, 9x5, 45, 9x6, 54, 9x7, 63, 9x8, 72, 9x9, 81, 9x10, 90.",
+   "decoupages": [
+    {
+     "methode": "mots",
+     "lignes_fausses": [
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7,
+      8,
+      9,
+      10
+     ],
+     "entendu": [
+      "9 9 fois 1",
+      "9, 9 fois 2.",
+      "18, 9 x 3",
+      "27, 9 fois 4",
+      "36 9 fois 5",
+      "45, 9 x 6",
+      "54, 9 ,7",
+      "63, 9 fois 8",
+      "72 9 .9",
+      "80 ans 9 fois 10 90"
+     ]
+    }
+   ]
+  },
+  {
+   "ligne_par_ligne": [
+    {
+     "ligne": 1,
+     "essais": 1,
+     "juste": true,
+     "entendu": "9 fois 1, 9..."
+    },
+    {
+     "ligne": 2,
+     "essais": 1,
+     "juste": true,
+     "entendu": "9 x 2, 18"
+    },
+    {
+     "ligne": 3,
+     "essais": 1,
+     "juste": true,
+     "entendu": "9 x 3, 27"
+    },
+    {
+     "ligne": 4,
+     "essais": 1,
+     "juste": true,
+     "entendu": "9 x 4, 36"
+    },
+    {
+     "ligne": 5,
+     "essais": 1,
+     "juste": true,
+     "entendu": "9 fois 5, 45 40"
+    },
+    {
+     "ligne": 6,
+     "essais": 2,
+     "juste": true,
+     "entendu": "9 x 6, 54"
+    },
+    {
+     "ligne": 7,
+     "essais": 1,
+     "juste": true,
+     "entendu": "9 x 7, 63, 63"
+    },
+    {
+     "ligne": 8,
+     "essais": 1,
+     "juste": true,
+     "entendu": "9 x 8, 72"
+    },
+    {
+     "ligne": 9,
+     "essais": 1,
+     "juste": true,
+     "entendu": "9 .9 .81"
+    },
+    {
+     "ligne": 10,
+     "essais": 1,
+     "juste": true,
+     "entendu": "9 x 10 x 90"
+    }
+   ]
   }
  ]
 }

@@ -39,8 +39,17 @@ def _chiffres(mots):
     return out
 def normaliser(t):
     t = unicodedata.normalize('NFKD', t.lower()); t = ''.join(c for c in t if not unicodedata.combining(c))
-    mots = re.sub(r'[^a-z0-9 ]+', ' ', t).split()
-    return _chiffres(['fois' if m == 'x' else m for m in mots])
+    # « 5x7 » vient parfois d'un seul tenant ; le x est le « fois » de Whisper.
+    t = re.sub(r'(\d)\s*x\s*(\d)', r'\1 x \2', t)
+    # Whisper écrit parfois « quatre, vingt » ou « soixante, dix » : on
+    # ressoude ces nombres composés avant de laisser la ponctuation les séparer.
+    t = re.sub(r'quatre[\s,.-]+vingt', 'quatre-vingt', t)
+    t = re.sub(r'soixante[\s,.-]+(dix|onze|douze|treize|quatorze|quinze|seize)', r'soixante-\1', t)
+    # La ponctuation sépare deux nombres : « deux, dix » n'est pas « douze ».
+    # On la garde comme borne le temps de convertir les nombres, puis on l'ôte.
+    t = re.sub(r'[,.;:!?]+', ' | ', t)
+    mots = re.sub(r'[^a-z0-9| ]+', ' ', t).split()
+    return [m for m in _chiffres(['fois' if m == 'x' else m for m in mots]) if m != '|']
 
 def main():
     import jiwer
@@ -65,14 +74,18 @@ def main():
         print(f"  {drapeau} {po['id']:20s} erreurs {e*100:4.0f}%  ({mots_ent}/{mots_att} mots entendus)  {os.path.getsize(f)/8000:.0f}s", flush=True)
         rapport['poemes'].append({'id': po['id'], 'wer': round(e, 3), 'mots_attendus': mots_att, 'mots_entendus': mots_ent, 'entendu': ent})
         pire = max(pire, e)
-    print('\n── Tables (20 lignes tirées au sort) ──', flush=True)
-    random.seed(7); faux = 0
-    for a, b in random.sample([(a, b) for a in range(1, 11) for b in range(1, 11)], 20):
-        f = os.path.join(VOIX, f't-{a}-{b}.mp3'); att = _gv.phrase_table(a, b); ent = entendre(f); e = wer(att, ent)
-        ok = e <= 0.34   # une ligne fait 6 mots : deux mots faux, c'est une ligne fausse
-        faux += 0 if ok else 1
-        print(f"  {'✅' if ok else '❌'} {a}×{b}  «{ent.strip()}»", flush=True)
-        rapport['tables'].append({'ligne': f'{a}x{b}', 'wer': round(e, 3), 'entendu': ent})
+    print('\n── Tables (les cent lignes) ──', flush=True)
+    faux = 0
+    for a in range(1, 11):
+        for b in range(1, 11):
+            f = os.path.join(VOIX, f't-{a}-{b}.mp3'); att = _gv.phrase_table(a, b); ent = entendre(f); e = wer(att, ent)
+            # Une ligne fait quatre mots une fois les nombres en chiffres
+            # (« 7 fois 8 56 ») : un mot faux passe (Whisper écorche), deux non.
+            ok = e <= 0.26
+            faux += 0 if ok else 1
+            if not ok: print(f"  ❌ {a}×{b}  «{ent.strip()}»", flush=True)
+            rapport['tables'].append({'ligne': f'{a}x{b}', 'wer': round(e, 3), 'entendu': ent})
+        print(f"  table de {a} : {sum(1 for t in rapport['tables'][-10:] if t['wer'] <= 0.26)}/10 lignes justes", flush=True)
     json.dump(rapport, open(os.path.join(RACINE, 'echantillons', 'verification.json'), 'w'), ensure_ascii=False, indent=2)
     if pire > 0.25 or faux:
         sys.exit(f'Voix à revoir : pire poème {pire*100:.0f}% d\'erreurs, {faux} ligne(s) de table fausse(s).')

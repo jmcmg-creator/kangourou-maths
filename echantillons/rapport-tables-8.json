@@ -2,17 +2,164 @@
  "8": [
   {
    "prise": 1,
-   "duree": 19.5,
-   "fois": 11,
-   "entendu": "Table de 8, 8x1, 8x2, 16, 8x3, 24, 8x10, 4x32, 8x5, 40, 8x6, 48, 8x7, 56, 8x8, 64, 8x9, 72, 8x10, 80.",
-   "decoupee": false
+   "duree": 23.2,
+   "entendu": "Table de 8. 8x1, 8x2, 16. 8x3, 24. 8x4, 32. 8x5, 40. 8x6, 48. 8x7, 56. 8x8, 64. 8x9, 72. 8x10, 80.",
+   "decoupages": [
+    {
+     "methode": "mots",
+     "lignes_fausses": [
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7,
+      8,
+      9
+     ],
+     "entendu": [
+      "8",
+      "8 x 1, 8 x 2",
+      "16, 8 x 3",
+      "24, 8x4",
+      "32, 8 fois 5",
+      "40 8 fois 6",
+      "48, 8x7",
+      "56 8 fois 8",
+      "64 8x9",
+      "72 8 x 10 80"
+     ]
+    }
+   ]
   },
   {
    "prise": 2,
-   "duree": 21.8,
-   "fois": 10,
-   "entendu": "table de 8, 8x1, 8x2, 16, 8x3, 24, 8x4, 32, 8x5, 40, 8x6, 48, 8x7, 56, 8x8, 64, 8x9, 72, 8x10, 80.",
-   "decoupee": true
+   "duree": 40.0,
+   "entendu": "table de 8, 8x1, 8x2, 16, 8x3, 24, 8x4, 32, 8x5, 40, 8x6, 48, 8x7, 56, 8x8, 64, 8x9, 72, 8x10, 80. x10, 80, 8x6, 46, 8...",
+   "decoupages": []
+  },
+  {
+   "prise": 3,
+   "duree": 19.7,
+   "entendu": "table de 8. 8x1 8x2 16 8x3 24 8x4 32 8x5 40 8x6 48 8x7 56 8x8 64 8x9 72 8x10 80",
+   "decoupages": [
+    {
+     "methode": "mots",
+     "lignes_fausses": [
+      1,
+      2,
+      3,
+      5,
+      6,
+      7,
+      8,
+      9
+     ],
+     "entendu": [
+      "Sous -titres réalisés par la communauté d 'Amara .org",
+      "8 x 1, 8 x 2",
+      "16 8 fois 3",
+      "8 x 4",
+      "32 8 fois 5",
+      "40. 8, choisis.",
+      "48 8 fois 7",
+      "56, 8x8",
+      "64, 8x9",
+      "72, 8 x 10, 80."
+     ]
+    },
+    {
+     "methode": "structure 0.18",
+     "lignes_fausses": [
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7,
+      8,
+      9
+     ],
+     "entendu": [
+      "8x1, 8x2, 16",
+      "8 x 3, 24",
+      "8x4 32 8x5",
+      "40.",
+      "8 x 6 x 48",
+      "8 x 7, 56.",
+      "8 x 8 ,64",
+      "8x9",
+      "72.",
+      "8 × 10 × 80"
+     ]
+    }
+   ]
+  },
+  {
+   "ligne_par_ligne": [
+    {
+     "ligne": 1,
+     "essais": 1,
+     "juste": true,
+     "entendu": "8 x 1, 8."
+    },
+    {
+     "ligne": 2,
+     "essais": 1,
+     "juste": true,
+     "entendu": "8 x 2, 16"
+    },
+    {
+     "ligne": 3,
+     "essais": 1,
+     "juste": true,
+     "entendu": "8 x 3, 24"
+    },
+    {
+     "ligne": 4,
+     "essais": 1,
+     "juste": true,
+     "entendu": "8x4 32"
+    },
+    {
+     "ligne": 5,
+     "essais": 1,
+     "juste": true,
+     "entendu": "8 x 5, 40 40"
+    },
+    {
+     "ligne": 6,
+     "essais": 2,
+     "juste": true,
+     "entendu": "8 × 6, 48"
+    },
+    {
+     "ligne": 7,
+     "essais": 1,
+     "juste": true,
+     "entendu": "8 x 7, 56"
+    },
+    {
+     "ligne": 8,
+     "essais": 1,
+     "juste": true,
+     "entendu": "8 x 8, 64"
+    },
+    {
+     "ligne": 9,
+     "essais": 1,
+     "juste": true,
+     "entendu": "8x9, 72"
+    },
+    {
+     "ligne": 10,
+     "essais": 1,
+     "juste": true,
+     "entendu": "8 × 10, 80"
+    }
+   ]
   }
  ]
 }
