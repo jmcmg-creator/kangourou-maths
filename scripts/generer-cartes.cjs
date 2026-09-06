@@ -24,6 +24,14 @@ const wa=require('world-atlas/countries-110m.json');const topo=require('topojson
 const i18n=require('i18n-iso-countries');i18n.registerLocale(require('i18n-iso-countries/langs/fr.json'));
 const wc=require('world-countries');const byN3={};wc.forEach(c=>byN3[c.ccn3]=c);
 const fc=topo.feature(wa,wa.objects.countries);
+function sansParentheses(t){
+  let out='',i=0;
+  while(i<t.length){
+    const j=t.indexOf('(',i); if(j<0){out+=t.slice(i);break}
+    const k=t.indexOf(')',j); out+=t.slice(i,j).replace(/ +$/,''); i=k<0?t.length:k+1;
+  }
+  return out.trim();
+}
 const CAP_FR={'Vienna':'Vienne','Warsaw':'Varsovie','Lisbon':'Lisbonne','Copenhagen':'Copenhague','Athens':'Athènes','Moscow':'Moscou','Beijing':'Pékin','Cairo':'Le Caire','Algiers':'Alger','Mexico City':'Mexico','Havana':'La Havane','Seoul':'Séoul','Riyadh':'Riyad','Tehran':'Téhéran','Damascus':'Damas','Baghdad':'Bagdad','Jerusalem':'Jérusalem','Kabul':'Kaboul','Ulan Bator':'Oulan-Bator','Ulaanbaatar':'Oulan-Bator','Manila':'Manille','Hanoi':'Hanoï','Dhaka':'Dacca','Kathmandu':'Katmandou','Tashkent':'Tachkent','Addis Ababa':'Addis-Abeba','Mogadishu':'Mogadiscio','Juba':'Djouba','Washington D.C.':'Washington','Washington, D.C.':'Washington','Guatemala City':'Guatemala','Santo Domingo':'Saint-Domingue','Panama City':'Panama','Bogotá':'Bogota','Asunción':'Asunción','Brasília':'Brasilia','Kyiv':'Kiev','Bucharest':'Bucarest','Belgrade':'Belgrade','Sofia':'Sofia','Bern':'Berne','Brussels':'Bruxelles','Prague':'Prague','Budapest':'Budapest','Helsinki':'Helsinki','Stockholm':'Stockholm','Oslo':'Oslo','Dublin':'Dublin','London':'Londres','Rome':'Rome','Berlin':'Berlin','Madrid':'Madrid','Paris':'Paris','Amsterdam':'Amsterdam','Ankara':'Ankara','Nur-Sultan':'Astana','Astana':'Astana','Bishkek':'Bichkek','Dushanbe':'Douchanbé','Ashgabat':'Achgabat','Yangon':'Rangoun','Naypyidaw':'Naypyidaw','Thimphu':'Thimphou','Muscat':'Mascate','Sanaa':'Sanaa','Abu Dhabi':'Abou Dabi','Doha':'Doha','Kuwait City':'Koweït','Beirut':'Beyrouth','Amman':'Amman','Tbilisi':'Tbilissi','Yerevan':'Erevan','Baku':'Bakou','Pyongyang':'Pyongyang','Taipei':'Taipei','Islamabad':'Islamabad','Colombo':'Colombo','Male':'Malé','Singapore':'Singapour','Bandar Seri Begawan':'Bandar Seri Begawan','Dili':'Dili','Kuala Lumpur':'Kuala Lumpur','Jakarta':'Jakarta','Phnom Penh':'Phnom Penh','Vientiane':'Vientiane','Bangkok':'Bangkok','Tokyo':'Tokyo','New Delhi':'New Delhi','Tunis':'Tunis','Tripoli':'Tripoli','Rabat':'Rabat','Nouakchott':'Nouakchott','Dakar':'Dakar','Bamako':'Bamako','Niamey':'Niamey','N\'Djamena':'N\'Djamena','Khartoum':'Khartoum','Asmara':'Asmara','Djibouti':'Djibouti','Nairobi':'Nairobi','Kampala':'Kampala','Kigali':'Kigali','Dodoma':'Dodoma','Lusaka':'Lusaka','Harare':'Harare','Maputo':'Maputo','Lilongwe':'Lilongwe','Antananarivo':'Antananarivo','Windhoek':'Windhoek','Gaborone':'Gaborone','Pretoria':'Pretoria','Luanda':'Luanda','Kinshasa':'Kinshasa','Brazzaville':'Brazzaville','Libreville':'Libreville','Yaoundé':'Yaoundé','Bangui':'Bangui','Abuja':'Abuja','Accra':'Accra','Lomé':'Lomé','Porto-Novo':'Porto-Novo','Ouagadougou':'Ouagadougou','Yamoussoukro':'Yamoussoukro','Conakry':'Conakry','Freetown':'Freetown','Monrovia':'Monrovia','Bissau':'Bissau','Banjul':'Banjul','Malabo':'Malabo','Ottawa':'Ottawa','Caracas':'Caracas','Quito':'Quito','Lima':'Lima','La Paz':'La Paz','Santiago':'Santiago','Buenos Aires':'Buenos Aires','Montevideo':'Montevideo','Paramaribo':'Paramaribo','Georgetown':'Georgetown','San José':'San José','Managua':'Managua','Tegucigalpa':'Tegucigalpa','San Salvador':'San Salvador','Belmopan':'Belmopan','Kingston':'Kingston','Port-au-Prince':'Port-au-Prince','Nuuk':'Nuuk'};
 // Les continents, avec la liste des pays qu'un enfant peut viser du doigt sur
 // un écran de téléphone : on écarte les micro-États. Zone de projection
@@ -49,7 +57,7 @@ for(const [cle,c] of Object.entries(CONT)){
   const feats=[];
   for(const f of fc.features){const n3=String(f.id).padStart(3,'0');const w=byN3[n3];if(!w||!c.regions.includes(w.region))continue;
     if(c.exclure.includes(w.cca2))continue;const km2=d3.geoArea(f)*6371*6371;if(km2<c.minKm2)continue;
-    feats.push({f,a2:w.cca2.toLowerCase(),A2:w.cca2,fr:(NOM_FR[w.cca2]||i18n.getName(w.cca2,'fr')||w.name.common).replace(/\s*\(.*?\)/g,''),cap:(w.capital||[])[0]||'',km2});}
+    feats.push({f,a2:w.cca2.toLowerCase(),A2:w.cca2,fr:sansParentheses(NOM_FR[w.cca2]||i18n.getName(w.cca2,'fr')||w.name.common),cap:(w.capital||[])[0]||'',km2});}
   const coll={type:'FeatureCollection',features:feats.map(x=>x.f)};
   const proj=c.proj().fitExtent([[3,3],[97,97]],coll);
   const path=d3.geoPath(proj).digits(2);
