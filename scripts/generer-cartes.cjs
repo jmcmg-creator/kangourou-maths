@@ -52,12 +52,16 @@ for(const [cle,c] of Object.entries(CONT)){
     feats.push({f,a2:w.cca2.toLowerCase(),A2:w.cca2,fr:(NOM_FR[w.cca2]||i18n.getName(w.cca2,'fr')||w.name.common).replace(/\s*\(.*?\)/g,''),cap:(w.capital||[])[0]||'',km2});}
   const coll={type:'FeatureCollection',features:feats.map(x=>x.f)};
   const proj=c.proj().fitExtent([[3,3],[97,97]],coll);
-  const path=d3.geoPath(proj);
+  const path=d3.geoPath(proj).digits(2);
   const pays={};
   for(const x of feats){
     const d=path(x.f);if(!d)continue;
-    // Deux décimales suffisent sur 100 unités : le tracé reste net sur un écran Retina et le fichier reste léger.
-    const dd=d.replace(/(\d+\.\d\d)\d+/g,'$1');
+    // Deux décimales suffisent sur 100 unités : le tracé reste net sur un
+    // écran Retina et le fichier reste léger. C'est d3 qui arrondit (digits),
+    // pas une expression régulière sur le tracé : une regex du type
+    // (\d+\.\d\d)\d+ recule sur chaque chiffre d'une longue suite et devient
+    // quadratique — CodeQL la classe en gravité haute (déni de service).
+    const dd=d;
     const centre=path.centroid(x.f);const b=path.bounds(x.f);
     pays[x.a2]={name:article(x.A2,x.fr),nom:x.fr,cap:CAP_FR[x.cap]||x.cap,path:dd,cx:+centre[0].toFixed(1),cy:+centre[1].toFixed(1),w:+(b[1][0]-b[0][0]).toFixed(1),h:+(b[1][1]-b[0][1]).toFixed(1),km2:Math.round(x.km2)};
   }
