@@ -104,5 +104,5 @@ jobs:
           git diff --cached --quiet && { echo "rien de neuf"; exit 0; }
           git commit -m "Voix clonée : 100 lignes de tables et 9 poésies (Chatterbox, référence $(cat audio/references/CHOIX.txt))"
           # Un autre workflow a pu déposer entre-temps : on se remet dessus avant de pousser.
-          git pull --rebase origin ${{ github.ref_name }}
+          git pull --rebase --autostash origin ${{ github.ref_name }}
           git push origin HEAD:${{ github.ref_name }}
