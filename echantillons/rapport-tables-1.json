@@ -2,9 +2,16 @@
  "1": [
   {
    "prise": 1,
-   "duree": 15.0,
+   "duree": 30.1,
+   "fois": 9,
+   "entendu": "table de 1, 1 fois 1, 1 fois 2, 2, 1 fois 3, 3, 1 fois 4, 4, 1 fois 5, 5, 1 fois 6, 6, 1 fois 7, 7, 1 fois 8, 8, 1 fois 9, 9 oui et fixé, si si",
+   "decoupee": false
+  },
+  {
+   "prise": 2,
+   "duree": 20.0,
    "fois": 10,
-   "entendu": "Table de 1, 1 fois 1, 1 fois 2, 2, 2, 1 fois 3, 3, 1 fois 4, 4, 1 fois 5, 5, 1 fois 6, 6, 1 fois 7, 1 fois 8, 8, 1 fois 9, 9, 1 fois 10, 10.",
+   "entendu": "table de 1, 1 fois 1, 1 fois 2, 2, 1 fois 3, 3, 3, 1 fois 4, 4, 1 fois 5, 5, 1 fois 6, 6, 1 fois 7, 7, 1 fois 8, 8, 1 fois 9, 9, 1 fois 10, 10.",
    "decoupee": true
   }
  ]

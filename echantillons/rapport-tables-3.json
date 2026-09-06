@@ -2,9 +2,16 @@
  "3": [
   {
    "prise": 1,
-   "duree": 22.1,
+   "duree": 16.7,
+   "fois": 8,
+   "entendu": "table de trois. Trois fois un, trois. Trois fois deux, six. Trois fois trois, neuf. Trois fois quatre, douze. Trois fois cinq, quinze. Trois fois six, dix -huit. Trois fois sept, vingt et un. Trois fois huit, vingt -quatre.",
+   "decoupee": false
+  },
+  {
+   "prise": 2,
+   "duree": 33.5,
    "fois": 10,
-   "entendu": "table de trois. Trois fois un, trois. Trois fois deux, six. Trois fois trois, neuf. Trois fois quatre, douze. Trois fois cinq, quinze. Trois fois six, dix -huit. Trois fois sept, vingt -et -un. Trois fois huit, vingt -quatre. Trois fois neuf, vingt -sept. Trois fois dix -trente.",
+   "entendu": "table de 3, 3 fois 1, 3, 3 fois 2, 6, 3 fois 3, 9, 3 fois 4, 12, 3 fois 5, 15, 3 fois 6, 18, 3 fois 7, 20 et 1, 3 fois 8, 24, 3 fois 8, 24, 3 fois 10, 32.",
    "decoupee": true
   }
  ]
