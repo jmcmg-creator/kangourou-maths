@@ -103,8 +103,9 @@ def decouper_par_mots(a, sr, mots, attendus=10, marge=0.12):
     coupe en son milieu. Puis chaque ligne est ébarbée de son silence, à une
     marge près, pour que le clip démarre net."""
     import numpy as np
+    # Whisper écrit parfois « 7 x 8 » pour « sept fois huit » : le x compte.
     idx = [i for i, (t, _, _) in enumerate(mots)
-           if re.sub(r"[^a-zà-ÿ]", '', t.lower()) in ('fois', 'foi', 'foie')]
+           if re.sub(r"[^a-zà-ÿ]", '', t.lower()) in ('fois', 'foi', 'foie', 'x')]
     if len(idx) != attendus or min(idx) == 0:
         return None
     env, n = enveloppe(a, sr)

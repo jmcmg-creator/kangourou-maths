@@ -21,7 +21,7 @@ USAGE
     python3 scripts/cloner-voix.py voix-julien.m4a --quoi poemes
     python3 scripts/cloner-voix.py voix-julien.m4a --quoi tables --tables 7 8
 """
-import argparse, json, os, subprocess, sys
+import argparse, json, os, re, subprocess, sys
 
 RACINE = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 SORTIE = os.path.join(RACINE, 'audio', 'voix')
@@ -133,6 +133,7 @@ def main():
             os.unlink(tmp.name)
             return mots
 
+        rapport = {}
         for t in (args.tables or range(1, 11)):
             noms = [f't-{t}-{b}.mp3' for b in range(1, 11)]
             if not args.force and all(os.path.exists(os.path.join(SORTIE, x)) for x in noms):
@@ -146,18 +147,23 @@ def main():
                 a = np.asarray(w.detach().cpu().numpy() if hasattr(w, 'detach') else w, dtype='float32').reshape(-1)
                 mots = ecouter(a, m.sr)
                 lignes = _dv.decouper_par_mots(a, m.sr, mots)
+                entendu = ' '.join(x for x, _, _ in mots)
+                nf = sum(1 for x, _, _ in mots if re.sub(r"[^a-zà-ÿ]", '', x.lower()) in ('fois', 'foi', 'foie', 'x'))
+                rapport.setdefault(str(t), []).append({'prise': essai, 'duree': round(len(a)/m.sr, 1), 'fois': nf, 'entendu': entendu, 'decoupee': bool(lignes)})
                 if lignes:
                     break
-                nf = sum(1 for x, _, _ in mots if 'foi' in x.lower())
-                print(f"  ⚠️  table de {t}, prise {essai} : {nf} « fois » entendus au lieu de 10, on refait", flush=True)
+                print(f"  ⚠️  table de {t}, prise {essai} ({len(a)/m.sr:.0f}s) : {nf} « fois » entendus au lieu de 10, on refait\n      entendu : {entendu}", flush=True)
             if lignes:
                 for nom, (d, f) in zip(noms, lignes):
                     total += encoder(os.path.join(SORTIE, nom), a[d:f], m.sr); n += 1
-                print(f"  ✅ table de {t} : une prise de {len(a)/m.sr:.0f}s, dix lignes", flush=True)
+                print(f"  ✅ table de {t} : une prise de {len(a)/m.sr:.0f}s, dix lignes\n      entendu : {entendu}", flush=True)
             else:
                 print(f"  ⚠️  table de {t} : trois prises inexploitables, générée ligne par ligne", flush=True)
                 for b in range(1, 11):
                     faire(f't-{t}-{b}.mp3', phrase_table(t, b))
+            # Le compte rendu voyage avec les clips : sans lui, impossible de
+            # savoir depuis ici quelle table a eu droit à sa prise entière.
+            json.dump(rapport, open(os.path.join(SORTIE, f'rapport-tables-{t}.json'), 'w'), ensure_ascii=False, indent=1)
 
     if args.quoi in ('poemes', 'tout'):
         for po in poemes():

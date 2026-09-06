@@ -108,8 +108,12 @@ jobs:
           merge-multiple: true
       - name: Déposer
         run: |
-          mkdir -p audio/voix
-          cp recolte/*.mp3 audio/voix/ && rm -rf recolte
+          mkdir -p audio/voix echantillons
+          cp recolte/*.mp3 audio/voix/
+          # Les comptes rendus de génération (quelle table a eu sa prise entière)
+          # vont dans echantillons/, pas chez les enfants.
+          cp recolte/*.json echantillons/ 2>/dev/null || true
+          rm -rf recolte
           n=$(ls audio/voix/t-*.mp3 | wc -l); p=$(ls audio/voix/p-*.mp3 | wc -l)
           echo "  $n clips de tables · $p poèmes"
           # 100 tables et 9 poèmes attendus : un lot incomplet ne doit pas
@@ -117,7 +121,7 @@ jobs:
           [ "$n" -eq 100 ] && [ "$p" -eq 9 ] || { echo "::error::Lot incomplet ($n/100 tables, $p/9 poèmes)"; exit 1; }
           git config user.name  'github-actions[bot]'
           git config user.email 'github-actions[bot]@users.noreply.github.com'
-          git add audio/voix
+          git add audio/voix echantillons
           git diff --cached --quiet && { echo "rien de neuf"; exit 0; }
           git commit -m "Voix clonée : 100 lignes de tables et 9 poésies (Chatterbox, référence $(cat audio/references/CHOIX.txt))"
           # Un autre workflow a pu déposer entre-temps : on se remet dessus avant de pousser.
