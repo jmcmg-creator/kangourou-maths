@@ -86,6 +86,7 @@ def main():
     p.add_argument('reference', help='échantillon de voix (45 s environ)')
     p.add_argument('--quoi', choices=['tables', 'poemes', 'tout'], default='tout')
     p.add_argument('--tables', type=int, nargs='*', help='ne refaire que ces tables')
+    p.add_argument('--poemes', nargs='*', help='ne refaire que ces poèmes (identifiants)')
     p.add_argument('--force', action='store_true', help='réécrire les fichiers existants')
     args = p.parse_args()
 
@@ -115,6 +116,7 @@ def main():
 
     if args.quoi in ('poemes', 'tout'):
         for po in poemes():
+            if args.poemes and po['id'] not in args.poemes: continue
             # Un poème d'une minute d'un seul tenant dérive : le modèle perd le
             # fil et la voix change en route. On génère phrase par phrase et on
             # recolle, avec un souffle entre les phrases.

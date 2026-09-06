@@ -14,7 +14,7 @@ on:
   push:
     paths:
       - 'audio/references/CHOIX.txt'
-      - 'scripts/cloner-voix.py'
+      - 'audio/references/LOT.txt'
 
 permissions:
   contents: write
@@ -31,6 +31,10 @@ jobs:
           - { lot: tables-1-5,  args: "--quoi tables --tables 1 2 3 4 5" }
           - { lot: tables-6-10, args: "--quoi tables --tables 6 7 8 9 10" }
           - { lot: poemes,      args: "--quoi poemes" }
+      # Si audio/references/LOT.txt existe, il remplace ces arguments — pour ne
+      # refaire qu'un poème raté (« --quoi poemes --poemes renard-raisins »)
+      # sans relancer une heure de génération. Les jobs dont ce n'est pas le
+      # lot se terminent aussitôt sans rien produire.
     steps:
       - uses: actions/checkout@v4
         with:
@@ -47,12 +51,22 @@ jobs:
           ref="audio/references/$(tr -d ' \r\n' < audio/references/CHOIX.txt)"
           test -f "$ref" || { echo "::error::Référence introuvable : $ref"; exit 1; }
           echo "  référence : $ref"
-          python scripts/cloner-voix.py "$ref" ${{ matrix.args }} --force
+          if [ -s audio/references/LOT.txt ]; then
+            lot="$(tr -d '\r\n' < audio/references/LOT.txt)"
+            # Un seul job s'en charge — le premier de la matrice — les autres passent.
+            # (et vident audio/voix pour ne pas renvoyer les anciens fichiers du dépôt,
+            # qui écraseraient le nouveau au moment de rassembler).
+            [ "${{ matrix.lot }}" = "tables-1-5" ] || { echo "  lot restreint « $lot » : rien pour ce job"; rm -rf audio/voix; mkdir -p audio/voix; exit 0; }
+            echo "  lot restreint : $lot"
+            python scripts/cloner-voix.py "$ref" $lot --force
+          else
+            python scripts/cloner-voix.py "$ref" ${{ matrix.args }} --force
+          fi
       - uses: actions/upload-artifact@v4
         with:
           name: voix-${{ matrix.lot }}
           path: audio/voix/
-          if-no-files-found: error
+          if-no-files-found: warn
 
   deposer:
     name: Rassembler et déposer
@@ -80,4 +94,6 @@ jobs:
           git add audio/voix
           git diff --cached --quiet && { echo "rien de neuf"; exit 0; }
           git commit -m "Voix clonée : 100 lignes de tables et 9 poésies (Chatterbox, référence $(cat audio/references/CHOIX.txt))"
+          # Un autre workflow a pu déposer entre-temps : on se remet dessus avant de pousser.
+          git pull --rebase origin ${{ github.ref_name }}
           git push origin HEAD:${{ github.ref_name }}

@@ -12,6 +12,7 @@ echantillons/ pour écoute :
   B. la table ENTIÈRE en une prise, mêmes mots, puis découpée      (contexte)
   C. la table entière en une prise, « sept fois huit, cinquante-six. »
      — la scansion d'un maître, sans « égale »
+  D. la table entière, nombres en CHIFFRES : « 7 fois 8, égale 56. »
 
 Pour B et C, la prise entière est conservée telle quelle (tables-B-entiere.mp3)
 ET découpée ligne par ligne par les silences (decouper-voix.py) ; on vérifie
@@ -46,19 +47,32 @@ def main():
         w = m.generate(texte, language_id='fr', audio_prompt_path=ref)
         return (w.detach().cpu().numpy() if hasattr(w, 'detach') else np.asarray(w)).astype('float32').reshape(-1), m.sr
 
-    # A — ligne par ligne, recollée avec une seconde de silence pour l'écoute.
-    bouts = []
-    for b in range(1, 11):
-        a, sr = gen(f"{mot(T)} fois {mot(b)}, égale {mot(T*b)}.")
-        bouts += [a, np.zeros(int(sr * 0.9), dtype='float32')]
-    mp3(os.path.join(ECH, 'tables-A-ligne-par-ligne.mp3'), np.concatenate(bouts), sr)
-    print('  ✅ A ligne par ligne', flush=True)
+    # Une variante déjà déposée dans echantillons/ n'est pas refaite : ajouter
+    # une recette ne coûte que sa propre génération, pas celle des autres.
+    def deja(nom):
+        if os.path.exists(os.path.join(ECH, nom)): print(f'  ⏭  {nom} déjà là', flush=True); return True
+        return False
 
-    rapport = {}
+    # A — ligne par ligne, recollée avec une seconde de silence pour l'écoute.
+    if not deja('tables-A-ligne-par-ligne.mp3'):
+        bouts = []
+        for b in range(1, 11):
+            a, sr = gen(f"{mot(T)} fois {mot(b)}, égale {mot(T*b)}.")
+            bouts += [a, np.zeros(int(sr * 0.9), dtype='float32')]
+        mp3(os.path.join(ECH, 'tables-A-ligne-par-ligne.mp3'), np.concatenate(bouts), sr)
+        print('  ✅ A ligne par ligne', flush=True)
+
+    chemin_rapport = os.path.join(ECH, 'variantes-tables.json')
+    rapport = json.load(open(chemin_rapport)) if os.path.exists(chemin_rapport) else {}
     for lettre, forme in (('B', lambda b: f"{mot(T)} fois {mot(b)}, égale {mot(T*b)}."),
-                          ('C', lambda b: f"{mot(T)} fois {mot(b)}, {mot(T*b)}.")):
+                          ('C', lambda b: f"{mot(T)} fois {mot(b)}, {mot(T*b)}."),
+                          # D : en chiffres. Whisper entend « cette fois neuf » pour
+                          # « sept fois neuf » et « s'y » pour « six » : le modèle
+                          # écorche les nombres en lettres ; en chiffres, peut-être pas.
+                          ('D', lambda b: f"{T} fois {b}, égale {T*b}.")):
         # « Table de sept. » en tête : l'attaque coupée, si elle survient,
         # tombe sur ces trois mots qu'on jette au découpage.
+        if deja(f'tables-{lettre}-entiere.mp3'): continue
         texte = f"Table de {mot(T)}. " + ' '.join(forme(b) for b in range(1, 11))
         a, sr = gen(texte)
         mp3(os.path.join(ECH, f'tables-{lettre}-entiere.mp3'), a, sr)
@@ -71,7 +85,7 @@ def main():
             for d, f in zones[1:]:
                 bouts += [a[d:f], np.zeros(int(sr * 0.9), dtype='float32')]
             mp3(os.path.join(ECH, f'tables-{lettre}-decoupee.mp3'), np.concatenate(bouts), sr)
-    json.dump(rapport, open(os.path.join(ECH, 'variantes-tables.json'), 'w'), indent=2)
+    json.dump(rapport, open(chemin_rapport, 'w'), indent=2)
 
 if __name__ == '__main__':
     main()
