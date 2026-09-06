@@ -6,6 +6,9 @@ name: Trois façons de dire une table
 on:
   workflow_dispatch:
   push:
+    # Jamais sur main : la fusion d'une branche voix y rejouerait toute la
+    # génération et redéposerait des clips par-dessus la version livrée.
+    branches-ignore: [main]
     paths:
       - 'scripts/variantes-tables.py'
       - '.github/workflows/variantes-tables.yml'

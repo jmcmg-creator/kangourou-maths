@@ -6,6 +6,9 @@ name: Vérifier la voix générée
 on:
   workflow_dispatch:
   push:
+    # Jamais sur main : la fusion d'une branche voix y rejouerait toute la
+    # génération et redéposerait des clips par-dessus la version livrée.
+    branches-ignore: [main]
     paths:
       - 'scripts/verifier-voix.py'
       - '.github/workflows/verifier-voix.yml'
