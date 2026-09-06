@@ -118,13 +118,40 @@ def main():
             # Un poème d'une minute d'un seul tenant dérive : le modèle perd le
             # fil et la voix change en route. On génère phrase par phrase et on
             # recolle, avec un souffle entre les phrases.
-            import numpy as np
+            #
+            # MAIS PAS DE FRAGMENT TROP COURT. Chatterbox plante sur un texte
+            # de deux ou trois mots (« IndexError: max(): Expected reduction
+            # dim 1 to have non-zero size » dans son analyseur d'alignement,
+            # dès le deuxième pas). Découper sur le point seul en produisait —
+            # « Hé ! bonjour. », une abréviation, une exclamation isolée. On
+            # découpe sur . ! ? et on fond tout morceau de moins de quatre mots
+            # dans son voisin. Si un morceau plante quand même, on le fond dans
+            # le suivant et on réessaie ; s'il ne reste rien à fondre, on
+            # s'arrête EN ERREUR plutôt que de livrer un poème amputé.
+            import numpy as np, re
+            brut = [x.strip() for x in re.split(r'(?<=[.!?…])\s+', po['texte'].replace('\n', ' ')) if x.strip()]
+            morceaux = []
+            for x in brut:
+                if morceaux and (len(x.split()) < 4 or len(morceaux[-1].split()) < 4):
+                    morceaux[-1] = morceaux[-1] + ' ' + x
+                else:
+                    morceaux.append(x)
             bouts = []
-            for ph in [x.strip() for x in po['texte'].replace('\n', ' ').split('.') if x.strip()]:
-                w = m.generate(ph + '.', language_id='fr', audio_prompt_path=ref)
+            i = 0
+            while i < len(morceaux):
+                ph = morceaux[i]
+                if not re.search(r'[.!?…]$', ph): ph += '.'
+                try:
+                    w = m.generate(ph, language_id='fr', audio_prompt_path=ref)
+                except IndexError as e:
+                    if i + 1 < len(morceaux):
+                        print(f"  ⚠️  fragment refusé, fondu dans le suivant : « {ph[:50]} »", flush=True)
+                        morceaux[i + 1] = ph + ' ' + morceaux[i + 1]; i += 1; continue
+                    sys.exit(f"Chatterbox refuse le dernier fragment de « {po['titre']} » : {ph[:60]} ({e})")
                 a = w.detach().cpu().numpy() if hasattr(w, 'detach') else w
                 bouts.append(np.asarray(a, dtype='float32').reshape(-1))
                 bouts.append(np.zeros(int(m.sr * 0.28), dtype='float32'))
+                i += 1
             chemin = os.path.join(SORTIE, f"p-{po['id']}.mp3")
             if os.path.exists(chemin) and not args.force:
                 continue

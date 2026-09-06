@@ -14,6 +14,7 @@ on:
   push:
     paths:
       - 'audio/references/CHOIX.txt'
+      - 'scripts/cloner-voix.py'
 
 permissions:
   contents: write
