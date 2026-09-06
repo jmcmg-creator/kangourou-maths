@@ -17,7 +17,7 @@ USAGE
     python3 scripts/decouper-voix.py enregistrement.m4a 7
     python3 scripts/decouper-voix.py enregistrement.m4a 7 --essai   # sans écrire
 """
-import argparse, os, subprocess, sys, wave, math
+import argparse, os, re, subprocess, sys, wave, math
 
 RACINE = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 SORTIE = os.path.join(RACINE, 'audio', 'voix')
@@ -88,6 +88,65 @@ def decouper(a, sr, attendus=10, silence_min=0.35, marge=0.12):
     zones = [(d, f) for d, f in zones if (f - d) * 0.02 >= 0.25]
     m = int(marge / 0.02)
     return [(max(0, d - m) * n, min(len(a), (f + m) * n)) for d, f in zones], seuil, fond
+
+
+def decouper_par_mots(a, sr, mots, attendus=10, marge=0.12):
+    """Coupe une table dite d'une traite en dix lignes, guidé par ce que
+    Whisper a entendu — et affiné par le silence.
+
+    `mots` : [(texte, début, fin)] en secondes, horodatés par Whisper. Chaque
+    ligne contient un « fois » ; on en attend dix, ni plus ni moins, sinon on
+    rend None et l'appelant refait la prise. La ligne k commence au mot qui
+    précède son « fois » (le multiplicande). Entre la fin de la ligne
+    précédente et ce mot, Whisper est approximatif d'un dixième de seconde ;
+    on cherche donc dans cette fenêtre le creux de volume le plus long et on
+    coupe en son milieu. Puis chaque ligne est ébarbée de son silence, à une
+    marge près, pour que le clip démarre net."""
+    import numpy as np
+    idx = [i for i, (t, _, _) in enumerate(mots)
+           if re.sub(r"[^a-zà-ÿ]", '', t.lower()) in ('fois', 'foi', 'foie')]
+    if len(idx) != attendus or min(idx) == 0:
+        return None
+    env, n = enveloppe(a, sr)
+    fond = np.percentile(env, 20); voix = np.percentile(env, 95)
+    seuil = max(fond * 3.0, fond + (voix - fond) * 0.10)
+    calme = env <= seuil
+
+    def creux(t0, t1):
+        """Milieu du plus long passage calme entre t0 et t1 ; à défaut, le milieu."""
+        i0, i1 = max(0, int(t0 * sr / n)), min(len(calme), int(t1 * sr / n))
+        meilleur, debut, cour = None, None, 0
+        for i in range(i0, i1 + 1):
+            if i < i1 and calme[i]:
+                if debut is None: debut = i
+                cour += 1
+            else:
+                if debut is not None and (meilleur is None or cour > meilleur[1]):
+                    meilleur = (debut, cour)
+                debut, cour = None, 0
+        if meilleur is None:
+            return (t0 + t1) / 2
+        return (meilleur[0] + meilleur[1] / 2) * n / sr
+
+    coupes = []
+    for k in idx:
+        premier = mots[k - 1]                       # le multiplicande
+        precedent = mots[k - 2] if k >= 2 else None  # dernier mot de la ligne d'avant
+        t0 = precedent[2] if precedent else 0.0
+        coupes.append(creux(t0, premier[1]))
+    coupes.append(len(a) / sr)
+
+    lignes = []
+    m = int(marge * sr)
+    for d, f in zip(coupes, coupes[1:]):
+        d, f = int(d * sr), int(f * sr)
+        bloc = a[d:f]
+        e, nn = enveloppe(bloc, sr)
+        parle = np.where(e > seuil)[0]
+        if len(parle) == 0:
+            return None
+        lignes.append((max(d, d + parle[0] * nn - m), min(f, d + (parle[-1] + 1) * nn + m)))
+    return lignes
 
 
 def ecrire_mp3(chemin, a, sr):

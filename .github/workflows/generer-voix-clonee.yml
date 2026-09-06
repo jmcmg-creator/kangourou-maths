@@ -32,9 +32,12 @@ jobs:
           - { lot: tables-6-10, args: "--quoi tables --tables 6 7 8 9 10" }
           - { lot: poemes,      args: "--quoi poemes" }
       # Si audio/references/LOT.txt existe, il remplace ces arguments — pour ne
-      # refaire qu'un poème raté (« --quoi poemes --poemes renard-raisins »)
-      # sans relancer une heure de génération. Les jobs dont ce n'est pas le
-      # lot se terminent aussitôt sans rien produire.
+      # refaire qu'un poème raté sans relancer une heure de génération. Une
+      # ligne par job, « lot: arguments » :
+      #     tables-1-5: --quoi tables --tables 1 2 3 4 5
+      #     tables-6-10: --quoi tables --tables 6 7 8 9 10
+      # Une ligne sans « lot: » revient au premier job. Les jobs qui n'ont pas
+      # de ligne se terminent aussitôt sans rien produire.
     steps:
       - uses: actions/checkout@v4
         with:
@@ -43,20 +46,26 @@ jobs:
         with:
           python-version: '3.11'
       - name: Installer
-        run: pip install --quiet chatterbox-tts numpy lameenc soundfile
+        # faster-whisper : l'oreille qui horodate les mots pour découper une
+        # table dite d'une traite en dix lignes (voir cloner-voix.py).
+        run: pip install --quiet chatterbox-tts numpy lameenc soundfile faster-whisper
       - name: Contrôler l'installation
-        run: python -c "import numpy, lameenc, soundfile, chatterbox; print('  outils OK · numpy', numpy.__version__)"
+        run: |
+          python -c "import numpy, lameenc, soundfile, chatterbox, faster_whisper; print('  outils OK · numpy', numpy.__version__)"
+          python scripts/test-decoupage.py
       - name: Générer
         run: |
           ref="audio/references/$(tr -d ' \r\n' < audio/references/CHOIX.txt)"
           test -f "$ref" || { echo "::error::Référence introuvable : $ref"; exit 1; }
           echo "  référence : $ref"
           if [ -s audio/references/LOT.txt ]; then
-            lot="$(tr -d '\r\n' < audio/references/LOT.txt)"
-            # Un seul job s'en charge — le premier de la matrice — les autres passent.
-            # (et vident audio/voix pour ne pas renvoyer les anciens fichiers du dépôt,
-            # qui écraseraient le nouveau au moment de rassembler).
-            [ "${{ matrix.lot }}" = "tables-1-5" ] || { echo "  lot restreint « $lot » : rien pour ce job"; rm -rf audio/voix; mkdir -p audio/voix; exit 0; }
+            lot="$(tr -d '\r' < audio/references/LOT.txt | grep -E '^${{ matrix.lot }}:' | sed 's/^[^:]*://' | head -1)"
+            if [ -z "$lot" ] && ! grep -q ':' audio/references/LOT.txt && [ "${{ matrix.lot }}" = "tables-1-5" ]; then
+              lot="$(tr -d '\r\n' < audio/references/LOT.txt)"
+            fi
+            # Un job sans ligne passe — et vide audio/voix pour ne pas renvoyer les
+            # anciens fichiers du dépôt, qui écraseraient les neufs au rassemblement.
+            [ -n "$lot" ] || { echo "  lot restreint : rien pour ce job"; rm -rf audio/voix; mkdir -p audio/voix; exit 0; }
             echo "  lot restreint : $lot"
             python scripts/cloner-voix.py "$ref" $lot --force
           else

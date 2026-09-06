@@ -63,8 +63,10 @@ def mot(n):
 
 def phrase_table(a, b):
     # La virgule crée le temps d'arrêt qu'un maître laisse avant le résultat ;
-    # le point fait redescendre la voix à la fin.
-    return f"{mot(a)} fois {mot(b)}, égale {mot(a*b)}."
+    # le point fait redescendre la voix à la fin. Pas de « égale » : Julien a
+    # choisi la scansion de la récitation (« sept fois huit, cinquante-six »),
+    # et c'était le mot que le modèle écorchait le plus.
+    return f"{mot(a)} fois {mot(b)}, {mot(a*b)}."
 
 def telecharger():
     os.makedirs(POIDS, exist_ok=True)

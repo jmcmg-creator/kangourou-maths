@@ -31,7 +31,9 @@ sys.path.insert(0, os.path.join(RACINE, 'scripts'))
 import importlib.util as _u
 _s = _u.spec_from_file_location('gv', os.path.join(RACINE, 'scripts', 'generer-voix.py'))
 _gv = _u.module_from_spec(_s); _s.loader.exec_module(_gv)
-phrase_table = _gv.phrase_table
+phrase_table, mot = _gv.phrase_table, _gv.mot
+_s2 = _u.spec_from_file_location('dv', os.path.join(RACINE, 'scripts', 'decouper-voix.py'))
+_dv = _u.module_from_spec(_s2); _s2.loader.exec_module(_dv)
 
 
 def poemes():
@@ -109,10 +111,53 @@ def main():
         print(f'  ✅ {nom}', flush=True)
 
     if args.quoi in ('tables', 'tout'):
-        for a in (args.tables or range(1, 11)):
-            for b in range(1, 11):
-                faire(f't-{a}-{b}.mp3', phrase_table(a, b))
-            print(f'  ── table de {a} terminée', flush=True)
+        # LA TABLE ENTIÈRE EN UNE PRISE, PUIS DÉCOUPÉE (recette « C », choisie
+        # par Julien à l'oreille parmi trois). Une ligne de cinq mots générée
+        # seule ne donne pas au modèle de quoi trouver un rythme : il écorche
+        # (« cette fois neuf », « s'y »). Dictée d'une traite, la table prend
+        # la scansion d'un maître qui fait réciter, et les dix lignes se
+        # ressemblent. On coupe ensuite aux silences, guidé par Whisper qui
+        # horodate chaque mot ; s'il n'entend pas exactement dix « fois », la
+        # prise est refaite, trois fois au plus, et à défaut la table est
+        # générée ligne par ligne — signalé, jamais silencieux.
+        import numpy as np
+        from faster_whisper import WhisperModel
+        oreille = WhisperModel('small', device='cpu', compute_type='int8')
+
+        def ecouter(a, sr):
+            import soundfile as sf, tempfile
+            with tempfile.NamedTemporaryFile(suffix='.wav', delete=False) as tmp:
+                sf.write(tmp.name, a, sr)
+                segs, _ = oreille.transcribe(tmp.name, language='fr', beam_size=3, word_timestamps=True)
+                mots = [(w.word.strip(), w.start, w.end) for sg in segs for w in (sg.words or [])]
+            os.unlink(tmp.name)
+            return mots
+
+        for t in (args.tables or range(1, 11)):
+            noms = [f't-{t}-{b}.mp3' for b in range(1, 11)]
+            if not args.force and all(os.path.exists(os.path.join(SORTIE, x)) for x in noms):
+                continue
+            # « Table de sept. » en tête : si le modèle mange l'attaque, c'est
+            # ces trois mots qu'il abîme, et on les jette au découpage.
+            texte = f"Table de {mot(t)}. " + ' '.join(phrase_table(t, b) for b in range(1, 11))
+            lignes = None
+            for essai in range(1, 4):
+                w = m.generate(texte, language_id='fr', audio_prompt_path=ref)
+                a = np.asarray(w.detach().cpu().numpy() if hasattr(w, 'detach') else w, dtype='float32').reshape(-1)
+                mots = ecouter(a, m.sr)
+                lignes = _dv.decouper_par_mots(a, m.sr, mots)
+                if lignes:
+                    break
+                nf = sum(1 for x, _, _ in mots if 'foi' in x.lower())
+                print(f"  ⚠️  table de {t}, prise {essai} : {nf} « fois » entendus au lieu de 10, on refait", flush=True)
+            if lignes:
+                for nom, (d, f) in zip(noms, lignes):
+                    total += encoder(os.path.join(SORTIE, nom), a[d:f], m.sr); n += 1
+                print(f"  ✅ table de {t} : une prise de {len(a)/m.sr:.0f}s, dix lignes", flush=True)
+            else:
+                print(f"  ⚠️  table de {t} : trois prises inexploitables, générée ligne par ligne", flush=True)
+                for b in range(1, 11):
+                    faire(f't-{t}-{b}.mp3', phrase_table(t, b))
 
     if args.quoi in ('poemes', 'tout'):
         for po in poemes():

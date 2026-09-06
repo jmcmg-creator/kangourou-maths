@@ -3433,7 +3433,7 @@ function testerVoix(){
   stopSpeaking();
   // Une phrase parlée et un calcul : les deux usages réels de la voix.
   const qui=(profile&&profile.name)?esc(profile.name):'toi';
-  direSuite(['Bonjour '+qui+' !','7 fois 8, égale 56.'],{rate:0.95,pause:300});
+  direSuite(['Bonjour '+qui+' !','7 fois 8, 56.'],{rate:0.95,pause:300});
 }
 
 function copySyncLink(){
@@ -5403,7 +5403,9 @@ function direMulti(a,b,fin){
   stopSpeaking();
   // L'enregistrement d'abord — c'est lui qui sonne juste. La synthèse ne sert
   // que si le fichier manque, pour qu'aucune table ne devienne muette.
-  const secours=()=>_prononcer(a+' fois '+b+', égale '+(a*b)+'.',{rate:0.92},fin);
+  // Même scansion que les clips enregistrés (« sept fois huit, cinquante-six »),
+  // pour qu'un fichier manquant ne change pas la formule que l'enfant apprend.
+  const secours=()=>_prononcer(a+' fois '+b+', '+(a*b)+'.',{rate:0.92},fin);
   _jouerFichier(_fichierTable(a,b),()=>{if(fin)fin()},secours);
 }
 
