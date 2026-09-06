@@ -25,7 +25,7 @@ for (const f of ['exercises.js', 'exercises_extra.js', 'exercises_logic.js', 'ca
 vm.runInContext(readFileSync(join(racine, 'game.js'), 'utf8').replace(/^(const|let) /gm, 'var '), ctx, { filename: 'game.js' });
 
 console.log('\n── Les cartes générées');
-for (const [id, set] of Object.entries(ctx.MAP_SETS_MONDE)) {
+for (const set of Object.values(ctx.MAP_SETS_MONDE)) {
   const pays = Object.values(set.pays);
   const casse = pays.filter(p => !p.path || !p.name || p.w == null || p.h == null || !p.cap);
   dire(`${set.nom} : ${pays.length} pays, tous avec forme, nom, taille et capitale`, casse.length === 0, casse.map(p => p.nom).join(','));
