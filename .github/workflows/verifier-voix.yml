@@ -9,6 +9,9 @@ on:
     paths:
       - 'scripts/verifier-voix.py'
       - '.github/workflows/verifier-voix.yml'
+      # Un lot poussé à la main (le dépôt par le bot de CI, lui, ne déclenche
+      # rien : c'est GitHub qui veut ça) est réécouté.
+      - 'audio/voix/**'
 
 permissions:
   contents: write
