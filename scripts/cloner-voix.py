@@ -181,7 +181,7 @@ def main():
             # dans son voisin. Si un morceau plante quand même, on le fond dans
             # le suivant et on réessaie ; s'il ne reste rien à fondre, on
             # s'arrête EN ERREUR plutôt que de livrer un poème amputé.
-            import numpy as np, re
+            import numpy as np
             brut = [x.strip() for x in re.split(r'(?<=[.!?…])\s+', po['texte'].replace('\n', ' ')) if x.strip()]
             morceaux = []
             for x in brut:
