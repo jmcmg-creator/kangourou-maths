@@ -2,9 +2,16 @@
  "5": [
   {
    "prise": 1,
-   "duree": 27.4,
+   "duree": 17.3,
+   "fois": 8,
+   "entendu": "table de 5, 5x1, 5x2, 10, 5x3, 15, 5x4, 20, 5x5, 25, 5x6, 30, 5x7, 35, soit 8, 40, 5x9, 45, soit 10, 55, soit 10",
+   "decoupee": false
+  },
+  {
+   "prise": 2,
+   "duree": 19.8,
    "fois": 10,
-   "entendu": "Tablet de 5, 5 fois 1, 5 fois 2, 10, 5 fois 3, 15, 5 fois 10, 5 fois 5, 20, 5 fois 6, 30, 5 fois 7, 35, 5 fois 8, 40, 5 fois 8, 45, 5 fois 10, 55, 10, 50 et...",
+   "entendu": "table de 5 5 fois 1 5 5 fois 2 10 5 fois 3 15 5 fois 4 20 5 fois 5 25 5 fois 6 30 5 fois 7 35 5 fois 8 40 5 fois 9 45 5 fois 10 50",
    "decoupee": true
   }
  ]

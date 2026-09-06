@@ -2,23 +2,9 @@
  "9": [
   {
    "prise": 1,
-   "duree": 9.5,
-   "fois": 4,
-   "entendu": "table de 9, 9 fois 1, 9, 9 fois 2, 18, 9 fois 3, 27, 9 fois 4, 36,",
-   "decoupee": false
-  },
-  {
-   "prise": 2,
-   "duree": 20.2,
-   "fois": 11,
-   "entendu": "9 fois 1, 9 fois 2, 9 fois 2, 18, 9 fois 3, 27, 9 fois 10, 4, 36, 9 fois 5, 45, 9 fois 6, 54, 9 fois 7, 63, 9 fois 8, 72, 9 fois 9, 81, 9 fois 10, 90.",
-   "decoupee": false
-  },
-  {
-   "prise": 3,
-   "duree": 22.2,
+   "duree": 23.9,
    "fois": 10,
-   "entendu": "table de 9. 9 x 1, 9 x 2, 18, 9 x 3, 27, 9 x 4, 36. 9 x 5, 45, 9 x 6, 54. 9 x 7, 63. 9 x 8, 72, 9 x 9, 81. 9 x 10, 90.",
+   "entendu": "table de 9, 9 fois 1, 9 fois 2, 18, 9 fois 3, 27, 9 fois 4, 36, 9 fois 5, 45, 9 fois 6, 54, 9 fois 7, 63, 9 fois 8, 72, 9 fois 9, 81, 9 fois 10, 90.",
    "decoupee": true
   }
  ]

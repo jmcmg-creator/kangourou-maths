@@ -2,9 +2,9 @@
  "10": [
   {
    "prise": 1,
-   "duree": 20.0,
+   "duree": 19.3,
    "fois": 10,
-   "entendu": "table de 10, 10x1, 10x2, 20, 10x3, 30, 10x4, 40, 10x5, 50, 10x6, 60, 10x7, 70, 10x8, 80, 10x9, 90, 10x10, 100.",
+   "entendu": "table de 10, 10 fois 1, 10, 10 fois 2, 20, 10 fois 3, 30, 10 fois 4, 40, 10 fois 5, 50, 10 fois 6, 60, 10 fois 7, 70, 10 fois 8, 80, 10 fois 9, 90, 10 fois 10, 100.",
    "decoupee": true
   }
  ]
