@@ -1,0 +1,35 @@
+name: Vérifier la voix générée
+
+# Fait écouter par Whisper chaque poème et vingt lignes de tables générés, et
+# compare au texte attendu. Voir scripts/verifier-voix.py.
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - 'scripts/verifier-voix.py'
+      - '.github/workflows/verifier-voix.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  verifier:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.ref_name }}
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - run: pip install --quiet faster-whisper jiwer numpy
+      - name: Vérifier
+        run: python scripts/verifier-voix.py
+      - name: Déposer le rapport
+        if: always()
+        run: |
+          git config user.name 'github-actions[bot]'; git config user.email 'github-actions[bot]@users.noreply.github.com'
+          git add echantillons/verification.json 2>/dev/null || true
+          git diff --cached --quiet || { git commit -m "Rapport de vérification de la voix (Whisper)"; git push origin HEAD:${{ github.ref_name }}; }
