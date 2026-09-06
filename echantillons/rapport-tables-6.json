@@ -2,9 +2,9 @@
  "6": [
   {
    "prise": 1,
-   "duree": 23.0,
+   "duree": 19.9,
    "fois": 10,
-   "entendu": "table de 6, 6 x 1, 6 x 2, 12, 6 x 3, 18, 6 x 10, soit 4, 24, 6 x 5, 30, 6 x 6, 36, 6 x 7, 42, 6 x 8, 48, 6 x 9, 54, 6 x 10, 60.",
+   "entendu": "table de 6, 6 fois 1, 6 fois 2, 12, 6 fois 3, 18, 6 fois 10, 4, 24, 6 fois 5, 30, 6 fois 6, 36, 6 fois 7, 42, 6 fois 8, 48, 6 fois 9, 54, 6 fois 10, 60.",
    "decoupee": true
   }
  ]

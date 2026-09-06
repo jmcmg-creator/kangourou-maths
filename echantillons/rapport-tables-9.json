@@ -2,9 +2,9 @@
  "9": [
   {
    "prise": 1,
-   "duree": 23.9,
+   "duree": 20.8,
    "fois": 10,
-   "entendu": "table de 9, 9 fois 1, 9 fois 2, 18, 9 fois 3, 27, 9 fois 4, 36, 9 fois 5, 45, 9 fois 6, 54, 9 fois 7, 63, 9 fois 8, 72, 9 fois 9, 81, 9 fois 10, 90.",
+   "entendu": "table de 9, 9x1, 9x2, 18, 9x3, 27, 9x4, 36, 9x5, 45, 9x6, 54, 9x7, 63, 9x8, 72, 9x9, 81, 9x10, 90.",
    "decoupee": true
   }
  ]

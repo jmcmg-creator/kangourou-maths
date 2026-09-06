@@ -2,9 +2,16 @@
  "8": [
   {
    "prise": 1,
-   "duree": 19.0,
+   "duree": 19.5,
+   "fois": 11,
+   "entendu": "Table de 8, 8x1, 8x2, 16, 8x3, 24, 8x10, 4x32, 8x5, 40, 8x6, 48, 8x7, 56, 8x8, 64, 8x9, 72, 8x10, 80.",
+   "decoupee": false
+  },
+  {
+   "prise": 2,
+   "duree": 21.8,
    "fois": 10,
-   "entendu": "table de 8. 8x1 8x2 16 8x3 24 8x10 432 8x5 40 8x6 48 8x7 56 8x8 64 8x9 72 8x10 80",
+   "entendu": "table de 8, 8x1, 8x2, 16, 8x3, 24, 8x4, 32, 8x5, 40, 8x6, 48, 8x7, 56, 8x8, 64, 8x9, 72, 8x10, 80.",
    "decoupee": true
   }
  ]
