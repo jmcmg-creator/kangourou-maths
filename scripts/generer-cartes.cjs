@@ -28,7 +28,7 @@ function sansParentheses(t){
   let out='',i=0;
   while(i<t.length){
     const j=t.indexOf('(',i); if(j<0){out+=t.slice(i);break}
-    const k=t.indexOf(')',j); out+=t.slice(i,j).replace(/ +$/,''); i=k<0?t.length:k+1;
+    const k=t.indexOf(')',j); out+=t.slice(i,j).trimEnd(); i=k<0?t.length:k+1;
   }
   return out.trim();
 }
