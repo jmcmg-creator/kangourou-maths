@@ -326,7 +326,7 @@ const STORAGE_ACTIVE="royaume_active_v1";
    distinguer « la fonctionnalité est cassée » de « le téléphone n'a pas
    encore la mise à jour ».
    À bumper avec CACHE_VERSION (sw.js) et le ?v= (index.html). */
-const APP_VERSION='v42';
+const APP_VERSION='v43';
 
 function loadProfilesDict(){
   try{const d=localStorage.getItem(STORAGE_PROFILES); if(d) return JSON.parse(d)||{};}catch(e){}
@@ -3566,7 +3566,7 @@ function testerVoix(){
   stopSpeaking();
   // Une phrase parlée et un calcul : les deux usages réels de la voix.
   const qui=(profile&&profile.name)?esc(profile.name):'toi';
-  direSuite(['Bonjour '+qui+' !','7 fois 8, égale 56.'],{rate:0.95,pause:300});
+  direSuite(['Bonjour '+qui+' !','7 fois 8, 56.'],{rate:0.95,pause:300});
 }
 
 function copySyncLink(){
@@ -3796,6 +3796,58 @@ function _direMaintenant(texte,opts,passer){
   }catch(e){passer()}
 }
 
+/* ════════ VOIX ENREGISTRÉE ════════
+   La synthèse du navigateur a un plafond : même en « premium », une voix
+   Apple reste assemblée à partir de morceaux enregistrés, et ça s'entend.
+   Aucun réglage de débit ne fait franchir ce plafond.
+
+   Pour tout ce que l'app dit et qui est CONNU D'AVANCE — les cent lignes des
+   tables de multiplication, les poèmes — on n'a pas besoin de synthèse du
+   tout. On enregistre une fois, avec un vrai modèle neuronal (Kokoro-82M,
+   licence Apache 2.0, tourne sur un simple processeur), et on livre les
+   fichiers avec l'app. Résultat : la meilleure qualité disponible, hors
+   connexion, sans clé d'API, sans un centime, et sans rien calculer sur le
+   téléphone — donc sans toucher à la batterie.
+
+   La synthèse reste le filet : si un fichier manque, l'app parle quand même.
+
+   UN SEUL ÉLÉMENT <audio>, RÉUTILISÉ. iOS n'autorise la lecture que si elle
+   découle d'un geste de l'utilisateur. Fabriquer un nouvel élément pour
+   chaque clip casse cette filiation : la 1re ligne d'une table se dirait, et
+   les neuf suivantes seraient refusées en silence. En réutilisant le même
+   élément, toute la récitation hérite du premier appui. */
+let _lecteurVoix=null;
+function _lecteur(){
+  if(_lecteurVoix) return _lecteurVoix;
+  try{_lecteurVoix=new Audio();_lecteurVoix.preload='auto'}catch(e){_lecteurVoix=null}
+  return _lecteurVoix;
+}
+// Les cent clips des tables existent tous ; en dehors de 1..10, il n'y a rien.
+function _fichierTable(a,b){
+  return (a>=1&&a<=10&&b>=1&&b<=10)?('audio/voix/t-'+a+'-'+b+'.mp3'):null;
+}
+function _jouerFichier(url,ok,echec){
+  const a=_lecteur();
+  if(!a||!url) return echec();
+  let fini=false;
+  const fin=(bon)=>{
+    if(fini)return;fini=true;
+    a.onended=null;a.onerror=null;
+    bon?ok():echec();
+  };
+  a.onended=()=>fin(true);
+  a.onerror=()=>fin(false);          // fichier absent → on retombe sur la synthèse
+  try{a.src=url;a.currentTime=0}catch(e){return fin(false)}
+  try{
+    const p=a.play();
+    if(p&&p.catch) p.catch(()=>fin(false));
+  }catch(e){fin(false)}
+}
+function _arreterFichier(){
+  if(!_lecteurVoix) return;
+  try{_lecteurVoix.onended=null;_lecteurVoix.onerror=null;_lecteurVoix.pause()}catch(e){}
+}
+
 /* Découpe un texte en souffles. Réciter un poème d'un seul tenant donne une
    diction plate : la synthèse ne respire nulle part. Un vers par phrase, avec
    un court silence entre eux, c'est déjà de la récitation. */
@@ -3839,11 +3891,23 @@ function speakText(text){
 }
 function stopSpeaking(){
   _suiteEnCours++;                            // invalide une suite en cours
+  _arreterFichier();                          // et coupe l'enregistrement en cours
   if('speechSynthesis' in window){try{speechSynthesis.cancel()}catch(e){}}
 }
 
-// Lecteur audio unifié : MP3 studio si disponible (f.audioUrl), sinon
-// synthèse vocale du navigateur. Géré via un singleton <audio>.
+/* Chaque poème livré avec l'app peut avoir son enregistrement, nommé d'après
+   son identifiant. Contrairement aux tables, il n'y a RIEN à découper : un
+   poème se lit d'un trait, avec les respirations de celui qui le dit — c'est
+   même tout l'intérêt. Un poème ajouté par un enfant n'a pas d'enregistrement
+   et retombe sur la synthèse, comme avant. */
+function _fichierPoeme(f){
+  if(!f) return null;
+  if(f.audioUrl) return f.audioUrl;
+  return FABLES.some(x=>x.id===f.id) ? 'audio/voix/p-'+f.id+'.mp3' : null;
+}
+
+// Lecteur audio unifié : enregistrement si disponible, sinon synthèse vocale
+// du navigateur. Géré via un singleton <audio>.
 let _poesieAudio=null;
 function playPoesie(){
   const f=getPoemById(state.fableId);
@@ -3854,22 +3918,27 @@ function playPoesie(){
   // (entités HTML décodées, sauts de ligne respectés), avec fallback sur stripHtmlText.
   const ftEl=$('fableText');
   const cleanText=ftEl?ftEl.innerText:stripHtmlText(f.text);
-  if(f.audioUrl){
-    _poesieAudio=new Audio(f.audioUrl);
+  const fichier=_fichierPoeme(f);
+  if(fichier){
+    _poesieAudio=new Audio(fichier);
     _poesieAudio.preload='auto';
     _poesieAudio.addEventListener('ended',()=>{_poesieAudio=null;if(btn)btn.textContent='▶️ Écouter';});
+    _poesieAudio.addEventListener('playing',()=>_direSource('\u{1F3A4} La voix de papa.'));
     _poesieAudio.addEventListener('error',()=>{
       _poesieAudio=null;
       if(btn)btn.textContent='▶️ Écouter';
+      _direSource('\u{1F916} Voix de synthèse — l\'enregistrement n\'est pas encore là.');
       speakText(cleanText);
     });
-    _poesieAudio.play().catch(()=>speakText(cleanText));
+    _poesieAudio.play().catch(()=>{_direSource('\u{1F916} Voix de synthèse.');speakText(cleanText)});
     if(btn)btn.textContent='⏸ Pause';
   }else{
+    _direSource('\u{1F916} Voix de synthèse du navigateur.');
     speakText(cleanText);
     if(btn)btn.textContent='⏸ En lecture…';
   }
 }
+function _direSource(t){const e=$('poesieSource');if(e)e.textContent=t}
 function stopPoesie(){
   if(_poesieAudio){try{_poesieAudio.pause()}catch(e){};_poesieAudio=null;}
   stopSpeaking();
@@ -4115,7 +4184,7 @@ function renderPoesieFable(){
   </div>
   <div class="card mb-4" style="border-color:#a78bfa">
     <h3 class="card-title" style="color:#5b21b6;margin-bottom:6px">\u{1F3A7} Écoute</h3>
-    <p class="sub mb-2">${f.audioUrl?'\u{1F3A4} Lecture studio (voix expressive d\'un conteur).':'\u{1F916} Voix de synthèse du navigateur (intonation limitée).'}</p>
+    <p class="sub mb-2" id="poesieSource">\u{1F3A7} Touche « Écouter » pour entendre la poésie.</p>
     <div class="btn-row">
       <button class="btn-fire" id="playBtn" onclick="playPoesie()">\u25B6\uFE0F Écouter</button>
       <button class="btn-stone" onclick="stopPoesie()">\u23F9\uFE0F Stop</button>
@@ -5465,7 +5534,12 @@ function _voixDispo(){return _memVoice&&('speechSynthesis' in window)}
 function direMulti(a,b,fin){
   if(!_voixDispo()){if(fin)setTimeout(fin,900);return}
   stopSpeaking();
-  _prononcer(a+' fois '+b+', égale '+(a*b)+'.',{rate:0.92},fin);
+  // L'enregistrement d'abord — c'est lui qui sonne juste. La synthèse ne sert
+  // que si le fichier manque, pour qu'aucune table ne devienne muette.
+  // Même scansion que les clips enregistrés (« sept fois huit, cinquante-six »),
+  // pour qu'un fichier manquant ne change pas la formule que l'enfant apprend.
+  const secours=()=>_prononcer(a+' fois '+b+', '+(a*b)+'.',{rate:0.92},fin);
+  _jouerFichier(_fichierTable(a,b),()=>{if(fin)fin()},secours);
 }
 
 function renderTablesHome(){
@@ -5936,11 +6010,9 @@ function memFlip(i){
     document.querySelectorAll('.mem-card')[a].classList.add('matched');
     document.querySelectorAll('.mem-card')[b2].classList.add('matched');
     const op=M.cards[a].op;
-    // Même moteur que les tables : la voix est choisie, pas subie.
-    if(op&&_memVoice){
-      stopSpeaking();
-      _prononcer(op[0]+' fois '+op[1]+', '+(op[0]*op[1])+'.',{rate:0.98});
-    }
+    // Même voix enregistrée que les tables : une paire trouvée s'entend
+    // exactement comme la ligne qu'on vient d'apprendre.
+    if(op&&_memVoice) direMulti(op[0],op[1]);
     if(M.found===M.cards.length/2)memWin();
   }else{
     // Deux cartes qui ne vont pas ensemble : c'est une erreur, et elle se

@@ -1,0 +1,129 @@
+name: Générer toute la voix avec la référence choisie
+
+# Génère les cent lignes des tables et les neuf poésies avec Chatterbox, en
+# imitant la voix de référence désignée dans audio/references/CHOIX.txt
+# (nom du fichier .wav, sans le chemin). Résultat dans audio/voix/.
+#
+# Déclenché en poussant CHOIX.txt — la seule porte ouverte à Claude Code, qui
+# ne peut pas lancer un workflow à la main. Trois jobs en parallèle : un
+# processeur met une quinzaine de secondes par phrase, et 109 fichiers d'un
+# seul tenant dépasseraient l'heure.
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - 'audio/references/CHOIX.txt'
+      - 'audio/references/LOT.txt'
+
+permissions:
+  contents: write
+
+jobs:
+  generer:
+    name: ${{ matrix.lot }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 80
+    strategy:
+      fail-fast: false
+      matrix:
+        # Une machine par table : une table dite d'une traite, réécoutée par
+        # Whisper et refaite jusqu'à trois fois, prend un quart d'heure ; cinq
+        # tables sur une machine frôlaient la limite de l'heure et demie.
+        include:
+          - { lot: table-1,  args: "--quoi tables --tables 1" }
+          - { lot: table-2,  args: "--quoi tables --tables 2" }
+          - { lot: table-3,  args: "--quoi tables --tables 3" }
+          - { lot: table-4,  args: "--quoi tables --tables 4" }
+          - { lot: table-5,  args: "--quoi tables --tables 5" }
+          - { lot: table-6,  args: "--quoi tables --tables 6" }
+          - { lot: table-7,  args: "--quoi tables --tables 7" }
+          - { lot: table-8,  args: "--quoi tables --tables 8" }
+          - { lot: table-9,  args: "--quoi tables --tables 9" }
+          - { lot: table-10, args: "--quoi tables --tables 10" }
+          - { lot: poemes,   args: "--quoi poemes" }
+      # Si audio/references/LOT.txt existe, il remplace ces arguments — pour ne
+      # refaire qu'un poème raté ou qu'une table sans relancer une heure de
+      # génération. Une ligne par job, « lot: arguments » :
+      #     table-7: --quoi tables --tables 7
+      #     poemes: --quoi poemes --poemes renard-raisins
+      # Une ligne sans « lot: » revient au job de la table 1. Les jobs qui
+      # n'ont pas de ligne se terminent aussitôt sans rien produire.
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.ref_name }}
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Installer
+        # faster-whisper : l'oreille qui horodate les mots pour découper une
+        # table dite d'une traite en dix lignes (voir cloner-voix.py).
+        run: pip install --quiet chatterbox-tts numpy lameenc soundfile faster-whisper
+      - name: Contrôler l'installation
+        run: |
+          python -c "import numpy, lameenc, soundfile, chatterbox, faster_whisper; print('  outils OK · numpy', numpy.__version__)"
+          python scripts/test-decoupage.py
+      - name: Générer
+        run: |
+          ref="audio/references/$(tr -d ' \r\n' < audio/references/CHOIX.txt)"
+          test -f "$ref" || { echo "::error::Référence introuvable : $ref"; exit 1; }
+          echo "  référence : $ref"
+          # Chaque job repart d'un dossier vide : sinon il renverrait aussi les
+          # anciens fichiers du dépôt, qui écraseraient au hasard ceux qu'un
+          # autre job vient de refaire, au moment de tout rassembler.
+          rm -rf audio/voix; mkdir -p audio/voix
+          if [ -s audio/references/LOT.txt ]; then
+            lot="$(tr -d '\r' < audio/references/LOT.txt | grep -E '^${{ matrix.lot }}:' | sed 's/^[^:]*://' | head -1)"
+            if [ -z "$lot" ] && ! grep -q ':' audio/references/LOT.txt && [ "${{ matrix.lot }}" = "table-1" ]; then
+              lot="$(tr -d '\r\n' < audio/references/LOT.txt)"
+            fi
+            # Un job sans ligne passe — et vide audio/voix pour ne pas renvoyer les
+            # anciens fichiers du dépôt, qui écraseraient les neufs au rassemblement.
+            [ -n "$lot" ] || { echo "  lot restreint : rien pour ce job"; exit 0; }
+            echo "  lot restreint : $lot"
+            python scripts/cloner-voix.py "$ref" $lot --force
+          else
+            python scripts/cloner-voix.py "$ref" ${{ matrix.args }} --force
+          fi
+      - uses: actions/upload-artifact@v4
+        # Même si la génération a dépassé le temps, ce qui est fait est gardé.
+        if: always()
+        with:
+          name: voix-${{ matrix.lot }}
+          path: audio/voix/
+          if-no-files-found: warn
+
+  deposer:
+    name: Rassembler et déposer
+    needs: generer
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.ref_name }}
+      - uses: actions/download-artifact@v4
+        with:
+          path: recolte
+          merge-multiple: true
+      - name: Déposer
+        run: |
+          mkdir -p audio/voix echantillons
+          cp recolte/*.mp3 audio/voix/
+          # Les comptes rendus de génération (quelle table a eu sa prise entière)
+          # vont dans echantillons/, pas chez les enfants.
+          cp recolte/*.json echantillons/ 2>/dev/null || true
+          rm -rf recolte
+          n=$(ls audio/voix/t-*.mp3 | wc -l); p=$(ls audio/voix/p-*.mp3 | wc -l)
+          echo "  $n clips de tables · $p poèmes"
+          # 100 tables et 9 poèmes attendus : un lot incomplet ne doit pas
+          # partir chez les enfants avec des trous silencieux.
+          [ "$n" -eq 100 ] && [ "$p" -eq 9 ] || { echo "::error::Lot incomplet ($n/100 tables, $p/9 poèmes)"; exit 1; }
+          git config user.name  'github-actions[bot]'
+          git config user.email 'github-actions[bot]@users.noreply.github.com'
+          git add audio/voix echantillons
+          git diff --cached --quiet && { echo "rien de neuf"; exit 0; }
+          git commit -m "Voix clonée : 100 lignes de tables et 9 poésies (Chatterbox, référence $(cat audio/references/CHOIX.txt))"
+          # Un autre workflow a pu déposer entre-temps : on se remet dessus avant de pousser.
+          git pull --rebase --autostash origin ${{ github.ref_name }}
+          git push origin HEAD:${{ github.ref_name }}

@@ -1,0 +1,169 @@
+name: Comparer les voix françaises
+
+# Génère les MÊMES phrases avec plusieurs modèles de synthèse vocale, puis
+# dépose les MP3 dans le dépôt pour qu'on puisse les écouter et choisir.
+#
+# POURQUOI ICI ET PAS EN LOCAL
+# Les poids de ces modèles vivent sur Hugging Face, que le réseau de la session
+# Claude Code ne peut pas joindre (403 au proxy). Le runner GitHub sort
+# librement. Ce workflow est donc la seule voie pour comparer autre chose que
+# ce qui est publié en GitHub Release.
+#
+# COMMENT LE DÉCLENCHER
+#   - en poussant une modification de scripts/comparer-voix.py (la voie de
+#     Claude Code : son jeton ne peut pas lancer un workflow à la main) ;
+#   - ou par le bouton « Run workflow ».
+#
+# UN JOB PAR MOTEUR, VOLONTAIREMENT : une bibliothèque qui ne s'installe pas ne
+# doit pas emporter toute la comparaison. Mieux vaut quatre voix sur six que
+# rien du tout.
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - 'scripts/comparer-voix.py'
+      - '.github/workflows/comparer-voix.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  voix:
+    name: ${{ matrix.moteur }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 75
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - moteur: piper
+            paquets: piper-tts
+          - moteur: mms
+            paquets: transformers torch --extra-index-url https://download.pytorch.org/whl/cpu
+          - moteur: melo
+            paquets: git+https://github.com/myshell-ai/MeloTTS.git
+          # Les deux suivants sont des modèles autorégressifs : ils construisent
+          # la parole morceau par morceau, ce qui leur donne des intonations que
+          # les petits modèles ci-dessus ne peuvent pas produire. Ils pèsent
+          # plusieurs gigaoctets et prennent des minutes par phrase sur
+          # processeur — d'où le temps de job plus long.
+          - moteur: xtts
+            paquets: coqui-tts
+          - moteur: chatterbox
+            paquets: chatterbox-tts
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.ref_name }}
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      # UNE SEULE commande pip pour le moteur ET nos outils. Installés
+      # séparément, le moteur emportait numpy avec lui : coqui-tts a désinstallé
+      # numpy 2 pour poser sa propre version, a échoué, et a laissé
+      # l'environnement sans numpy du tout. Le job est allé jusqu'à la
+      # génération avant de tomber sur « No module named numpy ». Une seule
+      # commande laisse le résolveur réconcilier les contraintes.
+      - name: Installer ${{ matrix.moteur }} et les outils
+        run: pip install --quiet ${{ matrix.paquets }} numpy lameenc
+
+      # On CONTRÔLE que tout répond avant de lancer une génération qui peut
+      # durer une heure. Un import manquant doit se voir ici, avec son nom,
+      # pas après le téléchargement de trois gigaoctets de poids.
+      - name: Contrôler l'installation
+        run: |
+          python - <<'PY'
+          import importlib, sys
+          manque = []
+          for m in ('numpy', 'lameenc'):
+              try: importlib.import_module(m)
+              except Exception as e: manque.append(f'{m} : {e}')
+          if manque:
+              sys.exit('Outils indisponibles APRÈS installation :\n  ' + '\n  '.join(manque))
+          import numpy, lameenc
+          print(f'  numpy {numpy.__version__} · lameenc OK')
+          PY
+
+      - name: Dictionnaire de découpage (MeloTTS seulement)
+        if: matrix.moteur == 'melo'
+        run: python -m unidic download || true
+
+      # PAS d'étape « faire de la place ». Elle a coûté deux passages de CI :
+      # la recette habituelle supprime "$AGENT_TOOLSDIRECTORY", c'est-à-dire
+      # /opt/hostedtoolcache — précisément là où actions/setup-python installe
+      # Python ET tous les paquets pip. Le contrôle d'installation passait au
+      # vert, puis l'étape suivante effaçait l'interpréteur, et la génération
+      # tombait sur « No module named numpy » sans que rien ne relie les deux.
+      # Le runner a de toute façon 105 Go libres : il n'y avait rien à libérer.
+
+      - name: Générer
+        env:
+          COQUI_TOS_AGREED: '1'   # sinon XTTS attend une réponse au clavier et le job expire
+        run: python scripts/comparer-voix.py ${{ matrix.moteur }}
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: voix-${{ matrix.moteur }}
+          path: echantillons/
+          if-no-files-found: warn
+
+  rassembler:
+    name: Rassembler et déposer dans le dépôt
+    needs: voix
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.ref_name }}
+
+      - uses: actions/download-artifact@v4
+        with:
+          path: recolte
+          merge-multiple: true
+
+      - name: Déposer les échantillons
+        run: |
+          mkdir -p echantillons
+          # Les manifestes des différents jobs portent le même nom : on ne
+          # garde donc que les MP3 et on reconstruit la liste ici, sinon le
+          # dernier téléchargé écraserait les voix de tous les autres.
+          find recolte -name '*.mp3' -exec cp {} echantillons/ \; 2>/dev/null || true
+          rm -rf recolte
+          n=$(ls echantillons/*.mp3 2>/dev/null | wc -l)
+          if [ "$n" -eq 0 ]; then
+            echo "::error::Aucun échantillon produit — aucun moteur n'a abouti."
+            exit 1
+          fi
+          python - <<'PY'
+          import json, os
+          d = 'echantillons'
+          fichiers = sorted(f for f in os.listdir(d) if f.endswith('.mp3'))
+          json.dump([{'fichier': f, 'octets': os.path.getsize(os.path.join(d, f))}
+                     for f in fichiers], open(os.path.join(d, 'index.json'), 'w'),
+                    ensure_ascii=False, indent=2)
+          print(f'{len(fichiers)} voix : ' + ', '.join(fichiers))
+          PY
+          git config user.name  'github-actions[bot]'
+          git config user.email 'github-actions[bot]@users.noreply.github.com'
+          git add echantillons
+          git diff --cached --quiet && { echo "rien de neuf"; exit 0; }
+          git commit -m "Échantillons de voix françaises générés en CI
+
+          Les poids vivent sur Hugging Face, inaccessible depuis la session
+          Claude Code. Ce dépôt d'échantillons est la seule façon de les
+          écouter et de choisir."
+          git push origin HEAD:${{ github.ref_name }}
+
+      - name: Récapitulatif
+        run: |
+          {
+            echo "## Voix générées"
+            echo
+            for f in echantillons/*.mp3; do
+              echo "- \`$(basename "$f")\` — $(( $(stat -c%s "$f") / 1024 )) Ko"
+            done
+          } >> "$GITHUB_STEP_SUMMARY"

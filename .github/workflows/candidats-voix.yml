@@ -1,0 +1,55 @@
+name: Trouver la voix la plus naturelle
+
+# Donne à Chatterbox de vraies voix françaises de narrateurs comme références,
+# génère les mêmes phrases avec chacune, et NOTE le résultat (DNSMOS pour le
+# naturel, Whisper pour l'intelligibilité). Voir scripts/candidats-voix.py.
+# Tourne ici parce que Hugging Face est inaccessible depuis Claude Code.
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - 'scripts/candidats-voix.py'
+      - '.github/workflows/candidats-voix.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  candidats:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.ref_name }}
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      # Une seule commande pip : installés séparément, un moteur peut emporter
+      # numpy avec lui (vu avec coqui-tts). Et surtout PAS de « nettoyage » de
+      # $AGENT_TOOLSDIRECTORY : c'est là que vit Python.
+      - name: Installer
+        run: pip install --quiet chatterbox-tts numpy lameenc soundfile datasets speechmos faster-whisper jiwer
+      - name: Contrôler l'installation
+        run: python -c "import numpy, lameenc, soundfile, datasets, speechmos, faster_whisper, jiwer, chatterbox; print('  outils OK · numpy', numpy.__version__)"
+      - name: Générer et noter
+        env:
+          NB_VOIX: '8'
+        run: python scripts/candidats-voix.py
+      - name: Déposer dans le dépôt
+        run: |
+          git config user.name  'github-actions[bot]'
+          git config user.email 'github-actions[bot]@users.noreply.github.com'
+          git add echantillons audio/references
+          git diff --cached --quiet && { echo "rien de neuf"; exit 0; }
+          git commit -m "Candidats de voix notés (DNSMOS + Whisper), générés en CI"
+          git push origin HEAD:${{ github.ref_name }}
+      - name: Récapitulatif
+        run: |
+          { echo "## Classement"; echo; python - <<'PY'
+          import json
+          for i, c in enumerate(json.load(open('echantillons/candidats.json')), 1):
+              print(f"{i}. **{c['nom']}** — naturel {c.get('ovrl_mos',0):.2f}/5 · erreurs {c['wer']*100:.0f}% · score {c['score']:.2f}")
+          PY
+          } >> "$GITHUB_STEP_SUMMARY"

@@ -1,0 +1,169 @@
+{
+  "poemes": [
+    {
+      "id": "corbeau-renard",
+      "wer": 0.104,
+      "mots_attendus": 109,
+      "mots_entendus": 106,
+      "entendu": "Maître Corbeau, sur un arbre perché, tenait en son bec un fromage.  Maître Renard, par l'odeur alléché, lui teint à peu près ce langage.  Hé ! Bonjour, Monsieur Luc Corbeau.  Monsieur Luc Corbeau, que vous êtes joli, que vous me semblez beau, sans mentir.  Si votre ramage se rapporte à votre plumage, vous êtes le phénix des hautes de ses bois.  À ses mots, le Corbeau ne se sent pas de joie, et pour montrer sa belle voix,  il ouvre un large bec, laisse tomber sa proie.  Renard s'en saisit et dit, mon bon monsieur,  apprenez que tout flatteur vit au dépend de celui qui l'écoute."
+    },
+    {
+      "id": "lievre-tortue",
+      "wer": 0.175,
+      "mots_attendus": 95,
+      "mots_entendus": 98,
+      "entendu": "Rien ne sert de courir, il faut partir à point.  Le lièvre et la tortue en sont un témoignage.  — Gajon, dit celle-ci, que vous n'atteindrez point si tôt que moi ce but.  Si tôt, êtes-vous sage ? — est partie d'animales légers.  — La tortue partie.  — Elle s'évertue, elle se hâte avec l'anteur.  Le lièvre cependant, méprise une telle victoire,  tient la gageur à peu de gloire.  Quand il voit que l'autre touche presque au bout de la carrière,  il partit comme un trait.  Mais les élanques il fit, furent vins,  la tortue arriva la première."
+    },
+    {
+      "id": "cigale-fourmi",
+      "wer": 0.181,
+      "mots_attendus": 92,
+      "mots_entendus": 95,
+      "entendu": "La sigale, ayant chanté tout l'été, se trouva fort dépourvue quand la bise fut venue,  pas un seul petit morceau de mouches ou de vermisseaux.  Elle a l'a crié famine chez la fourmi sa voisine, la priant de lui prêter quelques  grains pour subsister jusqu'à la saison nouvelle.  La fourmi n'est pas prêteuse, c'est là son moindre défaut.  « Que faisiez-vous autant chaud ? »  dit-elle à cette emprunteuse, « Nuit et jour, à tout venant, je chantais, ne vous  déplaise, vous chantiez, je vous chante, je suis fortaise.  Eh bien, dansez maintenant ! »"
+    },
+    {
+      "id": "loup-agneau",
+      "wer": 0.109,
+      "mots_attendus": 105,
+      "mots_entendus": 106,
+      "entendu": "La raison du plus fort est toujours la meilleure.  Un agneau se désaltérait dans le courant du nom de pur.  Un loup survient à jeun qui cherchait aventure,  et que la fin en ses lieux attirait,  qui te rend si hardi de troubler mon breuvage.  Dis cet animal plein de rage.  Tu seras châti de ta témérité.  « Si, répond l'agneau, que votre majesté ne se mette pas en colère,  mais plutôt qu'elle considère que je me va désaltérent dans le courant  plus de 20 pases au-dessous d'elle.  Là-dessus, au fond des forêts le loup l'emporte  et puis le mange sans autre forme de procès. »"
+    },
+    {
+      "id": "grenouille-boeuf",
+      "wer": 0.235,
+      "mots_attendus": 73,
+      "mots_entendus": 73,
+      "entendu": "Une grenouille vitain de boeuf qui lui semblait de belle taille.  Elle, qui n'était pas grosse, en tout comme un oeuf, en vieuse, s'étend et s'enflent  et se travaille pour égaler l'animal en grosseur, disant,  « Regardez bien ma sœur, est-ce assez ? »  « Dites-moi, ni suis-je point encore, n'en n'y, mi voici donc, point du tout, mi voilà. »  Vous n'en approchez point.  La chétive Pécor s'enflat si bien qu'elle creva."
+    },
+    {
+      "id": "renard-raisins",
+      "wer": 0.131,
+      "mots_attendus": 58,
+      "mots_entendus": 56,
+      "entendu": "Certains renard gascon, d'autres disent normand, mourant presque de faim,  lit aux eaux d'une traille des raisins murs apparemment et couverts d'une peau vermeille.  Le galant en eut fait volontiers un repas, mais comme il n'y pouvait atteindre,  ils sont trop verts, dit-il, et bons pour des goujards.  Fait-il pas mieux que de se plaindre ?"
+    },
+    {
+      "id": "chene-roseau",
+      "wer": 0.096,
+      "mots_attendus": 71,
+      "mots_entendus": 67,
+      "entendu": "Le chêne un jour dit Torozo.  Vous avez bien suger d'accuser la nature.  Un roi-telet pour vous est un pesant fardeau.  Le moindre vent qui d'aventure fait rider la face de l'eau, vous oblige à baisser la tête.  Le vent redouble ses efforts, et fait si bien qu'il déracine celui de qui la tête au ciel était voisine,  et dont les pieds touchaient un empire des morts."
+    },
+    {
+      "id": "lion-rat",
+      "wer": 0.132,
+      "mots_attendus": 85,
+      "mots_entendus": 87,
+      "entendu": "Il faut, autant qu'on peut, obliger tout le monde.  On a souvent besoin d'un plus petit que soi.  De cette vérité, deux fables feront foie.  Entre les pattes d'un lion, un rat sortit assez à l'étourdi.  Le roi des animaux, en cette occasion, montra ce qu'il était et lui donne à la vie.  Quelques temps après, ce lion fut pris dans des rées, dont ses rugissements ne le purent des fer.  Cire rat a couru, et fit tant par ses dents qu'une maille rongée emportait tout l'ouvrage."
+    },
+    {
+      "id": "schneider-tu-dis",
+      "wer": 0.0,
+      "mots_attendus": 62,
+      "mots_entendus": 62,
+      "entendu": "Tu dis sable, et déjà la mer est à tes pieds. Tu dis forêt, et déjà les arbres te tendent leurs bras.  Tu dis colline, et déjà le sentier court avec toi vers le sommet.  Tu dis nuage, et déjà un cumulus t'offre la promesse du voyage.  Tu dis poème, et déjà les mots volent et dansent comme étincelles dans la cheminée."
+    }
+  ],
+  "tables": [
+    {
+      "ligne": "5x2",
+      "wer": 0.0,
+      "entendu": "5 x 2 égale 10."
+    },
+    {
+      "ligne": "2x10",
+      "wer": 0.4,
+      "entendu": "2 × 10 × 20."
+    },
+    {
+      "ligne": "6x1",
+      "wer": 0.8,
+      "entendu": "s'y foise un égal 6."
+    },
+    {
+      "ligne": "9x4",
+      "wer": 0.4,
+      "entendu": "9 × 4 × 36"
+    },
+    {
+      "ligne": "1x7",
+      "wer": 0.0,
+      "entendu": "1 fois 7 égale 7."
+    },
+    {
+      "ligne": "1x10",
+      "wer": 0.0,
+      "entendu": "1 x 10 égale 10."
+    },
+    {
+      "ligne": "7x9",
+      "wer": 0.6,
+      "entendu": "Cette fois neuf, égal à 63."
+    },
+    {
+      "ligne": "2x3",
+      "wer": 0.2,
+      "entendu": "2 × 3 égale 6."
+    },
+    {
+      "ligne": "5x7",
+      "wer": 0.6,
+      "entendu": "5 fois c'est égal 35."
+    },
+    {
+      "ligne": "8x5",
+      "wer": 0.4,
+      "entendu": "8 × 5 × 40"
+    },
+    {
+      "ligne": "1x8",
+      "wer": 0.0,
+      "entendu": "1 x 8 égale 8."
+    },
+    {
+      "ligne": "7x5",
+      "wer": 0.2,
+      "entendu": "Cette fois 5, égale 35."
+    },
+    {
+      "ligne": "3x8",
+      "wer": 0.2,
+      "entendu": "Trois fois huit, égal 24."
+    },
+    {
+      "ligne": "1x5",
+      "wer": 0.0,
+      "entendu": "1 x 5 égale 5"
+    },
+    {
+      "ligne": "2x2",
+      "wer": 0.4,
+      "entendu": "2 × 2 × 4."
+    },
+    {
+      "ligne": "6x6",
+      "wer": 0.0,
+      "entendu": "6 fois 6 égale 36."
+    },
+    {
+      "ligne": "6x4",
+      "wer": 0.0,
+      "entendu": "6 x 4 égale 24"
+    },
+    {
+      "ligne": "1x9",
+      "wer": 0.2,
+      "entendu": "En fois neuf, égale neuf."
+    },
+    {
+      "ligne": "4x1",
+      "wer": 0.0,
+      "entendu": "4 fois 1 égale 4"
+    },
+    {
+      "ligne": "8x1",
+      "wer": 0.2,
+      "entendu": "huit fois un régal huit."
+    }
+  ]
+}

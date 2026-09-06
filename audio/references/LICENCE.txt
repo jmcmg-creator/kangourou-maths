@@ -1,0 +1,4 @@
+Extraits de référence pour le clonage vocal.
+Sources : Multilingual LibriSpeech (Pratap et al., 2020), licence CC BY 4.0,
+lectures LibriVox du domaine public ; à défaut FLEURS (Google), CC BY 4.0.
+Chaque fichier est nommé d'après la source et l'identifiant du locuteur.
