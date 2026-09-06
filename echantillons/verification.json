@@ -2,168 +2,568 @@
   "poemes": [
     {
       "id": "corbeau-renard",
-      "wer": 0.104,
+      "wer": 0.094,
       "mots_attendus": 109,
-      "mots_entendus": 106,
-      "entendu": "Maître Corbeau, sur un arbre perché, tenait en son bec un fromage.  Maître Renard, par l'odeur alléché, lui teint à peu près ce langage.  Hé ! Bonjour, Monsieur Luc Corbeau.  Monsieur Luc Corbeau, que vous êtes joli, que vous me semblez beau, sans mentir.  Si votre ramage se rapporte à votre plumage, vous êtes le phénix des hautes de ses bois.  À ses mots, le Corbeau ne se sent pas de joie, et pour montrer sa belle voix,  il ouvre un large bec, laisse tomber sa proie.  Renard s'en saisit et dit, mon bon monsieur,  apprenez que tout flatteur vit au dépend de celui qui l'écoute."
+      "mots_entendus": 111,
+      "entendu": "Mettre corbeau sur un arbre perché tenait en son bec un fromage.  Mettre renard par l'odeur à l'échée lutteint à peu près ce langage.  « Hé ! Bonjour, monsieur du corbeau ! Que vous êtes jolis ? Que vous me semblez beau ? »  Sans mentir, si votre ramage se rapporte à votre plumage, vous êtes le phénix des autres de ses bois.  À ses mots le corbeau ne se sent pas de joie, et pour montrer sa belle voix, il ouvre un large bec, laisse tomber sa proie.  Le renard s'en saisit et dit, « Mon bon monsieur, apprenez que tout flatteur vit aux dépens de celui qui l'écoute. »"
     },
     {
       "id": "lievre-tortue",
-      "wer": 0.175,
+      "wer": 0.155,
       "mots_attendus": 95,
-      "mots_entendus": 98,
-      "entendu": "Rien ne sert de courir, il faut partir à point.  Le lièvre et la tortue en sont un témoignage.  — Gajon, dit celle-ci, que vous n'atteindrez point si tôt que moi ce but.  Si tôt, êtes-vous sage ? — est partie d'animales légers.  — La tortue partie.  — Elle s'évertue, elle se hâte avec l'anteur.  Le lièvre cependant, méprise une telle victoire,  tient la gageur à peu de gloire.  Quand il voit que l'autre touche presque au bout de la carrière,  il partit comme un trait.  Mais les élanques il fit, furent vins,  la tortue arriva la première."
+      "mots_entendus": 93,
+      "entendu": "Rien ne sert de courir, il faut partir à point.  Le lièvre et la torcu en sont à témoignage.  « Gajons, dit celle-ci, que vous n'atteindrez point si tôt que moi ce but.  Si tôt, êtes-vous sage ? répartis l'animal léger.  La torcu partit, elle s'évertue, elle se hâte avec lenteuse.  Le lièvre, cependant méprise, une telle victoire,  tient la gageur à peu de gloire.  Quand il voit que l'autre touche presque au bout de la carrière,  il partit comme un trait.  Mais les élan qu'il furent vin, la tortu arriva la première."
     },
     {
       "id": "cigale-fourmi",
-      "wer": 0.181,
+      "wer": 0.223,
       "mots_attendus": 92,
-      "mots_entendus": 95,
-      "entendu": "La sigale, ayant chanté tout l'été, se trouva fort dépourvue quand la bise fut venue,  pas un seul petit morceau de mouches ou de vermisseaux.  Elle a l'a crié famine chez la fourmi sa voisine, la priant de lui prêter quelques  grains pour subsister jusqu'à la saison nouvelle.  La fourmi n'est pas prêteuse, c'est là son moindre défaut.  « Que faisiez-vous autant chaud ? »  dit-elle à cette emprunteuse, « Nuit et jour, à tout venant, je chantais, ne vous  déplaise, vous chantiez, je vous chante, je suis fortaise.  Eh bien, dansez maintenant ! »"
+      "mots_entendus": 89,
+      "entendu": "La sigale, ayant chanté tout l'été, se trouve à fort dépourvu quand la bise fut venue, pas un seul petit morceau de mouches ou de vermisseaux.  Elle a la crier famine chez la fourmille sa voisine, la priant de lui prêter quelques grains pour subsister jusqu'à la saison nouvelle.  La fourmille n'est pas prêteuse, c'est là son moindre défaut.  Que faisiez-vous autant chaud ? dis-t-elle à cet emprunteur.  Nuit et jour, à tout venant, je chantais. Ne vous déplaisez.  Vous chantiez ? J'en suis fortaises. Eh bien, dansez maintenant."
     },
     {
       "id": "loup-agneau",
-      "wer": 0.109,
+      "wer": 0.091,
       "mots_attendus": 105,
       "mots_entendus": 106,
-      "entendu": "La raison du plus fort est toujours la meilleure.  Un agneau se désaltérait dans le courant du nom de pur.  Un loup survient à jeun qui cherchait aventure,  et que la fin en ses lieux attirait,  qui te rend si hardi de troubler mon breuvage.  Dis cet animal plein de rage.  Tu seras châti de ta témérité.  « Si, répond l'agneau, que votre majesté ne se mette pas en colère,  mais plutôt qu'elle considère que je me va désaltérent dans le courant  plus de 20 pases au-dessous d'elle.  Là-dessus, au fond des forêts le loup l'emporte  et puis le mange sans autre forme de procès. »"
+      "entendu": "La raison du plus fort est toujours la meilleure.  Un agneau se désaltérait dans le courant du nom de pur.  Un loup survient à Jean qui cherchait aventure et que la faim en ses lieux attirait.  « Qui te rend si hardi de troubler mon breuvage ?  Dis, cet animal plein de rage, tu seras châti de ta témérité.  Si, répond l'agneau, que votre majesté ne se mette pas en colère,  mais plutôt qu'elle considère que je me va désaltérant dans le courant  plus de vingt pas au-dessous d'elle.  Là-dessus, au fond des forêts, le loup l'emporte  et puis le mange, sans autre forme de procès."
     },
     {
       "id": "grenouille-boeuf",
-      "wer": 0.235,
+      "wer": 0.247,
       "mots_attendus": 73,
-      "mots_entendus": 73,
-      "entendu": "Une grenouille vitain de boeuf qui lui semblait de belle taille.  Elle, qui n'était pas grosse, en tout comme un oeuf, en vieuse, s'étend et s'enflent  et se travaille pour égaler l'animal en grosseur, disant,  « Regardez bien ma sœur, est-ce assez ? »  « Dites-moi, ni suis-je point encore, n'en n'y, mi voici donc, point du tout, mi voilà. »  Vous n'en approchez point.  La chétive Pécor s'enflat si bien qu'elle creva."
+      "mots_entendus": 71,
+      "entendu": "Une grenouille vit un boeuf qui lui semblait de belle taille.  Elle, qui n'était pas grosse en tout comme un oeuf, en vieuse, s'étend et s'enfle,  et se travaille pour égaler l'animal en grosseur, disant « Regardez bien ma sœur, est-ce assez ? »  Dites-moi, ni suis-je pointe encore, ni ni, mi voici donc, pointe du tout, mi voilà, vous n'en  l'approchez point. La chétif pécore sans flacie bien qu'elle creva."
     },
     {
       "id": "renard-raisins",
-      "wer": 0.131,
+      "wer": 0.311,
       "mots_attendus": 58,
-      "mots_entendus": 56,
-      "entendu": "Certains renard gascon, d'autres disent normand, mourant presque de faim,  lit aux eaux d'une traille des raisins murs apparemment et couverts d'une peau vermeille.  Le galant en eut fait volontiers un repas, mais comme il n'y pouvait atteindre,  ils sont trop verts, dit-il, et bons pour des goujards.  Fait-il pas mieux que de se plaindre ?"
+      "mots_entendus": 62,
+      "entendu": "Certains renard gascon, d'autres disent Normand, mourant presque de faim, jitte au haut d'une  traille des raisins mûres apparemment et couvert d'une pouve vermeille.  Le galant en eut fait volontiers un repas, mais comme il n'y pouvait atteindre, ils  sont trop verts, dit-il, et bons pour des goujins.  Fils-t-il pas mieux que de se plaindre ?  Sous-titres réalisés par la communauté d'Amara.org"
     },
     {
       "id": "chene-roseau",
-      "wer": 0.096,
+      "wer": 0.041,
       "mots_attendus": 71,
-      "mots_entendus": 67,
-      "entendu": "Le chêne un jour dit Torozo.  Vous avez bien suger d'accuser la nature.  Un roi-telet pour vous est un pesant fardeau.  Le moindre vent qui d'aventure fait rider la face de l'eau, vous oblige à baisser la tête.  Le vent redouble ses efforts, et fait si bien qu'il déracine celui de qui la tête au ciel était voisine,  et dont les pieds touchaient un empire des morts."
+      "mots_entendus": 68,
+      "entendu": "Le chêne, un jour dit au rojo, vous avez bien sujet d'accuser la nature, un roi-telet pour vous est un pesant fardeau, le moindre vent qui d'aventure fait rider la face de l'eau, vous oblige à baisser la tête.  Le vent redouble ses efforts, et fait si bien qu'il déracine celui de qui la tête au ciel était voisine, et dont les pieds touchaient à l'empire des morts."
     },
     {
       "id": "lion-rat",
-      "wer": 0.132,
+      "wer": 0.154,
       "mots_attendus": 85,
-      "mots_entendus": 87,
-      "entendu": "Il faut, autant qu'on peut, obliger tout le monde.  On a souvent besoin d'un plus petit que soi.  De cette vérité, deux fables feront foie.  Entre les pattes d'un lion, un rat sortit assez à l'étourdi.  Le roi des animaux, en cette occasion, montra ce qu'il était et lui donne à la vie.  Quelques temps après, ce lion fut pris dans des rées, dont ses rugissements ne le purent des fer.  Cire rat a couru, et fit tant par ses dents qu'une maille rongée emportait tout l'ouvrage."
+      "mots_entendus": 85,
+      "entendu": "Il faut, autant qu'on peut, obliger tout le monde, on a souvent besoin d'un plus petit  que soi.  De cette vérité, deux fables feront foie, entre les pâtes d'un lion, un rat sorti  assez à l'étourdi, mais le roi des animaux, en cette  occasion, montrant ce qu'il était et lui donna la vie.  Quelque temps après, ce lion fut pris dans des rayes, dont ses rugissements ne le purent  défaire.  Si rat a couru, effitant par ses dents qu'une maille rongée en porta tout l'ouvrage."
     },
     {
       "id": "schneider-tu-dis",
-      "wer": 0.0,
+      "wer": 0.095,
       "mots_attendus": 62,
-      "mots_entendus": 62,
-      "entendu": "Tu dis sable, et déjà la mer est à tes pieds. Tu dis forêt, et déjà les arbres te tendent leurs bras.  Tu dis colline, et déjà le sentier court avec toi vers le sommet.  Tu dis nuage, et déjà un cumulus t'offre la promesse du voyage.  Tu dis poème, et déjà les mots volent et dansent comme étincelles dans la cheminée."
+      "mots_entendus": 65,
+      "entendu": "Tu dis sable et déjà la mer est à tes pieds. Tu dis forêt et déjà les arbres te tendent de leurs bras.  Tu dis colline et déjà le sentier court avec toi vers le sommet.  Tu dis nuage et déjà un cumulus t'offre la promesse du voyage.  Tu dis poème et déjà les mots vol et danse comme est un sel dans la cheminée."
     }
   ],
   "tables": [
     {
-      "ligne": "5x2",
-      "wer": 0.667,
-      "entendu": "5 x 2, 10"
-    },
-    {
-      "ligne": "2x10",
-      "wer": 1.0,
-      "entendu": "18, 2 x 10, 20."
-    },
-    {
-      "ligne": "6x1",
-      "wer": 1.0,
-      "entendu": "6x1, 6"
-    },
-    {
-      "ligne": "9x4",
-      "wer": 0.667,
-      "entendu": "9 x 4, 36"
-    },
-    {
-      "ligne": "1x7",
-      "wer": 1.0,
-      "entendu": "Enfoie 7"
-    },
-    {
-      "ligne": "1x10",
-      "wer": 0.667,
-      "entendu": "1 fois 10, 10."
-    },
-    {
-      "ligne": "7x9",
-      "wer": 0.667,
-      "entendu": "7.9.63"
-    },
-    {
-      "ligne": "2x3",
-      "wer": 1.0,
-      "entendu": "4, 2x3"
-    },
-    {
-      "ligne": "5x7",
-      "wer": 1.0,
-      "entendu": "5x7, 35"
-    },
-    {
-      "ligne": "8x5",
-      "wer": 0.667,
-      "entendu": "32, 8 fois 5"
-    },
-    {
-      "ligne": "1x8",
+      "ligne": "1x1",
       "wer": 0.0,
-      "entendu": "Un fois huit, huit."
+      "entendu": "Un fois un. Un."
     },
     {
-      "ligne": "7x5",
-      "wer": 0.667,
-      "entendu": "7 x 5, 35"
+      "ligne": "1x2",
+      "wer": 0.0,
+      "entendu": "1 fois 2, 2"
     },
     {
-      "ligne": "3x8",
-      "wer": 1.0,
-      "entendu": "3x8 24"
+      "ligne": "1x3",
+      "wer": 0.25,
+      "entendu": "Un fois trois, trois, trois..."
+    },
+    {
+      "ligne": "1x4",
+      "wer": 0.0,
+      "entendu": "Un fois quatre, quatre."
     },
     {
       "ligne": "1x5",
-      "wer": 0.667,
-      "entendu": "Au revoir, cinq, cinq."
+      "wer": 0.25,
+      "entendu": "Un fois, cinq, cinq, cinq..."
+    },
+    {
+      "ligne": "1x6",
+      "wer": 0.0,
+      "entendu": "1 fois 6. 6."
+    },
+    {
+      "ligne": "1x7",
+      "wer": 0.0,
+      "entendu": "1 fois 7, 7."
+    },
+    {
+      "ligne": "1x8",
+      "wer": 0.25,
+      "entendu": "1 x 8"
+    },
+    {
+      "ligne": "1x9",
+      "wer": 0.25,
+      "entendu": "Un fois neuf, neuf, neuf."
+    },
+    {
+      "ligne": "1x10",
+      "wer": 0.0,
+      "entendu": "Un fois, dix. Dix."
+    },
+    {
+      "ligne": "2x1",
+      "wer": 0.0,
+      "entendu": "deux fois un, deux."
     },
     {
       "ligne": "2x2",
-      "wer": 0.667,
-      "entendu": "2. 2 fois 2."
+      "wer": 0.0,
+      "entendu": "2 x 2, 4"
     },
     {
-      "ligne": "6x6",
-      "wer": 1.0,
-      "entendu": "6 x 6 x 36"
+      "ligne": "2x3",
+      "wer": 0.0,
+      "entendu": "2 x 3, 6"
+    },
+    {
+      "ligne": "2x4",
+      "wer": 0.0,
+      "entendu": "2x4, 8"
+    },
+    {
+      "ligne": "2x5",
+      "wer": 0.0,
+      "entendu": "deux fois cinq, dix."
+    },
+    {
+      "ligne": "2x6",
+      "wer": 0.25,
+      "entendu": "2 x 6 2"
+    },
+    {
+      "ligne": "2x7",
+      "wer": 0.25,
+      "entendu": "2 × 7 × 14"
+    },
+    {
+      "ligne": "2x8",
+      "wer": 0.0,
+      "entendu": "Deux fois huit, seize."
+    },
+    {
+      "ligne": "2x9",
+      "wer": 0.0,
+      "entendu": "2x9 18"
+    },
+    {
+      "ligne": "2x10",
+      "wer": 0.0,
+      "entendu": "2 x 10, 20"
+    },
+    {
+      "ligne": "3x1",
+      "wer": 0.0,
+      "entendu": "Trois fois un, trois..."
+    },
+    {
+      "ligne": "3x2",
+      "wer": 0.0,
+      "entendu": "Trois fois deux, six..."
+    },
+    {
+      "ligne": "3x3",
+      "wer": 0.0,
+      "entendu": "Trois fois trois, neuf."
+    },
+    {
+      "ligne": "3x4",
+      "wer": 0.0,
+      "entendu": "3x4, 12"
+    },
+    {
+      "ligne": "3x5",
+      "wer": 0.0,
+      "entendu": "Trois fois cinq, quinze."
+    },
+    {
+      "ligne": "3x6",
+      "wer": 0.0,
+      "entendu": "Trois fois six, dix-huit."
+    },
+    {
+      "ligne": "3x7",
+      "wer": 0.0,
+      "entendu": "Trois fois sept, vingt et un."
+    },
+    {
+      "ligne": "3x8",
+      "wer": 0.0,
+      "entendu": "3x8 24"
+    },
+    {
+      "ligne": "3x9",
+      "wer": 0.0,
+      "entendu": "Trois fois neuf, vingt-sept."
+    },
+    {
+      "ligne": "3x10",
+      "wer": 0.25,
+      "entendu": "3 x 10 x 30"
+    },
+    {
+      "ligne": "4x1",
+      "wer": 0.0,
+      "entendu": "4 fois 1, 4"
+    },
+    {
+      "ligne": "4x2",
+      "wer": 0.0,
+      "entendu": "4x2, 8"
+    },
+    {
+      "ligne": "4x3",
+      "wer": 0.0,
+      "entendu": "Quatre fois, trois, douze."
+    },
+    {
+      "ligne": "4x4",
+      "wer": 0.0,
+      "entendu": "4 x 4, 16"
+    },
+    {
+      "ligne": "4x5",
+      "wer": 0.0,
+      "entendu": "4 fois 5, 20"
+    },
+    {
+      "ligne": "4x6",
+      "wer": 0.0,
+      "entendu": "4x6, 24"
+    },
+    {
+      "ligne": "4x7",
+      "wer": 0.0,
+      "entendu": "4 x 7, 28"
+    },
+    {
+      "ligne": "4x8",
+      "wer": 0.0,
+      "entendu": "4 x 8 32"
+    },
+    {
+      "ligne": "4x9",
+      "wer": 0.0,
+      "entendu": "4x9, 36"
+    },
+    {
+      "ligne": "4x10",
+      "wer": 0.5,
+      "entendu": "4 x 10 x 40  40"
+    },
+    {
+      "ligne": "5x1",
+      "wer": 0.0,
+      "entendu": "5x1 5"
+    },
+    {
+      "ligne": "5x2",
+      "wer": 0.0,
+      "entendu": "5 x 2, 10"
+    },
+    {
+      "ligne": "5x3",
+      "wer": 0.0,
+      "entendu": "5x3 15"
+    },
+    {
+      "ligne": "5x4",
+      "wer": 0.667,
+      "entendu": "5 x 4, 20."
+    },
+    {
+      "ligne": "5x5",
+      "wer": 0.25,
+      "entendu": "5 fois 5, 25  25"
+    },
+    {
+      "ligne": "5x6",
+      "wer": 0.0,
+      "entendu": "5 x 6, 30"
+    },
+    {
+      "ligne": "5x7",
+      "wer": 0.0,
+      "entendu": "5 fois 7, 35."
+    },
+    {
+      "ligne": "5x8",
+      "wer": 0.25,
+      "entendu": "5 x 8 x 40"
+    },
+    {
+      "ligne": "5x9",
+      "wer": 0.25,
+      "entendu": "5 fois 9, 45, 40..."
+    },
+    {
+      "ligne": "5x10",
+      "wer": 0.0,
+      "entendu": "5 fois 10, 50"
+    },
+    {
+      "ligne": "6x1",
+      "wer": 0.0,
+      "entendu": "6 x 1, 6"
+    },
+    {
+      "ligne": "6x2",
+      "wer": 0.0,
+      "entendu": "6 fois 2, 12"
+    },
+    {
+      "ligne": "6x3",
+      "wer": 0.0,
+      "entendu": "Six fois trois, dix-huit."
     },
     {
       "ligne": "6x4",
       "wer": 1.0,
-      "entendu": "6 x 4, 24, 24"
+      "entendu": "6 fois 4, 24, 24..."
     },
     {
-      "ligne": "1x9",
-      "wer": 0.667,
-      "entendu": "1 fois 9, 9"
+      "ligne": "6x5",
+      "wer": 0.0,
+      "entendu": "6 x 5, 30"
     },
     {
-      "ligne": "4x1",
-      "wer": 0.667,
-      "entendu": "4 x 1, 4"
+      "ligne": "6x6",
+      "wer": 0.0,
+      "entendu": "6 x 6, 36"
+    },
+    {
+      "ligne": "6x7",
+      "wer": 0.0,
+      "entendu": "6 x 7, 42"
+    },
+    {
+      "ligne": "6x8",
+      "wer": 0.0,
+      "entendu": "6 x 8, 48"
+    },
+    {
+      "ligne": "6x9",
+      "wer": 0.25,
+      "entendu": "6 x 9, 54  54"
+    },
+    {
+      "ligne": "6x10",
+      "wer": 0.25,
+      "entendu": "6 x 10, 60, 60..."
+    },
+    {
+      "ligne": "7x1",
+      "wer": 0.25,
+      "entendu": "7 fois 1."
+    },
+    {
+      "ligne": "7x2",
+      "wer": 0.0,
+      "entendu": "7 x 2, 14"
+    },
+    {
+      "ligne": "7x3",
+      "wer": 0.0,
+      "entendu": "7 x 3, 21"
+    },
+    {
+      "ligne": "7x4",
+      "wer": 1.0,
+      "entendu": "Cette fois 4, 28"
+    },
+    {
+      "ligne": "7x5",
+      "wer": 0.25,
+      "entendu": "Cette fois cinq, trente-cinq."
+    },
+    {
+      "ligne": "7x6",
+      "wer": 0.0,
+      "entendu": "7x6, 42"
+    },
+    {
+      "ligne": "7x7",
+      "wer": 0.0,
+      "entendu": "7 x 7, 49"
+    },
+    {
+      "ligne": "7x8",
+      "wer": 0.0,
+      "entendu": "7x8, 56"
+    },
+    {
+      "ligne": "7x9",
+      "wer": 0.25,
+      "entendu": "7 x 8, 63"
+    },
+    {
+      "ligne": "7x10",
+      "wer": 0.0,
+      "entendu": "7 fois 10, 70."
     },
     {
       "ligne": "8x1",
-      "wer": 1.0,
-      "entendu": "Oui."
+      "wer": 0.0,
+      "entendu": "8 x 1 8"
+    },
+    {
+      "ligne": "8x2",
+      "wer": 0.0,
+      "entendu": "8 x 2, 16"
+    },
+    {
+      "ligne": "8x3",
+      "wer": 0.5,
+      "entendu": "8x3, 24  ou 1"
+    },
+    {
+      "ligne": "8x4",
+      "wer": 0.0,
+      "entendu": "8x4 32"
+    },
+    {
+      "ligne": "8x5",
+      "wer": 0.25,
+      "entendu": "8 x 5, 40  40"
+    },
+    {
+      "ligne": "8x6",
+      "wer": 0.25,
+      "entendu": "8 x 6 x 48"
+    },
+    {
+      "ligne": "8x7",
+      "wer": 0.0,
+      "entendu": "8 x 7, 56"
+    },
+    {
+      "ligne": "8x8",
+      "wer": 0.0,
+      "entendu": "8 x 8, 64"
+    },
+    {
+      "ligne": "8x9",
+      "wer": 0.0,
+      "entendu": "8x9, 72"
+    },
+    {
+      "ligne": "8x10",
+      "wer": 0.0,
+      "entendu": "8 x 10, 80"
+    },
+    {
+      "ligne": "9x1",
+      "wer": 0.0,
+      "entendu": "9 fois 1, 9..."
+    },
+    {
+      "ligne": "9x2",
+      "wer": 0.0,
+      "entendu": "9 x 2, 18"
+    },
+    {
+      "ligne": "9x3",
+      "wer": 0.0,
+      "entendu": "9 x 3, 27"
+    },
+    {
+      "ligne": "9x4",
+      "wer": 0.0,
+      "entendu": "9 x 4, 36"
+    },
+    {
+      "ligne": "9x5",
+      "wer": 0.0,
+      "entendu": "9 x 5, 45"
+    },
+    {
+      "ligne": "9x6",
+      "wer": 0.0,
+      "entendu": "9 x 6, 54."
+    },
+    {
+      "ligne": "9x7",
+      "wer": 0.25,
+      "entendu": "9 x 7, 63, 63..."
+    },
+    {
+      "ligne": "9x8",
+      "wer": 0.0,
+      "entendu": "9 x 8, 72"
+    },
+    {
+      "ligne": "9x9",
+      "wer": 0.25,
+      "entendu": "9.9.81"
+    },
+    {
+      "ligne": "9x10",
+      "wer": 0.25,
+      "entendu": "9x10x90"
+    },
+    {
+      "ligne": "10x1",
+      "wer": 0.0,
+      "entendu": "10 x 1  10"
+    },
+    {
+      "ligne": "10x2",
+      "wer": 0.0,
+      "entendu": "10 x 2, 20"
+    },
+    {
+      "ligne": "10x3",
+      "wer": 0.5,
+      "entendu": "dix fois trois trente"
+    },
+    {
+      "ligne": "10x4",
+      "wer": 0.0,
+      "entendu": "10 x 4, 40"
+    },
+    {
+      "ligne": "10x5",
+      "wer": 0.0,
+      "entendu": "10 x 5, 50"
+    },
+    {
+      "ligne": "10x6",
+      "wer": 0.5,
+      "entendu": "dix fois six soixante soixante"
+    },
+    {
+      "ligne": "10x7",
+      "wer": 0.0,
+      "entendu": "10 fois 7, 70,"
+    },
+    {
+      "ligne": "10x8",
+      "wer": 0.0,
+      "entendu": "10 x 8, 80"
+    },
+    {
+      "ligne": "10x9",
+      "wer": 0.0,
+      "entendu": "dix fois neuf, quatre-vingt-dix."
+    },
+    {
+      "ligne": "10x10",
+      "wer": 0.25,
+      "entendu": "10x10 sans..."
     }
   ]
 }
