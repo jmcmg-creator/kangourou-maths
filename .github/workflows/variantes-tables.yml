@@ -1,0 +1,35 @@
+name: Trois façons de dire une table
+
+# Génère la table de 7 selon trois recettes avec la voix de référence, pour
+# choisir à l'oreille. Voir scripts/variantes-tables.py.
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - 'scripts/variantes-tables.py'
+      - '.github/workflows/variantes-tables.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  variantes:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.ref_name }}
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - run: pip install --quiet chatterbox-tts numpy lameenc soundfile
+      - run: python -c "import numpy, lameenc, chatterbox; print('outils OK')"
+      - name: Générer
+        run: python scripts/variantes-tables.py
+      - name: Déposer
+        run: |
+          git config user.name 'github-actions[bot]'; git config user.email 'github-actions[bot]@users.noreply.github.com'
+          git add echantillons
+          git diff --cached --quiet || { git commit -m "Trois variantes de la table de 7, générées en CI"; git push origin HEAD:${{ github.ref_name }}; }
