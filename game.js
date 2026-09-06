@@ -75,8 +75,14 @@ const SUBJECTS=[
       {id:"geo-drapeaux",name:"Pays & Drapeaux",sub:"Tous niveaux \u2014 Reconna\u00eetre les drapeaux",icon:"\u{1F6A9}",color:"#0ea5e9",alwaysOpen:true},
       {id:"geo-carte-drapeaux",name:"Drapeaux sur la carte",sub:"Vois le drapeau, touche le pays",icon:"\u{1F6A9}",color:"#22d3ee",noBattle:true,alwaysOpen:true},
       {id:"geo-carte-france",name:"Villes de France",sub:"Place les villes sur la carte",icon:"\u{1F4CD}",color:"#06b6d4",noBattle:true,alwaysOpen:true},
-      {id:"geo-carte-europe",name:"Capitales d'Europe",sub:"Place les capitales sur la carte",icon:"\u{1F9ED}",color:"#0891b2",noBattle:true,alwaysOpen:true},
-      {id:"geo-carte-payseu",name:"Pays d'Europe",sub:"Touche le pays sur la carte",icon:"\u{1F30D}",color:"#0ea5e9",noBattle:true,alwaysOpen:true}
+      {id:"geo-carte-europe",name:"Capitales d'Europe",sub:"Touche le pays de chaque capitale",icon:"\u{1F9ED}",color:"#0891b2",noBattle:true,alwaysOpen:true},
+      {id:"geo-carte-payseu",name:"Pays d'Europe",sub:"Touche le pays sur la carte",icon:"\u{1F30D}",color:"#0ea5e9",noBattle:true,alwaysOpen:true},
+      // Les autres continents s'ouvrent l'un après l'autre : chacun exige que
+      // le précédent soit TERMINÉ (toutes ses questions réussies au moins une
+      // fois). L'Europe compte pour deux niveaux — pays et capitales.
+      {id:"geo-carte-asie",name:"L'Asie",sub:"Pays et capitales sur la carte",icon:"\u{1F30F}",color:"#f59e0b",noBattle:true,alwaysOpen:true,map:'asie',requires:["geo-carte-payseu","geo-carte-europe"]},
+      {id:"geo-carte-afrique",name:"L'Afrique",sub:"Pays et capitales sur la carte",icon:"\u{1F30D}",color:"#22c55e",noBattle:true,alwaysOpen:true,map:'afrique',requires:["geo-carte-asie"]},
+      {id:"geo-carte-amerique",name:"L'Amérique",sub:"Pays et capitales sur la carte",icon:"\u{1F30E}",color:"#a78bfa",noBattle:true,alwaysOpen:true,map:'amerique',requires:["geo-carte-afrique"]}
     ]}
 ];
 
@@ -320,7 +326,7 @@ const STORAGE_ACTIVE="royaume_active_v1";
    distinguer « la fonctionnalité est cassée » de « le téléphone n'a pas
    encore la mise à jour ».
    À bumper avec CACHE_VERSION (sw.js) et le ?v= (index.html). */
-const APP_VERSION='v40';
+const APP_VERSION='v43';
 
 function loadProfilesDict(){
   try{const d=localStorage.getItem(STORAGE_PROFILES); if(d) return JSON.parse(d)||{};}catch(e){}
@@ -338,7 +344,24 @@ function newProfile(){
 }
 function migrate(p){
   const base=newProfile();
-  return _purgeIncoherentAi(_restoreJudithXp(Object.assign(base,p)));
+  return _purgeHorsSujet(_purgeIncoherentAi(_restoreJudithXp(Object.assign(base,p))));
+}
+
+// Les questions de maths étiquetées « géographie » (ou autre royaume) qui
+// dorment déjà dans les profils. Un marqueur de VERSION plutôt qu'un booléen :
+// si le juge s'affine un jour, on remonte le numéro et la purge repasse.
+const PURGE_HORS_SUJET_V=1;
+function _purgeHorsSujet(p){
+  if(!p||p.horsSujetPurgeV>=PURGE_HORS_SUJET_V) return p;
+  if(Array.isArray(p.aiExercises)&&p.aiExercises.length){
+    const avant=p.aiExercises.length;
+    p.aiExercises=p.aiExercises.filter(e=>!_horsSujet(e,e&&e.lv));
+    const n=avant-p.aiExercises.length;
+    if(n) try{console.info('[profil] '+n+' question(s) hors matière retirée(s)')}catch(e){}
+    p.horsSujetPurgees=(Number(p.horsSujetPurgees)||0)+n;
+  }
+  p.horsSujetPurgeV=PURGE_HORS_SUJET_V;
+  return p;
 }
 
 // Les questions incohérentes sont désormais refusées à la génération, mais
@@ -631,13 +654,19 @@ async function generateAIExercises(level,count){
     // Anti-doublon à la source : le Dragon regénère parfois un énoncé déjà connu
     // avec un id neuf. On le jette ici, sinon il polluerait tous les tirages.
     const known=new Set(EX.concat(profile.aiExercises).concat(profile.customExercises||[]).map(_qKey));
+    let horsSujet=0;
     data.exercises=(data.exercises||[]).filter(e=>{
       // Incohérente (bonne réponse contredite par son propre corrigé) → jetée.
       if(!isExerciseCoherent(e)) return false;
+      // Le niveau est celui qu'on a DEMANDÉ, pas celui que le Sage renvoie.
+      e.lv=level;
+      // Du calcul pour un royaume qui n'en veut pas → jeté, et compté.
+      if(_horsSujet(e,level)){horsSujet++;return false}
       const k=_qKey(e);
       if(!k||known.has(k)) return false;
       known.add(k);return true;
     });
+    if(horsSujet) console.warn('[sage] '+horsSujet+' question(s) hors matière refusée(s) pour '+level);
     profile.aiExercises=profile.aiExercises.concat(data.exercises);
     // Plafond PAR NIVEAU puis global : avant, un seul plafond global de 200
     // suffisait à faire disparaître les questions d'un royaume dès qu'un autre
@@ -1071,6 +1100,43 @@ function levelMinGrade(lv){
   return min;
 }
 // Matière à laquelle appartient un niveau (pour un déblocage par matière).
+/* ── Une question de maths n'a rien à faire dans le Royaume des Explorateurs ──
+   Le tirage reste bien dans le royaume (mesuré : 1 600 tirages, zéro fuite),
+   mais une question GÉNÉRÉE par l'IA porte l'étiquette du niveau demandé quel
+   que soit son contenu. Si le Sage a fabriqué du calcul pour « geo-cm1 », la
+   question entre dans le profil avec lv='geo-cm1', part dans la base, revient
+   sur l'autre téléphone, et survit à toutes les mises à jour de l'app. C'est
+   exactement le symptôme « toujours le même problème ».
+   On juge donc le CONTENU, à trois moments : à l'import, au chargement du
+   profil (purge de ce qui dort déjà), et au tirage (ceinture et bretelles). */
+const MATHS_CATS=new Set(['Calcul mental','Calcul','Calcul astucieux','Fractions','Nombres décimaux','Dénombrement',
+  'Problème','Problème à piège','Géométrie','Périmètre et aire','Symétrie','Mesures','Équation','Divisibilité',
+  'Proportion','Pourcentages','Probabilités','Combinatoire','Vitesse','Puissances','Algèbre','Pythagore',
+  'Multiplication','Addition','Soustraction','Division','Numération','Tables','Parité','Suites','Suites logiques']);
+function _ressembleAuxMaths(e){
+  if(!e) return false;
+  if(e.cat&&MATHS_CATS.has(String(e.cat).trim())) return true;
+  const q=String(e.q||'');
+  // Un opérateur entre deux nombres. Le tiret n'est retenu qu'ENTOURÉ
+  // d'espaces (« 12 - 5 ») : « 14-18 » ou « 1914-1918 » sont des dates, pas
+  // des soustractions — l'histoire en est pleine. Ni « / » ni « : », qui
+  // écrivent des dates et des heures bien plus souvent que des divisions.
+  if(/\d\s*[+×*÷]\s*\d/.test(q)) return true;
+  if(/\d\s+[-−]\s+\d/.test(q)) return true;
+  if(/\d+\s*fois\s*\d+/i.test(q)) return true;
+  // Le vocabulaire du calcul — et seulement lui. « Pourcentage d'oxygène »,
+  // « le résultat de la Révolution » ou « une fraction de la population »
+  // sont des questions de sciences, d'histoire, de géographie.
+  if(/combien font|calcule[rz]? |le r[ée]sultat de \d|la somme de \d|le produit de \d|le quotient|multipli[ée]|divis[ée]s? par|soustrai|additionne|p[ée]rim[èe]tre/i.test(q)) return true;
+  return false;
+}
+// Vrai si la question ne devrait PAS être servie sous ce niveau.
+function _horsSujet(e,lvId){
+  const su=subjectOfLevel(lvId||(e&&e.lv));
+  // En maths, en logique et en informatique, les nombres et le calcul sont chez eux.
+  if(!su||su==='maths'||su==='logique'||su==='informatique') return false;
+  return _ressembleAuxMaths(e);
+}
 function subjectOfLevel(lvId){
   for(const s of SUBJECTS){ if((s.levels||[]).some(l=>l.id===lvId)) return s.id }
   return null;
@@ -1094,6 +1160,9 @@ function _lowestLevelOf(subjectId){
 function isLevelUnlocked(lvId){
   const lv=LEVELS.find(l=>l.id===lvId);
   if(!lv) return true;
+  // Une chaîne explicite (Europe → Asie → Afrique → Amérique) passe avant la
+  // classe : on ne saute pas un continent, quel que soit l'âge.
+  if(Array.isArray(lv.requires)&&lv.requires.length&&!lv.requires.every(isLevelMastered)) return false;
   if(profile.grade==null) return true;               // non-régression
   const need=levelMinGrade(lv);
   if(need===null) return true;                       // contenu transverse
@@ -1441,6 +1510,14 @@ function renderSubject(){
     const barre=(open&&m.total>0)?`<div class="lvl-track"><div class="lvl-fill" style="width:${Math.round(m.ratio*100)}%;background:${lv.color}"></div></div>` : '';
     let ligne;
     if(open) ligne=m.total>0?`${fini?'✅ Terminé — ':''}${m.done}/${m.total} questions réussies`:(lv.sub||'');
+    else if(Array.isArray(lv.requires)&&lv.requires.length){
+      // Continent verrouillé : on nomme ce qu'il reste à terminer, question par question.
+      const manque=lv.requires.map(id=>LEVELS.find(l=>l.id===id)).filter(Boolean)
+        .map(l=>({l,m:levelMastery(l.id)})).filter(x=>x.m.total>0&&x.m.done<x.m.total);
+      ligne=manque.length
+        ? 'À ouvrir — termine '+manque.map(x=>'« '+esc(x.l.name)+' » (encore '+(x.m.total-x.m.done)+')').join(' et ')
+        : 'À ouvrir';
+    }
     else if(isNext){
       const prec=topOpenLevel(s.id);
       const mp=prec?levelMastery(prec.id):null;
@@ -1817,14 +1894,14 @@ async function reqGen(lvId,n){
 function isPlayableEx(e){
   if(!e||e.oral) return false;
   if(e.type==='map') return !!(MAP_POINTS[e.map]&&e.target&&MAP_POINTS[e.map].some(p=>p.id===e.target));
-  if(e.type==='map-country') return !!(e.target&&MAP_COUNTRIES[e.target]);
+  if(e.type==='map-country') return !!(e.target&&mapSetOf(e).pays[e.target]);
   if(e.type==='input') return Array.isArray(e.answers)&&e.answers.length>0&&typeof e.q==='string';
   return Array.isArray(e.ch)&&e.ch.length>=2&&e.ch.length<=4&&typeof e.ans==='number'&&e.ans>=0&&e.ans<e.ch.length;
 }
 // Réponse correcte d'un exo, quel que soit son format.
 function exAnswerText(e){
   if(e.type==='map'){const p=((MAP_POINTS[e.map])||[]).find(x=>x.id===e.target);return p?p.name:''}
-  if(e.type==='map-country'){const cy=MAP_COUNTRIES[e.target];return cy?cy.name:''}
+  if(e.type==='map-country'){const cy=mapSetOf(e).pays[e.target];return cy?cy.name:''}
   return e.type==='input'?(e.answers&&e.answers[0]||''):(e.ch&&e.ch[e.ans]||'');
 }
 // Normalisation pour comparer une réponse tapée (accents/casse/espaces).
@@ -1870,7 +1947,6 @@ const MAP_POINTS={
   ]
 };
 MAP_POINTS.france.forEach(p=>EX.push({id:'mapfr_'+p.id,lv:'geo-carte-france',cat:'Villes de France',diff:p.diff,type:'map',map:'france',target:p.id,q:'Où est '+p.name+' ? Touche le bon point sur la carte !',se:p.se,sk:'Carte de France'}));
-MAP_POINTS.europe.forEach(p=>EX.push({id:'mapeu_'+p.id,lv:'geo-carte-europe',cat:"Capitales d'Europe",diff:p.diff,type:'map',map:'europe',target:p.id,q:'Où est '+p.name+', la capitale '+p.gen+' ? Touche le bon point !',se:p.se,sk:"Capitales d'Europe"}));
 
 /* ════════ PLACER LES PAYS : vraies frontières tappables (Natural Earth) ════════ */
 const MAP_COUNTRIES={
@@ -2052,6 +2128,35 @@ EX.push({id:'mapcy_by',lv:'geo-carte-payseu',cat:"Pays d'Europe",diff:4,type:'ma
 EX.push({id:'mapcy_md',lv:'geo-carte-payseu',cat:"Pays d'Europe",diff:5,type:'map-country',target:'md',q:'O\u00f9 est '+MAP_COUNTRIES.md.name+' ? Touche le pays sur la carte !',se:"La Moldavie est un petit pays entre la Roumanie et l\u2019Ukraine.",sk:"Pays d'Europe"});
 EX.push({id:'mapcy_ua',lv:'geo-carte-payseu',cat:"Pays d'Europe",diff:3,type:'map-country',target:'ua',q:'O\u00f9 est '+MAP_COUNTRIES.ua.name+' ? Touche le pays sur la carte !',se:"L\u2019Ukraine est le plus grand pays enti\u00e8rement europ\u00e9en, \u00e0 l\u2019est.",sk:"Pays d'Europe"});
 EX.push({id:'mapcy_lu',lv:'geo-carte-payseu',cat:"Pays d'Europe",diff:5,type:'map-country',target:'lu',q:'O\u00f9 est '+MAP_COUNTRIES.lu.name+' ? Touche le pays sur la carte !',se:"Le Luxembourg est minuscule, entre la France, la Belgique et l\u2019Allemagne.",sk:"Pays d'Europe"});
+
+/* Capitales d'Europe — SUR LE PAYS. Avant, l'enfant choisissait parmi cinq
+   points dont quatre villes-leurres : un QCM déguisé, pas un placement. Il
+   touche désormais le pays dont c'est la capitale, et le point s'affiche à sa
+   vraie place une fois répondu. Les identifiants sont conservés : ce que Judith
+   avait déjà réussi reste réussi. */
+const CAP_EUROPE={paris:'fr',londres:'gb',madrid:'es',rome:'it',berlin:'de',bruxelles:'be',amsterdam:'nl',lisbonne:'pt',athenes:'gr',berne:'ch',vienne:'at',prague:'cz',varsovie:'pl',copenhague:'dk',oslo:'no',stockholm:'se',dublin:'ie',budapest:'hu',bucarest:'ro',kiev:'ua',zagreb:'hr',belgrade:'rs',sofia:'bg',bratislava:'sk',ljubljana:'si',vilnius:'lt',riga:'lv',tallinn:'ee',minsk:'by',luxembourg:'lu'};
+MAP_POINTS.europe.forEach(p=>{
+  const cid=CAP_EUROPE[p.id];
+  if(!cid||!MAP_COUNTRIES[cid]) return;            // pays absent de la carte : pas de question
+  EX.push({id:'mapeu_'+p.id,lv:'geo-carte-europe',cat:"Capitales d'Europe",diff:p.diff,type:'map-country',map:'europe',cap:p.name,target:cid,
+    q:'Où est '+p.name+' ? Touche le pays dont c\'est la capitale.',se:p.se,sk:"Capitales d'Europe"});
+});
+
+/* Les autres continents : pays ET capitales, générés depuis cartes-monde.js.
+   La difficulté suit la taille : un grand pays se voit, un petit se cherche. */
+if(typeof MAP_SETS_MONDE!=='undefined'){
+  for(const [mid,set] of Object.entries(MAP_SETS_MONDE)){
+    const lvId='geo-carte-'+mid;
+    const ordre=Object.entries(set.pays).sort((a,b)=>b[1].km2-a[1].km2);
+    ordre.forEach(([cid,c],i)=>{
+      const diff=i<ordre.length*0.25?1:i<ordre.length*0.5?2:i<ordre.length*0.75?3:4;
+      EX.push({id:'mapc_'+mid+'_'+cid,lv:lvId,cat:'Pays — '+set.nom,diff,type:'map-country',map:mid,target:cid,
+        q:ouEst(c.name)+' Touche le pays sur la carte !',se:c.nom+' — sa capitale est '+c.cap+'.',sk:'Pays — '+set.nom});
+      if(c.cap) EX.push({id:'mapk_'+mid+'_'+cid,lv:lvId,cat:'Capitales — '+set.nom,diff:Math.min(5,diff+1),type:'map-country',map:mid,cap:c.cap,target:cid,
+        q:'Où est '+c.cap+' ? Touche le pays dont c\'est la capitale.',se:c.cap+' est la capitale '+deNom(c.name)+'.',sk:'Capitales — '+set.nom});
+    });
+  }
+}
 
 /* ── Drapeaux SUR LA CARTE (ÉTAPE demandée par Julien) ──
    Même carte tactile que « Pays d'Europe », mais la consigne est un drapeau :
@@ -2335,7 +2440,7 @@ function remainingOf(pool){
 function pickExercises(mode,lvId){
   const lv=LEVELS.find(l=>l.id===lvId);
   // Inclure les exercices AI générés (persistés dans le profil)
-  const aiPool=(profile.aiExercises||[]).filter(e=>e.lv===lvId);
+  const aiPool=(profile.aiExercises||[]).filter(e=>e.lv===lvId&&!_horsSujet(e,lvId));
   // Exercices personnalisés ajoutés par le parent (synchronisés cloud).
   const customPool=(profile.customExercises||[]).filter(e=>e.lv===lvId);
   // Toujours essayer le pool statique : tout niveau présent dans
@@ -2721,18 +2826,46 @@ function renderMapArea(ex){
     }).join('')
   +'</div>';
 }
+/* Le jeu de cartes d'un exercice. L'Europe est dessinée à la main (MAP_COUNTRIES,
+   avec le fond MAP_SVG_PATHS.europe) ; les autres continents viennent de
+   cartes-monde.js, généré depuis Natural Earth. Même format de pays :
+   { name (avec article), path, cx, cy, w, h } — et cap pour la capitale. */
+function mapSetOf(ex){
+  const m=ex&&ex.map;
+  if(m&&m!=='europe'&&typeof MAP_SETS_MONDE!=='undefined'&&MAP_SETS_MONDE[m]) return {id:m,pays:MAP_SETS_MONDE[m].pays,land:null};
+  return {id:'europe',pays:MAP_COUNTRIES,land:MAP_SVG_PATHS.europe};
+}
+// « Où est la France ? » mais « Où sont les Pays-Bas ? ».
+function ouEst(nom){return (/^les /.test(nom)?'Où sont ':'Où est ')+nom+' ?'}
+// « la capitale DU Kazakhstan, DE LA France, DE L'Iran, DES États-Unis, D'Israël, DE Cuba ».
+function deNom(nom){
+  if(/^le /.test(nom)) return 'du '+nom.slice(3);
+  if(/^les /.test(nom)) return 'des '+nom.slice(4);
+  if(/^la /.test(nom)) return 'de '+nom;
+  if(/^l'/.test(nom)) return 'de '+nom;
+  return (/^[AEIOUÉÈÊÎÔÛH]/i.test(nom)?"d'":'de ')+nom;
+}
+
 // ── Placer les PAYS : chaque pays est une vraie forme tappable ──────────
 /* En dessous de cette largeur (en unités du viewBox 0-100), un pays reçoit une
    zone tactile ronde en plus de son tracé. */
 const TINY_COUNTRY=5, TINY_HIT_R=3.2;
 function renderCountryMapArea(ex){
   const done=state.selected!==null;
+  const SET=mapSetOf(ex);const MAP_COUNTRIES=SET.pays;
   const ids=Object.keys(MAP_COUNTRIES);
   const shapes=ids.map(cid=>{
     let cls='map-country';
     if(done){if(cid===ex.target)cls+=' correct';else if(cid===state.selected)cls+=' wrong'}
     return '<path class="'+cls+'" d="'+MAP_COUNTRIES[cid].path+'" data-id="'+cid+'" onclick="selectCountryAnswer(this.dataset.id)"/>';
   }).join('');
+  // Capitale : une fois répondu, on POSE le point sur la carte quand on connaît
+  // sa position (Europe). Ailleurs, le pays s'allume et le corrigé la nomme.
+  let point='';
+  if(done&&ex.cap&&SET.id==='europe'){
+    const pt=(MAP_POINTS.europe||[]).find(x=>normAnswer(x.name)===normAnswer(ex.cap));
+    if(pt) point='<circle class="map-cap" cx="'+pt.x+'" cy="'+pt.y+'" r="1.6"/>';
+  }
   /* Zone tactile de secours pour les tout petits pays (Luxembourg, Monténégro,
      Slovénie…) : sur un iPhone, un tracé de 2 px est intouchable avec un doigt.
      On pose un disque invisible sur leur centre, le plus petit pays en dernier
@@ -2743,14 +2876,14 @@ function renderCountryMapArea(ex){
     .map(cid=>'<circle class="map-hit" cx="'+MAP_COUNTRIES[cid].cx+'" cy="'+MAP_COUNTRIES[cid].cy
       +'" r="'+TINY_HIT_R+'" data-id="'+cid+'" onclick="selectCountryAnswer(this.dataset.id)"/>').join('');
   return '<div class="map-wrap"><svg viewBox="0 0 100 100">'
-    +'<path class="map-land" style="pointer-events:none" d="'+MAP_SVG_PATHS.europe+'"/>'
-    +shapes+(done?'':tiny)+'</svg>'
-    +'<p class="sub" style="position:absolute;bottom:6px;left:0;right:0;text-align:center;font-size:.7rem;pointer-events:none">Touche le bon pays !</p>'
+    +(SET.land?'<path class="map-land" style="pointer-events:none" d="'+SET.land+'"/>':'')
+    +shapes+(done?'':tiny)+point+'</svg>'
+    +'<p class="sub" style="position:absolute;bottom:6px;left:0;right:0;text-align:center;font-size:.7rem;pointer-events:none">'+(ex.cap?'Touche le pays de cette capitale !':'Touche le bon pays !')+'</p>'
   +'</div>';
 }
 function selectCountryAnswer(id){
   if(state.selected!==null||state.gameOver) return;
-  if(!MAP_COUNTRIES[id]) return;
+  if(!mapSetOf(state.exercises[state.idx]).pays[id]) return;
   if(state.timerID){clearInterval(state.timerID);state.timerID=null}
   const ex=state.exercises[state.idx];
   const correct=id===ex.target;
@@ -3022,7 +3155,7 @@ function finishGame(abandoned){
       if(!r.correct){
         if(!profile.recentMisses)profile.recentMisses=[];
         const e=r.ex;let given='';
-        if(e.type==='map-country'){const cy=MAP_COUNTRIES[r.choice];given=cy?cy.name:'(temps écoulé)'}
+        if(e.type==='map-country'){const cy=mapSetOf(e).pays[r.choice];given=cy?cy.name:'(temps écoulé)'}
         else if(e.type==='map'){const p=(MAP_POINTS[e.map]||[]).find(x=>x.id===r.choice);given=p?p.name:'(temps écoulé)'}
         else if(e.type==='input'){given=String(r.choice||'')||'(vide)'}
         else{given=(typeof r.choice==='number'&&r.choice>=0&&Array.isArray(e.ch))?String(e.ch[r.choice]):'(temps écoulé)'}
