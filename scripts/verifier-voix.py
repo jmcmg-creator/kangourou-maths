@@ -41,6 +41,10 @@ def normaliser(t):
     t = unicodedata.normalize('NFKD', t.lower()); t = ''.join(c for c in t if not unicodedata.combining(c))
     # « 5x7 » vient parfois d'un seul tenant ; le x est le « fois » de Whisper.
     t = re.sub(r'(\d)\s*x\s*(\d)', r'\1 x \2', t)
+    # Whisper écrit parfois « quatre, vingt » ou « soixante, dix » : on
+    # ressoude ces nombres composés avant de laisser la ponctuation les séparer.
+    t = re.sub(r'quatre[\s,.-]+vingt', 'quatre-vingt', t)
+    t = re.sub(r'soixante[\s,.-]+(dix|onze|douze|treize|quatorze|quinze|seize)', r'soixante-\1', t)
     # La ponctuation sépare deux nombres : « deux, dix » n'est pas « douze ».
     # On la garde comme borne le temps de convertir les nombres, puis on l'ôte.
     t = re.sub(r'[,.;:!?]+', ' | ', t)
