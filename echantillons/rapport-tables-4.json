@@ -2,10 +2,166 @@
  "4": [
   {
    "prise": 1,
-   "duree": 20.4,
-   "fois": 10,
-   "entendu": "table de 4. 4 fois 1, 4. 4 fois 2, 8. 4 fois 3, 12. 4 fois 4, 16. 4 fois 5, 20. 4 fois 6, 24. 4 fois 7, 28. 4 fois 8, 32. 4 fois 9, 36. 4 fois 10, 40.",
-   "decoupee": true
+   "duree": 20.6,
+   "entendu": "table de 4, 4x1, 4x2, 8, 4x3, 12, 4x4, 16, 4x5, 20, 4x6, 24, 4x7, 28, 4x8, 32, 4x9, 36, 4x10, 40.",
+   "decoupages": [
+    {
+     "methode": "mots",
+     "lignes_fausses": [
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7,
+      8,
+      9
+     ],
+     "entendu": [
+      "4",
+      "4 fois 1, 4, 4 fois 2",
+      "8, 4 fois 3.",
+      "12, 4x4",
+      "4, 16, 4, 5",
+      "20, 4 fois 6",
+      "24, 4 fois 7",
+      "28. 4 fois 8.",
+      "32, 4 fois 9",
+      "36, 4 fois 10, 40."
+     ]
+    }
+   ]
+  },
+  {
+   "prise": 2,
+   "duree": 20.9,
+   "entendu": "table de 4, 4x1, 4, 4x2, 8, 4x3, 12, 4x4, 16, 4x5, 20, 4x6, 24, 4x7, 28, 4x8, 32, 4x9, 36, 4x10, 40.",
+   "decoupages": [
+    {
+     "methode": "mots",
+     "lignes_fausses": [
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7,
+      8,
+      9
+     ],
+     "entendu": [
+      "4, 4x1",
+      "4, 4 fois 2.",
+      "8, 4x3",
+      "12, 4x4",
+      "16, 4x5",
+      "20, 4 choix 6.",
+      "24 et 4 fois 7",
+      "28, 4 fois 8",
+      "32, 4x9",
+      "36, 4x10, 40"
+     ]
+    }
+   ]
+  },
+  {
+   "prise": 3,
+   "duree": 17.7,
+   "entendu": "table de 4. 4x1, 4. 4x2, 8. 4x3, 12. 4x4, 16. 4x5, 20. 4x6, 24. 4x7, 28. 4x8, 32. 4x9, 36. 4x10, 40.",
+   "decoupages": [
+    {
+     "methode": "mots",
+     "lignes_fausses": [
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7,
+      8,
+      9
+     ],
+     "entendu": [
+      "4, 4 fois 1",
+      "4, 4 fois 2",
+      "8, 4 fois 3",
+      "12, 4x4.",
+      "16, 4x5",
+      "vingt, quatre fois six.",
+      "24, 4x7",
+      "28, 4x8",
+      "32, 4x9",
+      "36, 4x10, 40."
+     ]
+    }
+   ]
+  },
+  {
+   "ligne_par_ligne": [
+    {
+     "ligne": 1,
+     "essais": 1,
+     "juste": true,
+     "entendu": "Quatre fois un, quatre."
+    },
+    {
+     "ligne": 2,
+     "essais": 1,
+     "juste": true,
+     "entendu": "4x2, 8"
+    },
+    {
+     "ligne": 3,
+     "essais": 1,
+     "juste": true,
+     "entendu": "Quatre fois, trois, douze."
+    },
+    {
+     "ligne": 4,
+     "essais": 1,
+     "juste": true,
+     "entendu": "4x4, 16"
+    },
+    {
+     "ligne": 5,
+     "essais": 1,
+     "juste": true,
+     "entendu": "4 x 5, 20"
+    },
+    {
+     "ligne": 6,
+     "essais": 1,
+     "juste": true,
+     "entendu": "4x6, 24"
+    },
+    {
+     "ligne": 7,
+     "essais": 1,
+     "juste": true,
+     "entendu": "4 x 7, 28"
+    },
+    {
+     "ligne": 8,
+     "essais": 1,
+     "juste": true,
+     "entendu": "4x8 32"
+    },
+    {
+     "ligne": 9,
+     "essais": 1,
+     "juste": true,
+     "entendu": "4x9, 36."
+    },
+    {
+     "ligne": 10,
+     "essais": 1,
+     "juste": true,
+     "entendu": "Quatre fois dix, quarante. Quarante."
+    }
+   ]
   }
  ]
 }

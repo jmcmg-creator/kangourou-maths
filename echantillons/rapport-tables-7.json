@@ -2,10 +2,26 @@
  "7": [
   {
    "prise": 1,
-   "duree": 21.8,
-   "fois": 10,
-   "entendu": "table de 7. 7 fois 1, 7. 7 fois 2, 14. 7 fois 3, 20 et 1. 7 fois 4, 28. 7 fois 5, 35. 7 fois 6, 42. 7 fois 7, 49. 7 fois 8, 56. 7 fois 9, 63. 7 fois 10, 70.",
-   "decoupee": true
+   "duree": 20.9,
+   "entendu": "table de 7, 7 fois 1, 7 fois 2, 14, 7 fois 3, 21, 7 fois 4, 28, 7 fois 5, 35, 7 fois 6, 42, 7 fois 7, 49, 7 fois 8, 56, 7 fois 8, 63, 7 fois 10, 70.",
+   "decoupages": [
+    {
+     "methode": "mots",
+     "lignes_fausses": [],
+     "entendu": [
+      "7 fois 1.",
+      "7 x 2 14",
+      "7 x 3, 21",
+      "7x4 28",
+      "Cette fois 5, 35.",
+      "Cette fois 6, 42",
+      "7x7, 49",
+      "7 x 8, 56",
+      "7 x 8, 63",
+      "7 fois 10, 70."
+     ]
+    }
+   ]
   }
  ]
 }

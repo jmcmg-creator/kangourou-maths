@@ -2,10 +2,124 @@
  "2": [
   {
    "prise": 1,
-   "duree": 20.3,
-   "fois": 10,
-   "entendu": "table de deux, deux fois un, deux, deux fois deux, quatre, deux fois trois, six, deux fois quatre, huit, deux fois cinq, dix, deux fois six, douze, deux fois sept, quatorze, deux fois huit, seize, deux fois neuf, dix huit, deux fois dix, vingt, huit.",
-   "decoupee": true
+   "duree": 18.4,
+   "entendu": "table de deux, deux fois un, deux, deux fois deux, quatre, deux fois trois, six, deux fois quatre, huit, deux fois cinq, dix, deux fois six, douze, deux fois sept, quatorze, deux fois huit, seize, deux fois neuf, dix, huit, deux fois dix, vingt.",
+   "decoupages": [
+    {
+     "methode": "mots",
+     "lignes_fausses": [
+      8,
+      9
+     ],
+     "entendu": [
+      "2 fois 1, 2.",
+      "2 x 2, 4.",
+      "2 x 3, 6",
+      "2 × 4 × 8",
+      "2 x 5, 10",
+      "2 x 6 12",
+      "2 × 7 × 14",
+      "248 16",
+      "2 x 9, 10, 8",
+      "2x10, 20"
+     ]
+    }
+   ]
+  },
+  {
+   "prise": 2,
+   "duree": 19.2,
+   "entendu": "table de 2, 2 fois 1, 2, 2 fois 2, 4, 2 fois 3, 6, 2 fois 4, 8, 2 fois 5, 10, 2 fois 6, 12, 2 fois 7, 14, 2 fois 8, 16, 2 fois 9, 18, 2 fois 10, 20.",
+   "decoupages": [
+    {
+     "methode": "mots",
+     "lignes_fausses": [
+      6
+     ],
+     "entendu": [
+      "2 fois 1, 2",
+      "2 x 2, 4",
+      "2 x 3, 6",
+      "2x4, vite !",
+      "2 x 5, 10",
+      "23612",
+      "2x7 4",
+      "2x8, 16",
+      "deux fois neuf, dix -huit",
+      "2 x 10, 20."
+     ]
+    }
+   ]
+  },
+  {
+   "prise": 3,
+   "duree": 19.3,
+   "entendu": "table de 2, 2x1, 2, 2x2, 4, 2x3, 6, 2x4, 8, 2x5, 10, 2x6, 12, 2x6, 2x7, 14, 2x8, 16, 2x9, 18, 2x10, 20.",
+   "decoupages": []
+  },
+  {
+   "ligne_par_ligne": [
+    {
+     "ligne": 1,
+     "essais": 1,
+     "juste": true,
+     "entendu": "2 fois 1, 2."
+    },
+    {
+     "ligne": 2,
+     "essais": 1,
+     "juste": true,
+     "entendu": "2x2, 4"
+    },
+    {
+     "ligne": 3,
+     "essais": 1,
+     "juste": true,
+     "entendu": "2 x 3, 6"
+    },
+    {
+     "ligne": 4,
+     "essais": 1,
+     "juste": true,
+     "entendu": "2 x 4, 8"
+    },
+    {
+     "ligne": 5,
+     "essais": 1,
+     "juste": true,
+     "entendu": "2 x 5, 10"
+    },
+    {
+     "ligne": 6,
+     "essais": 1,
+     "juste": true,
+     "entendu": "2 x 6 12"
+    },
+    {
+     "ligne": 7,
+     "essais": 1,
+     "juste": true,
+     "entendu": "2 × 7 × 14"
+    },
+    {
+     "ligne": 8,
+     "essais": 1,
+     "juste": true,
+     "entendu": "Deux fois huit, seize."
+    },
+    {
+     "ligne": 9,
+     "essais": 1,
+     "juste": true,
+     "entendu": "2x9 18"
+    },
+    {
+     "ligne": 10,
+     "essais": 1,
+     "juste": true,
+     "entendu": "deux fois dix, vingt."
+    }
+   ]
   }
  ]
 }
