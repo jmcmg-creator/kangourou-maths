@@ -1,1 +1,9 @@
-table-7: --quoi tables --tables 7 
+table-1: --quoi tables --tables 1
+table-2: --quoi tables --tables 2
+table-3: --quoi tables --tables 3
+table-4: --quoi tables --tables 4
+table-5: --quoi tables --tables 5
+table-6: --quoi tables --tables 6
+table-8: --quoi tables --tables 8
+table-9: --quoi tables --tables 9
+table-10: --quoi tables --tables 10
