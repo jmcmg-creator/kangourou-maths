@@ -67,103 +67,103 @@
   "tables": [
     {
       "ligne": "5x2",
-      "wer": 0.0,
-      "entendu": "5 x 2 égale 10."
+      "wer": 0.667,
+      "entendu": "5 x 2, 10"
     },
     {
       "ligne": "2x10",
-      "wer": 0.4,
-      "entendu": "2 × 10 × 20."
+      "wer": 1.0,
+      "entendu": "18, 2 x 10, 20."
     },
     {
       "ligne": "6x1",
-      "wer": 0.8,
-      "entendu": "s'y foise un égal 6."
+      "wer": 1.0,
+      "entendu": "6x1, 6"
     },
     {
       "ligne": "9x4",
-      "wer": 0.4,
-      "entendu": "9 × 4 × 36"
+      "wer": 0.667,
+      "entendu": "9 x 4, 36"
     },
     {
       "ligne": "1x7",
-      "wer": 0.0,
-      "entendu": "1 fois 7 égale 7."
+      "wer": 1.0,
+      "entendu": "Enfoie 7"
     },
     {
       "ligne": "1x10",
-      "wer": 0.0,
-      "entendu": "1 x 10 égale 10."
+      "wer": 0.667,
+      "entendu": "1 fois 10, 10."
     },
     {
       "ligne": "7x9",
-      "wer": 0.6,
-      "entendu": "Cette fois neuf, égal à 63."
+      "wer": 0.667,
+      "entendu": "7.9.63"
     },
     {
       "ligne": "2x3",
-      "wer": 0.2,
-      "entendu": "2 × 3 égale 6."
+      "wer": 1.0,
+      "entendu": "4, 2x3"
     },
     {
       "ligne": "5x7",
-      "wer": 0.6,
-      "entendu": "5 fois c'est égal 35."
+      "wer": 1.0,
+      "entendu": "5x7, 35"
     },
     {
       "ligne": "8x5",
-      "wer": 0.4,
-      "entendu": "8 × 5 × 40"
+      "wer": 0.667,
+      "entendu": "32, 8 fois 5"
     },
     {
       "ligne": "1x8",
       "wer": 0.0,
-      "entendu": "1 x 8 égale 8."
+      "entendu": "Un fois huit, huit."
     },
     {
       "ligne": "7x5",
-      "wer": 0.2,
-      "entendu": "Cette fois 5, égale 35."
+      "wer": 0.667,
+      "entendu": "7 x 5, 35"
     },
     {
       "ligne": "3x8",
-      "wer": 0.2,
-      "entendu": "Trois fois huit, égal 24."
+      "wer": 1.0,
+      "entendu": "3x8 24"
     },
     {
       "ligne": "1x5",
-      "wer": 0.0,
-      "entendu": "1 x 5 égale 5"
+      "wer": 0.667,
+      "entendu": "Au revoir, cinq, cinq."
     },
     {
       "ligne": "2x2",
-      "wer": 0.4,
-      "entendu": "2 × 2 × 4."
+      "wer": 0.667,
+      "entendu": "2. 2 fois 2."
     },
     {
       "ligne": "6x6",
-      "wer": 0.0,
-      "entendu": "6 fois 6 égale 36."
+      "wer": 1.0,
+      "entendu": "6 x 6 x 36"
     },
     {
       "ligne": "6x4",
-      "wer": 0.0,
-      "entendu": "6 x 4 égale 24"
+      "wer": 1.0,
+      "entendu": "6 x 4, 24, 24"
     },
     {
       "ligne": "1x9",
-      "wer": 0.2,
-      "entendu": "En fois neuf, égale neuf."
+      "wer": 0.667,
+      "entendu": "1 fois 9, 9"
     },
     {
       "ligne": "4x1",
-      "wer": 0.0,
-      "entendu": "4 fois 1 égale 4"
+      "wer": 0.667,
+      "entendu": "4 x 1, 4"
     },
     {
       "ligne": "8x1",
-      "wer": 0.2,
-      "entendu": "huit fois un régal huit."
+      "wer": 1.0,
+      "entendu": "Oui."
     }
   ]
 }
