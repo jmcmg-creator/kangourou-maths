@@ -320,7 +320,7 @@ const STORAGE_ACTIVE="royaume_active_v1";
    distinguer « la fonctionnalité est cassée » de « le téléphone n'a pas
    encore la mise à jour ».
    À bumper avec CACHE_VERSION (sw.js) et le ?v= (index.html). */
-const APP_VERSION='v40';
+const APP_VERSION='v41';
 
 function loadProfilesDict(){
   try{const d=localStorage.getItem(STORAGE_PROFILES); if(d) return JSON.parse(d)||{};}catch(e){}
@@ -338,7 +338,24 @@ function newProfile(){
 }
 function migrate(p){
   const base=newProfile();
-  return _purgeIncoherentAi(_restoreJudithXp(Object.assign(base,p)));
+  return _purgeHorsSujet(_purgeIncoherentAi(_restoreJudithXp(Object.assign(base,p))));
+}
+
+// Les questions de maths étiquetées « géographie » (ou autre royaume) qui
+// dorment déjà dans les profils. Un marqueur de VERSION plutôt qu'un booléen :
+// si le juge s'affine un jour, on remonte le numéro et la purge repasse.
+const PURGE_HORS_SUJET_V=1;
+function _purgeHorsSujet(p){
+  if(!p||p.horsSujetPurgeV>=PURGE_HORS_SUJET_V) return p;
+  if(Array.isArray(p.aiExercises)&&p.aiExercises.length){
+    const avant=p.aiExercises.length;
+    p.aiExercises=p.aiExercises.filter(e=>!_horsSujet(e,e&&e.lv));
+    const n=avant-p.aiExercises.length;
+    if(n) try{console.info('[profil] '+n+' question(s) hors matière retirée(s)')}catch(e){}
+    p.horsSujetPurgees=(Number(p.horsSujetPurgees)||0)+n;
+  }
+  p.horsSujetPurgeV=PURGE_HORS_SUJET_V;
+  return p;
 }
 
 // Les questions incohérentes sont désormais refusées à la génération, mais
@@ -631,13 +648,19 @@ async function generateAIExercises(level,count){
     // Anti-doublon à la source : le Dragon regénère parfois un énoncé déjà connu
     // avec un id neuf. On le jette ici, sinon il polluerait tous les tirages.
     const known=new Set(EX.concat(profile.aiExercises).concat(profile.customExercises||[]).map(_qKey));
+    let horsSujet=0;
     data.exercises=(data.exercises||[]).filter(e=>{
       // Incohérente (bonne réponse contredite par son propre corrigé) → jetée.
       if(!isExerciseCoherent(e)) return false;
+      // Le niveau est celui qu'on a DEMANDÉ, pas celui que le Sage renvoie.
+      e.lv=level;
+      // Du calcul pour un royaume qui n'en veut pas → jeté, et compté.
+      if(_horsSujet(e,level)){horsSujet++;return false}
       const k=_qKey(e);
       if(!k||known.has(k)) return false;
       known.add(k);return true;
     });
+    if(horsSujet) console.warn('[sage] '+horsSujet+' question(s) hors matière refusée(s) pour '+level);
     profile.aiExercises=profile.aiExercises.concat(data.exercises);
     // Plafond PAR NIVEAU puis global : avant, un seul plafond global de 200
     // suffisait à faire disparaître les questions d'un royaume dès qu'un autre
@@ -1071,6 +1094,43 @@ function levelMinGrade(lv){
   return min;
 }
 // Matière à laquelle appartient un niveau (pour un déblocage par matière).
+/* ── Une question de maths n'a rien à faire dans le Royaume des Explorateurs ──
+   Le tirage reste bien dans le royaume (mesuré : 1 600 tirages, zéro fuite),
+   mais une question GÉNÉRÉE par l'IA porte l'étiquette du niveau demandé quel
+   que soit son contenu. Si le Sage a fabriqué du calcul pour « geo-cm1 », la
+   question entre dans le profil avec lv='geo-cm1', part dans la base, revient
+   sur l'autre téléphone, et survit à toutes les mises à jour de l'app. C'est
+   exactement le symptôme « toujours le même problème ».
+   On juge donc le CONTENU, à trois moments : à l'import, au chargement du
+   profil (purge de ce qui dort déjà), et au tirage (ceinture et bretelles). */
+const MATHS_CATS=new Set(['Calcul mental','Calcul','Calcul astucieux','Fractions','Nombres décimaux','Dénombrement',
+  'Problème','Problème à piège','Géométrie','Périmètre et aire','Symétrie','Mesures','Équation','Divisibilité',
+  'Proportion','Pourcentages','Probabilités','Combinatoire','Vitesse','Puissances','Algèbre','Pythagore',
+  'Multiplication','Addition','Soustraction','Division','Numération','Tables','Parité','Suites','Suites logiques']);
+function _ressembleAuxMaths(e){
+  if(!e) return false;
+  if(e.cat&&MATHS_CATS.has(String(e.cat).trim())) return true;
+  const q=String(e.q||'');
+  // Un opérateur entre deux nombres. Le tiret n'est retenu qu'ENTOURÉ
+  // d'espaces (« 12 - 5 ») : « 14-18 » ou « 1914-1918 » sont des dates, pas
+  // des soustractions — l'histoire en est pleine. Ni « / » ni « : », qui
+  // écrivent des dates et des heures bien plus souvent que des divisions.
+  if(/\d\s*[+×*÷]\s*\d/.test(q)) return true;
+  if(/\d\s+[-−]\s+\d/.test(q)) return true;
+  if(/\d+\s*fois\s*\d+/i.test(q)) return true;
+  // Le vocabulaire du calcul — et seulement lui. « Pourcentage d'oxygène »,
+  // « le résultat de la Révolution » ou « une fraction de la population »
+  // sont des questions de sciences, d'histoire, de géographie.
+  if(/combien font|calcule[rz]? |le r[ée]sultat de \d|la somme de \d|le produit de \d|le quotient|multipli[ée]|divis[ée]s? par|soustrai|additionne|p[ée]rim[èe]tre/i.test(q)) return true;
+  return false;
+}
+// Vrai si la question ne devrait PAS être servie sous ce niveau.
+function _horsSujet(e,lvId){
+  const su=subjectOfLevel(lvId||(e&&e.lv));
+  // En maths, en logique et en informatique, les nombres et le calcul sont chez eux.
+  if(!su||su==='maths'||su==='logique'||su==='informatique') return false;
+  return _ressembleAuxMaths(e);
+}
 function subjectOfLevel(lvId){
   for(const s of SUBJECTS){ if((s.levels||[]).some(l=>l.id===lvId)) return s.id }
   return null;
@@ -2335,7 +2395,7 @@ function remainingOf(pool){
 function pickExercises(mode,lvId){
   const lv=LEVELS.find(l=>l.id===lvId);
   // Inclure les exercices AI générés (persistés dans le profil)
-  const aiPool=(profile.aiExercises||[]).filter(e=>e.lv===lvId);
+  const aiPool=(profile.aiExercises||[]).filter(e=>e.lv===lvId&&!_horsSujet(e,lvId));
   // Exercices personnalisés ajoutés par le parent (synchronisés cloud).
   const customPool=(profile.customExercises||[]).filter(e=>e.lv===lvId);
   // Toujours essayer le pool statique : tout niveau présent dans
