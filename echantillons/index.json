@@ -1,5 +1,49 @@
 [
   {
+    "fichier": "cb-defaut.mp3",
+    "octets": 87168
+  },
+  {
+    "fichier": "cb-mls-10065.mp3",
+    "octets": 117888
+  },
+  {
+    "fichier": "cb-mls-123.mp3",
+    "octets": 111744
+  },
+  {
+    "fichier": "cb-mls-1329.mp3",
+    "octets": 119808
+  },
+  {
+    "fichier": "cb-mls-1579.mp3",
+    "octets": 101184
+  },
+  {
+    "fichier": "cb-mls-1649.mp3",
+    "octets": 117312
+  },
+  {
+    "fichier": "cb-mls-1817.mp3",
+    "octets": 131904
+  },
+  {
+    "fichier": "cb-mls-1869.mp3",
+    "octets": 107904
+  },
+  {
+    "fichier": "cb-mls-62.mp3",
+    "octets": 117504
+  },
+  {
+    "fichier": "cb-multilinguallibrispeech1.mp3",
+    "octets": 120384
+  },
+  {
+    "fichier": "cb-multilinguallibrispeech6.mp3",
+    "octets": 112128
+  },
+  {
     "fichier": "chatterbox-fr.mp3",
     "octets": 110208
   },
@@ -13,7 +57,7 @@
   },
   {
     "fichier": "piper-fr_FR-gilles-low.mp3",
-    "octets": 111168
+    "octets": 117504
   },
   {
     "fichier": "piper-fr_FR-siwis-medium.mp3",
@@ -30,5 +74,21 @@
   {
     "fichier": "piper-fr_FR-upmc-medium-1.mp3",
     "octets": 88607
+  },
+  {
+    "fichier": "tables-A-ligne-par-ligne.mp3",
+    "octets": 352704
+  },
+  {
+    "fichier": "tables-B-entiere.mp3",
+    "octets": 206208
+  },
+  {
+    "fichier": "tables-C-entiere.mp3",
+    "octets": 149952
+  },
+  {
+    "fichier": "tables-D-entiere.mp3",
+    "octets": 210432
   }
 ]
