@@ -38,3 +38,15 @@ for k, ((d, f), (ad, af)) in enumerate(zip(lignes, attendu), 1):
 assert dv.decouper_par_mots(a, sr, bruites[:-4]) is None, 'neuf « fois » doivent être refusés'
 assert dv.decouper_par_mots(a, sr, [('fois', 0, 0.1)] + bruites) is None, 'onze « fois » doivent être refusés'
 print('  découpage guidé par les mots : dix lignes aux bons endroits, refus sinon ✅')
+
+# Par la structure : l'en-tête puis, par ligne, la virgule (0,25 s) et le point (0,6 s).
+for sm, attendu_ok in ((0.12, True), (0.18, True), (0.25, True), (0.35, True), (0.7, False)):
+    lignes = dv.decouper_par_structure(a, sr, silence_min=sm)
+    if not attendu_ok:
+        assert lignes is None, f'seuil {sm} : aucun creux, on attend un refus'
+        continue
+    assert lignes and len(lignes) == 10, (sm, lignes)
+    for k, ((d, f), (ad, af)) in enumerate(zip(lignes, attendu), 1):
+        d /= sr; f /= sr
+        assert ad - 0.13 <= d <= ad + 0.02 and af - 0.02 <= f <= af + 0.13, (sm, k, d, f, ad, af)
+print('  découpage par la structure : dix lignes aux bons endroits à quatre seuils, refus sinon ✅')
