@@ -2,8 +2,47 @@
  "5": [
   {
    "prise": 1,
-   "duree": 19.8,
-   "entendu": "table de 5, 5x1, 5x2, 10, 5x3, 15, 5x4, 20, 5x5, 25, 5x6, 30, 5x7, 35, 5x8, 40, 5x9, 45, 5x10, 50.",
+   "duree": 17.4,
+   "entendu": "table de 5, 5x1, 5x2, 10, 5x3, 15, 5x4, 20, 5x5, 25, 5x6, 30, 5x7, 35, 5x8, 40, 5x9, 45, 5x10, 55x10",
+   "decoupages": [
+    {
+     "methode": "structure 0.12",
+     "lignes_fausses": [
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      8,
+      9,
+      10
+     ],
+     "entendu": [
+      "Thank you for watching !",
+      "Ah, sang !",
+      "2, 10, 5",
+      "x 3, 15",
+      "5x4, 20",
+      "5 x 5, 25, 5 x 6, 30",
+      "5 ,7, 35.",
+      "5x8, 40, 5x8",
+      "45",
+      "5x10, 55x10"
+     ]
+    }
+   ]
+  },
+  {
+   "prise": 2,
+   "duree": 16.5,
+   "entendu": "table 5 5 fois 1 5 fois 2 10 5 fois 3 15 5 fois 4 20 5 fois 5 25 5 fois 6 30 5 fois 7 35 5 fois 8 40 5 fois 9 45 5 fois 10 50 5 fois 10",
+   "decoupages": []
+  },
+  {
+   "prise": 3,
+   "duree": 19.0,
+   "entendu": "table de 5, 5x1, 5x2, 10, 5x3, 15, 5x4, 20, 5x5, 25, 5x6, 30, 5x7, 35, 5x8, 40, 5x9, 45, 5x10, 50 quoi.",
    "decoupages": [
     {
      "methode": "mots",
@@ -12,37 +51,6 @@
       2,
       3,
       4,
-      5,
-      6,
-      7,
-      8,
-      9
-     ],
-     "entendu": [
-      "Sainte.",
-      "5x1, 5x2",
-      "10, 5 fois 3.",
-      "15, 5x4",
-      "20, 5x5",
-      "25, 5 fois 6",
-      "30. 5x7",
-      "Thank you for watching.",
-      "45 x 9",
-      "45. 5 fois 10, 50."
-     ]
-    }
-   ]
-  },
-  {
-   "prise": 2,
-   "duree": 18.9,
-   "entendu": "table de cinq, cinq fois un, cinq fois deux, dix, cinq fois trois, quinze, cinq fois quatre, vingt, cinq fois cinq, vingt -cinq, cinq fois six, trente, cinq fois sept, trente -cinq, cinq fois huit, quarante, cinq fois neuf, quarante -cinq, soit dix, cinquante -cinq, soit dix...",
-   "decoupages": [
-    {
-     "methode": "structure 0.25",
-     "lignes_fausses": [
-      2,
-      3,
       5,
       6,
       7,
@@ -51,67 +59,16 @@
       10
      ],
      "entendu": [
-      "5 fois 1.",
-      "cinq fois deux, dix, cinq fois trois.",
-      "15",
-      "5x4",
-      "va",
-      "5 x 5, 25. 5 x 6, 30.",
-      "5 fois 7, 35, 5 fois 8, 40",
-      "5 .9 .45",
-      "soit 10, 55.",
-      "Faudit."
-     ]
-    }
-   ]
-  },
-  {
-   "prise": 3,
-   "duree": 22.0,
-   "entendu": "table de cinq, cinq fois un, cinq, cinq fois deux, dix, cinq fois trois, quinze, cinq fois quatre, vingt, cinq fois cinq, vingt -cinq, cinq fois six, trente, cinq fois sept, trente -cinq, cinq fois huit, quarante, cinq fois neuf, quarante -cinq, cinq fois dix, cinquante.",
-   "decoupages": [
-    {
-     "methode": "mots",
-     "lignes_fausses": [
-      8
-     ],
-     "entendu": [
-      "5 fois 1, 5...",
-      "5 x 2, 10",
-      "5 x 3, 15...",
-      "5x4, 20...",
-      "5 x 5, 25",
-      "5 x 6, 30",
-      "5 fois 7, 35.",
-      "5 4 8. Count.",
-      "5x9, 45",
-      "5x10, 50."
-     ]
-    },
-    {
-     "methode": "structure 0.35",
-     "lignes_fausses": [
-      1,
-      2,
-      3,
-      4,
-      5,
-      6,
-      7,
-      8,
-      9
-     ],
-     "entendu": [
-      "5x3, 15, 5x4",
-      "20, 5x5",
-      "25",
-      "5 x 6, 30",
-      "5 fois 7, 35.",
-      "5 x 8",
-      "count.",
-      "S 'il n 'y en a pas.",
-      "gone thank you",
-      "5x10, 50."
+      "signes.",
+      "5x1, 5x2",
+      "10, 5x3.",
+      "15, 5, 4",
+      "1, 5 fois 5.",
+      "25, 5 fois 6",
+      "Taunt, Saint -Foy -Cit.",
+      "Tonsync, sync 4 .8",
+      "40, 5x9",
+      "45, 5x10, 54"
      ]
     }
    ]
@@ -122,13 +79,13 @@
      "ligne": 1,
      "essais": 1,
      "juste": true,
-     "entendu": "5x1, 5"
+     "entendu": "5 fois un 5"
     },
     {
      "ligne": 2,
      "essais": 1,
      "juste": true,
-     "entendu": "5 x 2, 10"
+     "entendu": "5 fois 2, 10"
     },
     {
      "ligne": 3,
@@ -138,8 +95,8 @@
     },
     {
      "ligne": 4,
-     "essais": 1,
-     "juste": true,
+     "essais": 3,
+     "juste": false,
      "entendu": "5 x 4, 20"
     },
     {
@@ -152,31 +109,31 @@
      "ligne": 6,
      "essais": 1,
      "juste": true,
-     "entendu": "5 x 6, 30"
+     "entendu": "cinq fois six tente"
     },
     {
      "ligne": 7,
      "essais": 1,
      "juste": true,
-     "entendu": "5 fois 7, 35."
+     "entendu": "5 fois 7, 35 35"
     },
     {
      "ligne": 8,
      "essais": 1,
      "juste": true,
-     "entendu": "5 x 8 x 40"
+     "entendu": "Cinq fois huit, quarante."
     },
     {
      "ligne": 9,
      "essais": 1,
      "juste": true,
-     "entendu": "5 fois 9, 45, 40"
+     "entendu": "5 x 9, 45, 45..."
     },
     {
      "ligne": 10,
      "essais": 1,
      "juste": true,
-     "entendu": "5 fois 10, 50"
+     "entendu": "5 x 10 x 50"
     }
    ]
   }
