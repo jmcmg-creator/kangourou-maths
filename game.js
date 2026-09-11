@@ -98,7 +98,7 @@ function getSubjectForLevel(lvId){
   return SUBJECTS[0];
 }
 const MODES=[
-{id:"training",name:"Entra\u00eenement libre",icon:"\u{1F4DC}",desc:"Sans limite de temps. Apprends \u00e0 ton rythme."},
+{id:"training",name:"Jouer à mon rythme",icon:"\u{1F4DC}",desc:"Sans chrono. La difficulté s’adapte à tes progrès."},
 {id:"adaptive",name:"Mode adaptatif",icon:"\u{1F3AF}",desc:"Exercices cibl\u00e9s sur tes points faibles."},
 {id:"challenge",name:"D\u00e9fi chrono",icon:"\u23F1\uFE0F",desc:"60 secondes par question. Chaque seconde compte !"},
 {id:"progression",name:"Qu\u00eate du Dragon",icon:"\u{1F3F0}",desc:"Difficult\u00e9 croissante. M\u00e9lange tous les niveaux."}
@@ -326,7 +326,7 @@ const STORAGE_ACTIVE="royaume_active_v1";
    distinguer « la fonctionnalité est cassée » de « le téléphone n'a pas
    encore la mise à jour ».
    À bumper avec CACHE_VERSION (sw.js) et le ?v= (index.html). */
-const APP_VERSION='v44';
+const APP_VERSION='v45';
 
 function loadProfilesDict(){
   try{const d=localStorage.getItem(STORAGE_PROFILES); if(d) return JSON.parse(d)||{};}catch(e){}
@@ -340,11 +340,13 @@ function newProfile(){
   return {name:"",totalGames:0,totalQuestions:0,totalCorrect:0,bestStreak:0,sessions:[],catStats:{},exerciseStats:{},playDays:[],unlockedBadges:[],
     xp:0,cristaux:0,dragonnets:[],mainDragon:"main",stage:0,
     dailyQuest:null,aiExercises:[],recentMisses:[],aid:"",
-    grade:null,age:null,unlocks:{},unlockProgress:{},recentExIds:[],lessonsSeen:[]};
+    grade:null,age:null,unlocks:{},unlockProgress:{},recentExIds:[],lessonsSeen:[],successfulQuestions:{}};
 }
 function migrate(p){
   const base=newProfile();
-  return _purgeHorsSujet(_purgeIncoherentAi(_restoreJudithXp(Object.assign(base,p))));
+  const out=Object.assign(base,p);
+  out.successfulQuestions=Object.fromEntries([...successfulKeys(out)].map(k=>[k,true]));
+  return _purgeHorsSujet(_purgeIncoherentAi(_restoreJudithXp(out)));
 }
 
 // Les questions de maths étiquetées « géographie » (ou autre royaume) qui
@@ -423,9 +425,8 @@ function migrateLegacyProfile(){
     setActiveName(p.name);
   }catch(e){}
 }
-migrateLegacyProfile();
-// Au boot : aucun profil chargé d'office. renderHome affichera le sélecteur
-// si des profils existent, sinon l'écran « entre ton prénom ».
+// Au boot, le dernier élève est restauré après initialisation des banques.
+// Un rechargement ne doit jamais ouvrir librement le sélecteur.
 let profile=newProfile();
 
 /* ════════ HTML escaping (protection XSS) ════════ */
@@ -522,6 +523,7 @@ function mergeProfiles(a,b){
   };
   out.catStats=mergeStats(a.catStats,b.catStats);
   out.exerciseStats=mergeStats(a.exerciseStats,b.exerciseStats);
+  out.successfulQuestions={...(a.successfulQuestions||{}),...(b.successfulQuestions||{})};
   out.poesieStats=mergeStats(a.poesieStats,b.poesieStats);
   // Contenus ajoutés par le parent + IA + battles + amis : union par identifiant.
   const uniById=(k,idf)=>{
@@ -560,8 +562,9 @@ function mergeProfiles(a,b){
 async function syncProfileFromCloud(){
   await ensureAid();
   if(!profile.aid) return null;
-  const remote=await fetchProfileByAid(profile.aid);
-  if(!remote) return null;
+  const active=profile;
+  const remote=await fetchProfileByAid(active.aid);
+  if(profile!==active||!remote) return null;
   // FUSION au lieu de remplacement : impossible de perdre des XP.
   const before=JSON.stringify(profile);
   profile=mergeProfiles(profile,migrate(remote));
@@ -605,6 +608,7 @@ function processIncomingSyncLink(){
   setTimeout(async()=>{
     const remote=await fetchProfileByAid(incoming);
     if(!remote||!remote.name){alert('Aucun profil trouvé pour ce lien.');return}
+    parentalGate(()=>{
     const dict=loadProfilesDict();
     const exists=!!dict[remote.name];
     if(!confirm((exists?'Mettre à jour':'Importer')+' le profil « '+remote.name+' » depuis l\'autre appareil ?')) return;
@@ -615,6 +619,7 @@ function processIncomingSyncLink(){
     profile=migrate(remote);
     alert('✅ Profil « '+remote.name+' » '+(exists?'mis à jour':'importé')+' !');
     navigate('home');
+    });
   },150);
 }
 
@@ -822,12 +827,57 @@ function isCleanName(name){
   const norm=String(name).toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'');
   return !_PROFANITY.some(w=>norm.includes(w));
 }
+let _profileAccess=false;
 function parentalGate(onPass,onCancel){
-  // Déjà passé dans les 15 dernières minutes ? on laisse passer.
-  try{
-    const last=parseInt(localStorage.getItem('royaume_parental_ok')||'0',10);
-    if(Date.now()-last<15*60*1000){onPass&&onPass();return}
-  }catch(e){}
+  if(document.getElementById('parentalGate')) return;
+  let stored;
+  try{stored=localStorage.getItem('royaume_parent_pin')}catch(e){toast('Stockage indisponible : accès adulte verrouillé.');return}
+  const show=()=>{
+    const overlay=document.createElement('div');
+    overlay.id='parentalGate';
+    overlay.className='parental-overlay';
+    overlay.innerHTML='<form class="card" role="dialog" aria-modal="true" aria-labelledby="parentTitle">'
+      +'<h2 id="parentTitle">'+(stored?'Code parental':'Parent : créez votre code')+'</h2>'
+      +'<p>'+(stored?'Saisissez votre code pour continuer.':'Choisissez 6 chiffres, à garder secrets. Ce code protège les profils sur cet appareil.')+'</p>'
+      +'<input aria-label="Code parental" name="pin" type="password" inputmode="numeric" pattern="[0-9]{6}" minlength="6" maxlength="6" required autocomplete="off">'
+      +(!stored?'<input aria-label="Confirmer le code" name="confirmation" type="password" inputmode="numeric" maxlength="6" required autocomplete="off">':'')
+      +'<p role="status" class="pin-status"></p><button type="submit" class="btn-fire">Valider</button> '
+      +'<button type="button" class="btn-stone">Annuler</button></form>';
+    document.body.appendChild(overlay);
+    overlay.querySelector('[type="button"]').onclick=()=>{overlay.remove();onCancel&&onCancel()};
+    const form=overlay.querySelector('form');
+    form.onsubmit=async ev=>{
+      ev.preventDefault();
+      const status=overlay.querySelector('.pin-status');
+      const pin=form.elements.pin.value;
+      if(!/^\d{6}$/.test(pin)){status.textContent='Le code doit contenir 6 chiffres.';return}
+      if(!stored&&pin!==form.elements.confirmation.value){status.textContent='Les deux codes sont différents.';return}
+      const submit=form.querySelector('[type="submit"]');submit.disabled=true;
+      try{
+        const until=Number(localStorage.getItem('royaume_pin_wait'))||0;
+        if(Date.now()<until){status.textContent='Patientez une minute avant de réessayer.';return}
+        const record=stored?JSON.parse(stored):{salt:Array.from(crypto.getRandomValues(new Uint8Array(16)),b=>b.toString(16).padStart(2,'0')).join('')};
+        const digest=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(record.salt+':'+pin));
+        const hash=Array.from(new Uint8Array(digest),b=>b.toString(16).padStart(2,'0')).join('');
+        if(stored&&record.hash!==hash){
+          const tries=(Number(localStorage.getItem('royaume_pin_tries'))||0)+1;
+          localStorage.setItem('royaume_pin_tries',String(tries%5));
+          if(tries>=5)localStorage.setItem('royaume_pin_wait',String(Date.now()+60000));
+          status.textContent='Code incorrect.';form.elements.pin.value='';return;
+        }
+        if(!stored)localStorage.setItem('royaume_parent_pin',JSON.stringify({salt:record.salt,hash}));
+        localStorage.removeItem('royaume_pin_tries');localStorage.removeItem('royaume_pin_wait');
+        overlay.remove();onPass&&onPass();
+      }catch(e){status.textContent='Impossible de vérifier ou enregistrer le code. Accès verrouillé.'}
+      finally{submit.disabled=false}
+    };
+    form.elements.pin.focus();
+  };
+  // Migration : seul le premier paramétrage conserve le défi adulte existant.
+  if(stored)show();else adultSetupGate(show,onCancel);
+}
+
+function adultSetupGate(onPass,onCancel){
   const a=7+Math.floor(Math.random()*8); // 7-14
   const b=6+Math.floor(Math.random()*8); // 6-13
   const answer=a*b;
@@ -860,7 +910,6 @@ function parentalGate(onPass,onCancel){
     if(t.dataset&&t.dataset.val){
       const v=parseInt(t.dataset.val,10);
       if(v===answer){
-        try{localStorage.setItem('royaume_parental_ok',String(Date.now()))}catch(e){}
         overlay.remove();onPass&&onPass();
       }else{
         t.style.background='rgba(248,113,113,.3)';
@@ -915,6 +964,9 @@ function _clePosition(){
    faisait perdre deux crans d'un coup. */
 function retourArriere(){
   const s=state.screen;
+  if(document.getElementById('parentalGate')){document.getElementById('parentalGate').remove();return}
+  const parents={game:state.mode==='battle'?'battleHome':state.mode==='theme'?'subject':'mode',results:state.mode==='battle'?'battleHome':state.mode==='theme'?'subject':'mode',stockEmpty:'subject',memoryGame:'memoryHome',poesieFable:'poesieHome',poesieRecite:'poesieHome',fichesView:'fichesTopics',battleResults:'battleHome'};
+  if(parents[s]){_retourEnCours=true;return navigate(parents[s])}
   if((s==='mode'||s==='lessonView')&&state.subjectId){
     _retourEnCours=true;
     return navigate('subject',{subjectId:state.subjectId});
@@ -962,6 +1014,16 @@ function _scrollToHomeAnchor(){
 }
 
 function navigate(screen,data){
+  if(['profilePicker','nameAsk'].includes(screen)&&profile.name&&!_profileAccess){
+    return parentalGate(()=>{_profileAccess=true;navigate(screen,data)});
+  }
+  if(state.screen==='game'&&screen!=='game'&&screen!=='results'&&!state.sessionSaved){
+    const access=_profileAccess;
+    finishGame(true);
+    _profileAccess=access;
+  }
+  if(screen==='mode'&&(data?.level||state.level)&&!data?.subjectId)state.subjectId=subjectOfLevel(data?.level||state.level);
+  if(!['profilePicker','nameAsk'].includes(screen))_profileAccess=false;
   // On note où on en était AVANT de changer d'écran.
   try{if(state.screen) _positions[_clePosition()]=window.scrollY}catch(e){}
   if(state.timerID){clearInterval(state.timerID);state.timerID=null}
@@ -1006,6 +1068,8 @@ function navigate(screen,data){
 
 function render(){
   switch(state.screen){
+    case 'stockEmpty':
+      app.innerHTML='<div class="card"><h2>Plus de questions disponibles</h2><p>Tu as réussi toutes les questions jouables de ce parcours, ou son stock est encore vide. Choisis un autre niveau ou un autre thème. Tes réussites restent enregistrées.</p><button class="btn-fire" onclick="retourArriere()">Choisir un autre parcours</button></div>';break;
     case 'home': renderHome(); break;
     case 'subject': renderSubject(); break;
     case 'mode': renderMode(); break;
@@ -1206,9 +1270,7 @@ function staticPoolOf(lvId){
 // {done, total, ratio} — combien de questions du niveau sont déjà réussies.
 function levelMastery(lvId){
   const pool=staticPoolOf(lvId);
-  const st=profile.exerciseStats||{};
-  let done=0;
-  for(const e of pool){const s=st[e.id]; if(s&&s.cor>0) done++;}
+  const done=pool.length-remainingOf(pool).length;
   return {done,total:pool.length,ratio:pool.length?done/pool.length:0};
 }
 function isLevelMastered(lvId){
@@ -1264,6 +1326,9 @@ function checkDailyQuest(){
 
 /* ════════ HOME ════════ */
 function renderHome(){
+  if(profile.name&&!localStorage.getItem('royaume_parent_pin')){
+    app.innerHTML='<div class="card"><h2>Avant de jouer : le code parental</h2><p>Parent, configurez votre code sur cet appareil avant de confier le jeu à votre enfant.</p><button class="btn-fire" onclick="parentalGate(()=>renderHome())">Configurer le code parental</button></div>';return;
+  }
   if(!profile.name){
     navigate(Object.keys(loadProfilesDict()).length>0?'profilePicker':'nameAsk');
     return;
@@ -1477,12 +1542,12 @@ function replayMisses(subjectId){
   for(const m of wanted){
     if(seen.has(m.id))continue;seen.add(m.id);
     const e=byId[m.id];
-    if(e&&isPlayableEx(e))list.push(e);
+    if(e&&isPlayableEx(e)&&remainingOf([e]).length)list.push(e);
     if(list.length>=10)break;
   }
   if(list.length===0){toast('Ces questions ne sont plus disponibles \u2014 elles ont \u00e9t\u00e9 remplac\u00e9es.');return}
   state.battleCode=null;
-  state.mode='revision';state.level=list[0].lv;state.exercises=dedupeExercises(list);
+  state.sessionSaved=false;state.mode='revision';state.level=list[0].lv;state.exercises=dedupeExercises(list);
   state.idx=0;state.selected=null;state.score=0;state.streak=0;state.maxStreak=0;state.results=[];
   state.timer=60;state.gameOver=false;state.startTime=Date.now();state.detailOpen=false;
   state.sessionXP=0;state.sessionCristaux=0;state.chestsOpen=[];
@@ -1544,7 +1609,7 @@ function renderSubject(){
     if(!th.length) return '';
     return '<div class="card mb-4" style="border-color:#c4b5fd">'
       +'<h3 class="fredoka" style="font-size:.85rem;color:#c4b5fd;margin-bottom:4px;letter-spacing:.1em;text-transform:uppercase">\u{1F3AF} R\u00e9viser un th\u00e8me</h3>'
-      +'<p class="sub" style="font-size:.75rem;margin-bottom:10px">10 questions sur un seul sujet. Celles que tu n\'as pas encore r\u00e9ussies passent en premier.</p>'
+      +'<p class="sub" style="font-size:.75rem;margin-bottom:10px">Jusqu’à 10 questions sur un seul sujet, jamais déjà réussies.</p>'
       +'<div class="theme-chips">'
       +th.map(([cat,n])=>'<button class="theme-chip" data-s="'+esc(s.id)+'" data-c="'+esc(cat)+'" onclick="startTheme(this.dataset.s,this.dataset.c)">'
           +esc(cat)+' <span class="theme-n">'+n+'</span></button>').join('')
@@ -1733,6 +1798,10 @@ function confirmAge(){
 
 /* ════════ SÉLECTEUR DE PROFIL (MULTI-UTILISATEUR) ════════ */
 function renderProfilePicker(){
+  if(!_profileAccess&&Object.keys(loadProfilesDict()).length){
+    app.innerHTML='<div class="card"><h2>Accès aux élèves</h2><button class="btn-fire" onclick="parentalGate(()=>{_profileAccess=true;renderProfilePicker()})">Code parental</button></div>';
+    return;
+  }
   const dict=loadProfilesDict();
   const active=getActiveName();
   const names=Object.keys(dict).sort((a,b)=>{
@@ -1777,6 +1846,7 @@ function renderProfilePicker(){
 function switchProfileIdx(i){const n=(window._profileNames||[])[i];if(n!=null)switchProfile(n)}
 function deleteProfileIdx(i){const n=(window._profileNames||[])[i];if(n!=null)deleteProfile(n)}
 async function switchProfile(name){
+  if(profile.name!==name&&!_profileAccess)return parentalGate(()=>{_profileAccess=true;switchProfile(name)});
   profile=loadProfileByName(name);
   const nameAid=await aidFromName(profile.name||name);
   const oldAid=(profile.aid&&profile.aid!==nameAid)?profile.aid:null;
@@ -1789,6 +1859,7 @@ async function switchProfile(name){
     try{
       if(oldAid){
         const old=await fetchProfileByAid(oldAid);
+        if(profile.name!==name)return;
         if(old&&old.name){profile=mergeProfiles(profile,migrate(old));profile.aid=nameAid;_localSave()}
       }
       const result=await syncProfileFromCloud();
@@ -1804,7 +1875,8 @@ function _doAddNewProfile(){
   navigate('nameAsk');
 }
 
-function deleteProfile(name){
+function deleteProfile(name,approved){
+  if(!approved)return parentalGate(()=>deleteProfile(name,true));
   if(!confirm('Supprimer le profil « '+name+' » sur cet appareil ? Action définitive.')) return;
   const dict=loadProfilesDict();
   delete dict[name];
@@ -1857,18 +1929,11 @@ function renderMode(){
     <div class="row"><div class="mode-icon">\u{1F4D6}</div><div class="flex-1">
       <h3 class="card-title" style="color:#22d3ee">La le\u00e7on</h3>
       <p class="sub">Les grandes id\u00e9es de ce niveau, avec un exemple pour chacune</p></div></div></div>
-  ${MODES.map((m,i)=>`<div class="card clickable fade-in" style="animation-delay:${i*.1}s" onclick="startGame('${m.id}')">
+  ${MODES.filter(m=>['training','challenge'].includes(m.id)).map((m,i)=>`<div class="card clickable fade-in" style="animation-delay:${i*.1}s" onclick="startGame('${m.id}')">
     <div class="row"><div class="mode-icon">${m.icon}</div><div class="flex-1">
       <h3 class="card-title" style="color:#fbbf24">${m.name}</h3>
       <p class="sub">${m.desc}</p></div></div></div>`).join('')}
-  <div class="card mb-4" style="border-color:#c4b5fd;background:linear-gradient(145deg,rgba(139,92,246,.1),rgba(59,130,246,.1))">
-    <h3 class="fredoka" style="color:#c4b5fd;font-size:.85rem;text-transform:uppercase;letter-spacing:.1em;margin-bottom:8px">\u{1F52E} Forge du Dragon (IA)</h3>
-    <p style="color:#faf5ff;font-size:.85rem;margin-bottom:6px">Le Dragon forge automatiquement de nouveaux d\u00e9fis quand tu en as besoin. Tu en as actuellement <strong style="color:#c4b5fd">${(profile.aiExercises||[]).filter(e=>e.lv===state.level).length} exercices IA</strong> disponibles pour ce niveau.</p>
-    <p style="color:#8b7ec8;font-size:.75rem;margin-bottom:10px;font-style:italic">\u{1F4A1} Astuce : les exos AI ont des nombres et des sc\u00e9narios diff\u00e9rents \u00e0 chaque g\u00e9n\u00e9ration.</p>
-    <button class="btn-stone btn-small" onclick="reqGen('${state.level}',10)" id="genBtn">\u{1F525} Forger 10 nouveaux d\u00e9fis maintenant</button>
-    <div id="genStatus" style="margin-top:8px;font-size:.8rem;color:#93c5fd"></div>
-  </div>
-  <button class="btn-stone mt-4" onclick="navigate('home')">\u2190 Retour</button>`;
+  <button class="btn-stone mt-4" onclick="retourArriere()">\u2190 Retour</button>`;
 }
 
 async function reqGen(lvId,n){
@@ -2016,8 +2081,8 @@ EX.push({id:'mapcy_cz',lv:'geo-carte-payseu',cat:"Pays d'Europe",diff:4,type:'ma
    2. profile.recentExIds — mémoire glissante des 150 dernières questions
       jouées. Écartées du tirage pour ne pas revoir la même d'une partie
       à l'autre.
-   3. Si tout écarter ne laisse pas assez d'exercices, on ré-admet les plus
-      anciennes d'abord : mieux vaut un rappel espacé qu'une partie vide. */
+   3. successfulQuestions exclut définitivement les réussites (ID + contenu).
+      Le cooldown ne peut réadmettre que des questions non réussies. */
 const RECENT_MAX=150;
 function _norm(t){
   return String(t||'').toLowerCase()
@@ -2035,8 +2100,8 @@ function _norm(t){
 function _qKey(e){
   if(!e) return '';
   const ch=Array.isArray(e.ch)?e.ch.map(_norm).sort().join('|'):'';
-  const extra=e.target?('@'+e.target):(e.flag?('@'+e.flag):'');
-  return _norm(e.q)+'||'+ch+extra;
+  const extra=JSON.stringify([e.type||'',e.map||'',e.target||'',e.flag||'',e.visual||'',e.visualImg||'',e.answers||[]]);
+  return _norm(String(e.q||'').replace(/[+*\/−×÷=<>-]/g,c=>' operator'+c.codePointAt(0)+' '))+'||'+ch+extra;
 }
 /* ══ COHÉRENCE DES QUESTIONS GÉNÉRÉES ══
    Le Dragon produit parfois une question dont l'indice de bonne réponse ne
@@ -2086,6 +2151,29 @@ function dedupeExercises(list){
   }
   return out;
 }
+function remainingOf(pool){
+  const keys=successfulKeys();
+  return pool.filter(e=>!keys.has('id:'+e.id)&&!keys.has('q:'+_qKey(e)));
+}
+
+function successfulKeys(p=profile){
+  const keys=new Set(Object.keys(p.successfulQuestions||{}));
+  // Old profiles had only per-ID counters and a bounded session history.
+  const known=EX.concat(p.aiExercises||[],p.customExercises||[]);
+  for(const e of known)if(p.exerciseStats?.[e.id]?.cor>0){keys.add('id:'+e.id);keys.add('q:'+_qKey(e))}
+  for(const session of p.sessions||[])for(const r of session.results||[]){
+    if(r.correct&&r.ex){keys.add('id:'+r.ex.id);keys.add('q:'+_qKey(r.ex))}
+  }
+  return keys;
+}
+function rememberSuccess(ex,correct){
+  if(!correct)return;
+  const ledger=profile.successfulQuestions||(profile.successfulQuestions={});
+  for(const key of successfulKeys())ledger[key]=true;
+  if(ex.id)ledger['id:'+ex.id]=true;
+  ledger['q:'+_qKey(ex)]=true;
+  saveProfile();
+}
 function recentExIds(){return Array.isArray(profile.recentExIds)?profile.recentExIds:[]}
 // Enregistre les questions réellement jouées (appelé en fin de partie).
 function rememberExercises(ids){
@@ -2108,7 +2196,7 @@ function _applyCooldown(candidates,n){
   return fresh.concat(stale);
 }
 function finalizePick(candidates,n){
-  return _applyCooldown(dedupeExercises(candidates),n).slice(0,n);
+  return _applyCooldown(remainingOf(dedupeExercises(candidates)),n).slice(0,n);
 }
 // fin anti-doublon
 
@@ -2419,23 +2507,19 @@ function niveauxDuSujet(subjectId){
 }
 
 /* Thèmes disponibles dans une matière, avec le nombre de questions.
-   Sous six questions, une révision tournerait toujours sur les mêmes : on
-   ne propose pas le thème plutôt que d'offrir une répétition. */
+   Même une seule question restante permet de terminer un thème.
+   Les thèmes terminés disparaissent du sélecteur. */
 function themesDuSujet(subjectId){
   const niv=niveauxDuSujet(subjectId);
   const compte={};
-  for(const e of EX){
+  for(const e of remainingOf(EX)){
     if(!e.cat||!niv.has(e.lv)||!isPlayableEx(e)) continue;
     compte[e.cat]=(compte[e.cat]||0)+1;
   }
-  return Object.entries(compte).filter(([,n])=>n>=6).sort((x,y)=>y[1]-x[1]);
+  return Object.entries(compte).filter(([,n])=>n>0).sort((x,y)=>y[1]-x[1]);
 }
 
 // Questions du niveau encore jamais réussies — celles qui restent à conquérir.
-function remainingOf(pool){
-  const st=profile.exerciseStats||{};
-  return pool.filter(e=>{const x=st[e.id];return !x||!(x.cor>0)});
-}
 
 function pickExercises(mode,lvId){
   const lv=LEVELS.find(l=>l.id===lvId);
@@ -2446,7 +2530,7 @@ function pickExercises(mode,lvId){
   // Toujours essayer le pool statique : tout niveau présent dans
   // exercises.js / exercises_extra.js a des exos prêts à l'emploi.
   const staticPool=EX.filter(e=>e.lv===lvId);
-  const pool=staticPool.concat(aiPool).concat(customPool).filter(isPlayableEx);
+  const pool=staticPool.concat(aiPool).concat(customPool).filter(e=>isPlayableEx(e)&&!_horsSujet(e,lvId));
   if(mode==='progression'){
     // La Quête piochait dans TOUTES les matières : on tombait sur des
     // questions de maths dans le Royaume des Explorateurs. Elle reste
@@ -2454,7 +2538,7 @@ function pickExercises(mode,lvId){
     // difficulté qui monte, pas le sujet qui change.
     const nivSujet=niveauxDuSujet(subjectOfLevel(lvId));
     const dansSujet=EX.filter(e=>nivSujet.has(e.lv)&&isPlayableEx(e));
-    const source=dansSujet.length>=6?dansSujet:EX.filter(e=>e.lv!=='cp'&&isPlayableEx(e));
+    const source=dansSujet;
     // finalizePick d'abord (dédoublonnage + cooldown), tri par difficulté ensuite :
     // l'ordre croissant doit rester vrai sur les 10 questions réellement tirées.
     return finalizePick(shuffle(source),10).sort((a,b)=>a.diff-b.diff);
@@ -2466,10 +2550,10 @@ function pickExercises(mode,lvId){
   if(mode==='theme'){
     const nivSujet=niveauxDuSujet(state.themeSubject);
     const pool=EX.concat(profile.aiExercises||[])
-      .filter(e=>nivSujet.has(e.lv)&&e.cat===state.themeCat&&isPlayableEx(e));
+      .filter(e=>nivSujet.has(e.lv)&&e.cat===state.themeCat&&isPlayableEx(e)&&!_horsSujet(e,e.lv));
     const reste=remainingOf(pool);
     const dejaVues=new Set(reste.map(e=>e.id));
-    // Ce qui n'est pas encore réussi passe devant : c'est ça, réviser.
+    // finalizePick exclut définitivement les réussites, même si le stock est court.
     const source=shuffle(reste).concat(shuffle(pool.filter(e=>!dejaVues.has(e.id))));
     return finalizePick(source,10);
   }
@@ -2477,7 +2561,7 @@ function pickExercises(mode,lvId){
     // Priorise les exercices rat\u00e9s ou jamais vus.
     // Ici on d\u00e9doublonne mais on n'applique PAS le cooldown : le mode adaptatif
     // existe justement pour refaire les questions rat\u00e9es r\u00e9cemment.
-    return dedupeExercises(pool.slice().sort((a,b)=>{
+    return dedupeExercises(remainingOf(pool).sort((a,b)=>{
       const sa=profile.exerciseStats[a.id]||{att:0,cor:0};
       const sb=profile.exerciseStats[b.id]||{att:0,cor:0};
       const scA=sa.att>0?sa.cor/sa.att:0.5;
@@ -2533,21 +2617,9 @@ function startTheme(subjectId,cat){
 
 async function startGame(mode){
   let exercises=pickExercises(mode,state.level);
-  // Si pas d'exercices (sujet non-maths sans pool g\u00e9n\u00e9r\u00e9), g\u00e9n\u00e9rer maintenant
-  if(exercises.length===0){
-    // Aucun exercice statique ni IA pour ce niveau : on tente la génération IA
-    // (avant : gate hasStatic — bloquait tout royaume non-maths si IA indispo).
-    app.innerHTML='<div class="card text-center" style="margin-top:60px"><div class="dragon-emoji float">\u{1F52E}</div><h2 class="title">Le Dragon prépare tes défis...</h2><p class="sub">Première g\u00e9n\u00e9ration : 5 \u00e0 15 secondes</p></div>';
-    try{
-      await generateAIExercises(state.level,10);
-      exercises=pickExercises(mode,state.level);
-    }catch(e){
-      alert('\u00c9chec g\u00e9n\u00e9ration : '+e.message);
-      return;
-    }
-  }
+  if(!exercises.length){navigate('stockEmpty');return}
   state.battleCode=null; // partie normale : ne jamais soumettre à une battle quittée en route
-  state.mode=mode;state.exercises=exercises;state.idx=0;state.selected=null;state.score=0;state.streak=0;state.maxStreak=0;state.results=[];state.timer=60;state.gameOver=false;state.startTime=Date.now();state.detailOpen=false;state.sessionXP=0;state.sessionCristaux=0;state.chestsOpen=[];
+  state.sessionSaved=false;state.mode=mode;state.exercises=exercises;state.idx=0;state.selected=null;state.score=0;state.streak=0;state.maxStreak=0;state.results=[];state.timer=60;state.gameOver=false;state.startTime=Date.now();state.detailOpen=false;state.sessionXP=0;state.sessionCristaux=0;state.chestsOpen=[];
   if(state.level) maybeAutoGenerate(state.level);
   navigate('game');
 }
@@ -2776,6 +2848,7 @@ function submitInputAnswer(){
   });
   state.selected=val;
   state.results.push({ex,choice:val,correct});
+  rememberSuccess(ex,correct);
   if(correct){
     state.score++;state.streak++;
     if(state.streak>state.maxStreak)state.maxStreak=state.streak;
@@ -2889,6 +2962,7 @@ function selectCountryAnswer(id){
   const correct=id===ex.target;
   state.selected=id;
   state.results.push({ex,choice:id,correct});
+  rememberSuccess(ex,correct);
   if(correct){
     state.score++;state.streak++;
     if(state.streak>state.maxStreak)state.maxStreak=state.streak;
@@ -2921,6 +2995,7 @@ function selectMapAnswer(id){
   const correct=id===ex.target;
   state.selected=id;
   state.results.push({ex,choice:id,correct});
+  rememberSuccess(ex,correct);
   if(correct){
     state.score++;state.streak++;
     if(state.streak>state.maxStreak)state.maxStreak=state.streak;
@@ -2957,6 +3032,7 @@ function selectAnswer(i){
   const ex=state.exercises[state.idx];
   const correct=i===ex.ans;
   state.results.push({ex,choice:i,correct});
+  rememberSuccess(ex,correct);
   if(correct){
     state.score++;
     state.streak++;
@@ -3074,6 +3150,8 @@ function nextQuestion(){
 
 /* ════════ FINISH + PERSIST ════════ */
 function finishGame(abandoned){
+  if(state.sessionSaved)return;
+  state.sessionSaved=true;
   if(state.timerID){clearInterval(state.timerID);state.timerID=null}
   if(state.autoNextID){clearTimeout(state.autoNextID);state.autoNextID=null}
   // state.results contient EXACTEMENT les questions auxquelles l'enfant a
@@ -3423,7 +3501,7 @@ function renderParent(){
   })()}
   ${weak.length>0?`<div class="card mb-4"><h3 class="fredoka" style="font-size:.85rem;color:#ef4444;margin-bottom:12px;letter-spacing:.1em;text-transform:uppercase">\u26A0\uFE0F Domaines \u00e0 travailler</h3>
   ${weak.map(([c,s])=>{const p=Math.round(s.cor/s.att*100);return `<div class="weak-cat"><div><div style="color:#fca5a5;font-weight:700">${c}</div><div style="font-size:.75rem;color:#8b7ec8">${s.cor}/${s.att} bonnes r\u00e9ponses</div></div><div style="color:#ef4444;font-weight:700;font-family:'Cinzel'">${p}%</div></div>`}).join('')}
-  <p style="font-size:.8rem;color:#8b7ec8;margin-top:8px;font-style:italic">Conseil : lancez le \u00ab Mode adaptatif \u00bb pour travailler ces domaines.</p></div>`:''}
+  <p style="font-size:.8rem;color:#8b7ec8;margin-top:8px;font-style:italic">Conseil : lancez \u00ab Jouer à mon rythme \u00bb pour travailler ces domaines.</p></div>`:''}
   ${strong.length>0?`<div class="card mb-4"><h3 class="fredoka" style="font-size:.85rem;color:#22c55e;margin-bottom:12px;letter-spacing:.1em;text-transform:uppercase">\u2B50 Points forts</h3>
   ${strong.map(([c,s])=>{const p=Math.round(s.cor/s.att*100);return `<div class="strong-cat"><div><div style="color:#bbf7d0;font-weight:700">${c}</div><div style="font-size:.75rem;color:#8b7ec8">${s.cor}/${s.att} bonnes r\u00e9ponses</div></div><div style="color:#22c55e;font-weight:700;font-family:'Cinzel'">${p}%</div></div>`}).join('')}</div>`:''}
   ${(function(){
@@ -4905,7 +4983,7 @@ async function createBattle(lvId,count,inviteName){
   const lv=gen?GEN_LABEL[gen]:LEVELS.find(l=>l.id===lvId);
   if(!lv){alert('Choisis d\'abord un niveau.');return}
   // dedupeExercises : deux joueurs ne doivent jamais tomber deux fois sur le même énoncé.
-  const pool=gen?[]:dedupeExercises(EX.filter(e=>e.lv===lvId&&isPlayableEx(e)&&Array.isArray(e.ch)&&e.ch.length===4));
+  const pool=gen?[]:remainingOf(dedupeExercises(EX.filter(e=>e.lv===lvId&&isPlayableEx(e)&&Array.isArray(e.ch)&&e.ch.length===4)));
   if(!gen&&pool.length<count){alert('Pas assez de questions pour ce niveau ('+pool.length+' dispo). Choisis un autre niveau ou 5 questions.');return}
   app.innerHTML='<div class="card text-center" style="margin-top:60px"><div class="dragon-emoji float">\u2694\ufe0f</div><h2 class="title">Pr\u00e9paration de la battle\u2026</h2></div>';
   // Code unique : on retire si une battle existe d\u00e9j\u00e0 sous ce code.
@@ -4963,10 +5041,11 @@ function startBattleGame(battle){
     exercises=(battle.exIds||[]).map(id=>byId[id]).filter(e=>isPlayableEx(e));
   }
   exercises=dedupeExercises(exercises);
+  if(remainingOf(exercises).length!==exercises.length){toast('Ce défi contient des questions déjà réussies. Choisissez un nouveau défi.');return}
   if(exercises.length===0){alert('Questions introuvables \u2014 vos versions de l\'app diff\u00e8rent. Mettez \u00e0 jour puis recr\u00e9ez une battle.');return}
   state.battleCode=battle.code;
   state.level=battle.level;
-  state.mode='battle';
+  state.sessionSaved=false;state.mode='battle';
   state.exercises=exercises;state.idx=0;state.selected=null;state.score=0;state.streak=0;state.maxStreak=0;state.results=[];state.timer=60;state.gameOver=false;state.startTime=Date.now();state.detailOpen=false;state.sessionXP=0;state.sessionCristaux=0;state.chestsOpen=[];
   navigate('game');
 }
@@ -5688,9 +5767,16 @@ function _choixMulti(n,k){
   }
   return shuffle([bon].concat(autres));
 }
+function tableQuestion(n,k){return {id:'table_'+n+'_'+k,q:n+' × '+k+' = ?',answers:[String(n*k)]}}
+function remainingTable(n){
+  if(tablesStats()[n]?.sansFaute)return [];
+  return remainingOf(Array.from({length:10},(_,i)=>tableQuestion(n,i+1))).map(e=>Number(e.id.split('_')[2]));
+}
 function startTableQuiz(n){
   arreterRecitation();
-  const q=shuffle([1,2,3,4,5,6,7,8,9,10]).map(k=>({k,ch:_choixMulti(n,k)}));
+  state.tableN=n;
+  const q=shuffle(remainingTable(n)).map(k=>({k,ch:_choixMulti(n,k)}));
+  if(!q.length){navigate('tablesLearn');toast('Toutes les questions de cette table sont déjà réussies. Choisis une autre table.');return}
   state.tblQuiz={n,q,i:0,score:0,choisi:null,fautes:[]};
   navigate('tablesQuiz');
 }
@@ -5736,6 +5822,7 @@ function repondreTable(v){
   const cur=Q.q[Q.i];
   const bon=Q.n*cur.k;
   Q.choisi=v;
+  rememberSuccess(tableQuestion(Q.n,cur.k),v===bon);
   if(v===bon)Q.score++;
   else Q.fautes.push(cur.k);
   renderTablesQuiz();
@@ -5750,7 +5837,7 @@ function suivantTable(){
 }
 function _finTableQuiz(t){
   const Q=state.tblQuiz;
-  const sansFaute=Q.score===Q.q.length;
+  const sansFaute=remainingTable(Q.n).length===0;
   // Une table n'est « apprise » qu'au sans-faute. Le score partiel rapporte
   // quand même des XP — il a fallu travailler — mais il ne pose pas l'étoile.
   const xp=Q.score*4+(sansFaute?20:0);
@@ -5760,7 +5847,7 @@ function _finTableQuiz(t){
   const st=tablesStats();
   const prec=st[Q.n]||{};
   st[Q.n]={
-    meilleur:Math.max(Number(prec.meilleur)||0,Q.score),
+    meilleur:Math.max(Number(prec.meilleur)||0,10-remainingTable(Q.n).length),
     sansFaute:!!prec.sansFaute||sansFaute,
     essais:(Number(prec.essais)||0)+1,
     date:today()
@@ -5819,7 +5906,7 @@ function renderMemoryHome(){
     +'<h2 class="title" style="color:#34d399;font-size:1.6rem">Memory</h2>'
     +'<p class="sub">Les cartes s\'affichent quelques secondes \u2014 plus il y en a, plus tu as de temps. M\u00e9morise-les, puis retrouve les paires. Aucune erreur \u2192 \u{1F451} super-bonus !</p>'
   +'</div>'
-  +MEMORY_MODES.map((m,i)=>{
+  +MEMORY_MODES.filter(m=>['training','challenge'].includes(m.id)).map((m,i)=>{
     const secs=memoryPreview(m.pairs);
     const best=stats[m.id];
     // Les anciens records ne retenaient que les coups : on en d\u00e9duit les
@@ -6107,4 +6194,12 @@ function _montrerMemWin(){
   try{requestAnimationFrame(aller)}catch(e){}
 }
 
+migrateLegacyProfile();
+profile=loadProfileByName(getActiveName());
+if(location.hash==='#lecons'&&profile.name)state.screen='lecons';
+
+try{
+  history.replaceState({royaume:true},'');history.pushState({royaume:true},'');
+  window.addEventListener('popstate',()=>{retourArriere();history.pushState({royaume:true},'')});
+}catch(e){}
 render();

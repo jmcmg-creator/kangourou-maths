@@ -25,6 +25,10 @@ function toggleTheme(){var h=document.documentElement;var light=!h.classList.con
 <style>
 /* Pas de zoom au double-appui (voir lecons/) ; le pincement reste possible. */
 html,body{touch-action:manipulation}
+input,select,textarea{font-size:16px!important}
+.parental-overlay{position:fixed;inset:0;z-index:9999;background:#0f0a2ef5;display:grid;place-items:center;padding:20px;overflow:auto}
+.parental-overlay .card{max-width:420px;width:100%}
+.parental-overlay input{display:block;margin:12px 0;padding:12px;width:100%}
 /* ══════════════════════════════════════════
    ENCHANTED KINGDOM — Dark Magical Theme
    ══════════════════════════════════════════ */
@@ -918,7 +922,7 @@ html.light .btn-stone:hover{background:rgba(180,83,9,0.08);border-color:rgba(180
 
 <header>
 <div class="header-left" id="headerHome">
-<span id="backArrow" class="hidden">&#8592;</span>
+<button id="backArrow" class="hidden" aria-label="Retour" style="min-width:44px;min-height:44px;background:none;border:0">&#8592;</button>
 <h1>&#x1F3F0; Le Royaume des Savoirs</h1>
 </div>
 <div class="header-right"><button id="themeToggle" onclick="toggleTheme()" aria-label="Mode clair / sombre" title="Mode clair / sombre">☀️</button><div class="header-sub">Apprends en t'amusant</div></div>
@@ -960,14 +964,14 @@ html.light .btn-stone:hover{background:rgba(180,83,9,0.08);border-color:rgba(180
 })();
 </script>
 
-<script src="exercises.js?v=15"></script>
-<script src="exercises_extra.js?v=9"></script>
-<script src="exercises_logic.js?v=1"></script>
+<script src="exercises.js?v=16"></script>
+<script src="exercises_extra.js?v=10"></script>
+<script src="exercises_logic.js?v=2"></script>
 <script src="cartes-monde.js?v=1"></script>
 <script src="config.js?v=2"></script>
 <script src="supa.js?v=2"></script>
 <script src="qr.js?v=1"></script>
-<script src="game.js?v=64"></script>
+<script src="game.js?v=65"></script>
 <script>
 // Service Worker : enregistré uniquement en HTTPS / localhost (sinon le navigateur refuse).
 if ('serviceWorker' in navigator && (location.protocol === 'https:' || location.hostname === 'localhost' || location.hostname === '127.0.0.1')) {
@@ -1008,5 +1012,6 @@ if ('serviceWorker' in navigator && (location.protocol === 'https:' || location.
   document.addEventListener('DOMContentLoaded', showOnlineState);
 })();
 </script>
+<script src="zoom.js?v=1"></script>
 </body>
 </html>

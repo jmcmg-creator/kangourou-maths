@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="fr">
 <head>
-<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1,minimum-scale=1,maximum-scale=5,user-scalable=yes,viewport-fit=cover">
 <title>🍎 Les Forces et la Gravité</title>
 <style>
 /* Pas de zoom au double-appui : un enfant qui tapote vite une tuile faisait
@@ -39,7 +39,7 @@ input[type=range]{width:100%;cursor:pointer;accent-color:#64a0ff}
 .back-btn{top:calc(12px + env(safe-area-inset-top,0px))!important;left:calc(12px + env(safe-area-inset-left,0px))!important;z-index:9999!important;min-height:44px;min-width:44px;display:inline-flex;align-items:center}
 </style></head>
 <body>
-<a class="back-btn" href="../index.html">← Retour</a>
+<a class="back-btn" href="../index.html#lecons">← Retour</a>
 <div class="header"><h1>🍎 Les Forces et la Gravité</h1><p>Pourquoi les choses tombent (et les planètes tournent)</p></div>
 <div class="main">
 
@@ -158,5 +158,6 @@ function draw(){
 }
 renderPlanets();renderWeights();draw();
 </script>
+<script src="../zoom.js?v=1"></script>
 </body>
 </html>
