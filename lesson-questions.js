@@ -30,15 +30,45 @@ function _qKey(e){
   }
   function key(q){return 'q:'+_qKey({q:q[0],ch:q[1]})}
   function pending(q){const x=current();return !!x&&!x.p.successfulQuestions?.[key(q)]}
-  function pass(q){
+  function record(q,choice,context={}){
     const x=current();if(!x)return false;
-    x.p.successfulQuestions={...(x.p.successfulQuestions||{}),[key(q)]:true};
+    const correct=choice===q[2];
+    if(correct)x.p.successfulQuestions={...(x.p.successfulQuestions||{}),[key(q)]:true};
+    const row={id:crypto.randomUUID(),date:new Date().toISOString(),exerciseId:context.id||'',
+      q:q[0],questionKey:_qKey({q:q[0],ch:q[1]}),choices:q[1].slice(),given:q[1][choice]||'(sans réponse)',answer:q[1][q[2]],
+      correct,level:context.level||'fiches',subject:context.subject||'sciences',category:context.category||'',
+      mode:'fiche',explanation:q[3]||''};
+    x.p.answerHistory=[...(x.p.answerHistory||[]),row];
     try{
       localStorage.setItem('royaume_profiles_v1',JSON.stringify(x.dict));
       localStorage.setItem('royaume_v3',JSON.stringify(x.p));
-      return true;
+      sync();return true;
     }catch(e){return false}
   }
+  function pass(q){return record(q,q[2])}
+  async function sync(){
+    const x=current();if(!x)return;
+    try{
+      if(window.Supa&&Supa.enabled()&&Supa.creds(x.name)){
+        const res=await Supa.saveProfile(x.name,x.p);
+        if(!res?.ok)throw new Error('sync');
+      }else if(x.p.aid){
+        const copy={...x.p};delete copy.name;
+        const res=await fetch('https://royaume-api.square-paris75.workers.dev/profile/'+x.p.aid,{
+          method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(copy)});
+        if(!res.ok)throw new Error('sync');
+      }else return;
+      const status=document.getElementById('lessonSyncStatus');if(status)status.remove();
+    }catch(e){
+      if(!document.getElementById('lessonSyncStatus')){
+        const status=document.createElement('p');status.id='lessonSyncStatus';status.setAttribute('role','status');
+        status.textContent='Réponses conservées sur cet appareil. Synchronisation en base en attente.';
+        document.body.appendChild(status);
+      }
+    }
+  }
+  window.addEventListener('online',sync);
+  window.addEventListener('pagehide',sync);
   function emptyMessage(){return current()?'Toutes les questions de cette fiche sont déjà réussies.':'Ouvre ton espace élève pour répondre aux questions.'}
-  return {key,pending,pass,emptyMessage};
+  return {key,pending,pass,record,emptyMessage};
 })();

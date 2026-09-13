@@ -587,9 +587,10 @@ function showInv(id){
   window.scrollTo(0,0);
 }
 function answerQ(btn,qi,ci){
+  if(btn.disabled)return;
   const inv=visibleList()[currentIdx];
   const good=inv.quiz[qi][2];
-  if(ci===good&&!LessonQuestions.pass(inv.quiz[qi]))alert('La réussite ne peut pas être sauvegardée sur cet appareil.');
+  if(!LessonQuestions.record(inv.quiz[qi],ci,{id:inv.id+':'+qi,category:inv.titre}))alert('La réponse ne peut pas être sauvegardée sur cet appareil.');
   const block=btn.parentElement;
   Array.from(block.children).forEach((b,i)=>{
     b.disabled=true;
@@ -612,7 +613,9 @@ function nextInv(){
 }
 renderGrid();
 </script>
-<script src="../lesson-questions.js?v=1"></script>
+<script src="../config.js?v=2"></script>
+<script src="../supa.js?v=3"></script>
+<script src="../lesson-questions.js?v=2"></script>
 <script src="../zoom.js?v=1"></script>
 </body>
 </html>

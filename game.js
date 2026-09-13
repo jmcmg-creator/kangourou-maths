@@ -326,7 +326,7 @@ const STORAGE_ACTIVE="royaume_active_v1";
    distinguer « la fonctionnalité est cassée » de « le téléphone n'a pas
    encore la mise à jour ».
    À bumper avec CACHE_VERSION (sw.js) et le ?v= (index.html). */
-const APP_VERSION='v45';
+const APP_VERSION='v46';
 
 function loadProfilesDict(){
   try{const d=localStorage.getItem(STORAGE_PROFILES); if(d) return JSON.parse(d)||{};}catch(e){}
@@ -340,11 +340,11 @@ function newProfile(){
   return {name:"",totalGames:0,totalQuestions:0,totalCorrect:0,bestStreak:0,sessions:[],catStats:{},exerciseStats:{},playDays:[],unlockedBadges:[],
     xp:0,cristaux:0,dragonnets:[],mainDragon:"main",stage:0,
     dailyQuest:null,aiExercises:[],recentMisses:[],aid:"",
-    grade:null,age:null,unlocks:{},unlockProgress:{},recentExIds:[],lessonsSeen:[],successfulQuestions:{}};
+    grade:null,age:null,unlocks:{},unlockProgress:{},recentExIds:[],lessonsSeen:[],successfulQuestions:{},answerHistory:[]};
 }
 function migrate(p){
   const base=newProfile();
-  const out=Object.assign(base,p);
+  const out=migrateAnswerHistory(Object.assign(base,p));
   out.successfulQuestions=Object.fromEntries([...successfulKeys(out)].map(k=>[k,true]));
   return _purgeHorsSujet(_purgeIncoherentAi(_restoreJudithXp(out)));
 }
@@ -407,6 +407,7 @@ function saveProfile(){
   if(!profile.name) return;
   const dict=loadProfilesDict();
   profile.successfulQuestions={...(dict[profile.name]?.successfulQuestions||{}),...(profile.successfulQuestions||{})};
+  profile.answerHistory=mergeAnswerHistory(dict[profile.name]?.answerHistory||[],profile.answerHistory||[]);
   dict[profile.name]=profile;
   saveProfilesDict(dict);
   setActiveName(profile.name);
@@ -525,6 +526,7 @@ function mergeProfiles(a,b){
   out.catStats=mergeStats(a.catStats,b.catStats);
   out.exerciseStats=mergeStats(a.exerciseStats,b.exerciseStats);
   out.successfulQuestions={...(a.successfulQuestions||{}),...(b.successfulQuestions||{})};
+  out.answerHistory=mergeAnswerHistory(migrateAnswerHistory({...a}).answerHistory||[],migrateAnswerHistory({...b}).answerHistory||[]);
   out.poesieStats=mergeStats(a.poesieStats,b.poesieStats);
   // Contenus ajoutés par le parent + IA + battles + amis : union par identifiant.
   const uniById=(k,idf)=>{
@@ -564,7 +566,8 @@ async function syncProfileFromCloud(){
   await ensureAid();
   if(!profile.aid) return null;
   const active=profile;
-  const remote=await fetchProfileByAid(active.aid);
+  const remote=(window.Supa&&Supa.enabled()&&Supa.creds(active.name))
+    ?await Supa.loadProfile(active.name):await fetchProfileByAid(active.aid);
   if(profile!==active||!remote) return null;
   // FUSION au lieu de remplacement : impossible de perdre des XP.
   const before=JSON.stringify(profile);
@@ -580,19 +583,26 @@ async function pushProfileToCloud(){
   // Si Supabase est actif et que ce profil a un pseudo enregistré, la sync
   // sécurisée (jeton + pseudo unique) prend le relais : on n'envoie plus
   // rien au Worker historique non authentifié.
-  try{if(window.Supa&&Supa.enabled()&&Supa.creds(profile.name)) return}catch(e){}
+  try{if(window.Supa&&Supa.enabled()&&Supa.creds(profile.name)){
+    const result=await Supa.saveProfile(profile.name,profile);
+    state.answerHistorySync=result?.ok?'ok':'pending';
+    if(result?.error)toast('Historique conservé sur cet appareil ; synchronisation en attente ('+result.error+').');
+    return result;
+  }}catch(e){toast('Historique conservé sur cet appareil ; synchronisation en attente.');return}
   try{
     // RGPD enfants : on ne transmet JAMAIS le prénom au serveur. La copie
     // cloud est identifiée par l'AID seul ; le prénom reste sur l'appareil.
     const copie=Object.assign({},profile);
     delete copie.name;
-    await fetch(API_BASE+'/profile/'+profile.aid,{
+    const response=await fetch(API_BASE+'/profile/'+profile.aid,{
       method:'PUT',
       headers:{'Content-Type':'application/json'},
       body:JSON.stringify(copie),
-      keepalive:true
+      keepalive:false
     });
-  }catch(e){}
+    state.answerHistorySync=response.ok?'ok':'pending';
+    if(!response.ok)toast('Historique conservé sur cet appareil ; synchronisation en attente.');
+  }catch(e){state.answerHistorySync='pending'}
 }
 
 function getSyncLink(){
@@ -757,7 +767,7 @@ saveProfile=function(){
   if(_syncTimer) clearTimeout(_syncTimer);
   _syncTimer=setTimeout(()=>{
     pushProfileToCloud();
-    try{if(window.Supa&&Supa.enabled()&&Supa.creds(profile.name))Supa.saveProfile(profile.name,profile)}catch(e){}
+
   },1000);
 };
 // Flush immédiat : pousse vers le cloud sans attendre le debounce. Sur mobile,
@@ -768,6 +778,7 @@ function flushProfileSync(){
 }
 document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='hidden')flushProfileSync();});
 window.addEventListener('pagehide',flushProfileSync);
+window.addEventListener('online',()=>{pushProfileToCloud()});
 
 /* ════════ EMBERS ════════
    Les braises coûtent cher en batterie : chaque une crée puis détruit un
@@ -2160,6 +2171,10 @@ function remainingOf(pool){
 
 function successfulKeys(p=profile){
   const keys=new Set(Object.keys(p.successfulQuestions||{}));
+  for(const row of p.answerHistory||[])if(row.correct){
+    if(row.exerciseId)keys.add('id:'+row.exerciseId);
+    if(row.questionKey)keys.add('q:'+row.questionKey);
+  }
   // Old profiles had only per-ID counters and a bounded session history.
   const known=EX.concat(p.aiExercises||[],p.customExercises||[]);
   for(const e of known)if(p.exerciseStats?.[e.id]?.cor>0){keys.add('id:'+e.id);keys.add('q:'+_qKey(e))}
@@ -2168,6 +2183,81 @@ function successfulKeys(p=profile){
   }
   return keys;
 }
+
+/* Journal permanent des tentatives, indépendant du journal des dernières erreurs. */
+function mergeAnswerHistory(...lists){
+  const byId=new Map();
+  for(const row of lists.flat())if(row&&typeof row.id==='string'&&!byId.has(row.id))byId.set(row.id,row);
+  return [...byId.values()].sort((a,b)=>String(a.date).localeCompare(String(b.date))||a.id.localeCompare(b.id));
+}
+function answerAttempt(ex,correct,choice,meta={}){
+  let given='';
+  if(ex.type==='map-country')given=mapSetOf(ex).pays[choice]?.name||'(sans réponse)';
+  else if(ex.type==='map')given=(MAP_POINTS[ex.map]||[]).find(p=>p.id===choice)?.name||'(sans réponse)';
+  else if(Array.isArray(ex.ch)&&Number.isInteger(choice))given=ex.ch[choice]||'(sans réponse)';
+  else given=choice==null?'(sans réponse)':String(choice);
+  return {id:meta.id||(crypto.randomUUID?crypto.randomUUID():Date.now().toString(36)+'-'+Math.random().toString(36).slice(2)),
+    date:meta.date||new Date().toISOString(),exerciseId:String(ex.id||''),questionKey:_qKey(ex),q:String(ex.q||''),
+    choices:Array.isArray(ex.ch)?ex.ch.slice():[],given,answer:exAnswerText(ex),
+    correct:!!correct,level:ex.lv||'',subject:subjectOfLevel(ex.lv)||'',
+    category:ex.cat||'',mode:meta.mode||state.mode||'',explanation:ex.se||''};
+}
+function migrateAnswerHistory(p){
+  if(p.answerHistoryVersion===1)return p;
+  const old=[];
+  const seen=new Set();
+  for(const session of p.sessions||[])for(const [i,r] of (session.results||[]).entries()){
+    if(!r?.ex)continue;
+    old.push(answerAttempt(r.ex,r.correct,r.choice,{id:r.attemptId||'legacy:'+session.date+':'+i+':'+r.ex.id,date:session.date,mode:session.mode}));
+    seen.add(session.date+'|'+r.ex.id);
+  }
+  for(const m of p.recentMisses||[]){
+    if(seen.has(m.date+'|'+m.id))continue;
+    old.push({id:'legacy-miss:'+m.date+':'+m.id,date:m.date,exerciseId:m.id,q:m.q||'',choices:[],
+      given:m.given||'(non conservée)',answer:m.ans||'',correct:false,level:m.lv||'',subject:m.subject||'',
+      category:m.cat||'',mode:m.mode||'',explanation:m.se||''});
+  }
+  p.answerHistory=mergeAnswerHistory(p.answerHistory||[],old);
+  p.answerHistoryVersion=1;
+  return p;
+}
+function recordAnswer(ex,correct,choice,meta={}){
+  const row=answerAttempt(ex,correct,choice,meta);
+  profile.answerHistory=mergeAnswerHistory(profile.answerHistory||[],[row]);
+  const r=state.results?.[state.results.length-1];
+  if(r?.ex===ex)r.attemptId=row.id;
+  if(correct)rememberSuccess(ex,true);else saveProfile();
+  return row;
+}
+function setAnswerHistoryFilter(filter){
+  state.answerHistoryFilter=['all','correct','wrong'].includes(filter)?filter:'all';
+  state.answerHistoryPage=0;renderParent();
+}
+function answerHistoryPage(delta){
+  state.answerHistoryPage=Math.max(0,(state.answerHistoryPage||0)+delta);renderParent();
+}
+function renderAnswerHistory(){
+  const all=profile.answerHistory||[];
+  const filter=state.answerHistoryFilter||'all';
+  const rows=all.filter(r=>filter==='all'||r.correct===(filter==='correct')).slice().reverse();
+  const page=Math.min(state.answerHistoryPage||0,Math.max(0,Math.ceil(rows.length/25)-1));
+  const ok=all.filter(r=>r.correct).length;
+  return '<div class="card mb-4"><h3>Historique des réponses</h3><p class="sub">'
+    +all.length+' tentatives · '+ok+' réussies · '+(all.length-ok)+' ratées</p>'
+    +'<p class="sub">'+(state.answerHistorySync==='ok'?'Dernière synchronisation en base réussie.':'Synchronisation en base non confirmée ; les réponses sont conservées sur cet appareil.')+'</p>'
+    +'<p class="sub">Une erreur reste conservée même si la question est réussie ensuite.</p>'
+    +'<div class="btn-row">'+[['all','Toutes'],['correct','Réussies'],['wrong','Ratées']].map(([id,label])=>
+      '<button class="btn-stone" aria-pressed="'+(filter===id)+'" onclick="setAnswerHistoryFilter(\''+id+'\')">'+label+'</button>').join('')+'</div>'
+    +(rows.length?rows.slice(page*25,page*25+25).map(r=>'<details class="miss-card"><summary>'
+      +(r.correct?'✅ ':'❌ ')+esc(r.q)+'</summary><p class="sub">'+esc(r.date)+' · '+esc(r.subject||r.level)+' · '+esc(r.category)+'</p>'
+      +'<p>Réponse de l’élève : <b>'+esc(r.given)+'</b></p><p>Bonne réponse : <b>'+esc(r.answer)+'</b></p>'
+      +(r.choices?.length?'<p>Choix proposés : '+r.choices.map(esc).join(' · ')+'</p>':'')
+      +'<p>'+esc(r.explanation)+'</p></details>').join(''):'<p>Aucune réponse dans ce filtre.</p>')
+    +'<div class="btn-row"><button class="btn-stone" onclick="answerHistoryPage(-1)" '+(page===0?'disabled':'')+'>Précédent</button>'
+    +'<span>Page '+(page+1)+' / '+Math.max(1,Math.ceil(rows.length/25))+'</span>'
+    +'<button class="btn-stone" onclick="answerHistoryPage(1)" '+((page+1)*25>=rows.length?'disabled':'')+'>Suivant</button></div></div>';
+}
+
 function rememberSuccess(ex,correct){
   if(!correct)return;
   const ledger=profile.successfulQuestions||(profile.successfulQuestions={});
@@ -2850,7 +2940,7 @@ function submitInputAnswer(){
   });
   state.selected=val;
   state.results.push({ex,choice:val,correct});
-  rememberSuccess(ex,correct);
+  recordAnswer(ex,correct,state.selected);
   if(correct){
     state.score++;state.streak++;
     if(state.streak>state.maxStreak)state.maxStreak=state.streak;
@@ -2964,7 +3054,7 @@ function selectCountryAnswer(id){
   const correct=id===ex.target;
   state.selected=id;
   state.results.push({ex,choice:id,correct});
-  rememberSuccess(ex,correct);
+  recordAnswer(ex,correct,state.selected);
   if(correct){
     state.score++;state.streak++;
     if(state.streak>state.maxStreak)state.maxStreak=state.streak;
@@ -2997,7 +3087,7 @@ function selectMapAnswer(id){
   const correct=id===ex.target;
   state.selected=id;
   state.results.push({ex,choice:id,correct});
-  rememberSuccess(ex,correct);
+  recordAnswer(ex,correct,state.selected);
   if(correct){
     state.score++;state.streak++;
     if(state.streak>state.maxStreak)state.maxStreak=state.streak;
@@ -3034,7 +3124,7 @@ function selectAnswer(i){
   const ex=state.exercises[state.idx];
   const correct=i===ex.ans;
   state.results.push({ex,choice:i,correct});
-  rememberSuccess(ex,correct);
+  recordAnswer(ex,correct,state.selected);
   if(correct){
     state.score++;
     state.streak++;
@@ -3483,6 +3573,7 @@ function renderParent(){
     <div class="stat-card"><div class="stat-val" style="color:${pct>=60?'#22c55e':'#ef4444'}">${pct}%</div><div class="stat-label">R\u00e9ussite</div></div>
     <div class="stat-card"><div class="stat-val" style="color:#fbbf24">${totalMinutes}m</div><div class="stat-label">Temps total</div></div>
   </div></div>
+  ${renderAnswerHistory()}
   ${(function(){
     const g=gradeByRank(profile.grade);
     const rows=SUBJECTS.filter(su=>(su.levels||[]).some(l=>levelMinGrade(l)!==null)).map(su=>{
@@ -5824,7 +5915,7 @@ function repondreTable(v){
   const cur=Q.q[Q.i];
   const bon=Q.n*cur.k;
   Q.choisi=v;
-  rememberSuccess(tableQuestion(Q.n,cur.k),v===bon);
+  recordAnswer({...tableQuestion(Q.n,cur.k),type:'input',lv:'ce1-ce2',cat:'Tables',se:Q.n+' × '+cur.k+' = '+bon},v===bon,v,{mode:'tables'});
   if(v===bon)Q.score++;
   else Q.fautes.push(cur.k);
   renderTablesQuiz();
