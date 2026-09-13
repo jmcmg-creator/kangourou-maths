@@ -98,7 +98,7 @@ Les consignes AGENTS.md et CLAUDE.md ont été lues sur `origin/docs/agents-md` 
 - Migration depuis les compteurs historiques et les réponses des anciennes sessions. La sauvegarde locale intervient dès la bonne réponse pour les QCM, saisies et cartes. Fusion du registre lors de la synchronisation. La progression de niveau utilise aussi le registre immédiat.
 - Questions ratées : peuvent être reposées. Questions réussies : exclues de tous les modes de quiz, révisions et créations de battles statiques. Une battle reçue contenant déjà une réussite est refusée intégralement : réduire sa liste fausserait la comparaison des scores.
 - Stock court : partie de 1 à 10 questions. Stock vide/terminé : écran explicite proposant un autre parcours ; pas de génération imposée ni de recyclage. Les thèmes terminés disparaissent. Les tables suivent la même règle et les anciens sans-faute restent acquis.
-- Leçons, consultation volontaire des corrigés, récitation de poésie et jeux de paires restent des activités consultables/rejouables ; le registre concerne les questions évaluées des quiz, pas une interdiction de revoir un contenu pédagogique.
+- Les mini-quiz Ingénieur et Inventions utilisent également le même registre par élève et la même identité de contenu. Leurs questions réussies disparaissent ; une fiche terminée affiche un message. La consultation volontaire des leçons et corrigés, la récitation de poésie et les jeux de paires restent disponibles.
 - Code parental local à six chiffres, stocké sous forme de condensat salé, requis à chaque accès aux profils. Pas de grâce de quinze minutes. Après cinq erreurs : attente d’une minute, conservée au rechargement. Le code reste propre à l’appareil et ne part pas dans les profils cloud.
 - Installation/migration : un parent configure le code avant de confier le jeu. Le défi adulte antérieur sert uniquement à ce premier paramétrage, qui demande deux saisies identiques. Aucun code universel ni réinitialisation enfant. Un stockage indisponible bloque la validation du code.
 - Reprise du dernier élève au démarrage ; accès à un autre profil via lien de synchronisation également protégé. Une réponse cloud arrivée après un changement de profil ne peut plus fusionner dans le nouvel élève.
@@ -111,8 +111,8 @@ Deux modes visibles : **Jouer à mon rythme** (sans chrono, adaptation existante
 
 ## Validation et limites
 
-- `npm test` : suite existante et nouveaux tests parcours/zoom, tous réussis. Vérification de toutes les combinaisons niveau × mode pour exclure les réussites, migration, fusion, isolation, stock minimal/vide, battle, tables, navigation et autorisation parentale.
-- `node --check game.js`, `node --check zoom.js`, `git diff --check` : réussis.
+- `npm test` : suite existante et nouveaux tests parcours/zoom, tous réussis. Vérification de toutes les combinaisons niveau × mode pour exclure les réussites, migration, fusion, isolation, stock minimal/vide, battle, tables, mini-quiz des fiches, navigation et autorisation parentale.
+- `node --check game.js`, `node --check zoom.js`, `node --check lesson-questions.js`, `git diff --check` : réussis.
 - Test réel dans le navigateur intégré, avec deux profils fictifs et connexions externes bloquées : mauvais code refusé, bon code accepté, second changement soumis au code, annulation, retour navigateur, deux modes, question de parité réussie puis absente des thèmes après rechargement ; élève actif et 1/50 conservés.
 - `npm run verify:questions` exécuté : bloqué par `ANTHROPIC_API_KEY manquant`. Le classement de toutes les catégories et les signaux de maths ont été audités ; cela ne vaut pas certification factuelle exhaustive de chaque énoncé.
 - Le bouton de zoom est testé pour la compensation à 3× et la restauration du viewport. Le pincement physique et la remise à 100 % dans WKWebView doivent encore être vérifiés sur iPhone/iPad ; aucun appareil ni build TestFlight n’a été utilisé.
@@ -126,3 +126,5 @@ npm test
 npm run audit:categories
 npm run verify:questions # nécessite ANTHROPIC_API_KEY
 ```
+
+Complément finalisé le 13 septembre 2026 : mini-quiz des fiches, conservation du registre lors d’une sauvegarde provenant d’un ancien écran et reprise de la synchronisation au démarrage.

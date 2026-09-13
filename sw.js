@@ -25,6 +25,7 @@ const SHELL_URLS = [
   './qr.js?v=1',
   './game.js?v=65',
   './zoom.js?v=1',
+  './lesson-questions.js?v=1',
   './lecons/planetes.html',
   './lecons/cycle-eau.html',
   './lecons/ingenieur.html',

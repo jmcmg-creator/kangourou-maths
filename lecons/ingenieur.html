@@ -215,6 +215,7 @@ function showDetail(i){
   const quizEl = document.getElementById('dQuiz');
   quizEl.innerHTML = '';
   m.quiz.forEach((quiz, qi) => {
+    if(!LessonQuestions.pending(quiz))return;
     const [q, choices, ans, expl] = quiz;
     const block = document.createElement('div');
     block.className = 'q-block';
@@ -227,7 +228,7 @@ function showDetail(i){
       btn.textContent = choice;
       btn.onclick = () => {
         [...cwrap.children].forEach(b => b.disabled = true);
-        if (ci === ans) btn.classList.add('correct');
+        if (ci === ans) {btn.classList.add('correct');if(!LessonQuestions.pass(quiz))alert('La réussite ne peut pas être sauvegardée sur cet appareil.');}
         else { btn.classList.add('wrong'); cwrap.children[ans].classList.add('correct'); }
         block.querySelector('.q-expl').classList.add('show');
       };
@@ -241,9 +242,11 @@ function showDetail(i){
     quizEl.appendChild(block);
   });
 
+  if(!quizEl.children.length)quizEl.textContent=LessonQuestions.emptyMessage();
   window.scrollTo(0,0);
 }
 </script>
+<script src="../lesson-questions.js?v=1"></script>
 <script src="../zoom.js?v=1"></script>
 </body>
 </html>

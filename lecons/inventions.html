@@ -580,14 +580,16 @@ function showInv(id){
     +'</div>').join('');
   document.getElementById('dSavais').innerHTML=inv.savais;
   document.getElementById('dQuiz').innerHTML=inv.quiz.map((q,qi)=>
-    '<div class="q-block"><div class="q-question">'+q[0]+'</div><div class="q-choices">'
+    !LessonQuestions.pending(q)?'':'<div class="q-block"><div class="q-question">'+q[0]+'</div><div class="q-choices">'
     +q[1].map((c,ci)=>'<button class="q-choice" onclick="answerQ(this,'+qi+','+ci+')">'+c+'</button>').join('')
     +'</div><div class="q-expl" id="expl-'+qi+'">'+q[3]+'</div></div>').join('');
+  if(!document.getElementById('dQuiz').children.length)document.getElementById('dQuiz').textContent=LessonQuestions.emptyMessage();
   window.scrollTo(0,0);
 }
 function answerQ(btn,qi,ci){
   const inv=visibleList()[currentIdx];
   const good=inv.quiz[qi][2];
+  if(ci===good&&!LessonQuestions.pass(inv.quiz[qi]))alert('La réussite ne peut pas être sauvegardée sur cet appareil.');
   const block=btn.parentElement;
   Array.from(block.children).forEach((b,i)=>{
     b.disabled=true;
@@ -610,6 +612,7 @@ function nextInv(){
 }
 renderGrid();
 </script>
+<script src="../lesson-questions.js?v=1"></script>
 <script src="../zoom.js?v=1"></script>
 </body>
 </html>

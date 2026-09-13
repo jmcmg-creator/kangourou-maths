@@ -406,6 +406,7 @@ function loadProfileByName(name){
 function saveProfile(){
   if(!profile.name) return;
   const dict=loadProfilesDict();
+  profile.successfulQuestions={...(dict[profile.name]?.successfulQuestions||{}),...(profile.successfulQuestions||{})};
   dict[profile.name]=profile;
   saveProfilesDict(dict);
   setActiveName(profile.name);
@@ -1715,6 +1716,7 @@ async function setName(){
   // Standardise la clé sur le prénom : tous les appareils regarderont ici.
   profile.aid=aid;
   if(localKey&&localKey!==profile.name) delete dict[localKey];
+  profile.successfulQuestions={...(dict[profile.name]?.successfulQuestions||{}),...(profile.successfulQuestions||{})};
   dict[profile.name]=profile;
   saveProfilesDict(dict);
   setActiveName(profile.name);
@@ -6196,6 +6198,12 @@ function _montrerMemWin(){
 
 migrateLegacyProfile();
 profile=loadProfileByName(getActiveName());
+window.addEventListener('pageshow',e=>{
+  if(e.persisted&&profile.name){profile=loadProfileByName(getActiveName());render()}
+});
+if(profile.name)setTimeout(async()=>{
+  try{const result=await syncProfileFromCloud();if(result==='merged'&&state.screen==='home')render();pushProfileToCloud()}catch(e){}
+},100);
 if(location.hash==='#lecons'&&profile.name)state.screen='lecons';
 
 try{

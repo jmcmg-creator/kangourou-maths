@@ -74,6 +74,16 @@ test('tables : réussite immédiate, reste décroissant et ancien sans-faute mig
   assert(!ctx.remainingTable(7).includes(8));assert.equal(ctx.remainingTable(7).length,9);
   ctx.tablesStats()[7]={sansFaute:true};assert.equal(ctx.remainingTable(7).length,0);
 });
+test('mini-quiz des fiches : même identité, persistance et isolation',()=>{
+  vm.runInContext(readFileSync(join(racine,'lesson-questions.js'),'utf8'),ctx);
+  ctx.profile=ctx.migrate({name:'Test',grade:3});ctx.saveProfile();
+  const q=['Quelle planète ?', ['Mercure','Vénus'],0,'Mercure'];
+  assert.equal(ctx.LessonQuestions.key(q),'q:'+ctx._qKey({q:q[0],ch:q[1]}));
+  assert(ctx.LessonQuestions.pending(q));assert(ctx.LessonQuestions.pass(q));assert(!ctx.LessonQuestions.pending(q));
+  ctx.saveProfile();assert(!ctx.LessonQuestions.pending(q),'une sauvegarde de l’ancien état conserve la réussite de la fiche');
+  ctx.profile=ctx.migrate({name:'Autre',grade:3});ctx.saveProfile();assert(ctx.LessonQuestions.pending(q));
+  ctx.profile=ctx.loadProfileByName('Test');ctx.saveProfile();
+});
 let requests=0,approved;
 ctx.parentalGate=fn=>{requests++;approved=fn};ctx.render=()=>{};
 ctx.document.getElementById=()=>null;
