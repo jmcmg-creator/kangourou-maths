@@ -2,7 +2,7 @@
 (function(){
   let back;
   try{back=JSON.parse(sessionStorage.getItem('royaume_section_return')||'null')}catch(e){return}
-  if(!back||back.name!==localStorage.getItem('royaume_active_v1')||typeof back.hash!=='string'||!back.hash.startsWith('#section='))return;
+  if(!back||location.hash!==back.hash||back.name!==localStorage.getItem('royaume_active_v1')||typeof back.hash!=='string'||!back.hash.startsWith('#section='))return;
   const target='../index.html'+back.hash;
   for(const a of document.querySelectorAll('a[href]')){
     if(a.getAttribute('href')==='../index.html'||a.getAttribute('href')==='../index.html#lecons'){

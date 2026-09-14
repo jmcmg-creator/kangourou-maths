@@ -32,7 +32,6 @@ Les manipulations libres servent à explorer : elles ne sont pas comptées comme
 La progression objets → représentations → symboles s’inspire de l’approche concrète, imagée, abstraite décrite par le ministère de l’Éducation de Singapour. La représentation numérique de la tablette est une simulation ; l’enfant peut aussi partager une feuille ou de vrais objets avec un adulte. Le modèle en barres et la référence à un même entier servent à comprendre les fractions, pas seulement à appliquer une recette.
 
 Sources primaires :
-- [Programme de mathématiques primaire, ministère de Singapour](https://www.moe.gov.sg/-/media/files/primary/mathematics_syllabus_primary_1_to_6.ashx).
 - [Présentation de l’approche concrète, imagée, abstraite, école Angsana du ministère](https://www.angsanapri.moe.edu.sg/teaching-n-learning/mathematics/).
 
 Il s’agit d’une adaptation, sans affiliation ni affirmation que cette méthode serait universellement la meilleure. Les paliers sont un choix produit : ils ne remplacent pas l’évaluation d’un enseignant.

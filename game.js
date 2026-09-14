@@ -326,7 +326,7 @@ const STORAGE_ACTIVE="royaume_active_v1";
    distinguer « la fonctionnalité est cassée » de « le téléphone n'a pas
    encore la mise à jour ».
    À bumper avec CACHE_VERSION (sw.js) et le ?v= (index.html). */
-const APP_VERSION='v47';
+const APP_VERSION='v48';
 
 function loadProfilesDict(){
   try{const d=localStorage.getItem(STORAGE_PROFILES); if(d) return JSON.parse(d)||{};}catch(e){}
@@ -3155,7 +3155,7 @@ function showExplanation(ex,correct){
   // n'apprend rien, et l'enfant croirait à un bug en voyant ses XP baisser.
   const gainHTML=correct
     ?`<span class="xp-gain">+${Math.round(ex.diff*10*(state.streak>=10?3:state.streak>=5?2:state.streak>=3?1.5:1))} XP</span> <span class="crystal-gain">\u{1F48E} +${ex.diff*2}</span>`
-    :`<span class="xp-perte">\u2212${xpMalus(ex)} XP</span>`;
+    :state.mode==='section'?'':`<span class="xp-perte">\u2212${xpMalus(ex)} XP</span>`;
   const isLast=state.gameOver||state.idx>=state.exercises.length-1;
   // Bonne r\u00e9ponse : passage auto (message discret). Mauvaise : bouton Suivant.
   // Retour en arrière : possible dès qu'une question précédente a été
@@ -6441,6 +6441,7 @@ function toggleFractionPart(i){
   if(!Number.isInteger(i)||i<0||i>=state.fractionParts)return;
   const set=new Set(state.fractionSelected||[]);if(set.has(i))set.delete(i);else set.add(i);
   state.fractionSelected=[...set];renderSectionLesson();
+  document.querySelector('.fraction-touch button:nth-child('+(i+1)+')')?.focus();
 }
 function setFractionScale(n){state.fractionScale=Math.max(1,Math.min(4,Number(n)||1));renderSectionLesson()}
 function setFractionGroups(n){if([2,3,4,6].includes(Number(n)))state.fractionGroups=Number(n);renderSectionLesson()}
@@ -6523,7 +6524,7 @@ function openSectionLab(file){
   const hash='#section='+encodeURIComponent(state.subjectId)+'&notion='+encodeURIComponent(state.sectionKey);
   // Le fragment reste sur index.html : cache hors ligne identique.
   try{sessionStorage.setItem('royaume_section_return',JSON.stringify({name:profile.name,hash}))}catch(e){}
-  location.href=file;
+  location.href=file+hash;
 }
 function restoreSectionLink(){
   if(!profile.name||!location.hash.startsWith('#section='))return false;
