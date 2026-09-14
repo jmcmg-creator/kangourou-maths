@@ -108,5 +108,14 @@ for(const e of added){
   assert.equal(new Set(e.ch).size,e.ch.length);
   assert(e.ans>=0&&e.ans<e.ch.length);assert(e.lessonTier>=1&&e.lessonTier<=5);
 }
+const savedEX=ctx.EX,savedProfile=ctx.profile;
+ctx.profile=ctx.migrate({name:'Ordre',grade:5,age:11});
+ctx.EX=[
+ {...first[0],id:'a_avance',q:'Exemple avancé distinct',lv:'cm1-cm2',diff:1,lessonTier:1},
+ {...first[0],id:'z_base',q:'Exemple simple distinct',lv:'ce1-ce2',diff:1,lessonTier:1}
+];
+ctx.state.subjectId='maths';ctx.state.sectionKey='|Fractions';
+assert.equal(ctx.pickSectionExercises()[0].id,'z_base','à palier égal, les bases avant le niveau avancé');
+ctx.EX=savedEX;ctx.profile=savedProfile;
 console.log('✅ Sections : matières et disciplines isolées, paliers croissants, erreurs et réussites conservées, reprise, manipulations, liens et navigation.');
 process.exit(0);

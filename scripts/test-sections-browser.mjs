@@ -50,7 +50,7 @@ try{
   await page.getByRole('button',{name:/Commencer les questions/}).click();
   const first=await page.evaluate(()=>({id:state.exercises[state.idx].id,ans:state.exercises[state.idx].ans}));
   await page.locator('.choices-grid button').nth(first.ans).click();
-  assert.equal(await page.evaluate(()=>state.autoNextID),null,'l’élève garde le temps de lire');
+  assert.equal(await page.evaluate(()=>Boolean(state.autoNextID)),false,'l’élève garde le temps de lire');
   await page.getByRole('button',{name:'Question suivante →',exact:true}).click();
   const wrong=await page.evaluate(()=>({ans:state.exercises[state.idx].ans,n:state.exercises[state.idx].ch.length}));
   await page.locator('.choices-grid button').nth((wrong.ans+1)%wrong.n).click();

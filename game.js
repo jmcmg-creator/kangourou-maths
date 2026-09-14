@@ -326,7 +326,7 @@ const STORAGE_ACTIVE="royaume_active_v1";
    distinguer « la fonctionnalité est cassée » de « le téléphone n'a pas
    encore la mise à jour ».
    À bumper avec CACHE_VERSION (sw.js) et le ?v= (index.html). */
-const APP_VERSION='v49';
+const APP_VERSION='v50';
 
 function loadProfilesDict(){
   try{const d=localStorage.getItem(STORAGE_PROFILES); if(d) return JSON.parse(d)||{};}catch(e){}
@@ -6317,7 +6317,7 @@ function pickSectionExercises(){
   // On termine les bases avant de passer au palier suivant. Les questions
   // ratées restent disponibles ; jamais de recyclage d'une réussite.
   return remaining.filter(e=>sectionTier(e)===tier)
-    .sort((a,b)=>levelMinGrade(a.lv)-levelMinGrade(b.lv)||String(a.id).localeCompare(String(b.id)))
+    .sort((a,b)=>(levelMinGrade(LEVELS.find(l=>l.id===a.lv))||0)-(levelMinGrade(LEVELS.find(l=>l.id===b.lv))||0)||String(a.id).localeCompare(String(b.id)))
     .slice(0,5);
 }
 function sectionCards(subjectId){
