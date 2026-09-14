@@ -308,3 +308,347 @@ const EX=[
 {id:"geo32",lv:"geo-cm2",cat:"Monuments",diff:2,q:"Les pyramides de Giza sont en ?",ch:["Amérique","Asie","Afrique (Égypte)","Europe"],ans:2,se:"Égypte : Giza (banlieue du Caire).",pourquoi:"Monuments archéologiques égyptiens.",methode:["Pyramides : tombes pharaons (~2500 av. J.-C.)."],regle:"Monuments antiques : localisation exacte.",exemple:"Colosseum : Rome (Italie, Europe).",sk:"Monuments"}
 ];
 
+
+/* Parcours fractions : identification, comparaison, quantités, opérations, problèmes. */
+EX.push(...[
+  {
+    "id": "section_frac_01",
+    "lv": "ce1-ce2",
+    "cat": "Fractions",
+    "lessonTier": 1,
+    "diff": 1,
+    "q": "Une bande est partagée en 3 cases égales. Une seule case est colorée. Quelle fraction est colorée ?",
+    "ch": [
+      "1/3",
+      "3/1",
+      "1/2",
+      "2/3"
+    ],
+    "ans": 0,
+    "se": "Une part prise sur 3 parts égales s’écrit 1/3.",
+    "regle": "Une part prise sur 3 parts égales s’écrit 1/3."
+  },
+  {
+    "id": "section_frac_02",
+    "lv": "ce1-ce2",
+    "cat": "Fractions",
+    "lessonTier": 1,
+    "diff": 1,
+    "q": "Un disque a 6 secteurs égaux. Deux secteurs sont bleus. Quelle fraction du disque est bleue ?",
+    "ch": [
+      "6/2",
+      "2/6",
+      "2/3",
+      "4/6"
+    ],
+    "ans": 1,
+    "se": "Le 6 compte les secteurs égaux de l’entier ; le 2 compte les secteurs bleus.",
+    "regle": "Le 6 compte les secteurs égaux de l’entier ; le 2 compte les secteurs bleus."
+  },
+  {
+    "id": "section_frac_03",
+    "lv": "ce1-ce2",
+    "cat": "Fractions",
+    "lessonTier": 1,
+    "diff": 1,
+    "q": "Une tablette compte 5 parts égales. Les 5 parts sont prises. Quelle fraction représente la tablette entière ?",
+    "ch": [
+      "1/5",
+      "5/1",
+      "5/5",
+      "0/5"
+    ],
+    "ans": 2,
+    "se": "5 parts sur les 5 parts de l’entier : 5/5 = 1.",
+    "regle": "5 parts sur les 5 parts de l’entier : 5/5 = 1."
+  },
+  {
+    "id": "section_frac_04",
+    "lv": "ce1-ce2",
+    "cat": "Fractions",
+    "lessonTier": 1,
+    "diff": 1,
+    "q": "Deux enfants découpent un gâteau en deux morceaux inégaux. Peut-on dire que chaque morceau est une moitié ?",
+    "ch": [
+      "Oui, car il y a deux morceaux",
+      "Seulement le plus grand",
+      "Seulement le plus petit",
+      "Non, les deux parts doivent être égales"
+    ],
+    "ans": 3,
+    "se": "Une moitié est une des deux parts égales d’un même entier.",
+    "regle": "Une moitié est une des deux parts égales d’un même entier."
+  },
+  {
+    "id": "section_frac_05",
+    "lv": "cm1-cm2",
+    "cat": "Fractions",
+    "lessonTier": 2,
+    "diff": 2,
+    "q": "Pour deux bandes de même longueur, quelle partie est la plus grande : 1/2 ou 1/6 ?",
+    "ch": [
+      "1/6",
+      "Elles sont égales",
+      "1/2",
+      "Impossible à comparer"
+    ],
+    "ans": 2,
+    "se": "Partager le même entier en 2 fait des parts plus grandes que le partager en 6.",
+    "regle": "Partager le même entier en 2 fait des parts plus grandes que le partager en 6."
+  },
+  {
+    "id": "section_frac_06",
+    "lv": "cm1-cm2",
+    "cat": "Fractions",
+    "lessonTier": 2,
+    "diff": 2,
+    "q": "Tu recoupes chacune des 3 parts d’une bande en 2 parts égales. Comment s’écrit maintenant 1/3 de cette bande ?",
+    "ch": [
+      "1/6",
+      "2/6",
+      "2/3",
+      "3/6"
+    ],
+    "ans": 1,
+    "se": "Une ancienne part devient 2 petites parts, sur 6 au total : 1/3 = 2/6.",
+    "regle": "Une ancienne part devient 2 petites parts, sur 6 au total : 1/3 = 2/6."
+  },
+  {
+    "id": "section_frac_07",
+    "lv": "cm1-cm2",
+    "cat": "Fractions",
+    "lessonTier": 2,
+    "diff": 2,
+    "q": "Quelle fraction représente trois parts sur huit parts égales ?",
+    "ch": [
+      "8/3",
+      "3/5",
+      "5/8",
+      "3/8"
+    ],
+    "ans": 3,
+    "se": "Le numérateur est 3, le dénominateur est 8 : on écrit 3/8.",
+    "regle": "Le numérateur est 3, le dénominateur est 8 : on écrit 3/8."
+  },
+  {
+    "id": "section_frac_08",
+    "lv": "cm1-cm2",
+    "cat": "Fractions",
+    "lessonTier": 2,
+    "diff": 2,
+    "q": "Deux bandes identiques ont 7 cases égales. L’une a 2 cases colorées, l’autre 5. Quelle comparaison est vraie ?",
+    "ch": [
+      "2/7 < 5/7",
+      "2/7 > 5/7",
+      "2/7 = 5/7",
+      "7/2 < 7/5"
+    ],
+    "ans": 0,
+    "se": "Les cases ont la même taille. Cinq cases couvrent plus de place que deux.",
+    "regle": "Les cases ont la même taille. Cinq cases couvrent plus de place que deux."
+  },
+  {
+    "id": "section_frac_09",
+    "lv": "ce1-ce2",
+    "cat": "Fractions",
+    "lessonTier": 3,
+    "diff": 2,
+    "q": "Un trésor de 10 pièces est partagé en 2 groupes égaux. Combien de pièces y a-t-il dans un groupe ?",
+    "ch": [
+      "2",
+      "4",
+      "5",
+      "8"
+    ],
+    "ans": 2,
+    "se": "Un groupe représente la moitié du trésor : 10 ÷ 2 = 5.",
+    "regle": "Un groupe représente la moitié du trésor : 10 ÷ 2 = 5."
+  },
+  {
+    "id": "section_frac_10",
+    "lv": "ce1-ce2",
+    "cat": "Fractions",
+    "lessonTier": 3,
+    "diff": 2,
+    "q": "Quatre enfants se partagent équitablement 16 autocollants. Quelle quantité représente un quart des autocollants ?",
+    "ch": [
+      "2",
+      "4",
+      "8",
+      "12"
+    ],
+    "ans": 1,
+    "se": "On forme 4 groupes égaux : 16 ÷ 4 = 4 autocollants dans un groupe.",
+    "regle": "On forme 4 groupes égaux : 16 ÷ 4 = 4 autocollants dans un groupe."
+  },
+  {
+    "id": "section_frac_11",
+    "lv": "cm1-cm2",
+    "cat": "Fractions",
+    "lessonTier": 3,
+    "diff": 3,
+    "q": "Pour prendre les 2/3 de 18 perles, combien de perles prends-tu ?",
+    "ch": [
+      "6",
+      "9",
+      "12",
+      "15"
+    ],
+    "ans": 2,
+    "se": "Un tiers vaut 18 ÷ 3 = 6 perles. Deux tiers valent 6 × 2 = 12 perles.",
+    "regle": "Un tiers vaut 18 ÷ 3 = 6 perles. Deux tiers valent 6 × 2 = 12 perles."
+  },
+  {
+    "id": "section_frac_12",
+    "lv": "cm1-cm2",
+    "cat": "Fractions",
+    "lessonTier": 3,
+    "diff": 3,
+    "q": "Une boîte contient 20 cartes. Tu en offres 3/5. Combien de cartes offres-tu ?",
+    "ch": [
+      "3",
+      "4",
+      "8",
+      "12"
+    ],
+    "ans": 3,
+    "se": "Un cinquième vaut 20 ÷ 5 = 4 cartes. Trois cinquièmes valent 4 × 3 = 12 cartes.",
+    "regle": "Un cinquième vaut 20 ÷ 5 = 4 cartes. Trois cinquièmes valent 4 × 3 = 12 cartes."
+  },
+  {
+    "id": "section_frac_13",
+    "lv": "cm1-cm2",
+    "cat": "Fractions",
+    "lessonTier": 3,
+    "diff": 3,
+    "q": "Tu utilises 1/4 de 28 briques pour un mur. Combien de briques restent disponibles ?",
+    "ch": [
+      "7",
+      "14",
+      "21",
+      "24"
+    ],
+    "ans": 2,
+    "se": "Un quart de 28 vaut 7. Il reste 28 − 7 = 21 briques.",
+    "regle": "Un quart de 28 vaut 7. Il reste 28 − 7 = 21 briques."
+  },
+  {
+    "id": "section_frac_14",
+    "lv": "cm1-cm2",
+    "cat": "Fractions",
+    "lessonTier": 4,
+    "diff": 3,
+    "q": "Deux huitièmes d’une bande sont rouges, puis trois autres huitièmes sont bleus. Quelle fraction est colorée en tout ?",
+    "ch": [
+      "5/16",
+      "6/8",
+      "5/8",
+      "1/8"
+    ],
+    "ans": 2,
+    "se": "Les parts ont toutes la taille d’un huitième : 2/8 + 3/8 = 5/8.",
+    "regle": "Les parts ont toutes la taille d’un huitième : 2/8 + 3/8 = 5/8."
+  },
+  {
+    "id": "section_frac_15",
+    "lv": "cm1-cm2",
+    "cat": "Fractions",
+    "lessonTier": 4,
+    "diff": 3,
+    "q": "Une bouteille contenait 5/6 de litre. On boit 2/6 de litre. Quelle quantité reste-t-il ?",
+    "ch": [
+      "3/6 de litre",
+      "3/0 de litre",
+      "7/6 de litre",
+      "3/12 de litre"
+    ],
+    "ans": 0,
+    "se": "On retire 2 sixièmes aux 5 sixièmes : 5/6 − 2/6 = 3/6.",
+    "regle": "On retire 2 sixièmes aux 5 sixièmes : 5/6 − 2/6 = 3/6."
+  },
+  {
+    "id": "section_frac_16",
+    "lv": "6e-5e",
+    "cat": "Fractions",
+    "lessonTier": 4,
+    "diff": 4,
+    "q": "Quelle est la somme de 1/3 et 1/6 ?",
+    "ch": [
+      "2/9",
+      "1/9",
+      "1/2",
+      "2/3"
+    ],
+    "ans": 2,
+    "se": "Un tiers vaut deux sixièmes. Donc 2/6 + 1/6 = 3/6 = 1/2.",
+    "regle": "Un tiers vaut deux sixièmes. Donc 2/6 + 1/6 = 3/6 = 1/2."
+  },
+  {
+    "id": "section_frac_17",
+    "lv": "6e-5e",
+    "cat": "Fractions",
+    "lessonTier": 4,
+    "diff": 4,
+    "q": "Quelle quantité représente 3/4 − 1/2 ?",
+    "ch": [
+      "2/2",
+      "1/4",
+      "2/4",
+      "1/2"
+    ],
+    "ans": 1,
+    "se": "Une moitié vaut deux quarts : 3/4 − 2/4 = 1/4.",
+    "regle": "Une moitié vaut deux quarts : 3/4 − 2/4 = 1/4."
+  },
+  {
+    "id": "section_frac_18",
+    "lv": "6e-5e",
+    "cat": "Fractions",
+    "lessonTier": 5,
+    "diff": 5,
+    "q": "Un ruban mesure 32 cm. Tu prends les 3/4 du ruban, puis la moitié de ce morceau. Quelle longueur obtiens-tu ?",
+    "ch": [
+      "8 cm",
+      "16 cm",
+      "24 cm",
+      "12 cm"
+    ],
+    "ans": 3,
+    "se": "Les 3/4 de 32 font 24 cm. La moitié de 24 fait 12 cm.",
+    "regle": "Les 3/4 de 32 font 24 cm. La moitié de 24 fait 12 cm."
+  },
+  {
+    "id": "section_frac_19",
+    "lv": "6e-5e",
+    "cat": "Fractions",
+    "lessonTier": 5,
+    "diff": 5,
+    "q": "Dans un jardin, 1/3 de la surface porte des fleurs et 1/4 porte des légumes. Le reste est du gazon. Quelle fraction est du gazon ?",
+    "ch": [
+      "7/12",
+      "5/12",
+      "2/7",
+      "1/2"
+    ],
+    "ans": 1,
+    "se": "Sur 12 parts : 4 pour les fleurs et 3 pour les légumes. Il reste 12 − 4 − 3 = 5 parts, donc 5/12.",
+    "regle": "Sur 12 parts : 4 pour les fleurs et 3 pour les légumes. Il reste 12 − 4 − 3 = 5 parts, donc 5/12."
+  },
+  {
+    "id": "section_frac_20",
+    "lv": "6e-5e",
+    "cat": "Fractions",
+    "lessonTier": 5,
+    "diff": 5,
+    "q": "Les 2/5 d’un trésor représentent 14 pièces. Combien de pièces compte le trésor entier ?",
+    "ch": [
+      "28",
+      "35",
+      "40",
+      "70"
+    ],
+    "ans": 1,
+    "se": "Si 2 parts valent 14, une part vaut 7. Les 5 parts valent 5 × 7 = 35.",
+    "regle": "Si 2 parts valent 14, une part vaut 7. Les 5 parts valent 5 × 7 = 35."
+  }
+]);

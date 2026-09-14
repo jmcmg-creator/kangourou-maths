@@ -43,3 +43,16 @@ jobs:
           psql -v ON_ERROR_STOP=1 -f supabase/answer-history.sql
           psql -v ON_ERROR_STOP=1 -f supabase/answer-history.sql
           psql -v ON_ERROR_STOP=1 -f scripts/test-answer-history.sql
+      - name: Installer le navigateur de test
+        run: |
+          npm install --no-save --package-lock=false playwright
+          npx playwright install --with-deps chromium
+      - name: Tester les sections sur navigateur mobile et bureau
+        run: node scripts/test-sections-browser.mjs
+      - name: Captures des leçons
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: lecons-fractions
+          path: artifacts/
+          if-no-files-found: ignore

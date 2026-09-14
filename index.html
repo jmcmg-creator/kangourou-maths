@@ -909,6 +909,39 @@ a.detail-link:hover{color:var(--gold)}
 #themeToggle:hover{transform:scale(1.12) rotate(15deg);background:rgba(251,191,36,0.12)}
 html.light .btn-stone:hover{background:rgba(180,83,9,0.08);border-color:rgba(180,83,9,0.25);box-shadow:0 4px 14px rgba(60,40,140,0.12)}
 }
+
+/* Sections et manipulations : utilisables au clavier et sur petit écran. */
+.section-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,220px),1fr));gap:12px}
+.section-card{display:flex;flex-direction:column;gap:8px;text-align:left;padding:18px;border:1px solid #8877bc;border-radius:18px;background:#211839;color:#faf5ff;font:inherit;cursor:pointer}
+.section-card strong{font-size:1.15rem;color:#fde68a}
+.section-card:hover,.section-card:focus-visible{border-color:#fbbf24;outline:2px solid #fbbf24;outline-offset:3px}
+.section-track{height:7px;background:#493966;border-radius:20px;overflow:hidden}
+.section-track>span{display:block;height:100%;background:#34d399}
+.section-page{line-height:1.75}
+.section-page p,.section-page h3,.section-page ol{margin:14px 0}
+.section-page ol{padding-left:24px}
+.section-page select{margin:8px;padding:8px 12px;color:#faf5ff;background:#302246;border:1px solid #c4b5fd;border-radius:8px;font:inherit}
+.section-route{display:flex;flex-wrap:wrap;gap:8px;margin:18px 0}
+.section-route>span{background:#392955;padding:6px 10px;border-radius:20px;font-size:.85rem}
+.section-tiers li{padding:8px 0}
+.fraction-bar{display:grid;gap:0;border:2px solid #fbbf24;border-radius:10px;overflow:hidden;margin:18px 0;width:100%;min-height:56px}
+.fraction-bar>span,.fraction-bar>button{display:flex;align-items:center;justify-content:center;min-width:0;min-height:52px;border:0;border-right:1px solid #fbbf24;background:#342640;color:#faf5ff;font:inherit}
+.fraction-bar>:last-child{border-right:0}
+.fraction-bar .painted{background:#b45309;color:white}
+.fraction-touch button{cursor:pointer;min-height:64px}
+.fraction-touch button:focus-visible{outline:3px solid #fff;outline-offset:-4px}
+.fraction-symbol{width:64px;text-align:center;font-size:2rem;font-weight:bold;margin:12px auto;color:#fde68a;line-height:1.4}
+.fraction-symbol hr{border:0;border-top:2px solid currentColor}
+.coin-groups{display:flex;flex-wrap:wrap;gap:10px}
+.coin-groups>div{border:2px dashed #c4b5fd;border-radius:12px;padding:10px;max-width:100%;overflow-wrap:anywhere}
+.section-counter{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:10px 0}
+.section-counter button{min-width:44px;min-height:44px}
+.number-blocks{display:flex;flex-wrap:wrap;gap:8px;margin:14px 0}
+.ten-block,.unit-block{padding:5px;background:#0f766e;color:white;border:1px solid #5eead4}
+.ten-block{width:70px;text-align:center}
+.area-grid{display:grid;border:3px solid #fbbf24;max-width:300px;margin:18px auto}
+.area-grid span{aspect-ratio:1;border:1px solid #5eead4;background:#115e59;display:grid;place-items:center}
+
 </style>
 </head>
 <body>
@@ -964,14 +997,14 @@ html.light .btn-stone:hover{background:rgba(180,83,9,0.08);border-color:rgba(180
 })();
 </script>
 
-<script src="exercises.js?v=16"></script>
+<script src="exercises.js?v=17"></script>
 <script src="exercises_extra.js?v=10"></script>
 <script src="exercises_logic.js?v=2"></script>
 <script src="cartes-monde.js?v=1"></script>
 <script src="config.js?v=2"></script>
 <script src="supa.js?v=3"></script>
 <script src="qr.js?v=1"></script>
-<script src="game.js?v=66"></script>
+<script src="game.js?v=67"></script>
 <script>
 // Service Worker : enregistré uniquement en HTTPS / localhost (sinon le navigateur refuse).
 if ('serviceWorker' in navigator && (location.protocol === 'https:' || location.hostname === 'localhost' || location.hostname === '127.0.0.1')) {

@@ -326,7 +326,7 @@ const STORAGE_ACTIVE="royaume_active_v1";
    distinguer « la fonctionnalité est cassée » de « le téléphone n'a pas
    encore la mise à jour ».
    À bumper avec CACHE_VERSION (sw.js) et le ?v= (index.html). */
-const APP_VERSION='v46';
+const APP_VERSION='v47';
 
 function loadProfilesDict(){
   try{const d=localStorage.getItem(STORAGE_PROFILES); if(d) return JSON.parse(d)||{};}catch(e){}
@@ -966,6 +966,7 @@ function _clePosition(){
   // mémorisée n'était jamais retrouvée.
   const s=state.screen;
   if(s==='subject') return 'subject|'+(state.subjectId||'');
+  if(s==='section'||s==='sectionLesson')return s+'|'+state.subjectId+'|'+state.sectionKey;
   if(s==='mode')    return 'mode|'+(state.level||'');
   if(s==='tablesLearn') return 'tablesLearn|'+(state.tableN||'');
   return s;
@@ -977,6 +978,9 @@ function _clePosition(){
 function retourArriere(){
   const s=state.screen;
   if(document.getElementById('parentalGate')){document.getElementById('parentalGate').remove();return}
+  if(s==='sectionLesson')return navigate('section');
+  if(s==='section')return navigate('subject');
+  if(['game','results','stockEmpty'].includes(s)&&state.mode==='section')return navigate('section');
   const parents={game:state.mode==='battle'?'battleHome':state.mode==='theme'?'subject':'mode',results:state.mode==='battle'?'battleHome':state.mode==='theme'?'subject':'mode',stockEmpty:'subject',memoryGame:'memoryHome',poesieFable:'poesieHome',poesieRecite:'poesieHome',fichesView:'fichesTopics',battleResults:'battleHome'};
   if(parents[s]){_retourEnCours=true;return navigate(parents[s])}
   if((s==='mode'||s==='lessonView')&&state.subjectId){
@@ -1084,6 +1088,8 @@ function render(){
       app.innerHTML='<div class="card"><h2>Plus de questions disponibles</h2><p>Tu as réussi toutes les questions jouables de ce parcours, ou son stock est encore vide. Choisis un autre niveau ou un autre thème. Tes réussites restent enregistrées.</p><button class="btn-fire" onclick="retourArriere()">Choisir un autre parcours</button></div>';break;
     case 'home': renderHome(); break;
     case 'subject': renderSubject(); break;
+    case 'section': renderSection(); break;
+    case 'sectionLesson': renderSectionLesson(); break;
     case 'mode': renderMode(); break;
     case 'game': renderGame(); break;
     case 'results': renderResults(); break;
@@ -1576,6 +1582,10 @@ function renderSubject(){
     <h2 class="title" style="color:${s.color};font-size:1.6rem">${s.name}</h2>
     <p class="sub">${s.desc}</p>
   </div>
+  <h3 class="mb-3">Les sections</h3>
+  <p class="sub mb-3">Choisis une notion. Découvre sa leçon, puis avance par petits paliers.</p>
+  ${sectionCards(s.id)}
+  <details class="mt-4"><summary>Autres entraînements par niveau</summary>
   ${subjectProgressBanner(s)}
   ${visibleLevels.map((lv,i)=>{
     const open=isLevelUnlocked(lv.id);
@@ -1613,20 +1623,7 @@ function renderSubject(){
       <div class="arrow">${open?'→':''}</div>
     </div>
   </div>`}).join('')}
-  ${(function(){
-    // Réviser par thème : un thème traverse les niveaux (les fractions
-    // commencent en CE2 et continuent en 5e), donc il a sa place ici et non
-    // dans un niveau. Seuls les niveaux ouverts alimentent le tirage.
-    const th=themesDuSujet(s.id);
-    if(!th.length) return '';
-    return '<div class="card mb-4" style="border-color:#c4b5fd">'
-      +'<h3 class="fredoka" style="font-size:.85rem;color:#c4b5fd;margin-bottom:4px;letter-spacing:.1em;text-transform:uppercase">\u{1F3AF} R\u00e9viser un th\u00e8me</h3>'
-      +'<p class="sub" style="font-size:.75rem;margin-bottom:10px">Jusqu’à 10 questions sur un seul sujet, jamais déjà réussies.</p>'
-      +'<div class="theme-chips">'
-      +th.map(([cat,n])=>'<button class="theme-chip" data-s="'+esc(s.id)+'" data-c="'+esc(cat)+'" onclick="startTheme(this.dataset.s,this.dataset.c)">'
-          +esc(cat)+' <span class="theme-n">'+n+'</span></button>').join('')
-      +'</div></div>';
-  })()}
+  </details>
   <button class="btn-stone mt-4" onclick="navigate('home')">\u2190 Retour</button>`;
 }
 
@@ -1661,28 +1658,11 @@ const LECONS=[
   {id:"atomes",title:"Les Atomes",emoji:"⚛️",color:"#50c8f0",desc:"Les briques qui composent tout l'univers",file:"lecons/atomes.html"}
 ];
 function renderLecons(){
-  app.innerHTML=`
-    <div class="text-center fade-in py-6">
-      <div style="font-size:3.5rem">🔬</div>
-      <h2 class="title" style="color:#22d3ee;font-size:1.6rem">Leçons Interactives</h2>
-      <p class="sub" style="color:var(--text-mid)">Des expériences animées pour comprendre la science</p>
-    </div>
-    ${LECONS.map((l,i)=>`
-      <div class="kingdom-gate fade-in" style="animation-delay:${i*.07}s;--k-color:${l.color}" onclick="location.href='${l.file}'">
-        <div class="kingdom-glow" style="background:radial-gradient(ellipse at 30% 50%,${l.color}18,transparent 70%)"></div>
-        <div class="kingdom-border-glow" style="--k-color:${l.color}"></div>
-        <div class="kingdom-inner">
-          <div class="kingdom-mascot" style="font-size:3rem">${l.emoji}</div>
-          <div class="kingdom-info">
-            <h3 class="kingdom-name" style="color:${l.color}">${l.title}</h3>
-            <p class="kingdom-stage">${l.desc}</p>
-          </div>
-          <div class="kingdom-enter" style="color:${l.color}">➔</div>
-        </div>
-      </div>
-    `).join('')}
-    <button class="btn-stone mt-4" onclick="navigate('home')">← Retour</button>
-  `;
+  app.innerHTML='<div class="text-center py-6"><h2 class="title">Apprendre par section</h2><p class="sub">Choisis une matière, puis une notion à comprendre et à pratiquer.</p></div>'
+    +SUBJECTS.filter(s=>(s.levels||[]).length).map(s=>'<button class="section-card" style="width:100%;margin-bottom:12px" data-s="'+esc(s.id)+'" onclick="navigate(\'subject\',{subjectId:this.dataset.s})"><strong>'+s.icon+' '+esc(s.name)+'</strong><span class="sub">Leçons et questions progressives</span></button>').join('')
+    +'<details class="mt-4"><summary>Toutes les expériences de sciences</summary>'
+    +LECONS.map(l=>'<a class="btn-stone" style="display:block;margin-top:10px" href="'+esc(l.file)+'">'+esc(l.emoji+' '+l.title)+'</a>').join('')+'</details>'
+    +'<button class="btn-stone mt-4" onclick="navigate(\'home\')">← Retour</button>';
 }
 
 function renderNameAsk(){
@@ -2614,6 +2594,7 @@ function themesDuSujet(subjectId){
 // Questions du niveau encore jamais réussies — celles qui restent à conquérir.
 
 function pickExercises(mode,lvId){
+  if(mode==='section')return pickSectionExercises();
   const lv=LEVELS.find(l=>l.id===lvId);
   // Inclure les exercices AI générés (persistés dans le profil)
   const aiPool=(profile.aiExercises||[]).filter(e=>e.lv===lvId&&!_horsSujet(e,lvId));
@@ -2712,7 +2693,7 @@ async function startGame(mode){
   if(!exercises.length){navigate('stockEmpty');return}
   state.battleCode=null; // partie normale : ne jamais soumettre à une battle quittée en route
   state.sessionSaved=false;state.mode=mode;state.exercises=exercises;state.idx=0;state.selected=null;state.score=0;state.streak=0;state.maxStreak=0;state.results=[];state.timer=60;state.gameOver=false;state.startTime=Date.now();state.detailOpen=false;state.sessionXP=0;state.sessionCristaux=0;state.chestsOpen=[];
-  if(state.level) maybeAutoGenerate(state.level);
+  if(state.level&&mode!=='section') maybeAutoGenerate(state.level);
   navigate('game');
 }
 
@@ -2813,6 +2794,7 @@ function renderQuestPath(){
    Une question à 3 de difficulté rapporte 30 XP et en coûte 12. */
 const XP_MALUS_PAR_DIFFICULTE=4;
 function xpMalus(ex){
+  if(state.mode==='section')return 0; // Apprendre : l’erreur donne une explication, pas une pénalité.
   const d=(ex&&ex.diff)?ex.diff:3;
   return Math.round(d*XP_MALUS_PAR_DIFFICULTE);
 }
@@ -2872,7 +2854,7 @@ function renderGame(){
   const streakHTML=state.streak>=2?`<span style="color:#f7a020">\u{1F525} ${state.streak}</span>`:'';
   const levelBadge=state.mode==='progression'?`<span class="badge" style="background:${lv.color}22;color:${lv.color};border-color:${lv.color}44;margin-left:6px">${lv.sub}</span>`:'';
   app.innerHTML=`<div style="margin:8px 0"><div class="row-between cinzel" style="font-size:.75rem;color:#8b7ec8;margin-bottom:4px">
-    <span>Question ${state.idx+1}/${total}</span>
+    <span>${state.mode==='section'?esc(currentSection()?.cat||'')+' · ':''}Question ${state.idx+1}/${total}</span>
     <span>Score : ${state.score}/${state.idx+(state.selected!==null?1:0)}</span>
     ${streakHTML}</div>
     <div class="progress-track"><div class="progress-fill" style="width:${pct}%"></div></div>
@@ -2960,7 +2942,7 @@ function submitInputAnswer(){
   questChestAward();
   renderGame();
   showExplanation(ex,correct);
-  if(correct){
+  if(correct&&state.mode!=='section'){
     if(state.autoNextID)clearTimeout(state.autoNextID);
     state.autoNextID=setTimeout(()=>{state.autoNextID=null;if(state.screen==='game'&&state.selected!==null)nextQuestion()},1600);
   }
@@ -3074,7 +3056,7 @@ function selectCountryAnswer(id){
   questChestAward();
   renderGame();
   showExplanation(ex,correct);
-  if(correct){
+  if(correct&&state.mode!=='section'){
     if(state.autoNextID)clearTimeout(state.autoNextID);
     state.autoNextID=setTimeout(()=>{state.autoNextID=null;if(state.screen==='game'&&state.selected!==null)nextQuestion()},1600);
   }
@@ -3107,7 +3089,7 @@ function selectMapAnswer(id){
   questChestAward();
   renderGame();
   showExplanation(ex,correct);
-  if(correct){
+  if(correct&&state.mode!=='section'){
     if(state.autoNextID)clearTimeout(state.autoNextID);
     state.autoNextID=setTimeout(()=>{state.autoNextID=null;if(state.screen==='game'&&state.selected!==null)nextQuestion()},1600);
   }
@@ -3150,7 +3132,7 @@ function selectAnswer(i){
   showExplanation(ex,correct);
   // Bonne réponse → passage automatique à la question suivante.
   // Mauvaise réponse → l'enfant lit l'explication et clique « Suivant ».
-  if(correct){
+  if(correct&&state.mode!=='section'){
     if(state.autoNextID)clearTimeout(state.autoNextID);
     state.autoNextID=setTimeout(()=>{
       state.autoNextID=null;
@@ -3186,7 +3168,7 @@ function showExplanation(ex,correct){
   // disparaîtrait avant qu'un enfant ait le temps de le toucher — pire que
   // pas de bouton du tout. Et c'est après une erreur qu'on a besoin de
   // relire, pas après une réussite.
-  const footerHTML=correct
+  const footerHTML=correct&&state.mode!=='section'
     ?`<p class="sub qp-unlock" style="margin-top:16px;font-style:italic">${isLast?'R\u00e9sultats dans un instant\u2026':'\u{1F513} Tu d\u00e9bloques la question suivante\u2026'}</p>`
     :`<button class="btn-fire mt-6" onclick="nextQuestion()">${isLast?'Voir mes r\u00e9sultats \u2192':'Question suivante \u2192'}</button>`+retourHTML;
   el.innerHTML=`<div class="card fade-in mt-6">
@@ -3412,6 +3394,12 @@ function renderResults(){
   else if(pct>=40){title="Apprentie courageuse";sub="Le chemin du savoir est long mais tu progresses.";emoji="\u{1F9D9}"}
   else{title="Le dragon a vaincu\u2026";sub="R\u00e9vise tes sortil\u00e8ges et retente !";emoji="\u{1F525}"}
 
+  if(d.mode==='section'){
+    title=pct===100?'Palier réussi !':'Tu avances dans ta section';
+    sub=pct===100?'Continue quand tu es prêt.':'Relis les explications, puis reprends les questions à travailler.';
+    emoji=pct===100?'🌟':'🌱';
+  }
+
   // Niveau ouvert \u00e0 l'instant : on propose sa le\u00e7on d'accueil ici plut\u00f4t
   // qu'en coupant la partie. L'enfant la voit au moment o\u00f9 elle sert.
   let unlockHTML='';
@@ -3485,7 +3473,8 @@ function renderResults(){
       <div class="flex-1"><p class="recap-q">${esc(r.ex.q.length>110?r.ex.q.slice(0,110)+'\u2026':r.ex.q)}</p>
       ${!r.correct?`<p class="recap-answer">R\u00e9ponse : ${esc(exAnswerText(r.ex))}</p>`:''}</div></div>`).join('')}</div></div>
   <div class="btn-row">
-    <button class="btn-fire" onclick="startGame('${d.mode}')">Rejouer</button>
+    <button class="btn-fire" onclick="startGame('undefined')">Rejouer</button>
+    
     <button class="btn-stone" onclick="navigate('royaume')">Mon Royaume</button>
     <button class="btn-stone" onclick="navigate('home')">Accueil</button>
   </div>
@@ -6287,6 +6276,262 @@ function _montrerMemWin(){
   try{requestAnimationFrame(aller)}catch(e){}
 }
 
+/* Parcours par notion : une matière, une section, une leçon puis des paliers.
+   Les réussites utilisent le registre commun ; aucune progression parallèle. */
+function sectionGroup(e){
+  const subject=subjectOfLevel(e.lv);
+  return ['culture','sciences','langues'].includes(subject)?String(e.lv).split('-')[0]:'';
+}
+function sectionKey(e){return sectionGroup(e)+'|'+String(e.cat||'Divers')}
+function sectionSource(subjectId){
+  const levels=niveauxDuSujet(subjectId);
+  return dedupeExercises(EX.concat(profile.aiExercises||[],profile.customExercises||[])
+    .filter(e=>levels.has(e.lv)&&isPlayableEx(e)&&!_horsSujet(e,e.lv)));
+}
+function sectionsOf(subjectId){
+  const groups=new Map();
+  for(const e of sectionSource(subjectId)){
+    const key=sectionKey(e);
+    if(!groups.has(key)){
+      const group=sectionGroup(e),lv=LEVELS.find(l=>l.id===e.lv);
+      groups.set(key,{key,cat:e.cat||'Divers',group,label:group&&lv?lv.name:'',pool:[]});
+    }
+    groups.get(key).pool.push(e);
+  }
+  return [...groups.values()].sort((a,b)=>a.label.localeCompare(b.label,'fr')
+    ||themeRank(a.cat)-themeRank(b.cat)||a.cat.localeCompare(b.cat,'fr'));
+}
+function currentSection(){
+  return sectionsOf(state.subjectId).find(s=>s.key===state.sectionKey)||null;
+}
+function sectionTier(e){
+  const fractions={frac_01:3,frac_02:1,frac_03:4,frac_04:2,frac_05:3,frac_06:2,frac_07:3,frac_08:4,frac_09:3,frac_10:3,frac_11:2,frac_12:2,cm12:5,s1:5,s11:4,s24:5};
+  return Math.max(1,Math.min(5,Number(e.lessonTier||(e.cat==='Fractions'&&fractions[e.id])||e.diff)||1));
+}
+function pickSectionExercises(){
+  const section=currentSection();
+  if(!section)return [];
+  const remaining=remainingOf(section.pool);
+  if(!remaining.length)return [];
+  const tier=Math.min(...remaining.map(sectionTier));
+  // On termine les bases avant de passer au palier suivant. Les questions
+  // ratées restent disponibles ; jamais de recyclage d'une réussite.
+  return remaining.filter(e=>sectionTier(e)===tier)
+    .sort((a,b)=>levelMinGrade(a.lv)-levelMinGrade(b.lv)||String(a.id).localeCompare(String(b.id)))
+    .slice(0,5);
+}
+function sectionCards(subjectId){
+  const sections=sectionsOf(subjectId);
+  if(!sections.length)return '<p class="sub">Les sections apparaîtront quand des questions seront disponibles pour ton niveau.</p>';
+  return '<div class="section-grid">'+sections.map(s=>{
+    const left=remainingOf(s.pool).length,done=s.pool.length-left;
+    return '<button class="section-card" data-subject="'+esc(subjectId)+'" data-key="'+esc(s.key)+'" onclick="openSection(this.dataset.subject,this.dataset.key)">'
+      +(s.label?'<span class="sub">'+esc(s.label)+'</span>':'')
+      +'<strong>'+esc(s.cat)+'</strong><span>'+done+' / '+s.pool.length+' réussies</span>'
+      +'<span class="section-track"><span style="width:'+Math.round(done/s.pool.length*100)+'%"></span></span>'
+      +'<span class="sub">'+(left?'📖 Comprendre · 🎯 S’entraîner':'✅ Questions terminées · Revoir la leçon')+'</span></button>';
+  }).join('')+'</div>';
+}
+function openSection(subjectId,key){
+  if(!sectionsOf(subjectId).some(s=>s.key===key)){toast('Cette section n’est pas disponible pour ton niveau.');return}
+  navigate('section',{subjectId,sectionKey:key,sectionStep:0,sectionReveal:false,sectionHint:0,
+    fractionParts:4,fractionSelected:[],fractionScale:1,fractionGroups:4,numberTens:2,numberUnits:3,areaWidth:4,areaHeight:3});
+}
+function sectionIntro(s){
+  if(s.cat==='Fractions')return 'Partager équitablement, représenter une fraction, comparer des parts puis calculer une quantité.';
+  if(/Calcul|Comptage|Dénombrement|Nombres décimaux/.test(s.cat))return 'Représenter les nombres, décomposer le calcul et expliquer chaque étape.';
+  if(/Géométrie|Périmètre et aire/.test(s.cat))return 'Observer une figure, la construire et distinguer ce que l’on mesure.';
+  if(state.subjectId==='langues')return 'Observer un exemple, le prononcer à voix haute, puis retrouver les mots sans aide.';
+  if(state.subjectId==='informatique')return 'Prévoir le résultat, suivre les instructions une à une, puis vérifier son raisonnement.';
+  if(state.subjectId==='sciences')return 'Observer, faire une prédiction et expliquer ce qui se passe avant de répondre.';
+  return 'Observer un exemple, expliquer l’idée avec tes mots, puis t’entraîner du plus simple au plus difficile.';
+}
+function renderSection(){
+  const s=currentSection();if(!s)return navigate('subject');
+  const remaining=remainingOf(s.pool),steps=[...new Set(s.pool.map(sectionTier))].sort((a,b)=>a-b);
+  const next=remaining.length?Math.min(...remaining.map(sectionTier)):null;
+  app.innerHTML='<div class="card section-page"><p class="sub">'+esc(SUBJECTS.find(x=>x.id===state.subjectId)?.name||'')+(s.label?' · '+esc(s.label):'')+'</p>'
+    +'<h2 class="title">'+esc(s.cat)+'</h2><p>'+esc(sectionIntro(s))+'</p>'
+    +'<div class="section-route"><span>1. Je comprends</span><span>2. Je manipule</span><span>3. Je m’entraîne</span></div>'
+    +'<button class="btn-fire" onclick="navigate(\'sectionLesson\',{sectionStep:0,sectionReveal:false,sectionHint:0})">📖 Ouvrir la leçon</button>'
+    +'<h3 class="mt-4">Mon entraînement</h3><p class="sub">Des séries de 5 questions au maximum, sans chronomètre. Termine un palier pour ouvrir le suivant.</p>'
+    +'<ol class="section-tiers">'+steps.map((tier,i)=>{
+      const pool=s.pool.filter(e=>sectionTier(e)===tier),left=remainingOf(pool).length;
+      return '<li><b>Palier '+(i+1)+'</b> · '+(left===0?'✅ Terminé':tier===next?'🎯 À travailler':'🔒 Après le précédent')
+        +' <span class="sub">('+ (pool.length-left)+' / '+pool.length+')</span></li>';
+    }).join('')+'</ol>'
+    +(remaining.length?'<button class="btn-fire" onclick="startSectionPractice()">🎯 '+(remaining.length===s.pool.length?'Commencer':'Continuer')+' les questions</button>'
+      :'<p role="status">🏆 Toutes les questions disponibles de cette section sont réussies ! Tu peux revoir la leçon ou choisir une autre section. Les prochaines questions apparaîtront avec les niveaux suivants.</p>')
+    +'<button class="btn-stone mt-3" onclick="navigate(\'subject\')">← Les sections de la matière</button></div>';
+}
+function startSectionPractice(){
+  const s=currentSection();if(!s)return navigate('subject');
+  const batch=pickSectionExercises();
+  if(!batch.length)return navigate('section');
+  state.level=batch[0].lv;
+  startGame('section');
+}
+function sectionLessonSteps(s){
+  return s.cat==='Fractions'
+    ?['Je partage','Je dessine','Je compare','Je calcule','J’assemble','Je résous']
+    :['Je découvre','Je cherche','J’explique'];
+}
+function sectionExample(s){
+  const pending=remainingOf(s.pool);
+  return (pending.length?pending:s.pool).slice().sort((a,b)=>sectionTier(a)-sectionTier(b))[0];
+}
+function renderSectionLesson(){
+  const s=currentSection();if(!s)return navigate('subject');
+  const names=sectionLessonSteps(s),step=Math.min(names.length-1,Math.max(0,state.sectionStep||0));
+  state.sectionStep=step;
+  let body;
+  if(s.cat==='Fractions')body=renderFractionLesson(step);
+  else{
+    const e=sectionExample(s);
+    if(step===0){
+      body='<h3>Une idée à comprendre</h3><p>'+esc(e.regle||sectionIntro(s))+'</p>'
+        +'<div class="lesson-example">'+esc(e.exemple||e.se||'Observe les données et repère ce que tu dois chercher.')+'</div>'
+        +'<p class="sub">Lis cet exemple expliqué, puis reformule l’idée avec tes mots.</p>';
+    }else if(step===1){
+      body=sectionManipulation(s)
+        ||'<h3>À toi de chercher</h3><p>'+esc(e.exemple||e.regle||sectionIntro(s))+'</p>'
+          +'<p>Cache l’explication. Fais un dessin, mime la situation ou explique à voix haute ce que tu penses.</p>';
+      body+='<button class="btn-stone" onclick="toggleSectionExplanation()">'
+        +(state.sectionReveal?'Cacher':'Voir')+' l’explication</button>'
+        +(state.sectionReveal?'<div class="lesson-example">'+esc(e.regle||e.se||sectionIntro(s))+'</div>':'');
+    }else{
+      const method=Array.isArray(e.methode)&&e.methode.length?e.methode
+        :['Observe les informations de l’exemple.','Explique le lien entre les informations et la réponse.','Vérifie que ton explication répond à la question.'];
+      body='<h3>Je construis mon raisonnement</h3><p>Compare ton raisonnement avec les étapes de cet exemple.</p>'
+        +'<ol>'+method.slice(0,state.sectionHint||0).map(x=>'<li>'+esc(x)+'</li>').join('')+'</ol>'
+        +((state.sectionHint||0)<method.length?'<button class="btn-stone" onclick="nextSectionHint()">Découvrir une étape</button>':'<p>✨ Tu peux maintenant essayer sans aide.</p>');
+    }
+    const labs=sectionLabs(s);
+    if(labs.length)body+='<details class="mt-3"><summary>🔬 Faire une expérience interactive</summary>'
+      +labs.map(l=>'<button class="btn-stone mt-3" data-file="'+esc(l.file)+'" onclick="openSectionLab(this.dataset.file)">'+esc(l.emoji+' '+l.title)+'</button>').join('')+'</details>';
+  }
+  app.innerHTML='<div class="card section-page"><p class="sub">'+esc(s.cat)+' · Étape '+(step+1)+' / '+names.length+'</p>'
+    +'<h2 class="title">'+names[step]+'</h2>'+body
+    +'<div class="btn-row mt-4">'+(step>0?'<button class="btn-stone" onclick="sectionLessonStep(-1)">← Précédent</button>':'')
+    +'<button class="btn-fire" onclick="sectionLessonStep(1)">'+(step===names.length-1?'🎯 Passer aux questions':'Suivant →')+'</button></div>'
+    +'<button class="btn-stone mt-3" onclick="navigate(\'section\')">← Ma section</button></div>';
+}
+function toggleSectionExplanation(){state.sectionReveal=!state.sectionReveal;renderSectionLesson()}
+function nextSectionHint(){state.sectionHint=(state.sectionHint||0)+1;renderSectionLesson()}
+function sectionLessonStep(delta){
+  const s=currentSection();if(!s)return;
+  const count=sectionLessonSteps(s).length;
+  if(state.sectionStep+delta>=count){
+    const id='section:'+state.subjectId+':'+s.key;
+    profile.lessonsSeen=Array.from(new Set([...(profile.lessonsSeen||[]),id]));saveProfile();
+    return startSectionPractice();
+  }
+  state.sectionStep=Math.max(0,state.sectionStep+delta);state.sectionReveal=false;state.sectionHint=0;
+  renderSectionLesson();window.scrollTo(0,0);
+}
+function fractionBar(n,d,label){
+  return '<div class="fraction-bar" role="img" aria-label="'+esc(label||n+' parts colorées sur '+d)+'" style="grid-template-columns:repeat('+d+',1fr)">'
+    +Array.from({length:d},(_,i)=>'<span class="'+(i<n?'painted':'')+'">'+(i<n?'●':'')+'</span>').join('')+'</div>';
+}
+function setFractionParts(n){
+  if(![2,3,4,6,8].includes(Number(n)))return;
+  state.fractionParts=Number(n);state.fractionSelected=[];renderSectionLesson();
+}
+function toggleFractionPart(i){
+  if(!Number.isInteger(i)||i<0||i>=state.fractionParts)return;
+  const set=new Set(state.fractionSelected||[]);if(set.has(i))set.delete(i);else set.add(i);
+  state.fractionSelected=[...set];renderSectionLesson();
+}
+function setFractionScale(n){state.fractionScale=Math.max(1,Math.min(4,Number(n)||1));renderSectionLesson()}
+function setFractionGroups(n){if([2,3,4,6].includes(Number(n)))state.fractionGroups=Number(n);renderSectionLesson()}
+function renderFractionLesson(step){
+  const d=state.fractionParts||4,n=(state.fractionSelected||[]).length;
+  if(step===0)return '<h3>La tablette à partager 🍫</h3><p>Une tablette représente <b>un entier</b>. Choisis le nombre de parts égales, puis touche les parts que tu prends.</p>'
+    +'<label>Parts égales <select onchange="setFractionParts(this.value)">'+[2,3,4,6,8].map(x=>'<option '+(d===x?'selected':'')+'>'+x+'</option>').join('')+'</select></label>'
+    +'<div class="fraction-bar fraction-touch" style="grid-template-columns:repeat('+d+',1fr)">'
+    +Array.from({length:d},(_,i)=>'<button aria-label="Part '+(i+1)+' sur '+d+'" aria-pressed="'+(state.fractionSelected||[]).includes(i)+'" class="'+((state.fractionSelected||[]).includes(i)?'painted':'')+'" onclick="toggleFractionPart('+i+')">'+((state.fractionSelected||[]).includes(i)?'●':'○')+'</button>').join('')+'</div>'
+    +'<p role="status" aria-live="polite">Tu prends <b>'+n+' part'+(n>1?'s':'')+' sur '+d+'</b> : '+n+'/'+d+'. '+(n===d?'La tablette entière !':n===0?'Aucune part pour le moment.':'Il reste '+(d-n)+'/'+d+'.')+'</p>'
+    +'<p class="lesson-example">Les parts doivent être <b>de même taille</b>. Deux morceaux inégaux ne sont pas deux moitiés.</p>';
+  if(step===1)return '<h3>De la tablette au schéma</h3><p>On peut dessiner une bande à la place du chocolat. Chaque case représente une part égale.</p>'
+    +fractionBar(n,d)
+    +'<div class="fraction-symbol" aria-label=numerateur>'+n+'<hr>'+d+'</div>'
+    +'<p><b>'+n+'</b> en haut : les parts prises (le numérateur).<br><b>'+d+'</b> en bas : les parts égales dans un entier (le dénominateur).</p>'
+    +'<p>La bande entière vaut '+d+'/'+d+' = 1. Une fraction indique une quantité, pas seulement deux nombres superposés.</p>';
+  if(step===2){
+    const k=state.fractionScale||1;
+    return '<h3>Même quantité, autre découpage</h3><p>Les deux bandes représentent le <b>même entier</b>. Découpe chaque moitié en plusieurs morceaux : la partie colorée ne grandit pas.</p>'
+      +fractionBar(1,2,'Une moitié')+'<label>Morceaux dans chaque moitié <select onchange="setFractionScale(this.value)">'+[1,2,3,4].map(x=>'<option '+(k===x?'selected':'')+'>'+x+'</option>').join('')+'</select></label>'
+      +fractionBar(k,2*k)+ '<p role="status"><b>1/2 = '+k+'/'+(2*k)+'</b> : on multiplie le haut et le bas par '+k+'.</p>'
+      +'<p>Pour un même entier, un tiers est plus grand qu’un quart : couper davantage donne des parts plus petites.</p>'
+      +fractionBar(1,3,'Un tiers du même entier')+fractionBar(1,4,'Un quart du même entier');
+  }
+  if(step===4)return '<h3>On additionne des parts de même taille</h3><p>Deux sixièmes et un sixième font trois sixièmes.</p>'
+    +fractionBar(2,6)+fractionBar(1,6)+'<p>2/6 + 1/6 = 3/6 = 1/2</p>'+fractionBar(3,6)
+    +'<p>Pour 1/2 + 1/4, transforme d’abord la moitié en deux quarts. Tu peux alors compter trois quarts : 2/4 + 1/4 = 3/4.</p>'
+    +'<p class="lesson-example">On additionne les parts prises. On ne change pas la taille des parts : on n’additionne pas les dénominateurs.</p>'
+    +'<p>Pour retirer une fraction, même idée : 5/8 − 2/8 = 3/8.</p>';
+  if(step===5)return '<h3>Un problème, plusieurs petits pas</h3><p>Les 3/5 d’une collection représentent 18 images. Combien y a-t-il d’images en tout ?</p>'
+    +'<p>Représente cinq groupes égaux. Trois groupes valent 18 images.</p>'
+    +'<button class="btn-stone" onclick="toggleSectionExplanation()">'+(state.sectionReveal?'Cacher':'Découvrir')+' le raisonnement</button>'
+    +(state.sectionReveal?'<div class="lesson-example">Un groupe vaut 18 ÷ 3 = 6 images. Les cinq groupes valent 6 × 5 = 30 images. Vérification : les 3/5 de 30 font bien 18.</div>':'')
+    +'<p>Pour une fraction d’une fraction, procède aussi par étapes : le tiers de la moitié de 36 vaut le tiers de 18, donc 6.</p>'
+    +'<p class="sub">Ces problèmes avancés arriveront lorsque les paliers précédents et ton niveau seront ouverts.</p>';
+  const groups=state.fractionGroups||4,each=12/groups;
+  return '<h3>Partager un trésor de 12 pièces 🪙</h3><p>Forme des groupes égaux. Un groupe est <b>1/'+groups+'</b> du trésor.</p>'
+    +'<label>Nombre de groupes <select onchange="setFractionGroups(this.value)">'+[2,3,4,6].map(x=>'<option '+(groups===x?'selected':'')+'>'+x+'</option>').join('')+'</select></label>'
+    +'<div class="coin-groups">'+Array.from({length:groups},()=>'<div aria-label="'+each+' pièces">'+'🪙'.repeat(each)+'</div>').join('')+'</div>'
+    +'<p role="status">12 ÷ '+groups+' = '+each+' pièces par groupe.<br>Pour prendre 2/'+groups+', prends deux groupes : '+each+' × 2 = <b>'+each*2+'</b> pièces.</p>'
+    +'<p class="lesson-example">Je partage par le nombre du bas, puis je prends le nombre de groupes indiqué en haut.</p>'
+    +'<p>Dans les questions, tu retrouveras ces idées avec d’autres nombres. Prends le temps de dessiner si tu en as besoin.</p>';
+}
+function changeSectionNumber(field,delta){
+  if(!['numberTens','numberUnits','areaWidth','areaHeight'].includes(field))return;
+  const min=field.startsWith('area')?1:0,max=field.startsWith('area')?8:9;
+  state[field]=Math.max(min,Math.min(max,(state[field]||0)+delta));renderSectionLesson();
+}
+function sectionCounter(label,field,value){
+  return '<div class="section-counter"><span>'+label+' : '+value+'</span><button class="btn-stone" aria-label="Diminuer '+label+'" onclick="changeSectionNumber(\''+field+'\',-1)">−</button><button class="btn-stone" aria-label="Augmenter '+label+'" onclick="changeSectionNumber(\''+field+'\',1)">+</button></div>';
+}
+function sectionManipulation(s){
+  if(state.subjectId==='maths'&&/Calcul|Comptage|Dénombrement/.test(s.cat)){
+    const t=state.numberTens||0,u=state.numberUnits||0;
+    return '<h3>Construis un nombre</h3><p>Une barre vaut 10 unités. Ajoute ou retire une dizaine et observe ce qui change.</p>'
+      +sectionCounter('Dizaines','numberTens',t)+sectionCounter('Unités','numberUnits',u)
+      +'<div class="number-blocks" aria-label="'+t+' dizaines et '+u+' unités">'+Array.from({length:t},()=>'<span class="ten-block">10</span>').join('')+Array.from({length:u},()=>'<span class="unit-block">1</span>').join('')+'</div>'
+      +'<p role="status">'+t+' × 10 + '+u+' = <b>'+ (10*t+u)+'</b></p>';
+  }
+  if(state.subjectId==='maths'&&/Géométrie|Périmètre et aire/.test(s.cat)){
+    const w=state.areaWidth||4,h=state.areaHeight||3;
+    return '<h3>Construis ton jardin</h3><p>Chaque case est un carré de 1 m de côté. Observe les cases à couvrir et le contour à clôturer.</p>'
+      +sectionCounter('Longueur','areaWidth',w)+sectionCounter('Largeur','areaHeight',h)
+      +'<div class="area-grid" role="img" aria-label="'+w+' colonnes et '+h+' lignes" style="grid-template-columns:repeat('+w+',1fr)">'
+      +Array.from({length:w*h},()=>'<span>·</span>').join('')+'</div>'
+      +'<p role="status">Aire : '+w+' × '+h+' = <b>'+w*h+' m²</b>.<br>Périmètre : 2 × ('+w+' + '+h+') = <b>'+2*(w+h)+' m</b>.</p>';
+  }
+  return '';
+}
+function sectionLabs(s){
+  if(state.subjectId!=='sciences')return [];
+  const mapping={'Électricité':['electricite'],'Circuits':['electricite'],'Lumière':['lumiere','ondes-em'],
+    'Astronomie':['planetes'],'Forces':['gravite'],'États de la matière':['eau','cycle-eau'],'États':['eau','cycle-eau'],
+    'Mélanges':['eau'],'Transformations':['atomes'],'Corps humain':['corps-humain'],'Nutrition':['corps-humain','photosynthese'],
+    'Écosystèmes':['photosynthese','cycle-eau'],'Énergie':['electricite','ondes-sonores']};
+  return (mapping[s.cat]||[]).map(id=>LECONS.find(l=>l.id===id)).filter(Boolean);
+}
+function openSectionLab(file){
+  const s=currentSection();if(!s||!sectionLabs(s).some(l=>l.file===file))return;
+  const hash='#section='+encodeURIComponent(state.subjectId)+'&notion='+encodeURIComponent(state.sectionKey);
+  // Le fragment reste sur index.html : cache hors ligne identique.
+  try{sessionStorage.setItem('royaume_section_return',JSON.stringify({name:profile.name,hash}))}catch(e){}
+  location.href=file;
+}
+function restoreSectionLink(){
+  if(!profile.name||!location.hash.startsWith('#section='))return false;
+  const params=new URLSearchParams(location.hash.slice(1)),subject=params.get('section'),key=params.get('notion');
+  if(!sectionsOf(subject).some(s=>s.key===key))return false;
+  state.subjectId=subject;state.sectionKey=key;state.screen='section';return true;
+}
+
 migrateLegacyProfile();
 profile=loadProfileByName(getActiveName());
 window.addEventListener('pageshow',e=>{
@@ -6295,7 +6540,8 @@ window.addEventListener('pageshow',e=>{
 if(profile.name)setTimeout(async()=>{
   try{const result=await syncProfileFromCloud();if(result==='merged'&&state.screen==='home')render();pushProfileToCloud()}catch(e){}
 },100);
-if(location.hash==='#lecons'&&profile.name)state.screen='lecons';
+if(location.hash==='#lecons'&&profile.name)state.screen='leconsHome';
+restoreSectionLink();
 
 try{
   history.replaceState({royaume:true},'');history.pushState({royaume:true},'');

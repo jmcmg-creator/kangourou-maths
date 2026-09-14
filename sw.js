@@ -8,7 +8,7 @@
  *
  * Bump CACHE_VERSION pour forcer une mise à jour du shell.
  */
-const CACHE_VERSION = 'royaume-v46';
+const CACHE_VERSION = 'royaume-v47';
 const SHELL_CACHE = CACHE_VERSION + '-shell';
 const RUNTIME_CACHE = CACHE_VERSION + '-runtime';
 
@@ -16,14 +16,14 @@ const SHELL_URLS = [
   './',
   './index.html',
   './manifest.json',
-  './exercises.js?v=16',
+  './exercises.js?v=17',
   './exercises_extra.js?v=10',
   './exercises_logic.js?v=2',
   './cartes-monde.js?v=1',
   './config.js?v=2',
   './supa.js?v=3',
   './qr.js?v=1',
-  './game.js?v=66',
+  './game.js?v=67',
   './zoom.js?v=1',
   './lesson-questions.js?v=2',
   './lecons/planetes.html',
@@ -41,6 +41,7 @@ const SHELL_URLS = [
   './lecons/volcans.html',
   './lecons/gravite.html',
   './lecons/fiche-retour.js',
+  './lecons/section-retour.js?v=1',
   // Schémas du corps humain : 44 Ko au total, mis en cache avec le shell pour
   // que les questions de SVT restent illustrées hors connexion.
   // Les 29 drapeaux dessinés : 124 Ko, mis en cache pour que le quiz de
