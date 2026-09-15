@@ -77,6 +77,7 @@ try{
   await page.getByText('🔬 Faire une expérience interactive',{exact:true}).click();
   await page.getByRole('button',{name:/La Lumière et les Couleurs/}).click();
   await page.getByRole('link',{name:'← Ma section',exact:true}).click();
+  await page.getByRole('button',{name:/Ouvrir la leçon/}).waitFor();
   assert.equal(await page.evaluate(()=>state.screen),'section');
   assert.equal(await page.evaluate(()=>state.subjectId),'sciences');
   // Le cache doit permettre de relire les leçons sans réseau.
