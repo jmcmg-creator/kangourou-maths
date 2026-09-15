@@ -42,7 +42,7 @@ const pool = [];
 new Function('EX', logic.replace(/if\(typeof EX[\s\S]*$/, '') + '\nEX.push(...EX_LOGIQUE);')(pool);
 ok('60 questions chargées', pool.length === 60, pool.length);
 ok('identifiants uniques', new Set(pool.map(q => q.id)).size === pool.length);
-ok('toutes en niveau "logique"', pool.every(q => q.lv === 'logique'));
+ok('56 défis logiques et 4 connaissances reclassées', pool.filter(q => q.lv === 'logique').length === 56);
 ok('toutes ont 4 choix (requis pour les battles)', pool.every(q => Array.isArray(q.ch) && q.ch.length === 4));
 ok('index de réponse valide', pool.every(q => Number.isInteger(q.ans) && q.ans >= 0 && q.ans < 4));
 ok('choix non vides et distincts', pool.every(q => new Set(q.ch).size === 4 && q.ch.every(c => String(c).trim())));
@@ -132,9 +132,9 @@ ok('« Tous niveaux » jamais verrouillé', G.levelMinGrade({ id: 'geo-drapeaux'
 /* ---------- anti-doublon ---------- */
 section('Anti-doublon — jamais deux fois la même question');
 const dsrc = grab('const RECENT_MAX=150;', '// fin anti-doublon');
-const DUP = new Function('profile', dsrc + '\nreturn {_qKey,dedupeExercises,recentExIds,rememberExercises,_applyCooldown,finalizePick};');
+const DUP = new Function('profile', 'EX', dsrc + '\nreturn {_qKey,dedupeExercises,recentExIds,rememberExercises,_applyCooldown,finalizePick};');
 const prof = { recentExIds: [] };
-const A = DUP(prof);
+const A = DUP(prof, []);
 
 ok('id identique → une seule occurrence',
   A.dedupeExercises([{ id: 'a', q: 'Combien font 2+2 ?' }, { id: 'a', q: 'Combien font 2+2 ?' }]).length === 1);

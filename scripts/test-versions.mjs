@@ -25,7 +25,15 @@ console.log('\n── Versions des fichiers (index.html ↔ sw.js) ──');
 
 // « <script src="game.js?v=57"> » → { 'game.js': '57' }
 const versIndex = {};
-for (const m of index.matchAll(/<script src="([^"?]+)\?v=(\d+)"/g)) versIndex[m[1]] = m[2];
+const pages=['index.html',...[...sw.matchAll(/'\.\/([^'?]+\.html)'/g)].map(m=>m[1])];
+for(const page of new Set(pages)){
+  const html=readFileSync(join(racine,page),'utf8');
+  for(const m of html.matchAll(/<script src="([^"?]+)\?v=(\d+)"/g)){
+    const file=new URL(m[1],'https://app.test/'+page).pathname.slice(1);
+    if(file in versIndex)dire(page+' : version cohérente pour '+file,versIndex[file]===m[2]);
+    versIndex[file]=m[2];
+  }
+}
 // « './game.js?v=57', » dans SHELL_URLS
 const versSw = {};
 for (const m of sw.matchAll(/'\.\/([^'?]+\.js)\?v=(\d+)'/g)) versSw[m[1]] = m[2];
@@ -35,13 +43,13 @@ dire('sw.js pré-cache des scripts versionnés', Object.keys(versSw).length > 0)
 
 for (const [f, v] of Object.entries(versSw)) {
   if (!(f in versIndex)) {
-    dire(`${f} : pré-caché par sw.js mais absent d'index.html`, false, 'URL mise en cache pour rien');
+    dire(`${f} : pré-caché par sw.js mais absent des pages pré-cachées`, false, 'URL mise en cache pour rien');
     continue;
   }
   dire(`${f} : v${v} des deux côtés`, versIndex[f] === v, `index.html=v${versIndex[f]} · sw.js=v${v}`);
 }
 for (const f of Object.keys(versIndex)) {
-  if (!(f in versSw)) dire(`${f} : chargé par index.html mais jamais pré-caché`, false, 'indisponible hors connexion');
+  if (!(f in versSw)) dire(`${f} : chargé par une page pré-cachée mais jamais pré-caché`, false, 'indisponible hors connexion');
 }
 
 // APP_VERSION (affiché dans l'Espace Parent) et CACHE_VERSION doivent avancer

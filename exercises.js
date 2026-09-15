@@ -218,10 +218,10 @@ const EX=[
 {id:"art23",lv:"art-cm1",cat:"Composition",diff:3,q:"Dans un tableau, l'endroit le plus « important » visuellement est souvent le ?",ch:["Coin en bas à gauche","Centre","Point d'or (1/3 de la composition)","Fond"],ans:2,se:"Règle des tiers : diviser en 3×3, intersection = zone de force.",pourquoi:"L'œil s'y attire naturellement.",methode:["Grille 3×3 : intersections de plus de contraste/importance.","Composition équilibrée."],regle:"Règle des tiers en photographie et peinture.",exemple:"Horizon : 1/3 haut, 2/3 bas (pas au milieu).",sk:"Composition"},
 {id:"art24",lv:"art-cm1",cat:"Technique",diff:2,q:"Une fresque est une peinture sur ?",ch:["Toile","Bois","Plâtre humide","Papier"],ans:2,se:"Fresque : affesco (« frais »), peinture sur plâtre frais.",pourquoi:"Pigments s'incorporent au plâtre en séchant.",methode:["Intonaco : couche de plâtre frais.","Pigments : appliqués avant le séchage."],regle:"Techniques : fresque, tempera, huile, acrylique.",exemple:"Plafond Sixtine : fresque (pas huile).",sk:"Techniques"},
 
-/* CM2 : Impressionisme, Picasso, moderne */
-{id:"art25",lv:"art-cm2",cat:"Impressionisme",diff:2,q:"« Impression, lever de soleil » est un tableau de ?",ch:["Renoir","Degas","Monet","Sisley"],ans:2,se:"Claude Monet (1872) : cette toile a donné le nom \"impressionnisme\".",pourquoi:"La critique a moqué le titre, d'où le mouvement.",methode:["Monet : peintre impressionniste.","Séries de même sujet à différentes heures."],regle:"Impressionisme (1870-1880) : lumière, couleur, moment.",exemple:"Monet : « Cathédrale de Rouen » (30+ versions).",sk:"Monet"},
-{id:"art26",lv:"art-cm2",cat:"Impressionisme",diff:2,q:"Quel impressionniste a peint « Bal du moulin de la Galette » ?",ch:["Renoir","Monet","Cézanne","Lautrec"],ans:0,se:"Pierre-Auguste Renoir (1876) : scène de fête à Montmartre.",pourquoi:"Lumière douce, figures en motion, chaleur sociale.",methode:["Renoir : impressionniste de la joie et de la lumière.","Touche légère, couleurs vibrants."],regle:"Peintres impressionnistes : Monet, Renoir, Degas, Sisley, Pissarro.",exemple:"Degas : danseuses de ballet.",sk:"Renoir"},
-{id:"art27",lv:"art-cm2",cat:"Post-impressionisme",diff:2,q:"« La Nuit étoilée » de Van Gogh utilise quelle technique pour montrer le mouvement ?",ch:["Coups de pinceau épais et directionnels","Points de couleur (pointillisme)","Lignes noires définies","Perspective linéaire stricte"],ans:0,se:"Coups épais, turbulents (impasto) : émotion visible.",pourquoi:"Van Gogh vs Seurat (pointilliste).",methode:["Impasto : peinture épaisse, pinceau apparent.","Créé du mouvement et de texture."],regle:"Techniques : du réalisme à l'expression.",exemple:"Impasto : texture 3D sur toile.",sk:"Technique Van Gogh"},
+/* CM2 : Impressionnisme, Picasso, moderne */
+{id:"art25",lv:"art-cm2",cat:"Impressionnisme",diff:2,q:"« Impression, lever de soleil » est un tableau de ?",ch:["Renoir","Degas","Monet","Sisley"],ans:2,se:"Claude Monet (1872) : cette toile a donné le nom \"impressionnisme\".",pourquoi:"La critique a moqué le titre, d'où le mouvement.",methode:["Monet : peintre impressionniste.","Séries de même sujet à différentes heures."],regle:"Impressionnisme (1870-1880) : lumière, couleur, moment.",exemple:"Monet : « Cathédrale de Rouen » (30+ versions).",sk:"Monet"},
+{id:"art26",lv:"art-cm2",cat:"Impressionnisme",diff:2,q:"Quel impressionniste a peint « Bal du moulin de la Galette » ?",ch:["Renoir","Monet","Cézanne","Lautrec"],ans:0,se:"Pierre-Auguste Renoir (1876) : scène de fête à Montmartre.",pourquoi:"Lumière douce, figures en motion, chaleur sociale.",methode:["Renoir : impressionniste de la joie et de la lumière.","Touche légère, couleurs vibrants."],regle:"Peintres impressionnistes : Monet, Renoir, Degas, Sisley, Pissarro.",exemple:"Degas : danseuses de ballet.",sk:"Renoir"},
+{id:"art27",lv:"art-cm2",cat:"Post-impressionnisme",diff:2,q:"« La Nuit étoilée » de Van Gogh utilise quelle technique pour montrer le mouvement ?",ch:["Coups de pinceau épais et directionnels","Points de couleur (pointillisme)","Lignes noires définies","Perspective linéaire stricte"],ans:0,se:"Coups épais, turbulents (impasto) : émotion visible.",pourquoi:"Van Gogh vs Seurat (pointilliste).",methode:["Impasto : peinture épaisse, pinceau apparent.","Créé du mouvement et de texture."],regle:"Techniques : du réalisme à l'expression.",exemple:"Impasto : texture 3D sur toile.",sk:"Technique Van Gogh"},
 {id:"art28",lv:"art-cm2",cat:"Modernisme",diff:2,q:"Pablo Picasso a co-fondé quel mouvement artistique au 20ᵉ siècle ?",ch:["Futurisme","Cubisme","Dadaïsme","Surréalisme"],ans:1,se:"Cubisme (1907+) : formes géométriques, perspectives multiples.",pourquoi:"« Les Demoiselles d'Avignon » : fracture perspective.",methode:["Picasso, Braque : décomposer la forme.","Voir l'objet sous plusieurs angles."],regle:"Mouvements 20ᵉ : cubisme, surréalisme, abstraction.",exemple:"Guernica » (1937) : cubisme expressif, protestation.",sk:"Picasso"},
 {id:"art29",lv:"art-cm2",cat:"Colorisme",diff:2,q:"Henri Matisse a créé l'art des papiers découpés. Comment appelle-t-on cette technique ?",ch:["Collage","Papiers gouachés découpés et assemblés","Découpage","Découpage papier coloré"],ans:1,se:"Papiers gouachés peints, puis découpés et assemblés : « gouaches découpées ».",pourquoi:"Innovation tardive, grande créativité.",methode:["Matisse : couleur pure sans peinture.","Liberté formelle avec papier."],regle:"Matisse : couleur, danse, décoration.",exemple:"\"Jazz\" (1947) : suite de compositions colorées.",sk:"Matisse"},
 {id:"art30",lv:"art-cm2",cat:"Surréalisme",diff:2,q:"Le surréalisme cherche à exprimer le ?",ch:["Réalisme exact","L'inconscient et l'imagination","Le mouvement","La géométrie"],ans:1,se:"Surréalisme : rêve, inconscient, irrationnel.",pourquoi:"Freud influença les artistes.",methode:["Dali, Ernst, Magritte : mondes de rêves.","Logique étrange, impossible."],regle:"Surréalisme (1920s+) : automatisme, rêve, inconscient.",exemple:"Dali : \"La Persistance de la mémoire\" (montres molles).",sk:"Surréalisme"},
@@ -242,7 +242,7 @@ const EX=[
 /* CE1-CE2 : Puzzles, deduction, sudoku-like */
 {id:"log9",lv:"logique-ce1-ce2",cat:"Déduction",diff:2,q:"3 amis (Alice, Bob, Carole). Alice plus grand que Bob. Carole plus petit que Alice. Qui est le plus grand ?",ch:["Alice","Bob","Carole","Impossible"],ans:0,se:"Alice > Bob, Alice > Carole. Alice = plus grand.",pourquoi:"Combine les relations.",methode:["Info 1 : Alice > Bob.","Info 2 : Carole < Alice.","Plus grand : Alice."],regle:"Chaîner les relations de comparaison.",exemple:"A > B > C → A est le plus grand.",sk:"Comparaison"},
 {id:"log10",lv:"logique-ce1-ce2",cat:"Puzzles",diff:3,q:"En mangeant 1 pomme par jour, combien de jours dure 5 pommes ?",ch:["4","5","6","10"],ans:1,se:"5 pommes ÷ 1 par jour = 5 jours.",pourquoi:"Pas 4 ! Jour 5 : manger la dernière.",methode:["Jour 1 : 1 pomme. Jour 2 : 1 pomme… Jour 5 : 1 pomme. Fini."],regle:"« Combien de jours pour X à raison de Y par jour » = X÷Y.",exemple:"10 caramels, 2 par jour = 5 jours.",sk:"Ratios"},
-{id:"log11",lv:"logique-ce1-ce2",cat:"Analogie",diff:2,q:"Chat est à félin ce que chien est à ?",ch:["Animal","Canidé","Carnivore","Mammifère"],ans:1,se:"Chat : félin. Chien : canidé (même niveau de classification).",pourquoi:"Analogie de catégorie.",methode:["Chat = type de félin.","Chien = type de canidé."],regle:"Analogies : même rapport entre les paires.",exemple:"Fleur est à bouquet ce que page est à livre.",sk:"Analogies"},
+{id:"log11",lv:"logique-ce1-ce2",cat:"Analogies",diff:2,q:"Chat est à félin ce que chien est à ?",ch:["Animal","Canidé","Carnivore","Mammifère"],ans:1,se:"Chat : félin. Chien : canidé (même niveau de classification).",pourquoi:"Analogie de catégorie.",methode:["Chat = type de félin.","Chien = type de canidé."],regle:"Analogies : même rapport entre les paires.",exemple:"Fleur est à bouquet ce que page est à livre.",sk:"Analogies"},
 {id:"log12",lv:"logique-ce1-ce2",cat:"Déduction",diff:3,q:"Les codes secret de Zoé contiennent A, B, C (3 lettres). Chaque lettre est utilisée une fois. Combien de codes possibles ?",ch:["3","6","9","12"],ans:1,se:"3! = 3×2×1 = 6 arrangements.",pourquoi:"Permutations.",methode:["Position 1 : 3 choix (A, B ou C).","Position 2 : 2 restants.","Position 3 : 1 restant.","3×2×1 = 6."],regle:"Arrangements de n objets = n!.",exemple:"2 objets = 2! = 2.",sk:"Permutations"},
 {id:"log13",lv:"logique-ce1-ce2",cat:"Analogies",diff:2,q:"Une pomme est à fruit ce que carotte est à ?",ch:["Fruit","Graine","Légume","Plante"],ans:2,se:"Pomme : fruit. Carotte : légume.",pourquoi:"Classification botanique.",methode:["Pomme = partie comestible d'un pommier (fruit).","Carotte = racine comestible (légume)."],regle:"Analogies de classification.",exemple:"Tomate = fruit botaniquement, mais légume culinairement.",sk:"Classification"},
 {id:"log14",lv:"logique-ce1-ce2",cat:"Puzzles",diff:3,q:"Tu as 2 briques rouges et 3 briques bleues. Combien de briques en total ?",ch:["1","3","5","6"],ans:2,se:"2 + 3 = 5.",pourquoi:"Addition simple.",methode:["Rouges : 2. Bleues : 3. Total : 2+3 = 5."],regle:"Dénombrement.",exemple:"5 stylos rouges + 4 bleus = 9.",sk:"Dénombrement"},
@@ -300,11 +300,355 @@ const EX=[
 /* CM2 : Monde, continents détail, cultures, landmarks */
 {id:"geo25",lv:"geo-cm2",cat:"Monde",diff:2,q:"Quel est le pays le plus peuplé du monde ?",ch:["Inde","Chine","États-Unis","Indonésie"],ans:0,se:"Inde : ~1,4 milliards (2024). Chine : ~1,4 milliards (stable/déclin).",pourquoi:"Récemment, Inde a dépassé Chine.",methode:["Top 3 : Inde, Chine, États-Unis."],regle:"Populations mondiales : croissance différentes.",exemple:"Nigeria : 4ᵉ (croissance rapide).",sk:"Populations"},
 {id:"geo26",lv:"geo-cm2",cat:"Continents",diff:2,q:"Quel continent a le plus de pays ?",ch:["Asie","Afrique","Amérique","Europe"],ans:1,se:"Afrique : 54 pays indépendants.",pourquoi:"Décolonisation, diversité.",methode:["Afrique : 54. Asie : ~48 (dépend définition). Amérique : ~35. Europe : ~50 (Russie?)."],regle:"Nombre de pays : dépend des frontières.",exemple:"Asie : Chine, Inde, Indonésie, Pakistan, Japon.",sk:"Pays par continent"},
-{id:"geo27",lv:"geo-cm2",cat:"Landmarks",diff:2,q:"La Tour Eiffel se trouve à ??",ch:["Lyon","Marseille","Paris","Bordeaux"],ans:2,se:"Paris, France (construite 1889, 324 m).",pourquoi:"Monument emblématique de Paris.",methode:["Eiffel : expo 1889."],regle:"Monuments : identifiants de villes.",exemple:"Big Ben : Londres. Statue de la Liberté : New York.",sk:"Landmarks"},
-{id:"geo28",lv:"geo-cm2",cat:"Mondes",diff:2,q:"Quel est le pays le plus grand du monde (superficie) ?",ch:["Canada","Russie","Chine","États-Unis"],ans:1,se:"Russie : 17,1 millions km² (11 % des terres).",pourquoi:"S'étend de l'Europe à Océan Pacifique.",methode:["Russie > Canada > Chine > États-Unis."],regle:"Pays par superficie : géographie.",exemple:"Canada : 10M km². Chine : 9,6M km².",sk:"Superficies"},
+{id:"geo27",lv:"geo-cm2",cat:"Monuments",diff:2,q:"La Tour Eiffel se trouve à ??",ch:["Lyon","Marseille","Paris","Bordeaux"],ans:2,se:"Paris, France (construite 1889, 324 m).",pourquoi:"Monument emblématique de Paris.",methode:["Eiffel : expo 1889."],regle:"Monuments : identifiants de villes.",exemple:"Big Ben : Londres. Statue de la Liberté : New York.",sk:"Monuments"},
+{id:"geo28",lv:"geo-cm2",cat:"Monde",diff:2,q:"Quel est le pays le plus grand du monde (superficie) ?",ch:["Canada","Russie","Chine","États-Unis"],ans:1,se:"Russie : 17,1 millions km² (11 % des terres).",pourquoi:"S'étend de l'Europe à Océan Pacifique.",methode:["Russie > Canada > Chine > États-Unis."],regle:"Pays par superficie : géographie.",exemple:"Canada : 10M km². Chine : 9,6M km².",sk:"Superficies"},
 {id:"geo29",lv:"geo-cm2",cat:"Continents",diff:3,q:"La Grande Barrière de corail est en Australie. C'est un site du patrimoine de l'UNESCO. Quel type d'écosystème ?",ch:["Forêt","Récif corallien","Montagne","Désert"],ans:1,se:"Récif corallien : structure biologique sous-marine.",pourquoi:"Plus grande structure de corail monde.",methode:["Corail : animal colonial. Barrière : 2 300 km."],regle:"Écosystèmes critiques : UNESCO.",exemple:"Vallée de la Loire : patrimoine culturel.",sk:"Écosystèmes"},
 {id:"geo30",lv:"geo-cm2",cat:"Cultures",diff:2,q:"Quelle langue est parlée au Brésil ?",ch:["Espagnol","Portugais","Français","Anglais"],ans:1,se:"Portugais : ancienne colonie portugaise.",pourquoi:"Brésil colonisé par Portugal (vs Espagne pour autres pays latins).",methode:["Langue : héritage colonial."],regle:"Langues : histoire coloniale.",exemple:"Mexique : espagnol.",sk:"Langues"},
 {id:"geo31",lv:"geo-cm2",cat:"Géographie",diff:3,q:"L'Égypte est un pays qui se situe surtout en ??",ch:["Asie","Europe","Afrique","Moyen-Orient"],ans:2,se:"Égypte : Afrique nord-est (Sinaï = petite partie asiatique).",pourquoi:"Géographie: 96 % en Afrique.",methode:["Égypte : delta du Nil, Sahara, Méditerranée."],regle:"Localisation continentale.",exemple:"Turquie : transcontinentale (Europe+Asie).",sk:"Localisation"},
-{id:"geo32",lv:"geo-cm2",cat:"Landmarks",diff:2,q:"Les pyramides de Giza sont en ?",ch:["Amérique","Asie","Afrique (Égypte)","Europe"],ans:2,se:"Égypte : Giza (banlieue du Caire).",pourquoi:"Monuments archéologiques égyptiens.",methode:["Pyramides : tombes pharaons (~2500 av. J.-C.)."],regle:"Monuments antiques : localisation exacte.",exemple:"Colosseum : Rome (Italie, Europe).",sk:"Landmarks"}
+{id:"geo32",lv:"geo-cm2",cat:"Monuments",diff:2,q:"Les pyramides de Giza sont en ?",ch:["Amérique","Asie","Afrique (Égypte)","Europe"],ans:2,se:"Égypte : Giza (banlieue du Caire).",pourquoi:"Monuments archéologiques égyptiens.",methode:["Pyramides : tombes pharaons (~2500 av. J.-C.)."],regle:"Monuments antiques : localisation exacte.",exemple:"Colosseum : Rome (Italie, Europe).",sk:"Monuments"}
 ];
 
+
+/* Parcours fractions : identification, comparaison, quantités, opérations, problèmes. */
+EX.push(...[
+  {
+    "id": "section_frac_01",
+    "lv": "ce1-ce2",
+    "cat": "Fractions",
+    "lessonTier": 1,
+    "diff": 1,
+    "q": "Une bande est partagée en 3 cases égales. Une seule case est colorée. Quelle fraction est colorée ?",
+    "ch": [
+      "1/3",
+      "3/1",
+      "1/2",
+      "2/3"
+    ],
+    "ans": 0,
+    "se": "Une part prise sur 3 parts égales s’écrit 1/3.",
+    "regle": "Une part prise sur 3 parts égales s’écrit 1/3."
+  },
+  {
+    "id": "section_frac_02",
+    "lv": "ce1-ce2",
+    "cat": "Fractions",
+    "lessonTier": 1,
+    "diff": 1,
+    "q": "Un disque a 6 secteurs égaux. Deux secteurs sont bleus. Quelle fraction du disque est bleue ?",
+    "ch": [
+      "6/2",
+      "2/6",
+      "2/3",
+      "4/6"
+    ],
+    "ans": 1,
+    "se": "Le 6 compte les secteurs égaux de l’entier ; le 2 compte les secteurs bleus.",
+    "regle": "Le 6 compte les secteurs égaux de l’entier ; le 2 compte les secteurs bleus."
+  },
+  {
+    "id": "section_frac_03",
+    "lv": "ce1-ce2",
+    "cat": "Fractions",
+    "lessonTier": 1,
+    "diff": 1,
+    "q": "Une tablette compte 5 parts égales. Les 5 parts sont prises. Quelle fraction représente la tablette entière ?",
+    "ch": [
+      "1/5",
+      "5/1",
+      "5/5",
+      "0/5"
+    ],
+    "ans": 2,
+    "se": "5 parts sur les 5 parts de l’entier : 5/5 = 1.",
+    "regle": "5 parts sur les 5 parts de l’entier : 5/5 = 1."
+  },
+  {
+    "id": "section_frac_04",
+    "lv": "ce1-ce2",
+    "cat": "Fractions",
+    "lessonTier": 1,
+    "diff": 1,
+    "q": "Deux enfants découpent un gâteau en deux morceaux inégaux. Peut-on dire que chaque morceau est une moitié ?",
+    "ch": [
+      "Oui, car il y a deux morceaux",
+      "Seulement le plus grand",
+      "Seulement le plus petit",
+      "Non, les deux parts doivent être égales"
+    ],
+    "ans": 3,
+    "se": "Une moitié est une des deux parts égales d’un même entier.",
+    "regle": "Une moitié est une des deux parts égales d’un même entier."
+  },
+  {
+    "id": "section_frac_05",
+    "lv": "cm1-cm2",
+    "cat": "Fractions",
+    "lessonTier": 2,
+    "diff": 2,
+    "q": "Pour deux bandes de même longueur, quelle partie est la plus grande : 1/2 ou 1/6 ?",
+    "ch": [
+      "1/6",
+      "Elles sont égales",
+      "1/2",
+      "Impossible à comparer"
+    ],
+    "ans": 2,
+    "se": "Partager le même entier en 2 fait des parts plus grandes que le partager en 6.",
+    "regle": "Partager le même entier en 2 fait des parts plus grandes que le partager en 6."
+  },
+  {
+    "id": "section_frac_06",
+    "lv": "cm1-cm2",
+    "cat": "Fractions",
+    "lessonTier": 2,
+    "diff": 2,
+    "q": "Tu recoupes chacune des 3 parts d’une bande en 2 parts égales. Comment s’écrit maintenant 1/3 de cette bande ?",
+    "ch": [
+      "1/6",
+      "2/6",
+      "2/3",
+      "3/6"
+    ],
+    "ans": 1,
+    "se": "Une ancienne part devient 2 petites parts, sur 6 au total : 1/3 = 2/6.",
+    "regle": "Une ancienne part devient 2 petites parts, sur 6 au total : 1/3 = 2/6."
+  },
+  {
+    "id": "section_frac_07",
+    "lv": "cm1-cm2",
+    "cat": "Fractions",
+    "lessonTier": 2,
+    "diff": 2,
+    "q": "Quelle fraction représente trois parts sur huit parts égales ?",
+    "ch": [
+      "8/3",
+      "3/5",
+      "5/8",
+      "3/8"
+    ],
+    "ans": 3,
+    "se": "Le numérateur est 3, le dénominateur est 8 : on écrit 3/8.",
+    "regle": "Le numérateur est 3, le dénominateur est 8 : on écrit 3/8."
+  },
+  {
+    "id": "section_frac_08",
+    "lv": "cm1-cm2",
+    "cat": "Fractions",
+    "lessonTier": 2,
+    "diff": 2,
+    "q": "Deux bandes identiques ont 7 cases égales. L’une a 2 cases colorées, l’autre 5. Quelle comparaison est vraie ?",
+    "ch": [
+      "2/7 < 5/7",
+      "2/7 > 5/7",
+      "2/7 = 5/7",
+      "7/2 < 7/5"
+    ],
+    "ans": 0,
+    "se": "Les cases ont la même taille. Cinq cases couvrent plus de place que deux.",
+    "regle": "Les cases ont la même taille. Cinq cases couvrent plus de place que deux."
+  },
+  {
+    "id": "section_frac_09",
+    "lv": "ce1-ce2",
+    "cat": "Fractions",
+    "lessonTier": 3,
+    "diff": 2,
+    "q": "Un trésor de 10 pièces est partagé en 2 groupes égaux. Combien de pièces y a-t-il dans un groupe ?",
+    "ch": [
+      "2",
+      "4",
+      "5",
+      "8"
+    ],
+    "ans": 2,
+    "se": "Un groupe représente la moitié du trésor : 10 ÷ 2 = 5.",
+    "regle": "Un groupe représente la moitié du trésor : 10 ÷ 2 = 5."
+  },
+  {
+    "id": "section_frac_10",
+    "lv": "ce1-ce2",
+    "cat": "Fractions",
+    "lessonTier": 3,
+    "diff": 2,
+    "q": "Quatre enfants se partagent équitablement 16 autocollants. Quelle quantité représente un quart des autocollants ?",
+    "ch": [
+      "2",
+      "4",
+      "8",
+      "12"
+    ],
+    "ans": 1,
+    "se": "On forme 4 groupes égaux : 16 ÷ 4 = 4 autocollants dans un groupe.",
+    "regle": "On forme 4 groupes égaux : 16 ÷ 4 = 4 autocollants dans un groupe."
+  },
+  {
+    "id": "section_frac_11",
+    "lv": "cm1-cm2",
+    "cat": "Fractions",
+    "lessonTier": 3,
+    "diff": 3,
+    "q": "Pour prendre les 2/3 de 18 perles, combien de perles prends-tu ?",
+    "ch": [
+      "6",
+      "9",
+      "12",
+      "15"
+    ],
+    "ans": 2,
+    "se": "Un tiers vaut 18 ÷ 3 = 6 perles. Deux tiers valent 6 × 2 = 12 perles.",
+    "regle": "Un tiers vaut 18 ÷ 3 = 6 perles. Deux tiers valent 6 × 2 = 12 perles."
+  },
+  {
+    "id": "section_frac_12",
+    "lv": "cm1-cm2",
+    "cat": "Fractions",
+    "lessonTier": 3,
+    "diff": 3,
+    "q": "Une boîte contient 20 cartes. Tu en offres 3/5. Combien de cartes offres-tu ?",
+    "ch": [
+      "3",
+      "4",
+      "8",
+      "12"
+    ],
+    "ans": 3,
+    "se": "Un cinquième vaut 20 ÷ 5 = 4 cartes. Trois cinquièmes valent 4 × 3 = 12 cartes.",
+    "regle": "Un cinquième vaut 20 ÷ 5 = 4 cartes. Trois cinquièmes valent 4 × 3 = 12 cartes."
+  },
+  {
+    "id": "section_frac_13",
+    "lv": "cm1-cm2",
+    "cat": "Fractions",
+    "lessonTier": 3,
+    "diff": 3,
+    "q": "Tu utilises 1/4 de 28 briques pour un mur. Combien de briques restent disponibles ?",
+    "ch": [
+      "7",
+      "14",
+      "21",
+      "24"
+    ],
+    "ans": 2,
+    "se": "Un quart de 28 vaut 7. Il reste 28 − 7 = 21 briques.",
+    "regle": "Un quart de 28 vaut 7. Il reste 28 − 7 = 21 briques."
+  },
+  {
+    "id": "section_frac_14",
+    "lv": "cm1-cm2",
+    "cat": "Fractions",
+    "lessonTier": 4,
+    "diff": 3,
+    "q": "Deux huitièmes d’une bande sont rouges, puis trois autres huitièmes sont bleus. Quelle fraction est colorée en tout ?",
+    "ch": [
+      "5/16",
+      "6/8",
+      "5/8",
+      "1/8"
+    ],
+    "ans": 2,
+    "se": "Les parts ont toutes la taille d’un huitième : 2/8 + 3/8 = 5/8.",
+    "regle": "Les parts ont toutes la taille d’un huitième : 2/8 + 3/8 = 5/8."
+  },
+  {
+    "id": "section_frac_15",
+    "lv": "cm1-cm2",
+    "cat": "Fractions",
+    "lessonTier": 4,
+    "diff": 3,
+    "q": "Une bouteille contenait 5/6 de litre. On boit 2/6 de litre. Quelle quantité reste-t-il ?",
+    "ch": [
+      "3/6 de litre",
+      "3/0 de litre",
+      "7/6 de litre",
+      "3/12 de litre"
+    ],
+    "ans": 0,
+    "se": "On retire 2 sixièmes aux 5 sixièmes : 5/6 − 2/6 = 3/6.",
+    "regle": "On retire 2 sixièmes aux 5 sixièmes : 5/6 − 2/6 = 3/6."
+  },
+  {
+    "id": "section_frac_16",
+    "lv": "6e-5e",
+    "cat": "Fractions",
+    "lessonTier": 4,
+    "diff": 4,
+    "q": "Quelle est la somme de 1/3 et 1/6 ?",
+    "ch": [
+      "2/9",
+      "1/9",
+      "1/2",
+      "2/3"
+    ],
+    "ans": 2,
+    "se": "Un tiers vaut deux sixièmes. Donc 2/6 + 1/6 = 3/6 = 1/2.",
+    "regle": "Un tiers vaut deux sixièmes. Donc 2/6 + 1/6 = 3/6 = 1/2."
+  },
+  {
+    "id": "section_frac_17",
+    "lv": "6e-5e",
+    "cat": "Fractions",
+    "lessonTier": 4,
+    "diff": 4,
+    "q": "Quelle quantité représente 3/4 − 1/2 ?",
+    "ch": [
+      "2/2",
+      "1/4",
+      "2/4",
+      "1/2"
+    ],
+    "ans": 1,
+    "se": "Une moitié vaut deux quarts : 3/4 − 2/4 = 1/4.",
+    "regle": "Une moitié vaut deux quarts : 3/4 − 2/4 = 1/4."
+  },
+  {
+    "id": "section_frac_18",
+    "lv": "6e-5e",
+    "cat": "Fractions",
+    "lessonTier": 5,
+    "diff": 5,
+    "q": "Un ruban mesure 32 cm. Tu prends les 3/4 du ruban, puis la moitié de ce morceau. Quelle longueur obtiens-tu ?",
+    "ch": [
+      "8 cm",
+      "16 cm",
+      "24 cm",
+      "12 cm"
+    ],
+    "ans": 3,
+    "se": "Les 3/4 de 32 font 24 cm. La moitié de 24 fait 12 cm.",
+    "regle": "Les 3/4 de 32 font 24 cm. La moitié de 24 fait 12 cm."
+  },
+  {
+    "id": "section_frac_19",
+    "lv": "6e-5e",
+    "cat": "Fractions",
+    "lessonTier": 5,
+    "diff": 5,
+    "q": "Dans un jardin, 1/3 de la surface porte des fleurs et 1/4 porte des légumes. Le reste est du gazon. Quelle fraction est du gazon ?",
+    "ch": [
+      "7/12",
+      "5/12",
+      "2/7",
+      "1/2"
+    ],
+    "ans": 1,
+    "se": "Sur 12 parts : 4 pour les fleurs et 3 pour les légumes. Il reste 12 − 4 − 3 = 5 parts, donc 5/12.",
+    "regle": "Sur 12 parts : 4 pour les fleurs et 3 pour les légumes. Il reste 12 − 4 − 3 = 5 parts, donc 5/12."
+  },
+  {
+    "id": "section_frac_20",
+    "lv": "6e-5e",
+    "cat": "Fractions",
+    "lessonTier": 5,
+    "diff": 5,
+    "q": "Les 2/5 d’un trésor représentent 14 pièces. Combien de pièces compte le trésor entier ?",
+    "ch": [
+      "28",
+      "35",
+      "40",
+      "70"
+    ],
+    "ans": 1,
+    "se": "Si 2 parts valent 14, une part vaut 7. Les 5 parts valent 5 × 7 = 35.",
+    "regle": "Si 2 parts valent 14, une part vaut 7. Les 5 parts valent 5 × 7 = 35."
+  }
+]);

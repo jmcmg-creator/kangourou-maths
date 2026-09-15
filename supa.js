@@ -62,18 +62,46 @@
     return res;
   }
 
-  // Sauvegarde du profil complet dans Postgres (fire-and-forget côté appelant).
+  // Les tentatives sont append-only en base ; elles ne remplissent pas le JSON
+  // du profil (plafonné à 400 Ko). Une reprise réseau ne crée pas de doublon.
+  function ackKey(c){return 'royaume_answer_ack_'+c.id}
+  function acknowledged(c){try{return new Set(JSON.parse(localStorage.getItem(ackKey(c))||'[]'))}catch(e){return new Set()}}
+  function saveAck(c,ids){try{localStorage.setItem(ackKey(c),JSON.stringify([...ids]))}catch(e){}}
   async function supaSaveProfile(profileName,profileData){
     const c=getCreds(profileName);
-    if(!c) return {error:'pas_connecte'};
-    return rpc('save_profile',{p_id:c.id,p_token:c.token,p_profile:profileData});
+    if(!c)return {error:'pas_connecte'};
+    const snapshot=JSON.parse(JSON.stringify(profileData));
+    const ack=acknowledged(c);
+    const pending=(snapshot.answerHistory||[]).filter(a=>a&&a.id&&!ack.has(a.id));
+    for(let i=0;i<pending.length;i+=100){
+      const batch=pending.slice(i,i+100);
+      const res=await rpc('save_question_answers',{p_id:c.id,p_token:c.token,p_answers:batch});
+      if(!res?.ok)return res||{error:'historique_non_confirme'};
+      batch.forEach(a=>ack.add(a.id));saveAck(c,ack);
+    }
+    delete snapshot.answerHistory;
+    delete snapshot.name;
+    return rpc('save_profile',{p_id:c.id,p_token:c.token,p_profile:snapshot});
   }
 
   async function supaLoadProfile(profileName){
     const c=getCreds(profileName);
-    if(!c) return null;
+    if(!c)return null;
     const res=await rpc('load_profile',{p_id:c.id,p_token:c.token});
-    return (res&&res.profile)?res.profile:null;
+    if(!res?.profile)return null;
+    const byId=new Map((res.profile.answerHistory||[]).map(a=>[a.id,a]));
+    let cursor=0;
+    while(true){
+      const page=await rpc('load_question_answers',{p_id:c.id,p_token:c.token,p_after:cursor});
+      if(page?.error||!Array.isArray(page?.answers))return null;
+      page.answers.forEach(a=>byId.set(a.id,a));
+      if(page.answers.length<100)break;
+      if(!(page.next>cursor))return null;
+      cursor=page.next;
+    }
+    // Une ancienne sauvegarde peut encore contenir un historique non migré :
+    // seul le serveur doit confirmer un ID avant qu'on le marque synchronisé.
+    return {...res.profile,answerHistory:[...byId.values()]};
   }
 
   async function supaSendInvite(profileName,toPseudo,code,lvName,count){

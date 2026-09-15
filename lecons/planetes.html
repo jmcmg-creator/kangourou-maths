@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="fr">
 <head>
-<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1,minimum-scale=1,maximum-scale=5,user-scalable=yes,viewport-fit=cover">
 <title>🪐 Le Système Solaire</title>
 <style>
 /* Pas de zoom au double-appui : un enfant qui tapote vite une tuile faisait
@@ -41,7 +41,7 @@ body{background:#060b1f;color:#eaf0ff;font-family:'Trebuchet MS',sans-serif;min-
 .back-btn{top:calc(12px + env(safe-area-inset-top,0px))!important;left:calc(12px + env(safe-area-inset-left,0px))!important;z-index:9999!important;min-height:44px;min-width:44px;display:inline-flex;align-items:center}
 </style></head>
 <body>
-<a class="back-btn" href="../index.html">← Retour</a>
+<a class="back-btn" href="../index.html#lecons">← Retour</a>
 <div class="header"><h1>🪐 Le Système Solaire</h1><p>Explore les 8 planètes qui tournent autour du Soleil</p></div>
 <div class="solar" id="solar"></div>
 <div class="planet-nav" id="pnav"></div>
@@ -124,5 +124,7 @@ function animate(){
 }
 renderInfo();animate();
 </script>
+<script src="../zoom.js?v=1"></script>
+<script src="section-retour.js?v=2"></script>
 </body>
 </html>

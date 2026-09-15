@@ -2,7 +2,7 @@
 <html lang="fr">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<meta name="viewport" content="width=device-width,initial-scale=1,minimum-scale=1,maximum-scale=5,user-scalable=yes,viewport-fit=cover">
 <title>🔧 Royaume de l'Ingénieur</title>
 <style>
 /* Pas de zoom au double-appui : un enfant qui tapote vite une tuile faisait
@@ -215,6 +215,7 @@ function showDetail(i){
   const quizEl = document.getElementById('dQuiz');
   quizEl.innerHTML = '';
   m.quiz.forEach((quiz, qi) => {
+    if(!LessonQuestions.pending(quiz))return;
     const [q, choices, ans, expl] = quiz;
     const block = document.createElement('div');
     block.className = 'q-block';
@@ -226,6 +227,8 @@ function showDetail(i){
       btn.className = 'q-choice';
       btn.textContent = choice;
       btn.onclick = () => {
+        if(btn.disabled)return;
+        if(!LessonQuestions.record(quiz,ci,{category:m.nom||m.name||'Ingénieur'}))alert('La réponse ne peut pas être sauvegardée sur cet appareil.');
         [...cwrap.children].forEach(b => b.disabled = true);
         if (ci === ans) btn.classList.add('correct');
         else { btn.classList.add('wrong'); cwrap.children[ans].classList.add('correct'); }
@@ -241,8 +244,13 @@ function showDetail(i){
     quizEl.appendChild(block);
   });
 
+  if(!quizEl.children.length)quizEl.textContent=LessonQuestions.emptyMessage();
   window.scrollTo(0,0);
 }
 </script>
+<script src="../config.js?v=2"></script>
+<script src="../supa.js?v=3"></script>
+<script src="../lesson-questions.js?v=2"></script>
+<script src="../zoom.js?v=1"></script>
 </body>
 </html>

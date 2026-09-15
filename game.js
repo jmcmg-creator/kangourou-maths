@@ -98,7 +98,7 @@ function getSubjectForLevel(lvId){
   return SUBJECTS[0];
 }
 const MODES=[
-{id:"training",name:"Entra\u00eenement libre",icon:"\u{1F4DC}",desc:"Sans limite de temps. Apprends \u00e0 ton rythme."},
+{id:"training",name:"Jouer à mon rythme",icon:"\u{1F4DC}",desc:"Sans chrono. La difficulté s’adapte à tes progrès."},
 {id:"adaptive",name:"Mode adaptatif",icon:"\u{1F3AF}",desc:"Exercices cibl\u00e9s sur tes points faibles."},
 {id:"challenge",name:"D\u00e9fi chrono",icon:"\u23F1\uFE0F",desc:"60 secondes par question. Chaque seconde compte !"},
 {id:"progression",name:"Qu\u00eate du Dragon",icon:"\u{1F3F0}",desc:"Difficult\u00e9 croissante. M\u00e9lange tous les niveaux."}
@@ -326,7 +326,7 @@ const STORAGE_ACTIVE="royaume_active_v1";
    distinguer « la fonctionnalité est cassée » de « le téléphone n'a pas
    encore la mise à jour ».
    À bumper avec CACHE_VERSION (sw.js) et le ?v= (index.html). */
-const APP_VERSION='v44';
+const APP_VERSION='v50';
 
 function loadProfilesDict(){
   try{const d=localStorage.getItem(STORAGE_PROFILES); if(d) return JSON.parse(d)||{};}catch(e){}
@@ -340,11 +340,13 @@ function newProfile(){
   return {name:"",totalGames:0,totalQuestions:0,totalCorrect:0,bestStreak:0,sessions:[],catStats:{},exerciseStats:{},playDays:[],unlockedBadges:[],
     xp:0,cristaux:0,dragonnets:[],mainDragon:"main",stage:0,
     dailyQuest:null,aiExercises:[],recentMisses:[],aid:"",
-    grade:null,age:null,unlocks:{},unlockProgress:{},recentExIds:[],lessonsSeen:[]};
+    grade:null,age:null,unlocks:{},unlockProgress:{},recentExIds:[],lessonsSeen:[],successfulQuestions:{},answerHistory:[]};
 }
 function migrate(p){
   const base=newProfile();
-  return _purgeHorsSujet(_purgeIncoherentAi(_restoreJudithXp(Object.assign(base,p))));
+  const out=migrateAnswerHistory(Object.assign(base,p));
+  out.successfulQuestions=Object.fromEntries([...successfulKeys(out)].map(k=>[k,true]));
+  return _purgeHorsSujet(_purgeIncoherentAi(_restoreJudithXp(out)));
 }
 
 // Les questions de maths étiquetées « géographie » (ou autre royaume) qui
@@ -404,6 +406,8 @@ function loadProfileByName(name){
 function saveProfile(){
   if(!profile.name) return;
   const dict=loadProfilesDict();
+  profile.successfulQuestions={...(dict[profile.name]?.successfulQuestions||{}),...(profile.successfulQuestions||{})};
+  profile.answerHistory=mergeAnswerHistory(dict[profile.name]?.answerHistory||[],profile.answerHistory||[]);
   dict[profile.name]=profile;
   saveProfilesDict(dict);
   setActiveName(profile.name);
@@ -423,9 +427,8 @@ function migrateLegacyProfile(){
     setActiveName(p.name);
   }catch(e){}
 }
-migrateLegacyProfile();
-// Au boot : aucun profil chargé d'office. renderHome affichera le sélecteur
-// si des profils existent, sinon l'écran « entre ton prénom ».
+// Au boot, le dernier élève est restauré après initialisation des banques.
+// Un rechargement ne doit jamais ouvrir librement le sélecteur.
 let profile=newProfile();
 
 /* ════════ HTML escaping (protection XSS) ════════ */
@@ -522,6 +525,8 @@ function mergeProfiles(a,b){
   };
   out.catStats=mergeStats(a.catStats,b.catStats);
   out.exerciseStats=mergeStats(a.exerciseStats,b.exerciseStats);
+  out.successfulQuestions={...(a.successfulQuestions||{}),...(b.successfulQuestions||{})};
+  out.answerHistory=mergeAnswerHistory(migrateAnswerHistory({...a}).answerHistory||[],migrateAnswerHistory({...b}).answerHistory||[]);
   out.poesieStats=mergeStats(a.poesieStats,b.poesieStats);
   // Contenus ajoutés par le parent + IA + battles + amis : union par identifiant.
   const uniById=(k,idf)=>{
@@ -560,8 +565,10 @@ function mergeProfiles(a,b){
 async function syncProfileFromCloud(){
   await ensureAid();
   if(!profile.aid) return null;
-  const remote=await fetchProfileByAid(profile.aid);
-  if(!remote) return null;
+  const active=profile;
+  const remote=(window.Supa&&Supa.enabled()&&Supa.creds(active.name))
+    ?await Supa.loadProfile(active.name):await fetchProfileByAid(active.aid);
+  if(profile!==active||!remote) return null;
   // FUSION au lieu de remplacement : impossible de perdre des XP.
   const before=JSON.stringify(profile);
   profile=mergeProfiles(profile,migrate(remote));
@@ -576,19 +583,26 @@ async function pushProfileToCloud(){
   // Si Supabase est actif et que ce profil a un pseudo enregistré, la sync
   // sécurisée (jeton + pseudo unique) prend le relais : on n'envoie plus
   // rien au Worker historique non authentifié.
-  try{if(window.Supa&&Supa.enabled()&&Supa.creds(profile.name)) return}catch(e){}
+  try{if(window.Supa&&Supa.enabled()&&Supa.creds(profile.name)){
+    const result=await Supa.saveProfile(profile.name,profile);
+    state.answerHistorySync=result?.ok?'ok':'pending';
+    if(result?.error)toast('Historique conservé sur cet appareil ; synchronisation en attente ('+result.error+').');
+    return result;
+  }}catch(e){toast('Historique conservé sur cet appareil ; synchronisation en attente.');return}
   try{
     // RGPD enfants : on ne transmet JAMAIS le prénom au serveur. La copie
     // cloud est identifiée par l'AID seul ; le prénom reste sur l'appareil.
     const copie=Object.assign({},profile);
     delete copie.name;
-    await fetch(API_BASE+'/profile/'+profile.aid,{
+    const response=await fetch(API_BASE+'/profile/'+profile.aid,{
       method:'PUT',
       headers:{'Content-Type':'application/json'},
       body:JSON.stringify(copie),
-      keepalive:true
+      keepalive:false
     });
-  }catch(e){}
+    state.answerHistorySync=response.ok?'ok':'pending';
+    if(!response.ok)toast('Historique conservé sur cet appareil ; synchronisation en attente.');
+  }catch(e){state.answerHistorySync='pending'}
 }
 
 function getSyncLink(){
@@ -605,6 +619,7 @@ function processIncomingSyncLink(){
   setTimeout(async()=>{
     const remote=await fetchProfileByAid(incoming);
     if(!remote||!remote.name){alert('Aucun profil trouvé pour ce lien.');return}
+    parentalGate(()=>{
     const dict=loadProfilesDict();
     const exists=!!dict[remote.name];
     if(!confirm((exists?'Mettre à jour':'Importer')+' le profil « '+remote.name+' » depuis l\'autre appareil ?')) return;
@@ -615,6 +630,7 @@ function processIncomingSyncLink(){
     profile=migrate(remote);
     alert('✅ Profil « '+remote.name+' » '+(exists?'mis à jour':'importé')+' !');
     navigate('home');
+    });
   },150);
 }
 
@@ -751,7 +767,7 @@ saveProfile=function(){
   if(_syncTimer) clearTimeout(_syncTimer);
   _syncTimer=setTimeout(()=>{
     pushProfileToCloud();
-    try{if(window.Supa&&Supa.enabled()&&Supa.creds(profile.name))Supa.saveProfile(profile.name,profile)}catch(e){}
+
   },1000);
 };
 // Flush immédiat : pousse vers le cloud sans attendre le debounce. Sur mobile,
@@ -762,6 +778,7 @@ function flushProfileSync(){
 }
 document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='hidden')flushProfileSync();});
 window.addEventListener('pagehide',flushProfileSync);
+window.addEventListener('online',()=>{pushProfileToCloud()});
 
 /* ════════ EMBERS ════════
    Les braises coûtent cher en batterie : chaque une crée puis détruit un
@@ -822,12 +839,57 @@ function isCleanName(name){
   const norm=String(name).toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'');
   return !_PROFANITY.some(w=>norm.includes(w));
 }
+let _profileAccess=false;
 function parentalGate(onPass,onCancel){
-  // Déjà passé dans les 15 dernières minutes ? on laisse passer.
-  try{
-    const last=parseInt(localStorage.getItem('royaume_parental_ok')||'0',10);
-    if(Date.now()-last<15*60*1000){onPass&&onPass();return}
-  }catch(e){}
+  if(document.getElementById('parentalGate')) return;
+  let stored;
+  try{stored=localStorage.getItem('royaume_parent_pin')}catch(e){toast('Stockage indisponible : accès adulte verrouillé.');return}
+  const show=()=>{
+    const overlay=document.createElement('div');
+    overlay.id='parentalGate';
+    overlay.className='parental-overlay';
+    overlay.innerHTML='<form class="card" role="dialog" aria-modal="true" aria-labelledby="parentTitle">'
+      +'<h2 id="parentTitle">'+(stored?'Code parental':'Parent : créez votre code')+'</h2>'
+      +'<p>'+(stored?'Saisissez votre code pour continuer.':'Choisissez 6 chiffres, à garder secrets. Ce code protège les profils sur cet appareil.')+'</p>'
+      +'<input aria-label="Code parental" name="pin" type="password" inputmode="numeric" pattern="[0-9]{6}" minlength="6" maxlength="6" required autocomplete="off">'
+      +(!stored?'<input aria-label="Confirmer le code" name="confirmation" type="password" inputmode="numeric" maxlength="6" required autocomplete="off">':'')
+      +'<p role="status" class="pin-status"></p><button type="submit" class="btn-fire">Valider</button> '
+      +'<button type="button" class="btn-stone">Annuler</button></form>';
+    document.body.appendChild(overlay);
+    overlay.querySelector('[type="button"]').onclick=()=>{overlay.remove();onCancel&&onCancel()};
+    const form=overlay.querySelector('form');
+    form.onsubmit=async ev=>{
+      ev.preventDefault();
+      const status=overlay.querySelector('.pin-status');
+      const pin=form.elements.pin.value;
+      if(!/^\d{6}$/.test(pin)){status.textContent='Le code doit contenir 6 chiffres.';return}
+      if(!stored&&pin!==form.elements.confirmation.value){status.textContent='Les deux codes sont différents.';return}
+      const submit=form.querySelector('[type="submit"]');submit.disabled=true;
+      try{
+        const until=Number(localStorage.getItem('royaume_pin_wait'))||0;
+        if(Date.now()<until){status.textContent='Patientez une minute avant de réessayer.';return}
+        const record=stored?JSON.parse(stored):{salt:Array.from(crypto.getRandomValues(new Uint8Array(16)),b=>b.toString(16).padStart(2,'0')).join('')};
+        const digest=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(record.salt+':'+pin));
+        const hash=Array.from(new Uint8Array(digest),b=>b.toString(16).padStart(2,'0')).join('');
+        if(stored&&record.hash!==hash){
+          const tries=(Number(localStorage.getItem('royaume_pin_tries'))||0)+1;
+          localStorage.setItem('royaume_pin_tries',String(tries%5));
+          if(tries>=5)localStorage.setItem('royaume_pin_wait',String(Date.now()+60000));
+          status.textContent='Code incorrect.';form.elements.pin.value='';return;
+        }
+        if(!stored)localStorage.setItem('royaume_parent_pin',JSON.stringify({salt:record.salt,hash}));
+        localStorage.removeItem('royaume_pin_tries');localStorage.removeItem('royaume_pin_wait');
+        overlay.remove();onPass&&onPass();
+      }catch(e){status.textContent='Impossible de vérifier ou enregistrer le code. Accès verrouillé.'}
+      finally{submit.disabled=false}
+    };
+    form.elements.pin.focus();
+  };
+  // Migration : seul le premier paramétrage conserve le défi adulte existant.
+  if(stored)show();else adultSetupGate(show,onCancel);
+}
+
+function adultSetupGate(onPass,onCancel){
   const a=7+Math.floor(Math.random()*8); // 7-14
   const b=6+Math.floor(Math.random()*8); // 6-13
   const answer=a*b;
@@ -860,7 +922,6 @@ function parentalGate(onPass,onCancel){
     if(t.dataset&&t.dataset.val){
       const v=parseInt(t.dataset.val,10);
       if(v===answer){
-        try{localStorage.setItem('royaume_parental_ok',String(Date.now()))}catch(e){}
         overlay.remove();onPass&&onPass();
       }else{
         t.style.background='rgba(248,113,113,.3)';
@@ -905,6 +966,7 @@ function _clePosition(){
   // mémorisée n'était jamais retrouvée.
   const s=state.screen;
   if(s==='subject') return 'subject|'+(state.subjectId||'');
+  if(s==='section'||s==='sectionLesson')return s+'|'+state.subjectId+'|'+state.sectionKey;
   if(s==='mode')    return 'mode|'+(state.level||'');
   if(s==='tablesLearn') return 'tablesLearn|'+(state.tableN||'');
   return s;
@@ -915,6 +977,12 @@ function _clePosition(){
    faisait perdre deux crans d'un coup. */
 function retourArriere(){
   const s=state.screen;
+  if(document.getElementById('parentalGate')){document.getElementById('parentalGate').remove();return}
+  if(s==='sectionLesson')return navigate('section');
+  if(s==='section')return navigate('subject');
+  if(['game','results','stockEmpty'].includes(s)&&state.mode==='section')return navigate('section');
+  const parents={game:state.mode==='battle'?'battleHome':state.mode==='theme'?'subject':'mode',results:state.mode==='battle'?'battleHome':state.mode==='theme'?'subject':'mode',stockEmpty:'subject',memoryGame:'memoryHome',poesieFable:'poesieHome',poesieRecite:'poesieHome',fichesView:'fichesTopics',battleResults:'battleHome'};
+  if(parents[s]){_retourEnCours=true;return navigate(parents[s])}
   if((s==='mode'||s==='lessonView')&&state.subjectId){
     _retourEnCours=true;
     return navigate('subject',{subjectId:state.subjectId});
@@ -962,6 +1030,16 @@ function _scrollToHomeAnchor(){
 }
 
 function navigate(screen,data){
+  if(['profilePicker','nameAsk'].includes(screen)&&profile.name&&!_profileAccess){
+    return parentalGate(()=>{_profileAccess=true;navigate(screen,data)});
+  }
+  if(state.screen==='game'&&screen!=='game'&&screen!=='results'&&!state.sessionSaved){
+    const access=_profileAccess;
+    finishGame(true);
+    _profileAccess=access;
+  }
+  if(screen==='mode'&&(data?.level||state.level)&&!data?.subjectId)state.subjectId=subjectOfLevel(data?.level||state.level);
+  if(!['profilePicker','nameAsk'].includes(screen))_profileAccess=false;
   // On note où on en était AVANT de changer d'écran.
   try{if(state.screen) _positions[_clePosition()]=window.scrollY}catch(e){}
   if(state.timerID){clearInterval(state.timerID);state.timerID=null}
@@ -1006,8 +1084,12 @@ function navigate(screen,data){
 
 function render(){
   switch(state.screen){
+    case 'stockEmpty':
+      app.innerHTML='<div class="card"><h2>Plus de questions disponibles</h2><p>Tu as réussi toutes les questions jouables de ce parcours, ou son stock est encore vide. Choisis un autre niveau ou un autre thème. Tes réussites restent enregistrées.</p><button class="btn-fire" onclick="retourArriere()">Choisir un autre parcours</button></div>';break;
     case 'home': renderHome(); break;
     case 'subject': renderSubject(); break;
+    case 'section': renderSection(); break;
+    case 'sectionLesson': renderSectionLesson(); break;
     case 'mode': renderMode(); break;
     case 'game': renderGame(); break;
     case 'results': renderResults(); break;
@@ -1206,9 +1288,7 @@ function staticPoolOf(lvId){
 // {done, total, ratio} — combien de questions du niveau sont déjà réussies.
 function levelMastery(lvId){
   const pool=staticPoolOf(lvId);
-  const st=profile.exerciseStats||{};
-  let done=0;
-  for(const e of pool){const s=st[e.id]; if(s&&s.cor>0) done++;}
+  const done=pool.length-remainingOf(pool).length;
   return {done,total:pool.length,ratio:pool.length?done/pool.length:0};
 }
 function isLevelMastered(lvId){
@@ -1264,6 +1344,9 @@ function checkDailyQuest(){
 
 /* ════════ HOME ════════ */
 function renderHome(){
+  if(profile.name&&!localStorage.getItem('royaume_parent_pin')){
+    app.innerHTML='<div class="card"><h2>Avant de jouer : le code parental</h2><p>Parent, configurez votre code sur cet appareil avant de confier le jeu à votre enfant.</p><button class="btn-fire" onclick="parentalGate(()=>renderHome())">Configurer le code parental</button></div>';return;
+  }
   if(!profile.name){
     navigate(Object.keys(loadProfilesDict()).length>0?'profilePicker':'nameAsk');
     return;
@@ -1477,12 +1560,12 @@ function replayMisses(subjectId){
   for(const m of wanted){
     if(seen.has(m.id))continue;seen.add(m.id);
     const e=byId[m.id];
-    if(e&&isPlayableEx(e))list.push(e);
+    if(e&&isPlayableEx(e)&&remainingOf([e]).length)list.push(e);
     if(list.length>=10)break;
   }
   if(list.length===0){toast('Ces questions ne sont plus disponibles \u2014 elles ont \u00e9t\u00e9 remplac\u00e9es.');return}
   state.battleCode=null;
-  state.mode='revision';state.level=list[0].lv;state.exercises=dedupeExercises(list);
+  state.sessionSaved=false;state.mode='revision';state.level=list[0].lv;state.exercises=dedupeExercises(list);
   state.idx=0;state.selected=null;state.score=0;state.streak=0;state.maxStreak=0;state.results=[];
   state.timer=60;state.gameOver=false;state.startTime=Date.now();state.detailOpen=false;
   state.sessionXP=0;state.sessionCristaux=0;state.chestsOpen=[];
@@ -1499,6 +1582,10 @@ function renderSubject(){
     <h2 class="title" style="color:${s.color};font-size:1.6rem">${s.name}</h2>
     <p class="sub">${s.desc}</p>
   </div>
+  <h3 class="mb-3">Les sections</h3>
+  <p class="sub mb-3">Choisis une notion. Découvre sa leçon, puis avance par petits paliers.</p>
+  ${sectionCards(s.id)}
+  <details class="mt-4"><summary>Autres entraînements par niveau</summary>
   ${subjectProgressBanner(s)}
   ${visibleLevels.map((lv,i)=>{
     const open=isLevelUnlocked(lv.id);
@@ -1536,20 +1623,7 @@ function renderSubject(){
       <div class="arrow">${open?'→':''}</div>
     </div>
   </div>`}).join('')}
-  ${(function(){
-    // Réviser par thème : un thème traverse les niveaux (les fractions
-    // commencent en CE2 et continuent en 5e), donc il a sa place ici et non
-    // dans un niveau. Seuls les niveaux ouverts alimentent le tirage.
-    const th=themesDuSujet(s.id);
-    if(!th.length) return '';
-    return '<div class="card mb-4" style="border-color:#c4b5fd">'
-      +'<h3 class="fredoka" style="font-size:.85rem;color:#c4b5fd;margin-bottom:4px;letter-spacing:.1em;text-transform:uppercase">\u{1F3AF} R\u00e9viser un th\u00e8me</h3>'
-      +'<p class="sub" style="font-size:.75rem;margin-bottom:10px">10 questions sur un seul sujet. Celles que tu n\'as pas encore r\u00e9ussies passent en premier.</p>'
-      +'<div class="theme-chips">'
-      +th.map(([cat,n])=>'<button class="theme-chip" data-s="'+esc(s.id)+'" data-c="'+esc(cat)+'" onclick="startTheme(this.dataset.s,this.dataset.c)">'
-          +esc(cat)+' <span class="theme-n">'+n+'</span></button>').join('')
-      +'</div></div>';
-  })()}
+  </details>
   <button class="btn-stone mt-4" onclick="navigate('home')">\u2190 Retour</button>`;
 }
 
@@ -1584,28 +1658,11 @@ const LECONS=[
   {id:"atomes",title:"Les Atomes",emoji:"⚛️",color:"#50c8f0",desc:"Les briques qui composent tout l'univers",file:"lecons/atomes.html"}
 ];
 function renderLecons(){
-  app.innerHTML=`
-    <div class="text-center fade-in py-6">
-      <div style="font-size:3.5rem">🔬</div>
-      <h2 class="title" style="color:#22d3ee;font-size:1.6rem">Leçons Interactives</h2>
-      <p class="sub" style="color:var(--text-mid)">Des expériences animées pour comprendre la science</p>
-    </div>
-    ${LECONS.map((l,i)=>`
-      <div class="kingdom-gate fade-in" style="animation-delay:${i*.07}s;--k-color:${l.color}" onclick="location.href='${l.file}'">
-        <div class="kingdom-glow" style="background:radial-gradient(ellipse at 30% 50%,${l.color}18,transparent 70%)"></div>
-        <div class="kingdom-border-glow" style="--k-color:${l.color}"></div>
-        <div class="kingdom-inner">
-          <div class="kingdom-mascot" style="font-size:3rem">${l.emoji}</div>
-          <div class="kingdom-info">
-            <h3 class="kingdom-name" style="color:${l.color}">${l.title}</h3>
-            <p class="kingdom-stage">${l.desc}</p>
-          </div>
-          <div class="kingdom-enter" style="color:${l.color}">➔</div>
-        </div>
-      </div>
-    `).join('')}
-    <button class="btn-stone mt-4" onclick="navigate('home')">← Retour</button>
-  `;
+  app.innerHTML='<div class="text-center py-6"><h2 class="title">Apprendre par section</h2><p class="sub">Choisis une matière, puis une notion à comprendre et à pratiquer.</p></div>'
+    +SUBJECTS.filter(s=>(s.levels||[]).length).map(s=>'<button class="section-card" style="width:100%;margin-bottom:12px" data-s="'+esc(s.id)+'" onclick="navigate(\'subject\',{subjectId:this.dataset.s})"><strong>'+s.icon+' '+esc(s.name)+'</strong><span class="sub">Leçons et questions progressives</span></button>').join('')
+    +'<details class="mt-4"><summary>Toutes les expériences de sciences</summary>'
+    +LECONS.map(l=>'<a class="btn-stone" style="display:block;margin-top:10px" href="'+esc(l.file)+'">'+esc(l.emoji+' '+l.title)+'</a>').join('')+'</details>'
+    +'<button class="btn-stone mt-4" onclick="navigate(\'home\')">← Retour</button>';
 }
 
 function renderNameAsk(){
@@ -1650,6 +1707,7 @@ async function setName(){
   // Standardise la clé sur le prénom : tous les appareils regarderont ici.
   profile.aid=aid;
   if(localKey&&localKey!==profile.name) delete dict[localKey];
+  profile.successfulQuestions={...(dict[profile.name]?.successfulQuestions||{}),...(profile.successfulQuestions||{})};
   dict[profile.name]=profile;
   saveProfilesDict(dict);
   setActiveName(profile.name);
@@ -1733,6 +1791,10 @@ function confirmAge(){
 
 /* ════════ SÉLECTEUR DE PROFIL (MULTI-UTILISATEUR) ════════ */
 function renderProfilePicker(){
+  if(!_profileAccess&&Object.keys(loadProfilesDict()).length){
+    app.innerHTML='<div class="card"><h2>Accès aux élèves</h2><button class="btn-fire" onclick="parentalGate(()=>{_profileAccess=true;renderProfilePicker()})">Code parental</button></div>';
+    return;
+  }
   const dict=loadProfilesDict();
   const active=getActiveName();
   const names=Object.keys(dict).sort((a,b)=>{
@@ -1777,6 +1839,7 @@ function renderProfilePicker(){
 function switchProfileIdx(i){const n=(window._profileNames||[])[i];if(n!=null)switchProfile(n)}
 function deleteProfileIdx(i){const n=(window._profileNames||[])[i];if(n!=null)deleteProfile(n)}
 async function switchProfile(name){
+  if(profile.name!==name&&!_profileAccess)return parentalGate(()=>{_profileAccess=true;switchProfile(name)});
   profile=loadProfileByName(name);
   const nameAid=await aidFromName(profile.name||name);
   const oldAid=(profile.aid&&profile.aid!==nameAid)?profile.aid:null;
@@ -1789,6 +1852,7 @@ async function switchProfile(name){
     try{
       if(oldAid){
         const old=await fetchProfileByAid(oldAid);
+        if(profile.name!==name)return;
         if(old&&old.name){profile=mergeProfiles(profile,migrate(old));profile.aid=nameAid;_localSave()}
       }
       const result=await syncProfileFromCloud();
@@ -1804,7 +1868,8 @@ function _doAddNewProfile(){
   navigate('nameAsk');
 }
 
-function deleteProfile(name){
+function deleteProfile(name,approved){
+  if(!approved)return parentalGate(()=>deleteProfile(name,true));
   if(!confirm('Supprimer le profil « '+name+' » sur cet appareil ? Action définitive.')) return;
   const dict=loadProfilesDict();
   delete dict[name];
@@ -1857,18 +1922,11 @@ function renderMode(){
     <div class="row"><div class="mode-icon">\u{1F4D6}</div><div class="flex-1">
       <h3 class="card-title" style="color:#22d3ee">La le\u00e7on</h3>
       <p class="sub">Les grandes id\u00e9es de ce niveau, avec un exemple pour chacune</p></div></div></div>
-  ${MODES.map((m,i)=>`<div class="card clickable fade-in" style="animation-delay:${i*.1}s" onclick="startGame('${m.id}')">
+  ${MODES.filter(m=>['training','challenge'].includes(m.id)).map((m,i)=>`<div class="card clickable fade-in" style="animation-delay:${i*.1}s" onclick="startGame('${m.id}')">
     <div class="row"><div class="mode-icon">${m.icon}</div><div class="flex-1">
       <h3 class="card-title" style="color:#fbbf24">${m.name}</h3>
       <p class="sub">${m.desc}</p></div></div></div>`).join('')}
-  <div class="card mb-4" style="border-color:#c4b5fd;background:linear-gradient(145deg,rgba(139,92,246,.1),rgba(59,130,246,.1))">
-    <h3 class="fredoka" style="color:#c4b5fd;font-size:.85rem;text-transform:uppercase;letter-spacing:.1em;margin-bottom:8px">\u{1F52E} Forge du Dragon (IA)</h3>
-    <p style="color:#faf5ff;font-size:.85rem;margin-bottom:6px">Le Dragon forge automatiquement de nouveaux d\u00e9fis quand tu en as besoin. Tu en as actuellement <strong style="color:#c4b5fd">${(profile.aiExercises||[]).filter(e=>e.lv===state.level).length} exercices IA</strong> disponibles pour ce niveau.</p>
-    <p style="color:#8b7ec8;font-size:.75rem;margin-bottom:10px;font-style:italic">\u{1F4A1} Astuce : les exos AI ont des nombres et des sc\u00e9narios diff\u00e9rents \u00e0 chaque g\u00e9n\u00e9ration.</p>
-    <button class="btn-stone btn-small" onclick="reqGen('${state.level}',10)" id="genBtn">\u{1F525} Forger 10 nouveaux d\u00e9fis maintenant</button>
-    <div id="genStatus" style="margin-top:8px;font-size:.8rem;color:#93c5fd"></div>
-  </div>
-  <button class="btn-stone mt-4" onclick="navigate('home')">\u2190 Retour</button>`;
+  <button class="btn-stone mt-4" onclick="retourArriere()">\u2190 Retour</button>`;
 }
 
 async function reqGen(lvId,n){
@@ -2016,8 +2074,8 @@ EX.push({id:'mapcy_cz',lv:'geo-carte-payseu',cat:"Pays d'Europe",diff:4,type:'ma
    2. profile.recentExIds — mémoire glissante des 150 dernières questions
       jouées. Écartées du tirage pour ne pas revoir la même d'une partie
       à l'autre.
-   3. Si tout écarter ne laisse pas assez d'exercices, on ré-admet les plus
-      anciennes d'abord : mieux vaut un rappel espacé qu'une partie vide. */
+   3. successfulQuestions exclut définitivement les réussites (ID + contenu).
+      Le cooldown ne peut réadmettre que des questions non réussies. */
 const RECENT_MAX=150;
 function _norm(t){
   return String(t||'').toLowerCase()
@@ -2035,8 +2093,8 @@ function _norm(t){
 function _qKey(e){
   if(!e) return '';
   const ch=Array.isArray(e.ch)?e.ch.map(_norm).sort().join('|'):'';
-  const extra=e.target?('@'+e.target):(e.flag?('@'+e.flag):'');
-  return _norm(e.q)+'||'+ch+extra;
+  const extra=JSON.stringify([e.type||'',e.map||'',e.target||'',e.flag||'',e.visual||'',e.visualImg||'',e.answers||[]]);
+  return _norm(String(e.q||'').replace(/[+*\/−×÷=<>-]/g,c=>' operator'+c.codePointAt(0)+' '))+'||'+ch+extra;
 }
 /* ══ COHÉRENCE DES QUESTIONS GÉNÉRÉES ══
    Le Dragon produit parfois une question dont l'indice de bonne réponse ne
@@ -2086,6 +2144,108 @@ function dedupeExercises(list){
   }
   return out;
 }
+function remainingOf(pool){
+  const keys=successfulKeys();
+  return pool.filter(e=>!keys.has('id:'+e.id)&&!keys.has('q:'+_qKey(e)));
+}
+
+function successfulKeys(p=profile){
+  const keys=new Set(Object.keys(p.successfulQuestions||{}));
+  for(const row of p.answerHistory||[])if(row.correct){
+    if(row.exerciseId)keys.add('id:'+row.exerciseId);
+    if(row.questionKey)keys.add('q:'+row.questionKey);
+  }
+  // Old profiles had only per-ID counters and a bounded session history.
+  const known=EX.concat(p.aiExercises||[],p.customExercises||[]);
+  for(const e of known)if(p.exerciseStats?.[e.id]?.cor>0){keys.add('id:'+e.id);keys.add('q:'+_qKey(e))}
+  for(const session of p.sessions||[])for(const r of session.results||[]){
+    if(r.correct&&r.ex){keys.add('id:'+r.ex.id);keys.add('q:'+_qKey(r.ex))}
+  }
+  return keys;
+}
+
+/* Journal permanent des tentatives, indépendant du journal des dernières erreurs. */
+function mergeAnswerHistory(...lists){
+  const byId=new Map();
+  for(const row of lists.flat())if(row&&typeof row.id==='string'&&!byId.has(row.id))byId.set(row.id,row);
+  return [...byId.values()].sort((a,b)=>String(a.date).localeCompare(String(b.date))||a.id.localeCompare(b.id));
+}
+function answerAttempt(ex,correct,choice,meta={}){
+  let given='';
+  if(ex.type==='map-country')given=mapSetOf(ex).pays[choice]?.name||'(sans réponse)';
+  else if(ex.type==='map')given=(MAP_POINTS[ex.map]||[]).find(p=>p.id===choice)?.name||'(sans réponse)';
+  else if(Array.isArray(ex.ch)&&Number.isInteger(choice))given=ex.ch[choice]||'(sans réponse)';
+  else given=choice==null?'(sans réponse)':String(choice);
+  return {id:meta.id||(crypto.randomUUID?crypto.randomUUID():Date.now().toString(36)+'-'+Math.random().toString(36).slice(2)),
+    date:meta.date||new Date().toISOString(),exerciseId:String(ex.id||''),questionKey:_qKey(ex),q:String(ex.q||''),
+    choices:Array.isArray(ex.ch)?ex.ch.slice():[],given,answer:exAnswerText(ex),
+    correct:!!correct,level:ex.lv||'',subject:subjectOfLevel(ex.lv)||'',
+    category:ex.cat||'',mode:meta.mode||state.mode||'',explanation:ex.se||''};
+}
+function migrateAnswerHistory(p){
+  if(p.answerHistoryVersion===1)return p;
+  const old=[];
+  const seen=new Set();
+  for(const session of p.sessions||[])for(const [i,r] of (session.results||[]).entries()){
+    if(!r?.ex)continue;
+    old.push(answerAttempt(r.ex,r.correct,r.choice,{id:r.attemptId||'legacy:'+session.date+':'+i+':'+r.ex.id,date:session.date,mode:session.mode}));
+    seen.add(session.date+'|'+r.ex.id);
+  }
+  for(const m of p.recentMisses||[]){
+    if(seen.has(m.date+'|'+m.id))continue;
+    old.push({id:'legacy-miss:'+m.date+':'+m.id,date:m.date,exerciseId:m.id,q:m.q||'',choices:[],
+      given:m.given||'(non conservée)',answer:m.ans||'',correct:false,level:m.lv||'',subject:m.subject||'',
+      category:m.cat||'',mode:m.mode||'',explanation:m.se||''});
+  }
+  p.answerHistory=mergeAnswerHistory(p.answerHistory||[],old);
+  p.answerHistoryVersion=1;
+  return p;
+}
+function recordAnswer(ex,correct,choice,meta={}){
+  const row=answerAttempt(ex,correct,choice,meta);
+  profile.answerHistory=mergeAnswerHistory(profile.answerHistory||[],[row]);
+  const r=state.results?.[state.results.length-1];
+  if(r?.ex===ex)r.attemptId=row.id;
+  if(correct)rememberSuccess(ex,true);else saveProfile();
+  return row;
+}
+function setAnswerHistoryFilter(filter){
+  state.answerHistoryFilter=['all','correct','wrong'].includes(filter)?filter:'all';
+  state.answerHistoryPage=0;renderParent();
+}
+function answerHistoryPage(delta){
+  state.answerHistoryPage=Math.max(0,(state.answerHistoryPage||0)+delta);renderParent();
+}
+function renderAnswerHistory(){
+  const all=profile.answerHistory||[];
+  const filter=state.answerHistoryFilter||'all';
+  const rows=all.filter(r=>filter==='all'||r.correct===(filter==='correct')).slice().reverse();
+  const page=Math.min(state.answerHistoryPage||0,Math.max(0,Math.ceil(rows.length/25)-1));
+  const ok=all.filter(r=>r.correct).length;
+  return '<div class="card mb-4"><h3>Historique des réponses</h3><p class="sub">'
+    +all.length+' tentatives · '+ok+' réussies · '+(all.length-ok)+' ratées</p>'
+    +'<p class="sub">'+(state.answerHistorySync==='ok'?'Dernière synchronisation en base réussie.':'Synchronisation en base non confirmée ; les réponses sont conservées sur cet appareil.')+'</p>'
+    +'<p class="sub">Une erreur reste conservée même si la question est réussie ensuite.</p>'
+    +'<div class="btn-row">'+[['all','Toutes'],['correct','Réussies'],['wrong','Ratées']].map(([id,label])=>
+      '<button class="btn-stone" aria-pressed="'+(filter===id)+'" onclick="setAnswerHistoryFilter(\''+id+'\')">'+label+'</button>').join('')+'</div>'
+    +(rows.length?rows.slice(page*25,page*25+25).map(r=>'<details class="miss-card"><summary>'
+      +(r.correct?'✅ ':'❌ ')+esc(r.q)+'</summary><p class="sub">'+esc(r.date)+' · '+esc(r.subject||r.level)+' · '+esc(r.category)+'</p>'
+      +'<p>Réponse de l’élève : <b>'+esc(r.given)+'</b></p><p>Bonne réponse : <b>'+esc(r.answer)+'</b></p>'
+      +(r.choices?.length?'<p>Choix proposés : '+r.choices.map(esc).join(' · ')+'</p>':'')
+      +'<p>'+esc(r.explanation)+'</p></details>').join(''):'<p>Aucune réponse dans ce filtre.</p>')
+    +'<div class="btn-row"><button class="btn-stone" onclick="answerHistoryPage(-1)" '+(page===0?'disabled':'')+'>Précédent</button>'
+    +'<span>Page '+(page+1)+' / '+Math.max(1,Math.ceil(rows.length/25))+'</span>'
+    +'<button class="btn-stone" onclick="answerHistoryPage(1)" '+((page+1)*25>=rows.length?'disabled':'')+'>Suivant</button></div></div>';
+}
+
+function rememberSuccess(ex,correct){
+  if(!correct)return;
+  const ledger=profile.successfulQuestions||(profile.successfulQuestions={});
+  for(const key of successfulKeys())ledger[key]=true;
+  if(ex.id)ledger['id:'+ex.id]=true;
+  ledger['q:'+_qKey(ex)]=true;
+  saveProfile();
+}
 function recentExIds(){return Array.isArray(profile.recentExIds)?profile.recentExIds:[]}
 // Enregistre les questions réellement jouées (appelé en fin de partie).
 function rememberExercises(ids){
@@ -2108,7 +2268,7 @@ function _applyCooldown(candidates,n){
   return fresh.concat(stale);
 }
 function finalizePick(candidates,n){
-  return _applyCooldown(dedupeExercises(candidates),n).slice(0,n);
+  return _applyCooldown(remainingOf(dedupeExercises(candidates)),n).slice(0,n);
 }
 // fin anti-doublon
 
@@ -2419,25 +2579,22 @@ function niveauxDuSujet(subjectId){
 }
 
 /* Thèmes disponibles dans une matière, avec le nombre de questions.
-   Sous six questions, une révision tournerait toujours sur les mêmes : on
-   ne propose pas le thème plutôt que d'offrir une répétition. */
+   Même une seule question restante permet de terminer un thème.
+   Les thèmes terminés disparaissent du sélecteur. */
 function themesDuSujet(subjectId){
   const niv=niveauxDuSujet(subjectId);
   const compte={};
-  for(const e of EX){
+  for(const e of remainingOf(EX)){
     if(!e.cat||!niv.has(e.lv)||!isPlayableEx(e)) continue;
     compte[e.cat]=(compte[e.cat]||0)+1;
   }
-  return Object.entries(compte).filter(([,n])=>n>=6).sort((x,y)=>y[1]-x[1]);
+  return Object.entries(compte).filter(([,n])=>n>0).sort((x,y)=>y[1]-x[1]);
 }
 
 // Questions du niveau encore jamais réussies — celles qui restent à conquérir.
-function remainingOf(pool){
-  const st=profile.exerciseStats||{};
-  return pool.filter(e=>{const x=st[e.id];return !x||!(x.cor>0)});
-}
 
 function pickExercises(mode,lvId){
+  if(mode==='section')return pickSectionExercises();
   const lv=LEVELS.find(l=>l.id===lvId);
   // Inclure les exercices AI générés (persistés dans le profil)
   const aiPool=(profile.aiExercises||[]).filter(e=>e.lv===lvId&&!_horsSujet(e,lvId));
@@ -2446,7 +2603,7 @@ function pickExercises(mode,lvId){
   // Toujours essayer le pool statique : tout niveau présent dans
   // exercises.js / exercises_extra.js a des exos prêts à l'emploi.
   const staticPool=EX.filter(e=>e.lv===lvId);
-  const pool=staticPool.concat(aiPool).concat(customPool).filter(isPlayableEx);
+  const pool=staticPool.concat(aiPool).concat(customPool).filter(e=>isPlayableEx(e)&&!_horsSujet(e,lvId));
   if(mode==='progression'){
     // La Quête piochait dans TOUTES les matières : on tombait sur des
     // questions de maths dans le Royaume des Explorateurs. Elle reste
@@ -2454,7 +2611,7 @@ function pickExercises(mode,lvId){
     // difficulté qui monte, pas le sujet qui change.
     const nivSujet=niveauxDuSujet(subjectOfLevel(lvId));
     const dansSujet=EX.filter(e=>nivSujet.has(e.lv)&&isPlayableEx(e));
-    const source=dansSujet.length>=6?dansSujet:EX.filter(e=>e.lv!=='cp'&&isPlayableEx(e));
+    const source=dansSujet;
     // finalizePick d'abord (dédoublonnage + cooldown), tri par difficulté ensuite :
     // l'ordre croissant doit rester vrai sur les 10 questions réellement tirées.
     return finalizePick(shuffle(source),10).sort((a,b)=>a.diff-b.diff);
@@ -2466,10 +2623,10 @@ function pickExercises(mode,lvId){
   if(mode==='theme'){
     const nivSujet=niveauxDuSujet(state.themeSubject);
     const pool=EX.concat(profile.aiExercises||[])
-      .filter(e=>nivSujet.has(e.lv)&&e.cat===state.themeCat&&isPlayableEx(e));
+      .filter(e=>nivSujet.has(e.lv)&&e.cat===state.themeCat&&isPlayableEx(e)&&!_horsSujet(e,e.lv));
     const reste=remainingOf(pool);
     const dejaVues=new Set(reste.map(e=>e.id));
-    // Ce qui n'est pas encore réussi passe devant : c'est ça, réviser.
+    // finalizePick exclut définitivement les réussites, même si le stock est court.
     const source=shuffle(reste).concat(shuffle(pool.filter(e=>!dejaVues.has(e.id))));
     return finalizePick(source,10);
   }
@@ -2477,7 +2634,7 @@ function pickExercises(mode,lvId){
     // Priorise les exercices rat\u00e9s ou jamais vus.
     // Ici on d\u00e9doublonne mais on n'applique PAS le cooldown : le mode adaptatif
     // existe justement pour refaire les questions rat\u00e9es r\u00e9cemment.
-    return dedupeExercises(pool.slice().sort((a,b)=>{
+    return dedupeExercises(remainingOf(pool).sort((a,b)=>{
       const sa=profile.exerciseStats[a.id]||{att:0,cor:0};
       const sb=profile.exerciseStats[b.id]||{att:0,cor:0};
       const scA=sa.att>0?sa.cor/sa.att:0.5;
@@ -2533,22 +2690,10 @@ function startTheme(subjectId,cat){
 
 async function startGame(mode){
   let exercises=pickExercises(mode,state.level);
-  // Si pas d'exercices (sujet non-maths sans pool g\u00e9n\u00e9r\u00e9), g\u00e9n\u00e9rer maintenant
-  if(exercises.length===0){
-    // Aucun exercice statique ni IA pour ce niveau : on tente la génération IA
-    // (avant : gate hasStatic — bloquait tout royaume non-maths si IA indispo).
-    app.innerHTML='<div class="card text-center" style="margin-top:60px"><div class="dragon-emoji float">\u{1F52E}</div><h2 class="title">Le Dragon prépare tes défis...</h2><p class="sub">Première g\u00e9n\u00e9ration : 5 \u00e0 15 secondes</p></div>';
-    try{
-      await generateAIExercises(state.level,10);
-      exercises=pickExercises(mode,state.level);
-    }catch(e){
-      alert('\u00c9chec g\u00e9n\u00e9ration : '+e.message);
-      return;
-    }
-  }
+  if(!exercises.length){navigate('stockEmpty');return}
   state.battleCode=null; // partie normale : ne jamais soumettre à une battle quittée en route
-  state.mode=mode;state.exercises=exercises;state.idx=0;state.selected=null;state.score=0;state.streak=0;state.maxStreak=0;state.results=[];state.timer=60;state.gameOver=false;state.startTime=Date.now();state.detailOpen=false;state.sessionXP=0;state.sessionCristaux=0;state.chestsOpen=[];
-  if(state.level) maybeAutoGenerate(state.level);
+  state.sessionSaved=false;state.mode=mode;state.exercises=exercises;state.idx=0;state.selected=null;state.score=0;state.streak=0;state.maxStreak=0;state.results=[];state.timer=60;state.gameOver=false;state.startTime=Date.now();state.detailOpen=false;state.sessionXP=0;state.sessionCristaux=0;state.chestsOpen=[];
+  if(state.level&&mode!=='section') maybeAutoGenerate(state.level);
   navigate('game');
 }
 
@@ -2649,6 +2794,7 @@ function renderQuestPath(){
    Une question à 3 de difficulté rapporte 30 XP et en coûte 12. */
 const XP_MALUS_PAR_DIFFICULTE=4;
 function xpMalus(ex){
+  if(state.mode==='section')return 0; // Apprendre : l’erreur donne une explication, pas une pénalité.
   const d=(ex&&ex.diff)?ex.diff:3;
   return Math.round(d*XP_MALUS_PAR_DIFFICULTE);
 }
@@ -2708,7 +2854,7 @@ function renderGame(){
   const streakHTML=state.streak>=2?`<span style="color:#f7a020">\u{1F525} ${state.streak}</span>`:'';
   const levelBadge=state.mode==='progression'?`<span class="badge" style="background:${lv.color}22;color:${lv.color};border-color:${lv.color}44;margin-left:6px">${lv.sub}</span>`:'';
   app.innerHTML=`<div style="margin:8px 0"><div class="row-between cinzel" style="font-size:.75rem;color:#8b7ec8;margin-bottom:4px">
-    <span>Question ${state.idx+1}/${total}</span>
+    <span>${state.mode==='section'?esc(currentSection()?.cat||'')+' · ':''}Question ${state.idx+1}/${total}</span>
     <span>Score : ${state.score}/${state.idx+(state.selected!==null?1:0)}</span>
     ${streakHTML}</div>
     <div class="progress-track"><div class="progress-fill" style="width:${pct}%"></div></div>
@@ -2776,6 +2922,7 @@ function submitInputAnswer(){
   });
   state.selected=val;
   state.results.push({ex,choice:val,correct});
+  recordAnswer(ex,correct,state.selected);
   if(correct){
     state.score++;state.streak++;
     if(state.streak>state.maxStreak)state.maxStreak=state.streak;
@@ -2795,7 +2942,7 @@ function submitInputAnswer(){
   questChestAward();
   renderGame();
   showExplanation(ex,correct);
-  if(correct){
+  if(correct&&state.mode!=='section'){
     if(state.autoNextID)clearTimeout(state.autoNextID);
     state.autoNextID=setTimeout(()=>{state.autoNextID=null;if(state.screen==='game'&&state.selected!==null)nextQuestion()},1600);
   }
@@ -2889,6 +3036,7 @@ function selectCountryAnswer(id){
   const correct=id===ex.target;
   state.selected=id;
   state.results.push({ex,choice:id,correct});
+  recordAnswer(ex,correct,state.selected);
   if(correct){
     state.score++;state.streak++;
     if(state.streak>state.maxStreak)state.maxStreak=state.streak;
@@ -2908,7 +3056,7 @@ function selectCountryAnswer(id){
   questChestAward();
   renderGame();
   showExplanation(ex,correct);
-  if(correct){
+  if(correct&&state.mode!=='section'){
     if(state.autoNextID)clearTimeout(state.autoNextID);
     state.autoNextID=setTimeout(()=>{state.autoNextID=null;if(state.screen==='game'&&state.selected!==null)nextQuestion()},1600);
   }
@@ -2921,6 +3069,7 @@ function selectMapAnswer(id){
   const correct=id===ex.target;
   state.selected=id;
   state.results.push({ex,choice:id,correct});
+  recordAnswer(ex,correct,state.selected);
   if(correct){
     state.score++;state.streak++;
     if(state.streak>state.maxStreak)state.maxStreak=state.streak;
@@ -2940,7 +3089,7 @@ function selectMapAnswer(id){
   questChestAward();
   renderGame();
   showExplanation(ex,correct);
-  if(correct){
+  if(correct&&state.mode!=='section'){
     if(state.autoNextID)clearTimeout(state.autoNextID);
     state.autoNextID=setTimeout(()=>{state.autoNextID=null;if(state.screen==='game'&&state.selected!==null)nextQuestion()},1600);
   }
@@ -2957,6 +3106,7 @@ function selectAnswer(i){
   const ex=state.exercises[state.idx];
   const correct=i===ex.ans;
   state.results.push({ex,choice:i,correct});
+  recordAnswer(ex,correct,state.selected);
   if(correct){
     state.score++;
     state.streak++;
@@ -2982,7 +3132,7 @@ function selectAnswer(i){
   showExplanation(ex,correct);
   // Bonne réponse → passage automatique à la question suivante.
   // Mauvaise réponse → l'enfant lit l'explication et clique « Suivant ».
-  if(correct){
+  if(correct&&state.mode!=='section'){
     if(state.autoNextID)clearTimeout(state.autoNextID);
     state.autoNextID=setTimeout(()=>{
       state.autoNextID=null;
@@ -3005,7 +3155,7 @@ function showExplanation(ex,correct){
   // n'apprend rien, et l'enfant croirait à un bug en voyant ses XP baisser.
   const gainHTML=correct
     ?`<span class="xp-gain">+${Math.round(ex.diff*10*(state.streak>=10?3:state.streak>=5?2:state.streak>=3?1.5:1))} XP</span> <span class="crystal-gain">\u{1F48E} +${ex.diff*2}</span>`
-    :`<span class="xp-perte">\u2212${xpMalus(ex)} XP</span>`;
+    :state.mode==='section'?'':`<span class="xp-perte">\u2212${xpMalus(ex)} XP</span>`;
   const isLast=state.gameOver||state.idx>=state.exercises.length-1;
   // Bonne r\u00e9ponse : passage auto (message discret). Mauvaise : bouton Suivant.
   // Retour en arrière : possible dès qu'une question précédente a été
@@ -3018,7 +3168,7 @@ function showExplanation(ex,correct){
   // disparaîtrait avant qu'un enfant ait le temps de le toucher — pire que
   // pas de bouton du tout. Et c'est après une erreur qu'on a besoin de
   // relire, pas après une réussite.
-  const footerHTML=correct
+  const footerHTML=correct&&state.mode!=='section'
     ?`<p class="sub qp-unlock" style="margin-top:16px;font-style:italic">${isLast?'R\u00e9sultats dans un instant\u2026':'\u{1F513} Tu d\u00e9bloques la question suivante\u2026'}</p>`
     :`<button class="btn-fire mt-6" onclick="nextQuestion()">${isLast?'Voir mes r\u00e9sultats \u2192':'Question suivante \u2192'}</button>`+retourHTML;
   el.innerHTML=`<div class="card fade-in mt-6">
@@ -3074,6 +3224,8 @@ function nextQuestion(){
 
 /* ════════ FINISH + PERSIST ════════ */
 function finishGame(abandoned){
+  if(state.sessionSaved)return;
+  state.sessionSaved=true;
   if(state.timerID){clearInterval(state.timerID);state.timerID=null}
   if(state.autoNextID){clearTimeout(state.autoNextID);state.autoNextID=null}
   // state.results contient EXACTEMENT les questions auxquelles l'enfant a
@@ -3242,6 +3394,12 @@ function renderResults(){
   else if(pct>=40){title="Apprentie courageuse";sub="Le chemin du savoir est long mais tu progresses.";emoji="\u{1F9D9}"}
   else{title="Le dragon a vaincu\u2026";sub="R\u00e9vise tes sortil\u00e8ges et retente !";emoji="\u{1F525}"}
 
+  if(d.mode==='section'){
+    title=pct===100?'Palier réussi !':'Tu avances dans ta section';
+    sub=pct===100?'Continue quand tu es prêt.':'Relis les explications, puis reprends les questions à travailler.';
+    emoji=pct===100?'🌟':'🌱';
+  }
+
   // Niveau ouvert \u00e0 l'instant : on propose sa le\u00e7on d'accueil ici plut\u00f4t
   // qu'en coupant la partie. L'enfant la voit au moment o\u00f9 elle sert.
   let unlockHTML='';
@@ -3315,7 +3473,8 @@ function renderResults(){
       <div class="flex-1"><p class="recap-q">${esc(r.ex.q.length>110?r.ex.q.slice(0,110)+'\u2026':r.ex.q)}</p>
       ${!r.correct?`<p class="recap-answer">R\u00e9ponse : ${esc(exAnswerText(r.ex))}</p>`:''}</div></div>`).join('')}</div></div>
   <div class="btn-row">
-    <button class="btn-fire" onclick="startGame('${d.mode}')">Rejouer</button>
+    <button class="btn-fire" onclick="startGame('undefined')">Rejouer</button>
+    
     <button class="btn-stone" onclick="navigate('royaume')">Mon Royaume</button>
     <button class="btn-stone" onclick="navigate('home')">Accueil</button>
   </div>
@@ -3403,6 +3562,7 @@ function renderParent(){
     <div class="stat-card"><div class="stat-val" style="color:${pct>=60?'#22c55e':'#ef4444'}">${pct}%</div><div class="stat-label">R\u00e9ussite</div></div>
     <div class="stat-card"><div class="stat-val" style="color:#fbbf24">${totalMinutes}m</div><div class="stat-label">Temps total</div></div>
   </div></div>
+  ${renderAnswerHistory()}
   ${(function(){
     const g=gradeByRank(profile.grade);
     const rows=SUBJECTS.filter(su=>(su.levels||[]).some(l=>levelMinGrade(l)!==null)).map(su=>{
@@ -3423,7 +3583,7 @@ function renderParent(){
   })()}
   ${weak.length>0?`<div class="card mb-4"><h3 class="fredoka" style="font-size:.85rem;color:#ef4444;margin-bottom:12px;letter-spacing:.1em;text-transform:uppercase">\u26A0\uFE0F Domaines \u00e0 travailler</h3>
   ${weak.map(([c,s])=>{const p=Math.round(s.cor/s.att*100);return `<div class="weak-cat"><div><div style="color:#fca5a5;font-weight:700">${c}</div><div style="font-size:.75rem;color:#8b7ec8">${s.cor}/${s.att} bonnes r\u00e9ponses</div></div><div style="color:#ef4444;font-weight:700;font-family:'Cinzel'">${p}%</div></div>`}).join('')}
-  <p style="font-size:.8rem;color:#8b7ec8;margin-top:8px;font-style:italic">Conseil : lancez le \u00ab Mode adaptatif \u00bb pour travailler ces domaines.</p></div>`:''}
+  <p style="font-size:.8rem;color:#8b7ec8;margin-top:8px;font-style:italic">Conseil : lancez \u00ab Jouer à mon rythme \u00bb pour travailler ces domaines.</p></div>`:''}
   ${strong.length>0?`<div class="card mb-4"><h3 class="fredoka" style="font-size:.85rem;color:#22c55e;margin-bottom:12px;letter-spacing:.1em;text-transform:uppercase">\u2B50 Points forts</h3>
   ${strong.map(([c,s])=>{const p=Math.round(s.cor/s.att*100);return `<div class="strong-cat"><div><div style="color:#bbf7d0;font-weight:700">${c}</div><div style="font-size:.75rem;color:#8b7ec8">${s.cor}/${s.att} bonnes r\u00e9ponses</div></div><div style="color:#22c55e;font-weight:700;font-family:'Cinzel'">${p}%</div></div>`}).join('')}</div>`:''}
   ${(function(){
@@ -4905,7 +5065,7 @@ async function createBattle(lvId,count,inviteName){
   const lv=gen?GEN_LABEL[gen]:LEVELS.find(l=>l.id===lvId);
   if(!lv){alert('Choisis d\'abord un niveau.');return}
   // dedupeExercises : deux joueurs ne doivent jamais tomber deux fois sur le même énoncé.
-  const pool=gen?[]:dedupeExercises(EX.filter(e=>e.lv===lvId&&isPlayableEx(e)&&Array.isArray(e.ch)&&e.ch.length===4));
+  const pool=gen?[]:remainingOf(dedupeExercises(EX.filter(e=>e.lv===lvId&&isPlayableEx(e)&&Array.isArray(e.ch)&&e.ch.length===4)));
   if(!gen&&pool.length<count){alert('Pas assez de questions pour ce niveau ('+pool.length+' dispo). Choisis un autre niveau ou 5 questions.');return}
   app.innerHTML='<div class="card text-center" style="margin-top:60px"><div class="dragon-emoji float">\u2694\ufe0f</div><h2 class="title">Pr\u00e9paration de la battle\u2026</h2></div>';
   // Code unique : on retire si une battle existe d\u00e9j\u00e0 sous ce code.
@@ -4963,10 +5123,11 @@ function startBattleGame(battle){
     exercises=(battle.exIds||[]).map(id=>byId[id]).filter(e=>isPlayableEx(e));
   }
   exercises=dedupeExercises(exercises);
+  if(remainingOf(exercises).length!==exercises.length){toast('Ce défi contient des questions déjà réussies. Choisissez un nouveau défi.');return}
   if(exercises.length===0){alert('Questions introuvables \u2014 vos versions de l\'app diff\u00e8rent. Mettez \u00e0 jour puis recr\u00e9ez une battle.');return}
   state.battleCode=battle.code;
   state.level=battle.level;
-  state.mode='battle';
+  state.sessionSaved=false;state.mode='battle';
   state.exercises=exercises;state.idx=0;state.selected=null;state.score=0;state.streak=0;state.maxStreak=0;state.results=[];state.timer=60;state.gameOver=false;state.startTime=Date.now();state.detailOpen=false;state.sessionXP=0;state.sessionCristaux=0;state.chestsOpen=[];
   navigate('game');
 }
@@ -5688,9 +5849,16 @@ function _choixMulti(n,k){
   }
   return shuffle([bon].concat(autres));
 }
+function tableQuestion(n,k){return {id:'table_'+n+'_'+k,q:n+' × '+k+' = ?',answers:[String(n*k)]}}
+function remainingTable(n){
+  if(tablesStats()[n]?.sansFaute)return [];
+  return remainingOf(Array.from({length:10},(_,i)=>tableQuestion(n,i+1))).map(e=>Number(e.id.split('_')[2]));
+}
 function startTableQuiz(n){
   arreterRecitation();
-  const q=shuffle([1,2,3,4,5,6,7,8,9,10]).map(k=>({k,ch:_choixMulti(n,k)}));
+  state.tableN=n;
+  const q=shuffle(remainingTable(n)).map(k=>({k,ch:_choixMulti(n,k)}));
+  if(!q.length){navigate('tablesLearn');toast('Toutes les questions de cette table sont déjà réussies. Choisis une autre table.');return}
   state.tblQuiz={n,q,i:0,score:0,choisi:null,fautes:[]};
   navigate('tablesQuiz');
 }
@@ -5736,6 +5904,7 @@ function repondreTable(v){
   const cur=Q.q[Q.i];
   const bon=Q.n*cur.k;
   Q.choisi=v;
+  recordAnswer({...tableQuestion(Q.n,cur.k),type:'input',lv:'ce1-ce2',cat:'Tables',se:Q.n+' × '+cur.k+' = '+bon},v===bon,v,{mode:'tables'});
   if(v===bon)Q.score++;
   else Q.fautes.push(cur.k);
   renderTablesQuiz();
@@ -5750,7 +5919,7 @@ function suivantTable(){
 }
 function _finTableQuiz(t){
   const Q=state.tblQuiz;
-  const sansFaute=Q.score===Q.q.length;
+  const sansFaute=remainingTable(Q.n).length===0;
   // Une table n'est « apprise » qu'au sans-faute. Le score partiel rapporte
   // quand même des XP — il a fallu travailler — mais il ne pose pas l'étoile.
   const xp=Q.score*4+(sansFaute?20:0);
@@ -5760,7 +5929,7 @@ function _finTableQuiz(t){
   const st=tablesStats();
   const prec=st[Q.n]||{};
   st[Q.n]={
-    meilleur:Math.max(Number(prec.meilleur)||0,Q.score),
+    meilleur:Math.max(Number(prec.meilleur)||0,10-remainingTable(Q.n).length),
     sansFaute:!!prec.sansFaute||sansFaute,
     essais:(Number(prec.essais)||0)+1,
     date:today()
@@ -5819,7 +5988,7 @@ function renderMemoryHome(){
     +'<h2 class="title" style="color:#34d399;font-size:1.6rem">Memory</h2>'
     +'<p class="sub">Les cartes s\'affichent quelques secondes \u2014 plus il y en a, plus tu as de temps. M\u00e9morise-les, puis retrouve les paires. Aucune erreur \u2192 \u{1F451} super-bonus !</p>'
   +'</div>'
-  +MEMORY_MODES.map((m,i)=>{
+  +MEMORY_MODES.filter(m=>['training','challenge'].includes(m.id)).map((m,i)=>{
     const secs=memoryPreview(m.pairs);
     const best=stats[m.id];
     // Les anciens records ne retenaient que les coups : on en d\u00e9duit les
@@ -6107,4 +6276,276 @@ function _montrerMemWin(){
   try{requestAnimationFrame(aller)}catch(e){}
 }
 
+/* Parcours par notion : une matière, une section, une leçon puis des paliers.
+   Les réussites utilisent le registre commun ; aucune progression parallèle. */
+function sectionGroup(e){
+  const subject=subjectOfLevel(e.lv);
+  return ['culture','sciences','langues'].includes(subject)?String(e.lv).split('-')[0]:'';
+}
+function sectionKey(e){return sectionGroup(e)+'|'+String(e.cat||'Divers')}
+function sectionSource(subjectId){
+  const levels=niveauxDuSujet(subjectId);
+  return dedupeExercises(EX.concat(profile.aiExercises||[],profile.customExercises||[])
+    .filter(e=>levels.has(e.lv)&&isPlayableEx(e)&&!_horsSujet(e,e.lv)));
+}
+function sectionsOf(subjectId){
+  const groups=new Map();
+  for(const e of sectionSource(subjectId)){
+    const key=sectionKey(e);
+    if(!groups.has(key)){
+      const group=sectionGroup(e),lv=LEVELS.find(l=>l.id===e.lv);
+      groups.set(key,{key,cat:e.cat||'Divers',group,label:group&&lv?lv.name:'',pool:[]});
+    }
+    groups.get(key).pool.push(e);
+  }
+  return [...groups.values()].sort((a,b)=>a.label.localeCompare(b.label,'fr')
+    ||themeRank(a.cat)-themeRank(b.cat)||a.cat.localeCompare(b.cat,'fr'));
+}
+function currentSection(){
+  return sectionsOf(state.subjectId).find(s=>s.key===state.sectionKey)||null;
+}
+function sectionTier(e){
+  const fractions={frac_01:3,frac_02:1,frac_03:4,frac_04:2,frac_05:3,frac_06:2,frac_07:3,frac_08:4,frac_09:3,frac_10:3,frac_11:2,frac_12:2,cm12:5,s1:5,s11:4,s24:5};
+  return Math.max(1,Math.min(5,Number(e.lessonTier||(e.cat==='Fractions'&&fractions[e.id])||e.diff)||1));
+}
+function pickSectionExercises(){
+  const section=currentSection();
+  if(!section)return [];
+  const remaining=remainingOf(section.pool);
+  if(!remaining.length)return [];
+  const tier=Math.min(...remaining.map(sectionTier));
+  // On termine les bases avant de passer au palier suivant. Les questions
+  // ratées restent disponibles ; jamais de recyclage d'une réussite.
+  return remaining.filter(e=>sectionTier(e)===tier)
+    .sort((a,b)=>(levelMinGrade(LEVELS.find(l=>l.id===a.lv))||0)-(levelMinGrade(LEVELS.find(l=>l.id===b.lv))||0)||String(a.id).localeCompare(String(b.id)))
+    .slice(0,5);
+}
+function sectionCards(subjectId){
+  const sections=sectionsOf(subjectId);
+  if(!sections.length)return '<p class="sub">Les sections apparaîtront quand des questions seront disponibles pour ton niveau.</p>';
+  return '<div class="section-grid">'+sections.map(s=>{
+    const left=remainingOf(s.pool).length,done=s.pool.length-left;
+    return '<button class="section-card" data-subject="'+esc(subjectId)+'" data-key="'+esc(s.key)+'" onclick="openSection(this.dataset.subject,this.dataset.key)">'
+      +(s.label?'<span class="sub">'+esc(s.label)+'</span>':'')
+      +'<strong>'+esc(s.cat)+'</strong><span>'+done+' / '+s.pool.length+' réussies</span>'
+      +'<span class="section-track"><span style="width:'+Math.round(done/s.pool.length*100)+'%"></span></span>'
+      +'<span class="sub">'+(left?'📖 Comprendre · 🎯 S’entraîner':'✅ Questions terminées · Revoir la leçon')+'</span></button>';
+  }).join('')+'</div>';
+}
+function openSection(subjectId,key){
+  if(!sectionsOf(subjectId).some(s=>s.key===key)){toast('Cette section n’est pas disponible pour ton niveau.');return}
+  navigate('section',{subjectId,sectionKey:key,sectionStep:0,sectionReveal:false,sectionHint:0,
+    fractionParts:4,fractionSelected:[],fractionScale:1,fractionGroups:4,numberTens:2,numberUnits:3,areaWidth:4,areaHeight:3});
+}
+function sectionIntro(s){
+  if(s.cat==='Fractions')return 'Partager équitablement, représenter une fraction, comparer des parts puis calculer une quantité.';
+  if(/Calcul|Comptage|Dénombrement|Nombres décimaux/.test(s.cat))return 'Représenter les nombres, décomposer le calcul et expliquer chaque étape.';
+  if(/Géométrie|Périmètre et aire/.test(s.cat))return 'Observer une figure, la construire et distinguer ce que l’on mesure.';
+  if(state.subjectId==='langues')return 'Observer un exemple, le prononcer à voix haute, puis retrouver les mots sans aide.';
+  if(state.subjectId==='informatique')return 'Prévoir le résultat, suivre les instructions une à une, puis vérifier son raisonnement.';
+  if(state.subjectId==='sciences')return 'Observer, faire une prédiction et expliquer ce qui se passe avant de répondre.';
+  return 'Observer un exemple, expliquer l’idée avec tes mots, puis t’entraîner du plus simple au plus difficile.';
+}
+function renderSection(){
+  const s=currentSection();if(!s)return navigate('subject');
+  const remaining=remainingOf(s.pool),steps=[...new Set(s.pool.map(sectionTier))].sort((a,b)=>a-b);
+  const next=remaining.length?Math.min(...remaining.map(sectionTier)):null;
+  app.innerHTML='<div class="card section-page"><p class="sub">'+esc(SUBJECTS.find(x=>x.id===state.subjectId)?.name||'')+(s.label?' · '+esc(s.label):'')+'</p>'
+    +'<h2 class="title">'+esc(s.cat)+'</h2><p>'+esc(sectionIntro(s))+'</p>'
+    +'<div class="section-route"><span>1. Je comprends</span><span>2. Je manipule</span><span>3. Je m’entraîne</span></div>'
+    +'<button class="btn-fire" onclick="navigate(\'sectionLesson\',{sectionStep:0,sectionReveal:false,sectionHint:0})">📖 Ouvrir la leçon</button>'
+    +'<h3 class="mt-4">Mon entraînement</h3><p class="sub">Des séries de 5 questions au maximum, sans chronomètre. Termine un palier pour ouvrir le suivant.</p>'
+    +'<ol class="section-tiers">'+steps.map((tier,i)=>{
+      const pool=s.pool.filter(e=>sectionTier(e)===tier),left=remainingOf(pool).length;
+      return '<li><b>Palier '+(i+1)+'</b> · '+(left===0?'✅ Terminé':tier===next?'🎯 À travailler':'🔒 Après le précédent')
+        +' <span class="sub">('+ (pool.length-left)+' / '+pool.length+')</span></li>';
+    }).join('')+'</ol>'
+    +(remaining.length?'<button class="btn-fire" onclick="startSectionPractice()">🎯 '+(remaining.length===s.pool.length?'Commencer':'Continuer')+' les questions</button>'
+      :'<p role="status">🏆 Toutes les questions disponibles de cette section sont réussies ! Tu peux revoir la leçon ou choisir une autre section. Les prochaines questions apparaîtront avec les niveaux suivants.</p>')
+    +'<button class="btn-stone mt-3" onclick="navigate(\'subject\')">← Les sections de la matière</button></div>';
+}
+function startSectionPractice(){
+  const s=currentSection();if(!s)return navigate('subject');
+  const batch=pickSectionExercises();
+  if(!batch.length)return navigate('section');
+  state.level=batch[0].lv;
+  startGame('section');
+}
+function sectionLessonSteps(s){
+  return s.cat==='Fractions'
+    ?['Je partage','Je dessine','Je compare','Je calcule','J’assemble','Je résous']
+    :['Je découvre','Je cherche','J’explique'];
+}
+function sectionExample(s){
+  const pending=remainingOf(s.pool);
+  return (pending.length?pending:s.pool).slice().sort((a,b)=>sectionTier(a)-sectionTier(b))[0];
+}
+function renderSectionLesson(){
+  const s=currentSection();if(!s)return navigate('subject');
+  const names=sectionLessonSteps(s),step=Math.min(names.length-1,Math.max(0,state.sectionStep||0));
+  state.sectionStep=step;
+  let body;
+  if(s.cat==='Fractions')body=renderFractionLesson(step);
+  else{
+    const e=sectionExample(s);
+    if(step===0){
+      body='<h3>Une idée à comprendre</h3><p>'+esc(e.regle||sectionIntro(s))+'</p>'
+        +'<div class="lesson-example">'+esc(e.exemple||e.se||'Observe les données et repère ce que tu dois chercher.')+'</div>'
+        +'<p class="sub">Lis cet exemple expliqué, puis reformule l’idée avec tes mots.</p>';
+    }else if(step===1){
+      body=sectionManipulation(s)
+        ||'<h3>À toi de chercher</h3><p>'+esc(e.exemple||e.regle||sectionIntro(s))+'</p>'
+          +'<p>Cache l’explication. Fais un dessin, mime la situation ou explique à voix haute ce que tu penses.</p>';
+      body+='<button class="btn-stone" onclick="toggleSectionExplanation()">'
+        +(state.sectionReveal?'Cacher':'Voir')+' l’explication</button>'
+        +(state.sectionReveal?'<div class="lesson-example">'+esc(e.regle||e.se||sectionIntro(s))+'</div>':'');
+    }else{
+      const method=Array.isArray(e.methode)&&e.methode.length?e.methode
+        :['Observe les informations de l’exemple.','Explique le lien entre les informations et la réponse.','Vérifie que ton explication répond à la question.'];
+      body='<h3>Je construis mon raisonnement</h3><p>Compare ton raisonnement avec les étapes de cet exemple.</p>'
+        +'<ol>'+method.slice(0,state.sectionHint||0).map(x=>'<li>'+esc(x)+'</li>').join('')+'</ol>'
+        +((state.sectionHint||0)<method.length?'<button class="btn-stone" onclick="nextSectionHint()">Découvrir une étape</button>':'<p>✨ Tu peux maintenant essayer sans aide.</p>');
+    }
+    const labs=sectionLabs(s);
+    if(labs.length)body+='<details class="mt-3"><summary>🔬 Faire une expérience interactive</summary>'
+      +labs.map(l=>'<button class="btn-stone mt-3" data-file="'+esc(l.file)+'" onclick="openSectionLab(this.dataset.file)">'+esc(l.emoji+' '+l.title)+'</button>').join('')+'</details>';
+  }
+  app.innerHTML='<div class="card section-page"><p class="sub">'+esc(s.cat)+' · Étape '+(step+1)+' / '+names.length+'</p>'
+    +'<h2 class="title">'+names[step]+'</h2>'+body
+    +'<div class="btn-row mt-4">'+(step>0?'<button class="btn-stone" onclick="sectionLessonStep(-1)">← Précédent</button>':'')
+    +'<button class="btn-fire" onclick="sectionLessonStep(1)">'+(step===names.length-1?'🎯 Passer aux questions':'Suivant →')+'</button></div>'
+    +'<button class="btn-stone mt-3" onclick="navigate(\'section\')">← Ma section</button></div>';
+}
+function toggleSectionExplanation(){state.sectionReveal=!state.sectionReveal;renderSectionLesson()}
+function nextSectionHint(){state.sectionHint=(state.sectionHint||0)+1;renderSectionLesson()}
+function sectionLessonStep(delta){
+  const s=currentSection();if(!s)return;
+  const count=sectionLessonSteps(s).length;
+  if(state.sectionStep+delta>=count){
+    const id='section:'+state.subjectId+':'+s.key;
+    profile.lessonsSeen=Array.from(new Set([...(profile.lessonsSeen||[]),id]));saveProfile();
+    return startSectionPractice();
+  }
+  state.sectionStep=Math.max(0,state.sectionStep+delta);state.sectionReveal=false;state.sectionHint=0;
+  renderSectionLesson();window.scrollTo(0,0);
+}
+function fractionBar(n,d,label){
+  return '<div class="fraction-bar" role="img" aria-label="'+esc(label||n+' parts colorées sur '+d)+'" style="grid-template-columns:repeat('+d+',1fr)">'
+    +Array.from({length:d},(_,i)=>'<span class="'+(i<n?'painted':'')+'">'+(i<n?'●':'')+'</span>').join('')+'</div>';
+}
+function setFractionParts(n){
+  if(![2,3,4,6,8].includes(Number(n)))return;
+  state.fractionParts=Number(n);state.fractionSelected=[];renderSectionLesson();
+}
+function toggleFractionPart(i){
+  if(!Number.isInteger(i)||i<0||i>=state.fractionParts)return;
+  const set=new Set(state.fractionSelected||[]);if(set.has(i))set.delete(i);else set.add(i);
+  state.fractionSelected=[...set];renderSectionLesson();
+  document.querySelector('.fraction-touch button:nth-child('+(i+1)+')')?.focus();
+}
+function setFractionScale(n){state.fractionScale=Math.max(1,Math.min(4,Number(n)||1));renderSectionLesson()}
+function setFractionGroups(n){if([2,3,4,6].includes(Number(n)))state.fractionGroups=Number(n);renderSectionLesson()}
+function renderFractionLesson(step){
+  const d=state.fractionParts||4,n=(state.fractionSelected||[]).length;
+  if(step===0)return '<h3>La tablette à partager 🍫</h3><p>Une tablette représente <b>un entier</b>. Choisis le nombre de parts égales, puis touche les parts que tu prends.</p>'
+    +'<label>Parts égales <select onchange="setFractionParts(this.value)">'+[2,3,4,6,8].map(x=>'<option '+(d===x?'selected':'')+'>'+x+'</option>').join('')+'</select></label>'
+    +'<div class="fraction-bar fraction-touch" style="grid-template-columns:repeat('+d+',1fr)">'
+    +Array.from({length:d},(_,i)=>'<button aria-label="Part '+(i+1)+' sur '+d+'" aria-pressed="'+(state.fractionSelected||[]).includes(i)+'" class="'+((state.fractionSelected||[]).includes(i)?'painted':'')+'" onclick="toggleFractionPart('+i+')">'+((state.fractionSelected||[]).includes(i)?'●':'○')+'</button>').join('')+'</div>'
+    +'<p role="status" aria-live="polite">Tu prends <b>'+n+' part'+(n>1?'s':'')+' sur '+d+'</b> : '+n+'/'+d+'. '+(n===d?'La tablette entière !':n===0?'Aucune part pour le moment.':'Il reste '+(d-n)+'/'+d+'.')+'</p>'
+    +'<p class="lesson-example">Les parts doivent être <b>de même taille</b>. Deux morceaux inégaux ne sont pas deux moitiés.</p>';
+  if(step===1)return '<h3>De la tablette au schéma</h3><p>On peut dessiner une bande à la place du chocolat. Chaque case représente une part égale.</p>'
+    +fractionBar(n,d)
+    +'<div class="fraction-symbol" aria-label=numerateur>'+n+'<hr>'+d+'</div>'
+    +'<p><b>'+n+'</b> en haut : les parts prises (le numérateur).<br><b>'+d+'</b> en bas : les parts égales dans un entier (le dénominateur).</p>'
+    +'<p>La bande entière vaut '+d+'/'+d+' = 1. Une fraction indique une quantité, pas seulement deux nombres superposés.</p>';
+  if(step===2){
+    const k=state.fractionScale||1;
+    return '<h3>Même quantité, autre découpage</h3><p>Les deux bandes représentent le <b>même entier</b>. Découpe chaque moitié en plusieurs morceaux : la partie colorée ne grandit pas.</p>'
+      +fractionBar(1,2,'Une moitié')+'<label>Morceaux dans chaque moitié <select onchange="setFractionScale(this.value)">'+[1,2,3,4].map(x=>'<option '+(k===x?'selected':'')+'>'+x+'</option>').join('')+'</select></label>'
+      +fractionBar(k,2*k)+ '<p role="status"><b>1/2 = '+k+'/'+(2*k)+'</b> : on multiplie le haut et le bas par '+k+'.</p>'
+      +'<p>Pour un même entier, un tiers est plus grand qu’un quart : couper davantage donne des parts plus petites.</p>'
+      +fractionBar(1,3,'Un tiers du même entier')+fractionBar(1,4,'Un quart du même entier');
+  }
+  if(step===4)return '<h3>On additionne des parts de même taille</h3><p>Deux sixièmes et un sixième font trois sixièmes.</p>'
+    +fractionBar(2,6)+fractionBar(1,6)+'<p>2/6 + 1/6 = 3/6 = 1/2</p>'+fractionBar(3,6)
+    +'<p>Pour 1/2 + 1/4, transforme d’abord la moitié en deux quarts. Tu peux alors compter trois quarts : 2/4 + 1/4 = 3/4.</p>'
+    +'<p class="lesson-example">On additionne les parts prises. On ne change pas la taille des parts : on n’additionne pas les dénominateurs.</p>'
+    +'<p>Pour retirer une fraction, même idée : 5/8 − 2/8 = 3/8.</p>';
+  if(step===5)return '<h3>Un problème, plusieurs petits pas</h3><p>Les 3/5 d’une collection représentent 18 images. Combien y a-t-il d’images en tout ?</p>'
+    +'<p>Représente cinq groupes égaux. Trois groupes valent 18 images.</p>'
+    +'<button class="btn-stone" onclick="toggleSectionExplanation()">'+(state.sectionReveal?'Cacher':'Découvrir')+' le raisonnement</button>'
+    +(state.sectionReveal?'<div class="lesson-example">Un groupe vaut 18 ÷ 3 = 6 images. Les cinq groupes valent 6 × 5 = 30 images. Vérification : les 3/5 de 30 font bien 18.</div>':'')
+    +'<p>Pour une fraction d’une fraction, procède aussi par étapes : le tiers de la moitié de 36 vaut le tiers de 18, donc 6.</p>'
+    +'<p class="sub">Ces problèmes avancés arriveront lorsque les paliers précédents et ton niveau seront ouverts.</p>';
+  const groups=state.fractionGroups||4,each=12/groups;
+  return '<h3>Partager un trésor de 12 pièces 🪙</h3><p>Forme des groupes égaux. Un groupe est <b>1/'+groups+'</b> du trésor.</p>'
+    +'<label>Nombre de groupes <select onchange="setFractionGroups(this.value)">'+[2,3,4,6].map(x=>'<option '+(groups===x?'selected':'')+'>'+x+'</option>').join('')+'</select></label>'
+    +'<div class="coin-groups">'+Array.from({length:groups},()=>'<div aria-label="'+each+' pièces">'+'🪙'.repeat(each)+'</div>').join('')+'</div>'
+    +'<p role="status">12 ÷ '+groups+' = '+each+' pièces par groupe.<br>Pour prendre 2/'+groups+', prends deux groupes : '+each+' × 2 = <b>'+each*2+'</b> pièces.</p>'
+    +'<p class="lesson-example">Je partage par le nombre du bas, puis je prends le nombre de groupes indiqué en haut.</p>'
+    +'<p>Dans les questions, tu retrouveras ces idées avec d’autres nombres. Prends le temps de dessiner si tu en as besoin.</p>';
+}
+function changeSectionNumber(field,delta){
+  if(!['numberTens','numberUnits','areaWidth','areaHeight'].includes(field))return;
+  const min=field.startsWith('area')?1:0,max=field.startsWith('area')?8:9;
+  state[field]=Math.max(min,Math.min(max,(state[field]||0)+delta));renderSectionLesson();
+}
+function sectionCounter(label,field,value){
+  return '<div class="section-counter"><span>'+label+' : '+value+'</span><button class="btn-stone" aria-label="Diminuer '+label+'" onclick="changeSectionNumber(\''+field+'\',-1)">−</button><button class="btn-stone" aria-label="Augmenter '+label+'" onclick="changeSectionNumber(\''+field+'\',1)">+</button></div>';
+}
+function sectionManipulation(s){
+  if(state.subjectId==='maths'&&/Calcul|Comptage|Dénombrement/.test(s.cat)){
+    const t=state.numberTens||0,u=state.numberUnits||0;
+    return '<h3>Construis un nombre</h3><p>Une barre vaut 10 unités. Ajoute ou retire une dizaine et observe ce qui change.</p>'
+      +sectionCounter('Dizaines','numberTens',t)+sectionCounter('Unités','numberUnits',u)
+      +'<div class="number-blocks" aria-label="'+t+' dizaines et '+u+' unités">'+Array.from({length:t},()=>'<span class="ten-block">10</span>').join('')+Array.from({length:u},()=>'<span class="unit-block">1</span>').join('')+'</div>'
+      +'<p role="status">'+t+' × 10 + '+u+' = <b>'+ (10*t+u)+'</b></p>';
+  }
+  if(state.subjectId==='maths'&&/Géométrie|Périmètre et aire/.test(s.cat)){
+    const w=state.areaWidth||4,h=state.areaHeight||3;
+    return '<h3>Construis ton jardin</h3><p>Chaque case est un carré de 1 m de côté. Observe les cases à couvrir et le contour à clôturer.</p>'
+      +sectionCounter('Longueur','areaWidth',w)+sectionCounter('Largeur','areaHeight',h)
+      +'<div class="area-grid" role="img" aria-label="'+w+' colonnes et '+h+' lignes" style="grid-template-columns:repeat('+w+',1fr)">'
+      +Array.from({length:w*h},()=>'<span>·</span>').join('')+'</div>'
+      +'<p role="status">Aire : '+w+' × '+h+' = <b>'+w*h+' m²</b>.<br>Périmètre : 2 × ('+w+' + '+h+') = <b>'+2*(w+h)+' m</b>.</p>';
+  }
+  return '';
+}
+function sectionLabs(s){
+  if(state.subjectId!=='sciences')return [];
+  const mapping={'Électricité':['electricite'],'Circuits':['electricite'],'Lumière':['lumiere','ondes-em'],
+    'Astronomie':['planetes'],'Forces':['gravite'],'États de la matière':['eau','cycle-eau'],'États':['eau','cycle-eau'],
+    'Mélanges':['eau'],'Transformations':['atomes'],'Corps humain':['corps-humain'],'Nutrition':['corps-humain','photosynthese'],
+    'Écosystèmes':['photosynthese','cycle-eau'],'Énergie':['electricite','ondes-sonores']};
+  return (mapping[s.cat]||[]).map(id=>LECONS.find(l=>l.id===id)).filter(Boolean);
+}
+function openSectionLab(file){
+  const s=currentSection();if(!s||!sectionLabs(s).some(l=>l.file===file))return;
+  const hash='#section='+encodeURIComponent(state.subjectId)+'&notion='+encodeURIComponent(state.sectionKey);
+  // Le fragment reste sur index.html : cache hors ligne identique.
+  try{sessionStorage.setItem('royaume_section_return',JSON.stringify({name:profile.name,hash}))}catch(e){}
+  location.href=file+hash;
+}
+function restoreSectionLink(){
+  if(!profile.name||!location.hash.startsWith('#section='))return false;
+  const params=new URLSearchParams(location.hash.slice(1)),subject=params.get('section'),key=params.get('notion');
+  if(!sectionsOf(subject).some(s=>s.key===key))return false;
+  state.subjectId=subject;state.sectionKey=key;state.screen='section';return true;
+}
+
+migrateLegacyProfile();
+profile=loadProfileByName(getActiveName());
+window.addEventListener('pageshow',e=>{
+  if(e.persisted&&profile.name){profile=loadProfileByName(getActiveName());render()}
+});
+if(profile.name)setTimeout(async()=>{
+  try{const result=await syncProfileFromCloud();if(result==='merged'&&state.screen==='home')render();pushProfileToCloud()}catch(e){}
+},100);
+if(location.hash==='#lecons'&&profile.name)state.screen='leconsHome';
+restoreSectionLink();
+
+try{
+  history.replaceState({royaume:true},'');history.pushState({royaume:true},'');
+  window.addEventListener('popstate',()=>{retourArriere();history.pushState({royaume:true},'')});
+}catch(e){}
 render();
