@@ -2,7 +2,7 @@
 const SUBJECTS=[
   {id:"maths",name:"Math\u00e9matiques",icon:"\u{1F9EE}",color:"#f7a020",desc:"Royaume des Nombres",
     levels:[
-      {id:"cp",name:"Apprenti Dragonneau",sub:"CP fort (secret)",icon:"\u{1F95A}",color:"#93c5fd",secret:true,hasStatic:true},
+      {id:"cp",name:"Apprenti Dragonneau",sub:"CP",icon:"\u{1F95A}",color:"#93c5fd",hasStatic:true},
       {id:"ce1-ce2",name:"Apprenti Sorcier",sub:"CE1 \u2013 CE2",icon:"\u{1F9D9}",color:"#22c55e",hasStatic:true},
       {id:"cm1-cm2",name:"Chevalier du Savoir",sub:"CM1 \u2013 CM2",icon:"\u2694\uFE0F",color:"#f7a020",hasStatic:true},
       {id:"6e-5e",name:"Ma\u00eetre Dragon",sub:"6\u1d49 \u2013 5\u1d49",icon:"\u{1F409}",color:"#ef4444",hasStatic:true}
@@ -326,7 +326,7 @@ const STORAGE_ACTIVE="royaume_active_v1";
    distinguer « la fonctionnalité est cassée » de « le téléphone n'a pas
    encore la mise à jour ».
    À bumper avec CACHE_VERSION (sw.js) et le ?v= (index.html). */
-const APP_VERSION='v50';
+const APP_VERSION='v51';
 
 function loadProfilesDict(){
   try{const d=localStorage.getItem(STORAGE_PROFILES); if(d) return JSON.parse(d)||{};}catch(e){}
@@ -1030,6 +1030,7 @@ function _scrollToHomeAnchor(){
 }
 
 function navigate(screen,data){
+  if(state.screen==='memoryGame'&&screen!=='memoryGame')recordMemorySession(false);
   if(['profilePicker','nameAsk'].includes(screen)&&profile.name&&!_profileAccess){
     return parentalGate(()=>{_profileAccess=true;navigate(screen,data)});
   }
@@ -1287,7 +1288,7 @@ function staticPoolOf(lvId){
 }
 // {done, total, ratio} — combien de questions du niveau sont déjà réussies.
 function levelMastery(lvId){
-  const pool=staticPoolOf(lvId);
+  const pool=staticPoolOf(lvId).filter(exerciseGradeAllowed);
   const done=pool.length-remainingOf(pool).length;
   return {done,total:pool.length,ratio:pool.length?done/pool.length:0};
 }
@@ -2151,7 +2152,7 @@ function remainingOf(pool){
 
 function successfulKeys(p=profile){
   const keys=new Set(Object.keys(p.successfulQuestions||{}));
-  for(const row of p.answerHistory||[])if(row.correct){
+  for(const row of p.answerHistory||[])if(row.correct&&!row.memory){
     if(row.exerciseId)keys.add('id:'+row.exerciseId);
     if(row.questionKey)keys.add('q:'+row.questionKey);
   }
@@ -2268,7 +2269,7 @@ function _applyCooldown(candidates,n){
   return fresh.concat(stale);
 }
 function finalizePick(candidates,n){
-  return _applyCooldown(remainingOf(dedupeExercises(candidates)),n).slice(0,n);
+  return _applyCooldown(remainingOf(dedupeExercises(candidates.filter(exerciseGradeAllowed))),n).slice(0,n);
 }
 // fin anti-doublon
 
@@ -2603,14 +2604,14 @@ function pickExercises(mode,lvId){
   // Toujours essayer le pool statique : tout niveau présent dans
   // exercises.js / exercises_extra.js a des exos prêts à l'emploi.
   const staticPool=EX.filter(e=>e.lv===lvId);
-  const pool=staticPool.concat(aiPool).concat(customPool).filter(e=>isPlayableEx(e)&&!_horsSujet(e,lvId));
+  const pool=staticPool.concat(aiPool).concat(customPool).filter(e=>isPlayableEx(e)&&exerciseGradeAllowed(e)&&!_horsSujet(e,lvId));
   if(mode==='progression'){
     // La Quête piochait dans TOUTES les matières : on tombait sur des
     // questions de maths dans le Royaume des Explorateurs. Elle reste
     // désormais dans le royaume où l'enfant se trouve — c'est bien la
     // difficulté qui monte, pas le sujet qui change.
     const nivSujet=niveauxDuSujet(subjectOfLevel(lvId));
-    const dansSujet=EX.filter(e=>nivSujet.has(e.lv)&&isPlayableEx(e));
+    const dansSujet=EX.filter(e=>nivSujet.has(e.lv)&&isPlayableEx(e)&&exerciseGradeAllowed(e));
     const source=dansSujet;
     // finalizePick d'abord (dédoublonnage + cooldown), tri par difficulté ensuite :
     // l'ordre croissant doit rester vrai sur les 10 questions réellement tirées.
@@ -2623,7 +2624,7 @@ function pickExercises(mode,lvId){
   if(mode==='theme'){
     const nivSujet=niveauxDuSujet(state.themeSubject);
     const pool=EX.concat(profile.aiExercises||[])
-      .filter(e=>nivSujet.has(e.lv)&&e.cat===state.themeCat&&isPlayableEx(e)&&!_horsSujet(e,e.lv));
+      .filter(e=>nivSujet.has(e.lv)&&e.cat===state.themeCat&&isPlayableEx(e)&&exerciseGradeAllowed(e)&&!_horsSujet(e,e.lv));
     const reste=remainingOf(pool);
     const dejaVues=new Set(reste.map(e=>e.id));
     // finalizePick exclut définitivement les réussites, même si le stock est court.
@@ -2741,6 +2742,7 @@ function flagImg(emoji,cls,alt){
 const ALLOWED_VISUAL_IMG=/^images\/anatomy\/[a-z0-9_-]+\.svg$/;
 function renderQuestionVisual(ex){
   if(!ex) return '';
+  if(ex.diagram)return renderGeometryDiagram(ex);
   if(ex.flag){
     const img=flagImg(ex.flag,'flag-big','Drapeau à reconnaître');
     if(img) return '<div class="q-visual q-visual-flag">'+img+'</div>';
@@ -2837,7 +2839,7 @@ function renderGame(){
   if(!ex) return finishGame();
   // Défense en profondeur : si un exo invalide s'est glissé dans la partie
   // (vieille sauvegarde, exo IA malformé), on le saute au lieu de geler.
-  while(ex&&!isPlayableEx(ex)){
+  while(ex&&(!isPlayableEx(ex)||!exerciseGradeAllowed(ex))){
     state.exercises.splice(state.idx,1);
     ex=state.exercises[state.idx];
   }
@@ -5967,6 +5969,69 @@ const MEMORY_MODES=[
   {id:"chevalier",name:"Chevalier",sub:"Tables 3 à 7 · 8 paires",icon:"\u2694\uFE0F",tables:[3,4,5,6,7],pairs:8,color:"#f7a020"},
   {id:"maitre",name:"Ma\u00eetre Dragon",sub:"Tables 6 à 9 · 8 paires",icon:"\u{1F409}",tables:[6,7,8,9],pairs:8,color:"#ef4444"}
 ];
+
+/* Progression Memory : validation répétée, journal commun et plateaux distincts. */
+const MEMORY_STAGES=[
+ {id:'visuel-1',track:'visuel',name:'Repérer les paires',animals:true,pairs:6,preview:12,legacy:'zoo-facile'},
+ {id:'visuel-2',track:'visuel',name:'Organiser sa mémoire',animals:true,pairs:8,preview:12,legacy:'zoo-moyen'},
+ {id:'visuel-3',track:'visuel',name:'Retenir davantage',animals:true,pairs:10,preview:10,legacy:'zoo-expert'},
+ {id:'visuel-4',track:'visuel',name:'Mémoire précise',animals:true,pairs:12,preview:8},
+ {id:'calcul-1',track:'calcul',name:'Tables de 2 à 5',tables:[2,3,4,5],pairs:6,preview:15,legacy:'apprenti'},
+ {id:'calcul-2',track:'calcul',name:'Tables de 3 à 7',tables:[3,4,5,6,7],pairs:8,preview:15,legacy:'chevalier'},
+ {id:'calcul-3',track:'calcul',name:'Tables de 6 à 9',tables:[6,7,8,9],pairs:8,preview:10,legacy:'maitre'},
+ {id:'calcul-4',track:'calcul',name:'Toutes les tables',tables:[2,3,4,5,6,7,8,9],pairs:10,preview:10}
+];
+function memoryStageProgress(stage){
+  const rows=(profile.answerHistory||[]).filter(r=>r.memory?.kind==='session'&&r.memory.stage===stage.id);
+  const boards=new Set(rows.filter(r=>r.correct&&r.memory.complete).map(r=>r.memory.board));
+  const old=stage.legacy&&profile.memoryStats?.[stage.legacy];
+  const oldErrors=old?(old.erreurs??Math.max(0,(old.moves||0)-(MEMORY_MODES.find(m=>m.id===stage.legacy)?.pairs||stage.pairs))):99;
+  const legacy=old&&oldErrors<=2?1:0;
+  return {wins:Math.min(2,boards.size+legacy),attempts:rows.length+Number(!!old),legacy:!!legacy,
+    best:rows.filter(r=>r.memory.complete).reduce((best,r)=>Math.min(best,r.memory.errors),oldErrors)};
+}
+function memoryStageOpen(stage){
+  const track=MEMORY_STAGES.filter(s=>s.track===stage.track),i=track.findIndex(s=>s.id===stage.id);
+  return track.slice(0,i).every(s=>memoryStageProgress(s).wins>=2);
+}
+function nextMemoryStage(track){
+  return MEMORY_STAGES.find(s=>s.track===track&&memoryStageProgress(s).wins<2)
+    ||MEMORY_STAGES.filter(s=>s.track===track).at(-1);
+}
+function memoryBoard(cards){return JSON.stringify(cards.map(c=>c.face))}
+function journalMemory(M,kind,correct,given,answer,extra={}){
+  const stage=MEMORY_STAGES.find(s=>s.id===M.stage);
+  const q=kind==='session'?'Memory : bilan de '+M.label:'Memory : association '+M.moves+' — '+M.label;
+  const ex={id:'memory:'+M.sessionId+':'+(kind==='session'?'bilan':M.moves),type:'input',
+    lv:stage?.track==='calcul'?'ce1-ce2':'logique',cat:stage?.track==='calcul'?'Memory calcul':'Memory visuel',
+    q,answers:[answer],se:kind==='session'?'Objectif : terminer avec au plus 2 erreurs sur deux plateaux différents.':'Retrouve la carte qui correspond à celle que tu as retournée.'};
+  const row=answerAttempt(ex,correct,given,{id:ex.id,mode:'memory'});
+  row.memory={kind,stage:M.stage||'',sessionId:M.sessionId,board:M.board,pairs:M.cards.length/2,
+    errors:M.erreurs||0,seconds:M.time||0,...extra};
+  profile.answerHistory=mergeAnswerHistory(profile.answerHistory,[row]);saveProfile();return row;
+}
+function recordMemorySession(complete){
+  const M=state.mem;if(!M||M.journalDone||!M.sessionId)return;
+  M.journalDone=true;
+  journalMemory(M,'session',complete&&(M.erreurs||0)<=2,
+    (complete?'Terminé':'Interrompu')+' · '+M.found+'/'+M.cards.length/2+' paires · '+(M.erreurs||0)+' erreurs',
+    'Terminer le plateau avec au plus 2 erreurs',{complete:!!complete});
+}
+function renderMemoryJourney(){
+  return '<div class="card"><h3>Ma progression</h3><p>Observe par lignes ou par petits groupes. Termine deux plateaux différents avec <b>2 erreurs au maximum</b> pour ouvrir le palier suivant. Le temps est un repère, pas une condition de réussite.</p>'
+    +['visuel','calcul'].map(track=>{
+      const next=nextMemoryStage(track),all=MEMORY_STAGES.filter(s=>s.track===track);
+      return '<h3 class="mt-3">'+(track==='visuel'?'🧠 Mémoire visuelle':'✖️ Mémoire et calcul')+'</h3>'
+        +'<ol>'+all.map((s,i)=>{const p=memoryStageProgress(s),open=memoryStageOpen(s);
+          return '<li style="margin:12px 0"><b>Palier '+(i+1)+' : '+s.name+'</b><br><span class="sub">'+s.pairs+' paires · '+s.preview+' s d’observation · '+p.wins+'/2 validations'
+            +(p.legacy?' (dont un ancien record)':'')+'</span><br>'
+            +'<button class="btn-stone" '+(!open?'disabled':'')+' data-stage="'+s.id+'" onclick="startMemory(\'path:\'+this.dataset.stage)">'
+            +(p.wins>=2?'✅ Perfectionner':open?'Jouer ce palier':'🔒 Termine le précédent')+'</button></li>';
+        }).join('')+'</ol><button class="btn-fire" data-stage="'+next.id+'" onclick="startMemory(\'path:\'+this.dataset.stage)">'
+        +(all.every(s=>memoryStageProgress(s).wins>=2)?'Parcours terminé — viser le sans-faute':'Continuer mon parcours')+'</button>';
+    }).join('')+'</div>';
+}
+
 let _memVoice=true;
 try{_memVoice=localStorage.getItem('royaume_mem_voice')!=='0'}catch(e){}
 
@@ -5986,24 +6051,9 @@ function renderMemoryHome(){
   app.innerHTML='<div class="text-center py-6 fade-in">'
     +'<div style="font-size:3.5rem">\u{1F0CF}</div>'
     +'<h2 class="title" style="color:#34d399;font-size:1.6rem">Memory</h2>'
-    +'<p class="sub">Les cartes s\'affichent quelques secondes \u2014 plus il y en a, plus tu as de temps. M\u00e9morise-les, puis retrouve les paires. Aucune erreur \u2192 \u{1F451} super-bonus !</p>'
+    +'<p class="sub">Les cartes s\'affichent quelques secondes \u2014 le temps d’observation dépend du palier. M\u00e9morise-les, puis retrouve les paires. Aucune erreur \u2192 \u{1F451} super-bonus !</p>'
   +'</div>'
-  +MEMORY_MODES.filter(m=>['training','challenge'].includes(m.id)).map((m,i)=>{
-    const secs=memoryPreview(m.pairs);
-    const best=stats[m.id];
-    // Les anciens records ne retenaient que les coups : on en d\u00e9duit les
-    // erreurs (coups \u2212 paires) pour ne pas afficher \u00ab undefined \u00bb \u00e0 ceux qui
-    // jouaient d\u00e9j\u00e0 avant.
-    const bestErr=best?(best.erreurs!==undefined?best.erreurs:Math.max(0,(best.moves||0)-m.pairs)):null;
-    const bestTxt=best
-      ?((best.sansFaute||bestErr===0?'\u{1F451} Sans faute':'Record : '+bestErr+' erreur'+(bestErr>1?'s':''))+' \u00b7 '+best.time+'s')
-      :'Pas encore jou\u00e9';
-    return '<div class="card clickable fade-in" style="animation-delay:'+(i*.07)+'s;border-color:'+m.color+'" onclick="startMemory(\''+m.id+'\')">'
-      +'<div class="row"><div style="font-size:2.2rem">'+m.icon+'</div>'
-      +'<div class="flex-1"><h3 class="card-title" style="color:'+m.color+'">'+m.name+'</h3>'
-      +'<p class="sub">'+m.sub+' \u00b7 '+secs+'s pour m\u00e9moriser \u2014 '+bestTxt+'</p></div>'
-      +'<div class="arrow">\u2192</div></div></div>';
-  }).join('')
+  +renderMemoryJourney()
   +'<div class="card mb-4"><h3 class="fredoka" style="font-size:.85rem;color:#8b7ec8;margin-bottom:10px;letter-spacing:.1em;text-transform:uppercase">\u{1F3AF} Ou entra\u00eene UNE table pr\u00e9cise</h3>'
   +'<div class="row" style="flex-wrap:wrap;gap:8px">'+tableChips+'</div></div>'
   +'<button class="btn-stone mb-2" onclick="toggleMemVoice()" id="memVoiceBtn">'+(_memVoice?'\u{1F50A} R\u00e9citation vocale : activ\u00e9e':'\u{1F507} R\u00e9citation vocale : coup\u00e9e')+'</button>'
@@ -6019,9 +6069,9 @@ function toggleMemVoice(){
   if(b)b.textContent=_memVoice?'\u{1F50A} R\u00e9citation vocale : activ\u00e9e':'\u{1F507} R\u00e9citation vocale : coup\u00e9e';
 }
 
-function _memBuildPairs(modeId){
+function _memBuildPairs(modeId,settings){
   let tables,pairs,label;
-  const mode=MEMORY_MODES.find(x=>x.id===modeId);
+  const mode=settings||MEMORY_MODES.find(x=>x.id===modeId);
   if(mode&&mode.animals){
     // Vrai Memory : paires d'animaux identiques.
     const picked=shuffle(MEMORY_ANIMALS.slice()).slice(0,mode.pairs);
@@ -6034,7 +6084,7 @@ function _memBuildPairs(modeId){
     const t=parseInt(modeId.slice(6),10);
     tables=[t];pairs=6;label='Table de '+t;
   }else{
-    const m=MEMORY_MODES.find(x=>x.id===modeId)||MEMORY_MODES[0];
+    const m=mode||MEMORY_MODES.find(x=>x.id===modeId)||MEMORY_MODES[3];
     tables=m.tables;pairs=m.pairs;label=m.name;
   }
   // Tire des opérations aux PRODUITS UNIQUES (sinon deux cartes résultat
@@ -6055,9 +6105,20 @@ function _memBuildPairs(modeId){
 }
 
 function startMemory(modeId){
-  const built=_memBuildPairs(modeId);
-  state.mem={modeId,label:built.label,cards:built.cards,flipped:[],found:0,moves:0,
-    erreurs:0,lock:false,start:Date.now(),time:0,preview:memoryPreview(built.cards.length/2)};
+  const stage=modeId.startsWith('path:')?MEMORY_STAGES.find(s=>s.id===modeId.slice(5)):null;
+  if(modeId.startsWith('path:')&&(!stage||!memoryStageOpen(stage))){toast('Termine les deux validations du palier précédent.');return}
+  if(!stage&&!MEMORY_MODES.some(s=>s.id===modeId)&&!/^table-[2-9]$/.test(modeId)){toast('Choisis un parcours Memory.');return}
+  if(state.screen==='memoryGame')recordMemorySession(false);
+  let built;
+  const previous=new Set((profile.answerHistory||[]).filter(r=>r.memory?.kind==='session'&&r.memory.stage===stage?.id).map(r=>r.memory.board));
+  for(let tries=0;tries<30;tries++){
+    built=_memBuildPairs(modeId,stage);
+    if(!previous.has(memoryBoard(built.cards)))break;
+  }
+  if(stage&&previous.has(memoryBoard(built.cards))){toast('Relance pour préparer un autre plateau.');return}
+  state.mem={modeId,stage:stage?.id||'',sessionId:crypto.randomUUID(),board:memoryBoard(built.cards),
+    label:built.label,cards:built.cards,flipped:[],found:0,moves:0,
+    erreurs:0,lock:false,start:Date.now(),time:0,preview:stage?stage.preview:memoryPreview(built.cards.length/2)};
   navigate('memoryGame');
 }
 
@@ -6162,7 +6223,7 @@ function renderMemoryGame(){
 
 function memFlip(i){
   const M=state.mem;
-  if(!M||M.lock||M.preview>0)return;
+  if(!M||M.finished||M.lock||M.preview>0||!Number.isInteger(i)||!M.cards[i])return;
   const c=M.cards[i];
   if(c.matched||M.flipped.includes(i))return;
   M.flipped.push(i);
@@ -6171,6 +6232,11 @@ function memFlip(i){
   if(M.flipped.length<2)return;
   M.moves++;
   const [a,b2]=M.flipped;
+  if(M.sessionId){
+    const matched=M.cards[a].pair===M.cards[b2].pair;
+    const partner=M.cards.find((c,j)=>j!==a&&c.pair===M.cards[a].pair);
+    journalMemory(M,'move',matched,M.cards[a].face+' ↔ '+M.cards[b2].face,M.cards[a].face+' ↔ '+partner.face,{errors:(M.erreurs||0)+(matched?0:1)});
+  }
   if(M.cards[a].pair===M.cards[b2].pair){
     // Paire trouvée : on la récite à voix haute pour ancrer la table.
     M.cards[a].matched=true;M.cards[b2].matched=true;
@@ -6192,6 +6258,7 @@ function memFlip(i){
     if(er){er.textContent=M.erreurs;er.style.color='#f87171'}
     M.lock=true;
     setTimeout(()=>{
+      if(state.mem!==M||state.screen!=='memoryGame')return;
       M.flipped=[];M.lock=false;
       const els=document.querySelectorAll('.mem-card');
       if(els[a]&&!M.cards[a].matched)els[a].classList.remove('flipped');
@@ -6202,6 +6269,8 @@ function memFlip(i){
 
 function memWin(){
   const M=state.mem;
+  if(!M||M.finished||M.found!==M.cards.length/2)return;
+  M.finished=true;recordMemorySession(true);
   if(state.memTickID){clearInterval(state.memTickID);state.memTickID=null}
   const total=M.cards.length/2;
   const erreurs=Number(M.erreurs)||0;
@@ -6255,7 +6324,8 @@ function memWin(){
       :'<p class="sub">'+erreurs+' erreur'+(erreurs>1?'s':'')+(erreurs<=2?' \u2014 vise le z\u00e9ro pour le super-bonus !':'')+'</p>')
     +'<p class="sub">'+M.time+'s \u00b7 +'+xp+' XP \u00b7 \u{1F48E} +'+cr+'</p>'
     +'<div class="btn-row mt-3">'
-      +'<button class="btn-fire" onclick="startMemory(\''+esc(M.modeId)+'\')">\u{1F504} Rejouer</button>'
+      +(M.stage?'<p>'+memoryStageProgress(MEMORY_STAGES.find(s=>s.id===M.stage)).wins+'/2 validations du palier. '+(erreurs<=2?'Validation acquise !':'Observe par petits groupes et réessaie.')+'</p><button class="btn-fire" onclick="navigate(\'memoryHome\')">Voir ma progression →</button>'
+        :'<button class="btn-fire" onclick="startMemory(\''+esc(M.modeId)+'\')">\u{1F504} Rejouer</button>')
       +'<button class="btn-stone" onclick="navigate(\'memoryHome\')">Autres niveaux</button>'
     +'</div></div>';
   _montrerMemWin();
@@ -6278,7 +6348,93 @@ function _montrerMemWin(){
 
 /* Parcours par notion : une matière, une section, une leçon puis des paliers.
    Les réussites utilisent le registre commun ; aucune progression parallèle. */
+
+function exerciseGradeAllowed(e){
+  return !Number.isInteger(e.schoolGrade)||e.schoolGrade<=maxOpenGrade('maths');
+}
+function geometrySVG(shape,rotation=0,labels=[]){
+  const names={triangle:'Triangle',square:'Carré',rectangle:'Rectangle',pentagon:'Pentagone',circle:'Cercle',parallel:'Droites parallèles',perpendicular:'Droites perpendiculaires'};
+  const points={triangle:'120,20 25,155 215,155',square:'55,30 185,30 185,160 55,160',
+    rectangle:'25,50 215,50 215,145 25,145',pentagon:'120,15 220,85 180,175 60,175 20,85'};
+  let drawing;
+  if(points[shape])drawing='<polygon points="'+points[shape]+'"/>';
+  else if(shape==='circle')drawing='<circle cx="120" cy="95" r="72"/><circle cx="120" cy="95" r="2" fill="#fbbf24"/><path d="M120 95H192"/>';
+  else if(shape==='parallel')drawing='<path d="M20 50H220M20 135H220"/>';
+  else if(shape==='perpendicular')drawing='<path d="M20 100H220M120 20V180M120 80H140V100"/>';
+  else return '';
+  return '<svg viewBox="0 0 240 220" role="img" aria-label="'+esc((names[shape]||'Figure')+' '+labels.join(' '))+'" style="display:block;width:100%;max-width:320px;margin:12px auto">'
+    +'<g fill="none" stroke="#fbbf24" stroke-width="3" transform="rotate('+Number(rotation||0)+' 120 95)">'+drawing+'</g>'
+    +labels.map((l,i)=>'<text x="120" y="'+(198+i*18)+'" text-anchor="middle" fill="#faf5ff" font-size="15">'+esc(l)+'</text>').join('')+'</svg>';
+}
+function renderGeometryDiagram(ex){
+  if(!ex.diagram)return '';
+  return geometrySVG(ex.diagram.shape,ex.diagram.rotation,Array.isArray(ex.diagram.labels)?ex.diagram.labels:[])+'<p class="sub" style="text-align:center">Schéma : utilise les propriétés et les mesures indiquées.</p>';
+}
+function setGeometryShape(value){
+  if(!['triangle','square','rectangle','pentagon'].includes(value))return;
+  state.geoShape=value;renderSectionLesson();
+}
+function turnGeometry(){state.geoRotation=((state.geoRotation||0)+45)%360;renderSectionLesson()}
+function geometryAngleHTML(){
+  const a=state.geoAngle||60,r=a*Math.PI/180;
+  return '<svg viewBox="0 0 260 190" role="img" aria-label="Angle de '+a+' degrés" style="max-width:320px;width:100%">'
+    +'<path d="M230 145H120L'+(120+100*Math.cos(r)).toFixed(2)+' '+(145-100*Math.sin(r)).toFixed(2)+'" fill="none" stroke="#fbbf24" stroke-width="4"/></svg>'
+    +'<p>'+a+'° : angle '+(a<90?'aigu':a===90?'droit':'obtus')+'. '+(a===90?'Il coïncide avec le coin de l’équerre.':'Compare-le à 90°.')+'</p>';
+}
+function setGeometryAngle(n){
+  state.geoAngle=Math.max(15,Math.min(165,Number(n)||90));
+  const el=document.getElementById('geoAngleLive');if(el)el.innerHTML=geometryAngleHTML();
+}
+function chooseSymmetry(x,y){
+  state.geoPoint={x,y};renderSectionLesson();
+}
+function geometrySymmetryHTML(){
+  const p=state.geoPoint||{x:1,y:1};
+  return '<p>Choisis un point à gauche. Son image apparaît à la même distance à droite de l’axe central.</p>'
+    +'<div style="display:grid;grid-template-columns:repeat(7,1fr);max-width:350px;margin:16px auto">'
+    +Array.from({length:35},(_,i)=>{const x=i%7,y=Math.floor(i/7),mark=y===p.y&&(x===p.x||x===6-p.x);
+      return '<button class="btn-stone" style="padding:5px;min-height:44px;border-radius:0;'+(x===3?'border-left:3px solid #fbbf24;':'')+'" '+(x>=3?'disabled':'')+' aria-label="Colonne '+x+', ligne '+y+'" onclick="chooseSymmetry('+x+','+y+')">'+(mark?'●':x===3?'│':'·')+'</button>';
+    }).join('')+'</div><p>Le point et son image sont chacun à '+(3-p.x)+' carreaux de l’axe, sur la même ligne.</p>';
+}
+function renderGeometryLesson(step,grade){
+  const titles=['Reconnaître et nommer','Tracer et vérifier','Angles et figures','Mesurer avec précision','Relier les propriétés','Construire et raisonner','Justifier une propriété'];
+  const rules=[
+    'Un côté est un segment du contour ; un sommet est la rencontre de deux côtés. Une rotation ne change pas la nature d’une figure.',
+    'La règle trace et mesure des segments. L’équerre vérifie les angles droits. Un carré est un rectangle particulier.',
+    'Des droites perpendiculaires forment un angle droit. Des droites parallèles distinctes d’un même plan ne se rencontrent pas.',
+    'Le périmètre mesure le contour en unités de longueur. L’aire mesure la surface en unités carrées. On ne confond pas les deux.',
+    'La symétrie axiale conserve les longueurs et les angles. Le point et son image sont à la même distance de l’axe.',
+    'Une construction s’appuie sur des propriétés : la règle, le compas et l’équerre permettent de les respecter.',
+    'On distingue ce que le dessin suggère de ce que les propriétés permettent de prouver. On annonce la propriété puis on l’applique.'
+  ];
+  const example=[
+    'Une figure a trois segments qui se rejoignent et trois sommets : c’est un triangle, même si on la tourne.',
+    'Un segment va de 3 cm à 9 cm sur la règle : il mesure 9 − 3 = 6 cm. On ne lit pas seulement la graduation finale.',
+    'Le contour d’un rectangle de 8 cm sur 4 cm mesure 8 + 4 + 8 + 4 = 24 cm.',
+    'Un rectangle de 7 cm sur 5 cm a un périmètre de 24 cm et une aire de 35 cm².',
+    'Un carré de 2 dm de côté a une aire de 4 dm². Chaque dm² contient 100 cm² : cela fait 400 cm².',
+    'Pour construire un triangle de côtés 4, 5 et 6 cm, trace 6 cm puis deux arcs de rayons 4 et 5 cm depuis ses extrémités. Leur intersection donne le sommet.',
+    'Dans un triangle isocèle dont l’angle au sommet mesure 50°, les deux angles à la base sont égaux. Ils mesurent chacun (180 − 50) ÷ 2 = 65°.'
+  ];
+  if(step===0)return '<h3>'+titles[grade]+'</h3><p>'+rules[grade]+'</p>'+geometrySVG(grade<2?'square':grade===2?'perpendicular':grade<5?'rectangle':'triangle')+'<p class="sub">Nomme les objets et les propriétés avec des mots précis.</p>';
+  if(step===1){
+    if(grade<2){
+      const shape=state.geoShape||'triangle',names={triangle:'Triangle',square:'Carré',rectangle:'Rectangle',pentagon:'Pentagone'},sides={triangle:3,square:4,rectangle:4,pentagon:5};
+      return '<label>Figure <select onchange="setGeometryShape(this.value)">'+Object.entries(names).map(([k,v])=>'<option value="'+k+'" '+(shape===k?'selected':'')+'>'+v+'</option>').join('')+'</select></label>'
+        +geometrySVG(shape,state.geoRotation||0)+'<button class="btn-stone" onclick="turnGeometry()">Tourner la figure</button><p>'+names[shape]+' : '+sides[shape]+' côtés et '+sides[shape]+' sommets. Tourne la figure et recompte.</p>';
+    }
+    if(grade===2||grade>=5)return '<label>Ouvre ou ferme l’angle <input type="range" min="15" max="165" value="'+(state.geoAngle||60)+'" oninput="setGeometryAngle(this.value)"></label><div id="geoAngleLive">'+geometryAngleHTML()+'</div>';
+    return geometrySymmetryHTML();
+  }
+  if(step===2)return '<h3>Un exemple résolu avec méthode</h3><p>'+example[grade]+'</p>'
+    +'<p>Sur une feuille, refais le dessin avec les instruments. Écris les données, le calcul si nécessaire, puis une phrase de réponse avec son unité.</p>';
+  return '<h3>Je vérifie et je justifie</h3><p>'+rules[grade]+'</p><p>Explique à voix haute pourquoi ta réponse est vraie. Une figure tournée conserve ses propriétés ; un dessin à main levée ne prouve pas qu’un angle est droit.</p>'
+    +'<button class="btn-stone" onclick="toggleSectionExplanation()">'+(state.sectionReveal?'Cacher':'Voir')+' ma liste de vérification</button>'
+    +(state.sectionReveal?'<ol><li>J’ai nommé la figure et les données.</li><li>J’ai utilisé une propriété adaptée.</li><li>J’ai vérifié le tracé ou le calcul.</li><li>J’ai indiqué la bonne unité.</li></ol>':'');
+}
+
 function sectionGroup(e){
+  if(e.cat==='Géométrie'&&Number.isInteger(e.schoolGrade))return 'geometry-'+e.schoolGrade;
   const subject=subjectOfLevel(e.lv);
   return ['culture','sciences','langues'].includes(subject)?String(e.lv).split('-')[0]:'';
 }
@@ -6286,7 +6442,7 @@ function sectionKey(e){return sectionGroup(e)+'|'+String(e.cat||'Divers')}
 function sectionSource(subjectId){
   const levels=niveauxDuSujet(subjectId);
   return dedupeExercises(EX.concat(profile.aiExercises||[],profile.customExercises||[])
-    .filter(e=>levels.has(e.lv)&&isPlayableEx(e)&&!_horsSujet(e,e.lv)));
+    .filter(e=>levels.has(e.lv)&&isPlayableEx(e)&&exerciseGradeAllowed(e)&&!_horsSujet(e,e.lv)));
 }
 function sectionsOf(subjectId){
   const groups=new Map();
@@ -6294,11 +6450,11 @@ function sectionsOf(subjectId){
     const key=sectionKey(e);
     if(!groups.has(key)){
       const group=sectionGroup(e),lv=LEVELS.find(l=>l.id===e.lv);
-      groups.set(key,{key,cat:e.cat||'Divers',group,label:group&&lv?lv.name:'',pool:[]});
+      groups.set(key,{key,cat:e.cat||'Divers',group,label:Number.isInteger(e.schoolGrade)?gradeByRank(e.schoolGrade)?.name||'':group&&lv?lv.name:'',grade:e.schoolGrade,pool:[]});
     }
     groups.get(key).pool.push(e);
   }
-  return [...groups.values()].sort((a,b)=>a.label.localeCompare(b.label,'fr')
+  return [...groups.values()].sort((a,b)=>(Number.isInteger(a.grade)&&Number.isInteger(b.grade)?a.grade-b.grade:0)||a.label.localeCompare(b.label,'fr')
     ||themeRank(a.cat)-themeRank(b.cat)||a.cat.localeCompare(b.cat,'fr'));
 }
 function currentSection(){
@@ -6372,6 +6528,7 @@ function startSectionPractice(){
   startGame('section');
 }
 function sectionLessonSteps(s){
+  if(s.cat==='Géométrie'&&Number.isInteger(s.grade))return ['Je nomme','Je manipule','J’applique','Je justifie'];
   return s.cat==='Fractions'
     ?['Je partage','Je dessine','Je compare','Je calcule','J’assemble','Je résous']
     :['Je découvre','Je cherche','J’explique'];
@@ -6385,7 +6542,8 @@ function renderSectionLesson(){
   const names=sectionLessonSteps(s),step=Math.min(names.length-1,Math.max(0,state.sectionStep||0));
   state.sectionStep=step;
   let body;
-  if(s.cat==='Fractions')body=renderFractionLesson(step);
+  if(s.cat==='Géométrie'&&Number.isInteger(s.grade))body=renderGeometryLesson(step,s.grade);
+  else if(s.cat==='Fractions')body=renderFractionLesson(step);
   else{
     const e=sectionExample(s);
     if(step===0){
@@ -6549,3 +6707,5 @@ try{
   window.addEventListener('popstate',()=>{retourArriere();history.pushState({royaume:true},'')});
 }catch(e){}
 render();
+
+window.addEventListener('pagehide',()=>{if(state.screen==='memoryGame')recordMemorySession(false)});

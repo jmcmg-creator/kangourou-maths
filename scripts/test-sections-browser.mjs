@@ -88,5 +88,47 @@ try{
   assert.equal(await page.evaluate(()=>state.screen),'sectionLesson');
   assert.equal(errors.length,0,errors.join('\n'));
   console.log('✅ Navigateur : fractions mobile/desktop, réponses, retours, verrou parental, reprise et leçons hors ligne.');
+
+  await context.setOffline(false);
+  await page.evaluate(()=>{_memVoice=false;navigate('memoryHome')});
+  async function solveMemory(){
+    await page.evaluate(()=>{state.mem.preview=0;renderMemoryGame()});
+    const pairs=await page.evaluate(()=>{
+      const ids=[...new Set(state.mem.cards.map(c=>c.pair))];
+      return ids.map(id=>state.mem.cards.map((c,i)=>c.pair===id?i:-1).filter(i=>i>=0));
+    });
+    for(const [a,b] of pairs){await page.locator('.mem-card').nth(a).click();await page.locator('.mem-card').nth(b).click()}
+    await page.getByRole('button',{name:'Voir ma progression →',exact:true}).waitFor();
+  }
+  await page.locator('button[data-stage="visuel-1"]').first().click();
+  assert.equal(await page.evaluate(()=>state.mem.preview),12);
+  await page.screenshot({path:'artifacts/memory-mobile.png',fullPage:true});
+  const board1=await page.evaluate(()=>state.mem.board);
+  await solveMemory();
+  assert.equal(await page.evaluate(()=>memoryStageProgress(MEMORY_STAGES[0]).wins),1);
+  await page.getByRole('button',{name:'Voir ma progression →',exact:true}).click();
+  await page.locator('button[data-stage="visuel-1"]').first().click();
+  assert.notEqual(await page.evaluate(()=>state.mem.board),board1);
+  await solveMemory();
+  await page.getByRole('button',{name:'Voir ma progression →',exact:true}).click();
+  assert.equal(await page.locator('button[data-stage="visuel-2"]').first().isEnabled(),true);
+  assert.equal(await page.evaluate(()=>profile.answerHistory.filter(r=>r.memory?.kind==='move').length),12);
+  await page.evaluate(()=>openSection('maths','geometry-3|Géométrie'));
+  await page.getByRole('button',{name:/Ouvrir la leçon/}).click();
+  await page.getByRole('button',{name:'Suivant →',exact:true}).click();
+  await page.getByRole('button',{name:'Colonne 0, ligne 2',exact:true}).click();
+  assert((await page.locator('.section-page').textContent()).includes('3 carreaux'));
+  assert(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth));
+  await page.screenshot({path:'artifacts/geometrie-mobile.png',fullPage:true});
+  await page.getByRole('button',{name:'← Ma section',exact:true}).click();
+  await page.getByRole('button',{name:/Commencer les questions/}).click();
+  assert.equal(await page.evaluate(()=>state.exercises.length),2);
+  assert(await page.evaluate(()=>state.exercises.every(e=>e.schoolGrade===3&&e.lessonTier===1)));
+  await page.evaluate(()=>retourArriere());
+  await page.reload();
+  assert.equal(await page.evaluate(()=>memoryStageProgress(MEMORY_STAGES[0]).wins),2,'Memory persistant après rechargement');
+  assert.equal(errors.length,0,errors.join('\n'));
+  console.log('✅ Navigateur : Memory progressif persistant, deux plateaux distincts et géométrie CM1 interactive.');
+
   await context.close();
 }finally{await browser.close();await new Promise(done=>server.close(done))}
