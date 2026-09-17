@@ -326,7 +326,7 @@ const STORAGE_ACTIVE="royaume_active_v1";
    distinguer « la fonctionnalité est cassée » de « le téléphone n'a pas
    encore la mise à jour ».
    À bumper avec CACHE_VERSION (sw.js) et le ?v= (index.html). */
-const APP_VERSION='v51';
+const APP_VERSION='v52';
 
 function loadProfilesDict(){
   try{const d=localStorage.getItem(STORAGE_PROFILES); if(d) return JSON.parse(d)||{};}catch(e){}
@@ -2269,7 +2269,7 @@ function _applyCooldown(candidates,n){
   return fresh.concat(stale);
 }
 function finalizePick(candidates,n){
-  return _applyCooldown(remainingOf(dedupeExercises(candidates.filter(exerciseGradeAllowed))),n).slice(0,n);
+  return _applyCooldown(remainingOf(dedupeExercises(candidates).filter(exerciseGradeAllowed)),n).slice(0,n);
 }
 // fin anti-doublon
 

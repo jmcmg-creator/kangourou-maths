@@ -131,7 +131,9 @@ ok('« Tous niveaux » jamais verrouillé', G.levelMinGrade({ id: 'geo-drapeaux'
 
 /* ---------- anti-doublon ---------- */
 section('Anti-doublon — jamais deux fois la même question');
-const dsrc = grab('const RECENT_MAX=150;', '// fin anti-doublon');
+const dsrc = grab('const RECENT_MAX=150;', '// fin anti-doublon')
+  + grab('function exerciseGradeAllowed(e){', 'function geometrySVG')
+  + grab('function maxOpenGrade(subjectId){', 'function _lowestLevelOf');
 const DUP = new Function('profile', 'EX', dsrc + '\nreturn {_qKey,dedupeExercises,recentExIds,rememberExercises,_applyCooldown,finalizePick};');
 const prof = { recentExIds: [] };
 const A = DUP(prof, []);
