@@ -14,6 +14,6 @@ while(frames.length)frames.shift()();
 assert(meta.content.includes('maximum-scale=5'));assert(meta.content.includes('user-scalable=yes'));
 for(const name of ['index.html',...['atomes','corps-humain','cycle-eau','eau','electricite','gravite','ingenieur','inventions','lumiere','ondes-em','ondes-sonores','photosynthese','planetes','volcans'].map(n=>'lecons/'+n+'.html')]){
  const html=readFileSync(new URL('../'+name,import.meta.url),'utf8');
- assert(html.includes('zoom.js?v=1'),name);assert(!html.includes('user-scalable=no'),name);
+ assert(html.includes('zoom.js?v=2'),name);assert(!html.includes('user-scalable=no'),name);
 }
 console.log('✅ Zoom : bouton visible et compensé à 3×, remise à 1× puis pincement réactivé ; 15 pages couvertes.');

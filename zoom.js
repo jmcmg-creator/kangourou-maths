@@ -7,7 +7,12 @@
   const button=document.createElement('button');
   button.type='button';button.textContent='100 %';
   button.setAttribute('aria-label','Revenir au zoom normal');
-  button.style.cssText='position:fixed;top:0;left:0;z-index:20000;min-height:44px;min-width:60px;border:2px solid #fbbf24;border-radius:12px;background:#1e1650;color:white;font:700 16px sans-serif;transform-origin:top left';
+  // Sous le bouton « ← Retour » des leçons (top:12px + encoche), qui ne
+  // suit pas le zoom : sans cette marge les deux boutons se chevauchaient
+  // au début d'un pincement, avant que l'utilisateur ait déplacé la vue.
+  // La formule du translate() plus bas suppose un point de départ à top:0 ;
+  // ce décalage s'ADDITIONNE à elle plutôt que de la changer.
+  button.style.cssText='position:fixed;top:calc(64px + env(safe-area-inset-top,0px));left:0;z-index:20000;min-height:44px;min-width:60px;border:2px solid #fbbf24;border-radius:12px;background:#1e1650;color:white;font:700 16px sans-serif;transform-origin:top left';
   document.body.appendChild(button);
   const vv=window.visualViewport;
   function position(){

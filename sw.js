@@ -24,7 +24,7 @@ const SHELL_URLS = [
   './supa.js?v=3',
   './qr.js?v=1',
   './game.js?v=72',
-  './zoom.js?v=1',
+  './zoom.js?v=2',
   './lesson-questions.js?v=2',
   './lecons/planetes.html',
   './lecons/cycle-eau.html',
