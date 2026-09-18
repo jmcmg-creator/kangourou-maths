@@ -218,10 +218,10 @@ const EX=[
 {id:"art23",lv:"art-cm1",cat:"Composition",diff:3,q:"Dans un tableau, l'endroit le plus « important » visuellement est souvent le ?",ch:["Coin en bas à gauche","Centre","Point d'or (1/3 de la composition)","Fond"],ans:2,se:"Règle des tiers : diviser en 3×3, intersection = zone de force.",pourquoi:"L'œil s'y attire naturellement.",methode:["Grille 3×3 : intersections de plus de contraste/importance.","Composition équilibrée."],regle:"Règle des tiers en photographie et peinture.",exemple:"Horizon : 1/3 haut, 2/3 bas (pas au milieu).",sk:"Composition"},
 {id:"art24",lv:"art-cm1",cat:"Technique",diff:2,q:"Une fresque est une peinture sur ?",ch:["Toile","Bois","Plâtre humide","Papier"],ans:2,se:"Fresque : affesco (« frais »), peinture sur plâtre frais.",pourquoi:"Pigments s'incorporent au plâtre en séchant.",methode:["Intonaco : couche de plâtre frais.","Pigments : appliqués avant le séchage."],regle:"Techniques : fresque, tempera, huile, acrylique.",exemple:"Plafond Sixtine : fresque (pas huile).",sk:"Techniques"},
 
-/* CM2 : Impressionisme, Picasso, moderne */
-{id:"art25",lv:"art-cm2",cat:"Impressionisme",diff:2,q:"« Impression, lever de soleil » est un tableau de ?",ch:["Renoir","Degas","Monet","Sisley"],ans:2,se:"Claude Monet (1872) : cette toile a donné le nom \"impressionnisme\".",pourquoi:"La critique a moqué le titre, d'où le mouvement.",methode:["Monet : peintre impressionniste.","Séries de même sujet à différentes heures."],regle:"Impressionisme (1870-1880) : lumière, couleur, moment.",exemple:"Monet : « Cathédrale de Rouen » (30+ versions).",sk:"Monet"},
-{id:"art26",lv:"art-cm2",cat:"Impressionisme",diff:2,q:"Quel impressionniste a peint « Bal du moulin de la Galette » ?",ch:["Renoir","Monet","Cézanne","Lautrec"],ans:0,se:"Pierre-Auguste Renoir (1876) : scène de fête à Montmartre.",pourquoi:"Lumière douce, figures en motion, chaleur sociale.",methode:["Renoir : impressionniste de la joie et de la lumière.","Touche légère, couleurs vibrants."],regle:"Peintres impressionnistes : Monet, Renoir, Degas, Sisley, Pissarro.",exemple:"Degas : danseuses de ballet.",sk:"Renoir"},
-{id:"art27",lv:"art-cm2",cat:"Post-impressionisme",diff:2,q:"« La Nuit étoilée » de Van Gogh utilise quelle technique pour montrer le mouvement ?",ch:["Coups de pinceau épais et directionnels","Points de couleur (pointillisme)","Lignes noires définies","Perspective linéaire stricte"],ans:0,se:"Coups épais, turbulents (impasto) : émotion visible.",pourquoi:"Van Gogh vs Seurat (pointilliste).",methode:["Impasto : peinture épaisse, pinceau apparent.","Créé du mouvement et de texture."],regle:"Techniques : du réalisme à l'expression.",exemple:"Impasto : texture 3D sur toile.",sk:"Technique Van Gogh"},
+/* CM2 : Impressionnisme, Picasso, moderne */
+{id:"art25",lv:"art-cm2",cat:"Impressionnisme",diff:2,q:"« Impression, lever de soleil » est un tableau de ?",ch:["Renoir","Degas","Monet","Sisley"],ans:2,se:"Claude Monet (1872) : cette toile a donné le nom \"impressionnisme\".",pourquoi:"La critique a moqué le titre, d'où le mouvement.",methode:["Monet : peintre impressionniste.","Séries de même sujet à différentes heures."],regle:"Impressionnisme (1870-1880) : lumière, couleur, moment.",exemple:"Monet : « Cathédrale de Rouen » (30+ versions).",sk:"Monet"},
+{id:"art26",lv:"art-cm2",cat:"Impressionnisme",diff:2,q:"Quel impressionniste a peint « Bal du moulin de la Galette » ?",ch:["Renoir","Monet","Cézanne","Lautrec"],ans:0,se:"Pierre-Auguste Renoir (1876) : scène de fête à Montmartre.",pourquoi:"Lumière douce, figures en motion, chaleur sociale.",methode:["Renoir : impressionniste de la joie et de la lumière.","Touche légère, couleurs vibrants."],regle:"Peintres impressionnistes : Monet, Renoir, Degas, Sisley, Pissarro.",exemple:"Degas : danseuses de ballet.",sk:"Renoir"},
+{id:"art27",lv:"art-cm2",cat:"Post-impressionnisme",diff:2,q:"« La Nuit étoilée » de Van Gogh utilise quelle technique pour montrer le mouvement ?",ch:["Coups de pinceau épais et directionnels","Points de couleur (pointillisme)","Lignes noires définies","Perspective linéaire stricte"],ans:0,se:"Coups épais, turbulents (impasto) : émotion visible.",pourquoi:"Van Gogh vs Seurat (pointilliste).",methode:["Impasto : peinture épaisse, pinceau apparent.","Créé du mouvement et de texture."],regle:"Techniques : du réalisme à l'expression.",exemple:"Impasto : texture 3D sur toile.",sk:"Technique Van Gogh"},
 {id:"art28",lv:"art-cm2",cat:"Modernisme",diff:2,q:"Pablo Picasso a co-fondé quel mouvement artistique au 20ᵉ siècle ?",ch:["Futurisme","Cubisme","Dadaïsme","Surréalisme"],ans:1,se:"Cubisme (1907+) : formes géométriques, perspectives multiples.",pourquoi:"« Les Demoiselles d'Avignon » : fracture perspective.",methode:["Picasso, Braque : décomposer la forme.","Voir l'objet sous plusieurs angles."],regle:"Mouvements 20ᵉ : cubisme, surréalisme, abstraction.",exemple:"Guernica » (1937) : cubisme expressif, protestation.",sk:"Picasso"},
 {id:"art29",lv:"art-cm2",cat:"Colorisme",diff:2,q:"Henri Matisse a créé l'art des papiers découpés. Comment appelle-t-on cette technique ?",ch:["Collage","Papiers gouachés découpés et assemblés","Découpage","Découpage papier coloré"],ans:1,se:"Papiers gouachés peints, puis découpés et assemblés : « gouaches découpées ».",pourquoi:"Innovation tardive, grande créativité.",methode:["Matisse : couleur pure sans peinture.","Liberté formelle avec papier."],regle:"Matisse : couleur, danse, décoration.",exemple:"\"Jazz\" (1947) : suite de compositions colorées.",sk:"Matisse"},
 {id:"art30",lv:"art-cm2",cat:"Surréalisme",diff:2,q:"Le surréalisme cherche à exprimer le ?",ch:["Réalisme exact","L'inconscient et l'imagination","Le mouvement","La géométrie"],ans:1,se:"Surréalisme : rêve, inconscient, irrationnel.",pourquoi:"Freud influença les artistes.",methode:["Dali, Ernst, Magritte : mondes de rêves.","Logique étrange, impossible."],regle:"Surréalisme (1920s+) : automatisme, rêve, inconscient.",exemple:"Dali : \"La Persistance de la mémoire\" (montres molles).",sk:"Surréalisme"},
@@ -242,7 +242,7 @@ const EX=[
 /* CE1-CE2 : Puzzles, deduction, sudoku-like */
 {id:"log9",lv:"logique-ce1-ce2",cat:"Déduction",diff:2,q:"3 amis (Alice, Bob, Carole). Alice plus grand que Bob. Carole plus petit que Alice. Qui est le plus grand ?",ch:["Alice","Bob","Carole","Impossible"],ans:0,se:"Alice > Bob, Alice > Carole. Alice = plus grand.",pourquoi:"Combine les relations.",methode:["Info 1 : Alice > Bob.","Info 2 : Carole < Alice.","Plus grand : Alice."],regle:"Chaîner les relations de comparaison.",exemple:"A > B > C → A est le plus grand.",sk:"Comparaison"},
 {id:"log10",lv:"logique-ce1-ce2",cat:"Puzzles",diff:3,q:"En mangeant 1 pomme par jour, combien de jours dure 5 pommes ?",ch:["4","5","6","10"],ans:1,se:"5 pommes ÷ 1 par jour = 5 jours.",pourquoi:"Pas 4 ! Jour 5 : manger la dernière.",methode:["Jour 1 : 1 pomme. Jour 2 : 1 pomme… Jour 5 : 1 pomme. Fini."],regle:"« Combien de jours pour X à raison de Y par jour » = X÷Y.",exemple:"10 caramels, 2 par jour = 5 jours.",sk:"Ratios"},
-{id:"log11",lv:"logique-ce1-ce2",cat:"Analogie",diff:2,q:"Chat est à félin ce que chien est à ?",ch:["Animal","Canidé","Carnivore","Mammifère"],ans:1,se:"Chat : félin. Chien : canidé (même niveau de classification).",pourquoi:"Analogie de catégorie.",methode:["Chat = type de félin.","Chien = type de canidé."],regle:"Analogies : même rapport entre les paires.",exemple:"Fleur est à bouquet ce que page est à livre.",sk:"Analogies"},
+{id:"log11",lv:"logique-ce1-ce2",cat:"Analogies",diff:2,q:"Chat est à félin ce que chien est à ?",ch:["Animal","Canidé","Carnivore","Mammifère"],ans:1,se:"Chat : félin. Chien : canidé (même niveau de classification).",pourquoi:"Analogie de catégorie.",methode:["Chat = type de félin.","Chien = type de canidé."],regle:"Analogies : même rapport entre les paires.",exemple:"Fleur est à bouquet ce que page est à livre.",sk:"Analogies"},
 {id:"log12",lv:"logique-ce1-ce2",cat:"Déduction",diff:3,q:"Les codes secret de Zoé contiennent A, B, C (3 lettres). Chaque lettre est utilisée une fois. Combien de codes possibles ?",ch:["3","6","9","12"],ans:1,se:"3! = 3×2×1 = 6 arrangements.",pourquoi:"Permutations.",methode:["Position 1 : 3 choix (A, B ou C).","Position 2 : 2 restants.","Position 3 : 1 restant.","3×2×1 = 6."],regle:"Arrangements de n objets = n!.",exemple:"2 objets = 2! = 2.",sk:"Permutations"},
 {id:"log13",lv:"logique-ce1-ce2",cat:"Analogies",diff:2,q:"Une pomme est à fruit ce que carotte est à ?",ch:["Fruit","Graine","Légume","Plante"],ans:2,se:"Pomme : fruit. Carotte : légume.",pourquoi:"Classification botanique.",methode:["Pomme = partie comestible d'un pommier (fruit).","Carotte = racine comestible (légume)."],regle:"Analogies de classification.",exemple:"Tomate = fruit botaniquement, mais légume culinairement.",sk:"Classification"},
 {id:"log14",lv:"logique-ce1-ce2",cat:"Puzzles",diff:3,q:"Tu as 2 briques rouges et 3 briques bleues. Combien de briques en total ?",ch:["1","3","5","6"],ans:2,se:"2 + 3 = 5.",pourquoi:"Addition simple.",methode:["Rouges : 2. Bleues : 3. Total : 2+3 = 5."],regle:"Dénombrement.",exemple:"5 stylos rouges + 4 bleus = 9.",sk:"Dénombrement"},
@@ -300,11 +300,1186 @@ const EX=[
 /* CM2 : Monde, continents détail, cultures, landmarks */
 {id:"geo25",lv:"geo-cm2",cat:"Monde",diff:2,q:"Quel est le pays le plus peuplé du monde ?",ch:["Inde","Chine","États-Unis","Indonésie"],ans:0,se:"Inde : ~1,4 milliards (2024). Chine : ~1,4 milliards (stable/déclin).",pourquoi:"Récemment, Inde a dépassé Chine.",methode:["Top 3 : Inde, Chine, États-Unis."],regle:"Populations mondiales : croissance différentes.",exemple:"Nigeria : 4ᵉ (croissance rapide).",sk:"Populations"},
 {id:"geo26",lv:"geo-cm2",cat:"Continents",diff:2,q:"Quel continent a le plus de pays ?",ch:["Asie","Afrique","Amérique","Europe"],ans:1,se:"Afrique : 54 pays indépendants.",pourquoi:"Décolonisation, diversité.",methode:["Afrique : 54. Asie : ~48 (dépend définition). Amérique : ~35. Europe : ~50 (Russie?)."],regle:"Nombre de pays : dépend des frontières.",exemple:"Asie : Chine, Inde, Indonésie, Pakistan, Japon.",sk:"Pays par continent"},
-{id:"geo27",lv:"geo-cm2",cat:"Landmarks",diff:2,q:"La Tour Eiffel se trouve à ??",ch:["Lyon","Marseille","Paris","Bordeaux"],ans:2,se:"Paris, France (construite 1889, 324 m).",pourquoi:"Monument emblématique de Paris.",methode:["Eiffel : expo 1889."],regle:"Monuments : identifiants de villes.",exemple:"Big Ben : Londres. Statue de la Liberté : New York.",sk:"Landmarks"},
-{id:"geo28",lv:"geo-cm2",cat:"Mondes",diff:2,q:"Quel est le pays le plus grand du monde (superficie) ?",ch:["Canada","Russie","Chine","États-Unis"],ans:1,se:"Russie : 17,1 millions km² (11 % des terres).",pourquoi:"S'étend de l'Europe à Océan Pacifique.",methode:["Russie > Canada > Chine > États-Unis."],regle:"Pays par superficie : géographie.",exemple:"Canada : 10M km². Chine : 9,6M km².",sk:"Superficies"},
+{id:"geo27",lv:"geo-cm2",cat:"Monuments",diff:2,q:"La Tour Eiffel se trouve à ??",ch:["Lyon","Marseille","Paris","Bordeaux"],ans:2,se:"Paris, France (construite 1889, 324 m).",pourquoi:"Monument emblématique de Paris.",methode:["Eiffel : expo 1889."],regle:"Monuments : identifiants de villes.",exemple:"Big Ben : Londres. Statue de la Liberté : New York.",sk:"Monuments"},
+{id:"geo28",lv:"geo-cm2",cat:"Monde",diff:2,q:"Quel est le pays le plus grand du monde (superficie) ?",ch:["Canada","Russie","Chine","États-Unis"],ans:1,se:"Russie : 17,1 millions km² (11 % des terres).",pourquoi:"S'étend de l'Europe à Océan Pacifique.",methode:["Russie > Canada > Chine > États-Unis."],regle:"Pays par superficie : géographie.",exemple:"Canada : 10M km². Chine : 9,6M km².",sk:"Superficies"},
 {id:"geo29",lv:"geo-cm2",cat:"Continents",diff:3,q:"La Grande Barrière de corail est en Australie. C'est un site du patrimoine de l'UNESCO. Quel type d'écosystème ?",ch:["Forêt","Récif corallien","Montagne","Désert"],ans:1,se:"Récif corallien : structure biologique sous-marine.",pourquoi:"Plus grande structure de corail monde.",methode:["Corail : animal colonial. Barrière : 2 300 km."],regle:"Écosystèmes critiques : UNESCO.",exemple:"Vallée de la Loire : patrimoine culturel.",sk:"Écosystèmes"},
 {id:"geo30",lv:"geo-cm2",cat:"Cultures",diff:2,q:"Quelle langue est parlée au Brésil ?",ch:["Espagnol","Portugais","Français","Anglais"],ans:1,se:"Portugais : ancienne colonie portugaise.",pourquoi:"Brésil colonisé par Portugal (vs Espagne pour autres pays latins).",methode:["Langue : héritage colonial."],regle:"Langues : histoire coloniale.",exemple:"Mexique : espagnol.",sk:"Langues"},
 {id:"geo31",lv:"geo-cm2",cat:"Géographie",diff:3,q:"L'Égypte est un pays qui se situe surtout en ??",ch:["Asie","Europe","Afrique","Moyen-Orient"],ans:2,se:"Égypte : Afrique nord-est (Sinaï = petite partie asiatique).",pourquoi:"Géographie: 96 % en Afrique.",methode:["Égypte : delta du Nil, Sahara, Méditerranée."],regle:"Localisation continentale.",exemple:"Turquie : transcontinentale (Europe+Asie).",sk:"Localisation"},
-{id:"geo32",lv:"geo-cm2",cat:"Landmarks",diff:2,q:"Les pyramides de Giza sont en ?",ch:["Amérique","Asie","Afrique (Égypte)","Europe"],ans:2,se:"Égypte : Giza (banlieue du Caire).",pourquoi:"Monuments archéologiques égyptiens.",methode:["Pyramides : tombes pharaons (~2500 av. J.-C.)."],regle:"Monuments antiques : localisation exacte.",exemple:"Colosseum : Rome (Italie, Europe).",sk:"Landmarks"}
+{id:"geo32",lv:"geo-cm2",cat:"Monuments",diff:2,q:"Les pyramides de Giza sont en ?",ch:["Amérique","Asie","Afrique (Égypte)","Europe"],ans:2,se:"Égypte : Giza (banlieue du Caire).",pourquoi:"Monuments archéologiques égyptiens.",methode:["Pyramides : tombes pharaons (~2500 av. J.-C.)."],regle:"Monuments antiques : localisation exacte.",exemple:"Colosseum : Rome (Italie, Europe).",sk:"Monuments"}
 ];
 
+
+/* Parcours fractions : identification, comparaison, quantités, opérations, problèmes. */
+EX.push(...[
+  {
+    "id": "section_frac_01",
+    "lv": "ce1-ce2",
+    "cat": "Fractions",
+    "lessonTier": 1,
+    "diff": 1,
+    "q": "Une bande est partagée en 3 cases égales. Une seule case est colorée. Quelle fraction est colorée ?",
+    "ch": [
+      "1/3",
+      "3/1",
+      "1/2",
+      "2/3"
+    ],
+    "ans": 0,
+    "se": "Une part prise sur 3 parts égales s’écrit 1/3.",
+    "regle": "Une part prise sur 3 parts égales s’écrit 1/3."
+  },
+  {
+    "id": "section_frac_02",
+    "lv": "ce1-ce2",
+    "cat": "Fractions",
+    "lessonTier": 1,
+    "diff": 1,
+    "q": "Un disque a 6 secteurs égaux. Deux secteurs sont bleus. Quelle fraction du disque est bleue ?",
+    "ch": [
+      "6/2",
+      "2/6",
+      "2/3",
+      "4/6"
+    ],
+    "ans": 1,
+    "se": "Le 6 compte les secteurs égaux de l’entier ; le 2 compte les secteurs bleus.",
+    "regle": "Le 6 compte les secteurs égaux de l’entier ; le 2 compte les secteurs bleus."
+  },
+  {
+    "id": "section_frac_03",
+    "lv": "ce1-ce2",
+    "cat": "Fractions",
+    "lessonTier": 1,
+    "diff": 1,
+    "q": "Une tablette compte 5 parts égales. Les 5 parts sont prises. Quelle fraction représente la tablette entière ?",
+    "ch": [
+      "1/5",
+      "5/1",
+      "5/5",
+      "0/5"
+    ],
+    "ans": 2,
+    "se": "5 parts sur les 5 parts de l’entier : 5/5 = 1.",
+    "regle": "5 parts sur les 5 parts de l’entier : 5/5 = 1."
+  },
+  {
+    "id": "section_frac_04",
+    "lv": "ce1-ce2",
+    "cat": "Fractions",
+    "lessonTier": 1,
+    "diff": 1,
+    "q": "Deux enfants découpent un gâteau en deux morceaux inégaux. Peut-on dire que chaque morceau est une moitié ?",
+    "ch": [
+      "Oui, car il y a deux morceaux",
+      "Seulement le plus grand",
+      "Seulement le plus petit",
+      "Non, les deux parts doivent être égales"
+    ],
+    "ans": 3,
+    "se": "Une moitié est une des deux parts égales d’un même entier.",
+    "regle": "Une moitié est une des deux parts égales d’un même entier."
+  },
+  {
+    "id": "section_frac_05",
+    "lv": "cm1-cm2",
+    "cat": "Fractions",
+    "lessonTier": 2,
+    "diff": 2,
+    "q": "Pour deux bandes de même longueur, quelle partie est la plus grande : 1/2 ou 1/6 ?",
+    "ch": [
+      "1/6",
+      "Elles sont égales",
+      "1/2",
+      "Impossible à comparer"
+    ],
+    "ans": 2,
+    "se": "Partager le même entier en 2 fait des parts plus grandes que le partager en 6.",
+    "regle": "Partager le même entier en 2 fait des parts plus grandes que le partager en 6."
+  },
+  {
+    "id": "section_frac_06",
+    "lv": "cm1-cm2",
+    "cat": "Fractions",
+    "lessonTier": 2,
+    "diff": 2,
+    "q": "Tu recoupes chacune des 3 parts d’une bande en 2 parts égales. Comment s’écrit maintenant 1/3 de cette bande ?",
+    "ch": [
+      "1/6",
+      "2/6",
+      "2/3",
+      "3/6"
+    ],
+    "ans": 1,
+    "se": "Une ancienne part devient 2 petites parts, sur 6 au total : 1/3 = 2/6.",
+    "regle": "Une ancienne part devient 2 petites parts, sur 6 au total : 1/3 = 2/6."
+  },
+  {
+    "id": "section_frac_07",
+    "lv": "cm1-cm2",
+    "cat": "Fractions",
+    "lessonTier": 2,
+    "diff": 2,
+    "q": "Quelle fraction représente trois parts sur huit parts égales ?",
+    "ch": [
+      "8/3",
+      "3/5",
+      "5/8",
+      "3/8"
+    ],
+    "ans": 3,
+    "se": "Le numérateur est 3, le dénominateur est 8 : on écrit 3/8.",
+    "regle": "Le numérateur est 3, le dénominateur est 8 : on écrit 3/8."
+  },
+  {
+    "id": "section_frac_08",
+    "lv": "cm1-cm2",
+    "cat": "Fractions",
+    "lessonTier": 2,
+    "diff": 2,
+    "q": "Deux bandes identiques ont 7 cases égales. L’une a 2 cases colorées, l’autre 5. Quelle comparaison est vraie ?",
+    "ch": [
+      "2/7 < 5/7",
+      "2/7 > 5/7",
+      "2/7 = 5/7",
+      "7/2 < 7/5"
+    ],
+    "ans": 0,
+    "se": "Les cases ont la même taille. Cinq cases couvrent plus de place que deux.",
+    "regle": "Les cases ont la même taille. Cinq cases couvrent plus de place que deux."
+  },
+  {
+    "id": "section_frac_09",
+    "lv": "ce1-ce2",
+    "cat": "Fractions",
+    "lessonTier": 3,
+    "diff": 2,
+    "q": "Un trésor de 10 pièces est partagé en 2 groupes égaux. Combien de pièces y a-t-il dans un groupe ?",
+    "ch": [
+      "2",
+      "4",
+      "5",
+      "8"
+    ],
+    "ans": 2,
+    "se": "Un groupe représente la moitié du trésor : 10 ÷ 2 = 5.",
+    "regle": "Un groupe représente la moitié du trésor : 10 ÷ 2 = 5."
+  },
+  {
+    "id": "section_frac_10",
+    "lv": "ce1-ce2",
+    "cat": "Fractions",
+    "lessonTier": 3,
+    "diff": 2,
+    "q": "Quatre enfants se partagent équitablement 16 autocollants. Quelle quantité représente un quart des autocollants ?",
+    "ch": [
+      "2",
+      "4",
+      "8",
+      "12"
+    ],
+    "ans": 1,
+    "se": "On forme 4 groupes égaux : 16 ÷ 4 = 4 autocollants dans un groupe.",
+    "regle": "On forme 4 groupes égaux : 16 ÷ 4 = 4 autocollants dans un groupe."
+  },
+  {
+    "id": "section_frac_11",
+    "lv": "cm1-cm2",
+    "cat": "Fractions",
+    "lessonTier": 3,
+    "diff": 3,
+    "q": "Pour prendre les 2/3 de 18 perles, combien de perles prends-tu ?",
+    "ch": [
+      "6",
+      "9",
+      "12",
+      "15"
+    ],
+    "ans": 2,
+    "se": "Un tiers vaut 18 ÷ 3 = 6 perles. Deux tiers valent 6 × 2 = 12 perles.",
+    "regle": "Un tiers vaut 18 ÷ 3 = 6 perles. Deux tiers valent 6 × 2 = 12 perles."
+  },
+  {
+    "id": "section_frac_12",
+    "lv": "cm1-cm2",
+    "cat": "Fractions",
+    "lessonTier": 3,
+    "diff": 3,
+    "q": "Une boîte contient 20 cartes. Tu en offres 3/5. Combien de cartes offres-tu ?",
+    "ch": [
+      "3",
+      "4",
+      "8",
+      "12"
+    ],
+    "ans": 3,
+    "se": "Un cinquième vaut 20 ÷ 5 = 4 cartes. Trois cinquièmes valent 4 × 3 = 12 cartes.",
+    "regle": "Un cinquième vaut 20 ÷ 5 = 4 cartes. Trois cinquièmes valent 4 × 3 = 12 cartes."
+  },
+  {
+    "id": "section_frac_13",
+    "lv": "cm1-cm2",
+    "cat": "Fractions",
+    "lessonTier": 3,
+    "diff": 3,
+    "q": "Tu utilises 1/4 de 28 briques pour un mur. Combien de briques restent disponibles ?",
+    "ch": [
+      "7",
+      "14",
+      "21",
+      "24"
+    ],
+    "ans": 2,
+    "se": "Un quart de 28 vaut 7. Il reste 28 − 7 = 21 briques.",
+    "regle": "Un quart de 28 vaut 7. Il reste 28 − 7 = 21 briques."
+  },
+  {
+    "id": "section_frac_14",
+    "lv": "cm1-cm2",
+    "cat": "Fractions",
+    "lessonTier": 4,
+    "diff": 3,
+    "q": "Deux huitièmes d’une bande sont rouges, puis trois autres huitièmes sont bleus. Quelle fraction est colorée en tout ?",
+    "ch": [
+      "5/16",
+      "6/8",
+      "5/8",
+      "1/8"
+    ],
+    "ans": 2,
+    "se": "Les parts ont toutes la taille d’un huitième : 2/8 + 3/8 = 5/8.",
+    "regle": "Les parts ont toutes la taille d’un huitième : 2/8 + 3/8 = 5/8."
+  },
+  {
+    "id": "section_frac_15",
+    "lv": "cm1-cm2",
+    "cat": "Fractions",
+    "lessonTier": 4,
+    "diff": 3,
+    "q": "Une bouteille contenait 5/6 de litre. On boit 2/6 de litre. Quelle quantité reste-t-il ?",
+    "ch": [
+      "3/6 de litre",
+      "3/0 de litre",
+      "7/6 de litre",
+      "3/12 de litre"
+    ],
+    "ans": 0,
+    "se": "On retire 2 sixièmes aux 5 sixièmes : 5/6 − 2/6 = 3/6.",
+    "regle": "On retire 2 sixièmes aux 5 sixièmes : 5/6 − 2/6 = 3/6."
+  },
+  {
+    "id": "section_frac_16",
+    "lv": "6e-5e",
+    "cat": "Fractions",
+    "lessonTier": 4,
+    "diff": 4,
+    "q": "Quelle est la somme de 1/3 et 1/6 ?",
+    "ch": [
+      "2/9",
+      "1/9",
+      "1/2",
+      "2/3"
+    ],
+    "ans": 2,
+    "se": "Un tiers vaut deux sixièmes. Donc 2/6 + 1/6 = 3/6 = 1/2.",
+    "regle": "Un tiers vaut deux sixièmes. Donc 2/6 + 1/6 = 3/6 = 1/2."
+  },
+  {
+    "id": "section_frac_17",
+    "lv": "6e-5e",
+    "cat": "Fractions",
+    "lessonTier": 4,
+    "diff": 4,
+    "q": "Quelle quantité représente 3/4 − 1/2 ?",
+    "ch": [
+      "2/2",
+      "1/4",
+      "2/4",
+      "1/2"
+    ],
+    "ans": 1,
+    "se": "Une moitié vaut deux quarts : 3/4 − 2/4 = 1/4.",
+    "regle": "Une moitié vaut deux quarts : 3/4 − 2/4 = 1/4."
+  },
+  {
+    "id": "section_frac_18",
+    "lv": "6e-5e",
+    "cat": "Fractions",
+    "lessonTier": 5,
+    "diff": 5,
+    "q": "Un ruban mesure 32 cm. Tu prends les 3/4 du ruban, puis la moitié de ce morceau. Quelle longueur obtiens-tu ?",
+    "ch": [
+      "8 cm",
+      "16 cm",
+      "24 cm",
+      "12 cm"
+    ],
+    "ans": 3,
+    "se": "Les 3/4 de 32 font 24 cm. La moitié de 24 fait 12 cm.",
+    "regle": "Les 3/4 de 32 font 24 cm. La moitié de 24 fait 12 cm."
+  },
+  {
+    "id": "section_frac_19",
+    "lv": "6e-5e",
+    "cat": "Fractions",
+    "lessonTier": 5,
+    "diff": 5,
+    "q": "Dans un jardin, 1/3 de la surface porte des fleurs et 1/4 porte des légumes. Le reste est du gazon. Quelle fraction est du gazon ?",
+    "ch": [
+      "7/12",
+      "5/12",
+      "2/7",
+      "1/2"
+    ],
+    "ans": 1,
+    "se": "Sur 12 parts : 4 pour les fleurs et 3 pour les légumes. Il reste 12 − 4 − 3 = 5 parts, donc 5/12.",
+    "regle": "Sur 12 parts : 4 pour les fleurs et 3 pour les légumes. Il reste 12 − 4 − 3 = 5 parts, donc 5/12."
+  },
+  {
+    "id": "section_frac_20",
+    "lv": "6e-5e",
+    "cat": "Fractions",
+    "lessonTier": 5,
+    "diff": 5,
+    "q": "Les 2/5 d’un trésor représentent 14 pièces. Combien de pièces compte le trésor entier ?",
+    "ch": [
+      "28",
+      "35",
+      "40",
+      "70"
+    ],
+    "ans": 1,
+    "se": "Si 2 parts valent 14, une part vaut 7. Les 5 parts valent 5 × 7 = 35.",
+    "regle": "Si 2 parts valent 14, une part vaut 7. Les 5 parts valent 5 × 7 = 35."
+  }
+]);
+
+/* Géométrie, progression précise du CP à la 5e. */
+EX.push(...[
+  {
+    "id": "geom_0_1",
+    "lv": "cp",
+    "cat": "Géométrie",
+    "schoolGrade": 0,
+    "lessonTier": 1,
+    "diff": 1,
+    "q": "Combien de sommets possède un triangle ?",
+    "ch": [
+      "2",
+      "3",
+      "4",
+      "5"
+    ],
+    "ans": 1,
+    "se": "Un triangle possède 3 côtés et 3 sommets.",
+    "regle": "Un triangle possède 3 côtés et 3 sommets.",
+    "diagram": {
+      "shape": "triangle"
+    }
+  },
+  {
+    "id": "geom_0_2",
+    "lv": "cp",
+    "cat": "Géométrie",
+    "schoolGrade": 0,
+    "lessonTier": 1,
+    "diff": 1,
+    "q": "Quelle figure possède quatre côtés de même longueur et quatre coins droits ?",
+    "ch": [
+      "Le cercle",
+      "Le triangle",
+      "Le carré",
+      "Un pentagone"
+    ],
+    "ans": 2,
+    "se": "Le carré a quatre côtés égaux et quatre angles droits.",
+    "regle": "Le carré a quatre côtés égaux et quatre angles droits.",
+    "diagram": {
+      "shape": "square"
+    }
+  },
+  {
+    "id": "geom_0_3",
+    "lv": "cp",
+    "cat": "Géométrie",
+    "schoolGrade": 0,
+    "lessonTier": 2,
+    "diff": 1,
+    "q": "Un carré est tourné sur la pointe. Change-t-il de nom ?",
+    "ch": [
+      "Il devient un triangle",
+      "Il devient un cercle",
+      "Oui, il perd un côté",
+      "Non, il reste un carré"
+    ],
+    "ans": 3,
+    "se": "Tourner une figure ne change ni ses côtés ni ses angles.",
+    "regle": "Tourner une figure ne change ni ses côtés ni ses angles.",
+    "diagram": {
+      "shape": "square",
+      "rotation": 45
+    }
+  },
+  {
+    "id": "geom_0_4",
+    "lv": "cp",
+    "cat": "Géométrie",
+    "schoolGrade": 0,
+    "lessonTier": 2,
+    "diff": 2,
+    "q": "Quelle figure n’a ni côté droit ni sommet ?",
+    "ch": [
+      "Le cercle",
+      "Le triangle",
+      "Le carré",
+      "Le rectangle"
+    ],
+    "ans": 0,
+    "se": "Le cercle est une ligne courbe fermée ; il n’a pas de sommet.",
+    "regle": "Le cercle est une ligne courbe fermée ; il n’a pas de sommet.",
+    "diagram": {
+      "shape": "circle"
+    }
+  },
+  {
+    "id": "geom_0_5",
+    "lv": "cp",
+    "cat": "Géométrie",
+    "schoolGrade": 0,
+    "lessonTier": 3,
+    "diff": 2,
+    "q": "Lina veut tracer le côté bien droit d’un triangle. Quel outil choisit-elle ?",
+    "ch": [
+      "Une règle",
+      "Une gomme",
+      "Un pinceau",
+      "Une cuillère"
+    ],
+    "ans": 0,
+    "se": "Une règle permet de tracer un segment droit. On repère les deux extrémités avant de tracer.",
+    "regle": "Une règle permet de tracer un segment droit. On repère les deux extrémités avant de tracer."
+  },
+  {
+    "id": "geom_0_6",
+    "lv": "cp",
+    "cat": "Géométrie",
+    "schoolGrade": 0,
+    "lessonTier": 3,
+    "diff": 2,
+    "q": "Un triangle et un carré séparés ont combien de côtés en tout ?",
+    "ch": [
+      "5",
+      "6",
+      "7",
+      "8"
+    ],
+    "ans": 2,
+    "se": "Le triangle a 3 côtés et le carré en a 4 : 3 + 4 = 7.",
+    "regle": "Le triangle a 3 côtés et le carré en a 4 : 3 + 4 = 7."
+  },
+  {
+    "id": "geom_1_1",
+    "lv": "ce1-ce2",
+    "cat": "Géométrie",
+    "schoolGrade": 1,
+    "lessonTier": 1,
+    "diff": 1,
+    "q": "Comment appelle-t-on une figure fermée formée de cinq segments ?",
+    "ch": [
+      "Un triangle",
+      "Un quadrilatère",
+      "Un pentagone",
+      "Un cercle"
+    ],
+    "ans": 2,
+    "se": "Un pentagone a cinq côtés droits.",
+    "regle": "Un pentagone a cinq côtés droits.",
+    "diagram": {
+      "shape": "pentagon"
+    }
+  },
+  {
+    "id": "geom_1_2",
+    "lv": "ce1-ce2",
+    "cat": "Géométrie",
+    "schoolGrade": 1,
+    "lessonTier": 1,
+    "diff": 1,
+    "q": "Combien de faces carrées possède un cube ?",
+    "ch": [
+      "4",
+      "6",
+      "8",
+      "12"
+    ],
+    "ans": 1,
+    "se": "Le cube possède six faces carrées. Ses huit sommets ne sont pas des faces.",
+    "regle": "Le cube possède six faces carrées. Ses huit sommets ne sont pas des faces."
+  },
+  {
+    "id": "geom_1_3",
+    "lv": "ce1-ce2",
+    "cat": "Géométrie",
+    "schoolGrade": 1,
+    "lessonTier": 2,
+    "diff": 1,
+    "q": "Un segment commence à la graduation 2 cm et finit à 7 cm. Quelle est sa longueur ?",
+    "ch": [
+      "2 cm",
+      "5 cm",
+      "7 cm",
+      "9 cm"
+    ],
+    "ans": 1,
+    "se": "On calcule la différence entre les graduations : 7 − 2 = 5 cm.",
+    "regle": "On calcule la différence entre les graduations : 7 − 2 = 5 cm."
+  },
+  {
+    "id": "geom_1_4",
+    "lv": "ce1-ce2",
+    "cat": "Géométrie",
+    "schoolGrade": 1,
+    "lessonTier": 2,
+    "diff": 2,
+    "q": "Quel instrument permet de vérifier qu’un angle est droit ?",
+    "ch": [
+      "Le compas",
+      "L’équerre",
+      "La balance",
+      "Le thermomètre"
+    ],
+    "ans": 1,
+    "se": "Le coin droit de l’équerre se superpose aux deux côtés de l’angle.",
+    "regle": "Le coin droit de l’équerre se superpose aux deux côtés de l’angle."
+  },
+  {
+    "id": "geom_1_5",
+    "lv": "ce1-ce2",
+    "cat": "Géométrie",
+    "schoolGrade": 1,
+    "lessonTier": 3,
+    "diff": 2,
+    "q": "Un rectangle mesure 6 cm de long et 3 cm de large. Combien mesure le côté opposé au côté de 6 cm ?",
+    "ch": [
+      "3 cm",
+      "6 cm",
+      "9 cm",
+      "12 cm"
+    ],
+    "ans": 1,
+    "se": "Les côtés opposés d’un rectangle ont la même longueur.",
+    "regle": "Les côtés opposés d’un rectangle ont la même longueur.",
+    "diagram": {
+      "shape": "rectangle",
+      "labels": [
+        "6 cm",
+        "3 cm"
+      ]
+    }
+  },
+  {
+    "id": "geom_1_6",
+    "lv": "ce1-ce2",
+    "cat": "Géométrie",
+    "schoolGrade": 1,
+    "lessonTier": 3,
+    "diff": 2,
+    "q": "Un rectangle a quatre angles droits. Un carré a aussi quatre angles droits. Quelle affirmation est correcte ?",
+    "ch": [
+      "Un carré n’est jamais un rectangle",
+      "Un carré est un rectangle particulier",
+      "Tout rectangle est un carré",
+      "Un carré a trois angles droits"
+    ],
+    "ans": 1,
+    "se": "Le carré est un rectangle dont les quatre côtés ont la même longueur.",
+    "regle": "Le carré est un rectangle dont les quatre côtés ont la même longueur."
+  },
+  {
+    "id": "geom_2_1",
+    "lv": "ce1-ce2",
+    "cat": "Géométrie",
+    "schoolGrade": 2,
+    "lessonTier": 1,
+    "diff": 2,
+    "q": "Deux droites qui se coupent en formant un angle droit sont…",
+    "ch": [
+      "parallèles",
+      "perpendiculaires",
+      "courbes",
+      "confondues"
+    ],
+    "ans": 1,
+    "se": "Des droites perpendiculaires forment un angle droit à leur intersection.",
+    "regle": "Des droites perpendiculaires forment un angle droit à leur intersection.",
+    "diagram": {
+      "shape": "perpendicular"
+    }
+  },
+  {
+    "id": "geom_2_2",
+    "lv": "ce1-ce2",
+    "cat": "Géométrie",
+    "schoolGrade": 2,
+    "lessonTier": 1,
+    "diff": 2,
+    "q": "Deux droites d’un même plan qui ne se rencontrent jamais sont…",
+    "ch": [
+      "perpendiculaires",
+      "parallèles",
+      "des segments",
+      "des cercles"
+    ],
+    "ans": 1,
+    "se": "Deux droites parallèles distinctes gardent le même écart.",
+    "regle": "Deux droites parallèles distinctes gardent le même écart.",
+    "diagram": {
+      "shape": "parallel"
+    }
+  },
+  {
+    "id": "geom_2_3",
+    "lv": "ce1-ce2",
+    "cat": "Géométrie",
+    "schoolGrade": 2,
+    "lessonTier": 2,
+    "diff": 2,
+    "q": "Quel est le périmètre d’un carré de 4 cm de côté ?",
+    "ch": [
+      "8 cm",
+      "12 cm",
+      "16 cm",
+      "20 cm"
+    ],
+    "ans": 2,
+    "se": "Le périmètre mesure le contour : 4 + 4 + 4 + 4 = 16 cm.",
+    "regle": "Le périmètre mesure le contour : 4 + 4 + 4 + 4 = 16 cm.",
+    "diagram": {
+      "shape": "square",
+      "labels": [
+        "4 cm"
+      ]
+    }
+  },
+  {
+    "id": "geom_2_4",
+    "lv": "ce1-ce2",
+    "cat": "Géométrie",
+    "schoolGrade": 2,
+    "lessonTier": 2,
+    "diff": 3,
+    "q": "Un rectangle mesure 7 cm sur 3 cm. Quelle longueur de fil faut-il pour faire exactement son tour ?",
+    "ch": [
+      "10 cm",
+      "14 cm",
+      "20 cm",
+      "21 cm"
+    ],
+    "ans": 2,
+    "se": "Le tour mesure 7 + 3 + 7 + 3 = 20 cm.",
+    "regle": "Le tour mesure 7 + 3 + 7 + 3 = 20 cm.",
+    "diagram": {
+      "shape": "rectangle",
+      "labels": [
+        "7 cm",
+        "3 cm"
+      ]
+    }
+  },
+  {
+    "id": "geom_2_5",
+    "lv": "ce1-ce2",
+    "cat": "Géométrie",
+    "schoolGrade": 2,
+    "lessonTier": 3,
+    "diff": 3,
+    "q": "Une figure et son image par symétrie se superposent quand on plie suivant l’axe. Que conserve la symétrie ?",
+    "ch": [
+      "Seulement la couleur",
+      "Les longueurs et la forme",
+      "Seulement le nombre de lettres",
+      "Elle double les longueurs"
+    ],
+    "ans": 1,
+    "se": "La symétrie conserve les longueurs et les angles : le pliage superpose les deux figures.",
+    "regle": "La symétrie conserve les longueurs et les angles : le pliage superpose les deux figures."
+  },
+  {
+    "id": "geom_2_6",
+    "lv": "ce1-ce2",
+    "cat": "Géométrie",
+    "schoolGrade": 2,
+    "lessonTier": 3,
+    "diff": 3,
+    "q": "Pour tracer un rectangle précis, quelle démarche convient ?",
+    "ch": [
+      "Tracer au hasard puis écrire rectangle",
+      "Vérifier les quatre angles droits et les longueurs des côtés",
+      "Vérifier seulement sa couleur",
+      "Tracer quatre côtés obligatoirement différents"
+    ],
+    "ans": 1,
+    "se": "Un rectangle doit avoir quatre angles droits. La règle contrôle les longueurs et l’équerre les angles.",
+    "regle": "Un rectangle doit avoir quatre angles droits. La règle contrôle les longueurs et l’équerre les angles."
+  },
+  {
+    "id": "geom_3_1",
+    "lv": "cm1-cm2",
+    "cat": "Géométrie",
+    "schoolGrade": 3,
+    "lessonTier": 1,
+    "diff": 2,
+    "q": "Un angle plus petit qu’un angle droit est un angle…",
+    "ch": [
+      "plat",
+      "obtus",
+      "aigu",
+      "plein"
+    ],
+    "ans": 2,
+    "se": "Un angle aigu mesure moins de 90°. On peut le comparer au coin de l’équerre.",
+    "regle": "Un angle aigu mesure moins de 90°. On peut le comparer au coin de l’équerre."
+  },
+  {
+    "id": "geom_3_2",
+    "lv": "cm1-cm2",
+    "cat": "Géométrie",
+    "schoolGrade": 3,
+    "lessonTier": 1,
+    "diff": 2,
+    "q": "Quel ensemble de propriétés définit un rectangle ?",
+    "ch": [
+      "Quatre côtés égaux seulement",
+      "Quatre angles droits",
+      "Trois angles droits et un côté courbe",
+      "Deux côtés seulement"
+    ],
+    "ans": 1,
+    "se": "Un rectangle est un quadrilatère dont les quatre angles sont droits.",
+    "regle": "Un rectangle est un quadrilatère dont les quatre angles sont droits.",
+    "diagram": {
+      "shape": "rectangle"
+    }
+  },
+  {
+    "id": "geom_3_3",
+    "lv": "cm1-cm2",
+    "cat": "Géométrie",
+    "schoolGrade": 3,
+    "lessonTier": 2,
+    "diff": 2,
+    "q": "Quel est le périmètre d’un rectangle de 9 cm sur 4 cm ?",
+    "ch": [
+      "13 cm",
+      "18 cm",
+      "26 cm",
+      "36 cm"
+    ],
+    "ans": 2,
+    "se": "Deux longueurs et deux largeurs : 2 × (9 + 4) = 26 cm.",
+    "regle": "Deux longueurs et deux largeurs : 2 × (9 + 4) = 26 cm.",
+    "diagram": {
+      "shape": "rectangle",
+      "labels": [
+        "9 cm",
+        "4 cm"
+      ]
+    }
+  },
+  {
+    "id": "geom_3_4",
+    "lv": "cm1-cm2",
+    "cat": "Géométrie",
+    "schoolGrade": 3,
+    "lessonTier": 2,
+    "diff": 3,
+    "q": "Un jardin rectangulaire contient 5 rangées de 4 carrés de 1 m². Quelle est son aire ?",
+    "ch": [
+      "9 m²",
+      "18 m²",
+      "20 m²",
+      "40 m²"
+    ],
+    "ans": 2,
+    "se": "L’aire compte les carrés unités : 5 × 4 = 20 m².",
+    "regle": "L’aire compte les carrés unités : 5 × 4 = 20 m²."
+  },
+  {
+    "id": "geom_3_5",
+    "lv": "cm1-cm2",
+    "cat": "Géométrie",
+    "schoolGrade": 3,
+    "lessonTier": 3,
+    "diff": 3,
+    "q": "Un carré de côté 5 cm et un rectangle de 8 cm sur 2 cm ont-ils le même périmètre ?",
+    "ch": [
+      "Oui, 20 cm chacun",
+      "Oui, 25 cm chacun",
+      "Non, 10 cm et 16 cm",
+      "Non, 25 cm et 16 cm"
+    ],
+    "ans": 0,
+    "se": "Carré : 4 × 5 = 20 cm. Rectangle : 2 × (8 + 2) = 20 cm. Même périmètre ne signifie pas même forme.",
+    "regle": "Carré : 4 × 5 = 20 cm. Rectangle : 2 × (8 + 2) = 20 cm. Même périmètre ne signifie pas même forme."
+  },
+  {
+    "id": "geom_3_6",
+    "lv": "cm1-cm2",
+    "cat": "Géométrie",
+    "schoolGrade": 3,
+    "lessonTier": 3,
+    "diff": 3,
+    "q": "Un point est à 3 carreaux à gauche d’un axe vertical. Où se trouve son symétrique ?",
+    "ch": [
+      "À 3 carreaux à droite, sur la même ligne",
+      "À 6 carreaux à droite, sur la même ligne",
+      "À 3 carreaux au-dessus",
+      "Sur l’axe"
+    ],
+    "ans": 0,
+    "se": "Le symétrique est à la même distance de l’autre côté de l’axe.",
+    "regle": "Le symétrique est à la même distance de l’autre côté de l’axe."
+  },
+  {
+    "id": "geom_4_1",
+    "lv": "cm1-cm2",
+    "cat": "Géométrie",
+    "schoolGrade": 4,
+    "lessonTier": 1,
+    "diff": 3,
+    "q": "Combien de centimètres carrés y a-t-il dans 1 dm² ?",
+    "ch": [
+      "10",
+      "20",
+      "100",
+      "1000"
+    ],
+    "ans": 2,
+    "se": "Un carré de 1 dm de côté mesure 10 cm sur 10 cm : 100 cm².",
+    "regle": "Un carré de 1 dm de côté mesure 10 cm sur 10 cm : 100 cm²."
+  },
+  {
+    "id": "geom_4_2",
+    "lv": "cm1-cm2",
+    "cat": "Géométrie",
+    "schoolGrade": 4,
+    "lessonTier": 1,
+    "diff": 3,
+    "q": "Un cercle a un rayon de 4 cm. Quel est son diamètre ?",
+    "ch": [
+      "2 cm",
+      "4 cm",
+      "8 cm",
+      "16 cm"
+    ],
+    "ans": 2,
+    "se": "Le diamètre passe par le centre et mesure deux rayons : 2 × 4 = 8 cm.",
+    "regle": "Le diamètre passe par le centre et mesure deux rayons : 2 × 4 = 8 cm.",
+    "diagram": {
+      "shape": "circle",
+      "labels": [
+        "rayon : 4 cm"
+      ]
+    }
+  },
+  {
+    "id": "geom_4_3",
+    "lv": "cm1-cm2",
+    "cat": "Géométrie",
+    "schoolGrade": 4,
+    "lessonTier": 2,
+    "diff": 3,
+    "q": "Calcule l’aire d’un rectangle de 12 cm sur 7 cm.",
+    "ch": [
+      "19 cm²",
+      "38 cm²",
+      "72 cm²",
+      "84 cm²"
+    ],
+    "ans": 3,
+    "se": "L’aire vaut longueur × largeur : 12 × 7 = 84 cm².",
+    "regle": "L’aire vaut longueur × largeur : 12 × 7 = 84 cm².",
+    "diagram": {
+      "shape": "rectangle",
+      "labels": [
+        "12 cm",
+        "7 cm"
+      ]
+    }
+  },
+  {
+    "id": "geom_4_4",
+    "lv": "cm1-cm2",
+    "cat": "Géométrie",
+    "schoolGrade": 4,
+    "lessonTier": 2,
+    "diff": 4,
+    "q": "Une salle mesure 6 m sur 4 m. Une porte de 1 m interrompt la plinthe. Quelle longueur de plinthe faut-il ?",
+    "ch": [
+      "19 m",
+      "20 m",
+      "23 m",
+      "24 m"
+    ],
+    "ans": 0,
+    "se": "Le périmètre est 2 × (6 + 4) = 20 m. On retire la largeur de la porte : 19 m.",
+    "regle": "Le périmètre est 2 × (6 + 4) = 20 m. On retire la largeur de la porte : 19 m."
+  },
+  {
+    "id": "geom_4_5",
+    "lv": "cm1-cm2",
+    "cat": "Géométrie",
+    "schoolGrade": 4,
+    "lessonTier": 3,
+    "diff": 4,
+    "q": "Un rectangle a une aire de 48 cm² et une longueur de 8 cm. Quelle est sa largeur ?",
+    "ch": [
+      "4 cm",
+      "6 cm",
+      "8 cm",
+      "40 cm"
+    ],
+    "ans": 1,
+    "se": "La largeur est 48 ÷ 8 = 6 cm. Vérification : 8 × 6 = 48.",
+    "regle": "La largeur est 48 ÷ 8 = 6 cm. Vérification : 8 × 6 = 48."
+  },
+  {
+    "id": "geom_4_6",
+    "lv": "cm1-cm2",
+    "cat": "Géométrie",
+    "schoolGrade": 4,
+    "lessonTier": 3,
+    "diff": 4,
+    "q": "Deux rectangles ont le même périmètre. Ont-ils forcément la même aire ?",
+    "ch": [
+      "Oui, toujours",
+      "Non : 6 × 2 et 5 × 3 ont même périmètre mais des aires différentes",
+      "Oui, si on change leur couleur",
+      "On ne peut comparer aucune aire"
+    ],
+    "ans": 1,
+    "se": "Les périmètres valent 16 cm. Les aires valent 12 cm² et 15 cm² : elles sont différentes.",
+    "regle": "Les périmètres valent 16 cm. Les aires valent 12 cm² et 15 cm² : elles sont différentes."
+  },
+  {
+    "id": "geom_5_1",
+    "lv": "6e-5e",
+    "cat": "Géométrie",
+    "schoolGrade": 5,
+    "lessonTier": 1,
+    "diff": 3,
+    "q": "Un segment [AB] mesure 10 cm. Son milieu M est à quelle distance de A ?",
+    "ch": [
+      "2 cm",
+      "5 cm",
+      "10 cm",
+      "20 cm"
+    ],
+    "ans": 1,
+    "se": "Le milieu partage le segment en deux segments de même longueur : AM = MB = 5 cm.",
+    "regle": "Le milieu partage le segment en deux segments de même longueur : AM = MB = 5 cm."
+  },
+  {
+    "id": "geom_5_2",
+    "lv": "6e-5e",
+    "cat": "Géométrie",
+    "schoolGrade": 5,
+    "lessonTier": 1,
+    "diff": 3,
+    "q": "Quelle propriété caractérise les points de la médiatrice de [AB] ?",
+    "ch": [
+      "Ils sont tous sur [AB]",
+      "Ils sont à égale distance de A et de B",
+      "Ils sont tous plus proches de A",
+      "Ils forment un cercle de centre A"
+    ],
+    "ans": 1,
+    "se": "La médiatrice est la droite perpendiculaire au segment en son milieu. Ses points sont équidistants des extrémités.",
+    "regle": "La médiatrice est la droite perpendiculaire au segment en son milieu. Ses points sont équidistants des extrémités."
+  },
+  {
+    "id": "geom_5_3",
+    "lv": "6e-5e",
+    "cat": "Géométrie",
+    "schoolGrade": 5,
+    "lessonTier": 2,
+    "diff": 3,
+    "q": "Un cercle a un diamètre de 10 cm. Quel est son périmètre ?",
+    "ch": [
+      "10π cm",
+      "20π cm",
+      "100π cm",
+      "5π cm"
+    ],
+    "ans": 0,
+    "se": "Le périmètre du cercle est π × diamètre : 10π cm.",
+    "regle": "Le périmètre du cercle est π × diamètre : 10π cm.",
+    "diagram": {
+      "shape": "circle",
+      "labels": [
+        "diamètre : 10 cm"
+      ]
+    }
+  },
+  {
+    "id": "geom_5_4",
+    "lv": "6e-5e",
+    "cat": "Géométrie",
+    "schoolGrade": 5,
+    "lessonTier": 2,
+    "diff": 4,
+    "q": "Un triangle a une base de 8 cm et une hauteur correspondante de 5 cm. Quelle est son aire ?",
+    "ch": [
+      "13 cm²",
+      "20 cm²",
+      "40 cm²",
+      "80 cm²"
+    ],
+    "ans": 1,
+    "se": "Aire du triangle = base × hauteur ÷ 2 = 8 × 5 ÷ 2 = 20 cm².",
+    "regle": "Aire du triangle = base × hauteur ÷ 2 = 8 × 5 ÷ 2 = 20 cm²."
+  },
+  {
+    "id": "geom_5_5",
+    "lv": "6e-5e",
+    "cat": "Géométrie",
+    "schoolGrade": 5,
+    "lessonTier": 3,
+    "diff": 4,
+    "q": "Peut-on construire un triangle dont les côtés mesurent 3 cm, 4 cm et 9 cm ?",
+    "ch": [
+      "Oui, toujours",
+      "Oui, s’il est rectangle",
+      "Non, car 3 + 4 est inférieur à 9",
+      "Non, car les nombres sont impairs"
+    ],
+    "ans": 2,
+    "se": "Les deux plus petits côtés doivent pouvoir se rejoindre : leur somme doit dépasser le plus grand côté. Ici 7 < 9.",
+    "regle": "Les deux plus petits côtés doivent pouvoir se rejoindre : leur somme doit dépasser le plus grand côté. Ici 7 < 9."
+  },
+  {
+    "id": "geom_5_6",
+    "lv": "6e-5e",
+    "cat": "Géométrie",
+    "schoolGrade": 5,
+    "lessonTier": 3,
+    "diff": 4,
+    "q": "Pour construire un triangle de côtés 5 cm, 6 cm et 7 cm, après avoir tracé le côté de 7 cm, que fait-on ?",
+    "ch": [
+      "On mesure l’aire",
+      "On trace deux arcs de rayons 5 cm et 6 cm depuis ses extrémités",
+      "On trace une parallèle au hasard",
+      "On divise 7 par 2 et on termine"
+    ],
+    "ans": 1,
+    "se": "Le troisième sommet est à 5 cm d’une extrémité et à 6 cm de l’autre : l’intersection des arcs le situe.",
+    "regle": "Le troisième sommet est à 5 cm d’une extrémité et à 6 cm de l’autre : l’intersection des arcs le situe."
+  },
+  {
+    "id": "geom_6_1",
+    "lv": "6e-5e",
+    "cat": "Géométrie",
+    "schoolGrade": 6,
+    "lessonTier": 1,
+    "diff": 4,
+    "q": "Quelle est la somme des trois angles d’un triangle ?",
+    "ch": [
+      "90°",
+      "180°",
+      "270°",
+      "360°"
+    ],
+    "ans": 1,
+    "se": "La somme des angles intérieurs d’un triangle est 180°.",
+    "regle": "La somme des angles intérieurs d’un triangle est 180°."
+  },
+  {
+    "id": "geom_6_2",
+    "lv": "6e-5e",
+    "cat": "Géométrie",
+    "schoolGrade": 6,
+    "lessonTier": 1,
+    "diff": 4,
+    "q": "Dans un parallélogramme, quelles longueurs sont égales ?",
+    "ch": [
+      "Tous les côtés, toujours",
+      "Les côtés opposés",
+      "Seulement les diagonales, toujours",
+      "Aucune longueur"
+    ],
+    "ans": 1,
+    "se": "Les côtés opposés d’un parallélogramme sont parallèles et de même longueur.",
+    "regle": "Les côtés opposés d’un parallélogramme sont parallèles et de même longueur."
+  },
+  {
+    "id": "geom_6_3",
+    "lv": "6e-5e",
+    "cat": "Géométrie",
+    "schoolGrade": 6,
+    "lessonTier": 2,
+    "diff": 4,
+    "q": "Deux angles d’un triangle mesurent 48° et 67°. Combien mesure le troisième ?",
+    "ch": [
+      "55°",
+      "65°",
+      "75°",
+      "115°"
+    ],
+    "ans": 1,
+    "se": "180 − 48 − 67 = 65°. Vérification : 48 + 67 + 65 = 180.",
+    "regle": "180 − 48 − 67 = 65°. Vérification : 48 + 67 + 65 = 180."
+  },
+  {
+    "id": "geom_6_4",
+    "lv": "6e-5e",
+    "cat": "Géométrie",
+    "schoolGrade": 6,
+    "lessonTier": 2,
+    "diff": 5,
+    "q": "Un parallélogramme a une base de 9 cm et une hauteur correspondante de 4 cm. Quelle est son aire ?",
+    "ch": [
+      "13 cm²",
+      "18 cm²",
+      "26 cm²",
+      "36 cm²"
+    ],
+    "ans": 3,
+    "se": "Son aire est base × hauteur : 9 × 4 = 36 cm². La hauteur est perpendiculaire à la base.",
+    "regle": "Son aire est base × hauteur : 9 × 4 = 36 cm². La hauteur est perpendiculaire à la base."
+  },
+  {
+    "id": "geom_6_5",
+    "lv": "6e-5e",
+    "cat": "Géométrie",
+    "schoolGrade": 6,
+    "lessonTier": 3,
+    "diff": 5,
+    "q": "Un triangle isocèle a un angle au sommet de 40°. Combien mesure chacun des deux angles à la base ?",
+    "ch": [
+      "40°",
+      "60°",
+      "70°",
+      "140°"
+    ],
+    "ans": 2,
+    "se": "Les angles à la base sont égaux. Leur somme vaut 180 − 40 = 140°, donc chacun mesure 70°.",
+    "regle": "Les angles à la base sont égaux. Leur somme vaut 180 − 40 = 140°, donc chacun mesure 70°."
+  },
+  {
+    "id": "geom_6_6",
+    "lv": "6e-5e",
+    "cat": "Géométrie",
+    "schoolGrade": 6,
+    "lessonTier": 3,
+    "diff": 5,
+    "q": "Un quadrilatère a ses côtés opposés parallèles et possède un angle droit. Que peut-on affirmer ?",
+    "ch": [
+      "C’est forcément un carré",
+      "C’est un rectangle, mais pas forcément un carré",
+      "C’est un triangle",
+      "Ses quatre côtés sont forcément égaux"
+    ],
+    "ans": 1,
+    "se": "C’est un parallélogramme avec un angle droit : ses quatre angles sont droits. Ses côtés voisins ne sont pas nécessairement égaux.",
+    "regle": "C’est un parallélogramme avec un angle droit : ses quatre angles sont droits. Ses côtés voisins ne sont pas nécessairement égaux."
+  }
+]);

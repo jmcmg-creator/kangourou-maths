@@ -2,7 +2,7 @@
 <html lang="fr">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<meta name="viewport" content="width=device-width,initial-scale=1,minimum-scale=1,maximum-scale=5,user-scalable=yes,viewport-fit=cover">
 <title>🚀 Les Grandes Inventions</title>
 <style>
 /* Pas de zoom au double-appui : un enfant qui tapote vite une tuile faisait
@@ -580,14 +580,17 @@ function showInv(id){
     +'</div>').join('');
   document.getElementById('dSavais').innerHTML=inv.savais;
   document.getElementById('dQuiz').innerHTML=inv.quiz.map((q,qi)=>
-    '<div class="q-block"><div class="q-question">'+q[0]+'</div><div class="q-choices">'
+    !LessonQuestions.pending(q)?'':'<div class="q-block"><div class="q-question">'+q[0]+'</div><div class="q-choices">'
     +q[1].map((c,ci)=>'<button class="q-choice" onclick="answerQ(this,'+qi+','+ci+')">'+c+'</button>').join('')
     +'</div><div class="q-expl" id="expl-'+qi+'">'+q[3]+'</div></div>').join('');
+  if(!document.getElementById('dQuiz').children.length)document.getElementById('dQuiz').textContent=LessonQuestions.emptyMessage();
   window.scrollTo(0,0);
 }
 function answerQ(btn,qi,ci){
+  if(btn.disabled)return;
   const inv=visibleList()[currentIdx];
   const good=inv.quiz[qi][2];
+  if(!LessonQuestions.record(inv.quiz[qi],ci,{id:inv.id+':'+qi,category:inv.titre}))alert('La réponse ne peut pas être sauvegardée sur cet appareil.');
   const block=btn.parentElement;
   Array.from(block.children).forEach((b,i)=>{
     b.disabled=true;
@@ -610,5 +613,9 @@ function nextInv(){
 }
 renderGrid();
 </script>
+<script src="../config.js?v=2"></script>
+<script src="../supa.js?v=3"></script>
+<script src="../lesson-questions.js?v=2"></script>
+<script src="../zoom.js?v=2"></script>
 </body>
 </html>
