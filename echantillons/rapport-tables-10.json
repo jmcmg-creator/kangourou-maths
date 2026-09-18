@@ -2,67 +2,83 @@
  "10": [
   {
    "prise": 1,
-   "duree": 6.7,
-   "entendu": "table de 10, 10 x 1, 10 x 2, 20, 10 x 3, 30",
-   "decoupages": []
-  },
-  {
-   "prise": 2,
-   "duree": 21.1,
-   "entendu": "table de 10, 10 x 1, 10 x 2, 20, 10 x 3, 30, 10 x 4, 40, 10 x 5, 50, 10 x 6, 60, 10 x 7, 70, 10 x 8, 80, 10 x 9, 90, 10 x 10, 100.",
+   "duree": 18.1,
+   "entendu": "Table de 10, 10 fois 1, 10, 10 fois 2, 20, 10 fois 3, 30, 10 fois 4, 40, 10 fois 5, 50, 10 fois 6, 60, 10 fois 7, 70, 10 fois 8, 80, 10 fois 9, 90, 10 fois 10, 100.",
    "decoupages": [
     {
      "methode": "mots",
      "lignes_fausses": [
+      3
+     ],
+     "entendu": [
+      "10 x 1, 10",
+      "10 x 2, 20.",
+      "dix fois trois trente",
+      "10 × 4 × 40",
+      "dix fois cinq, cinquante",
+      "dix fois six, soixante.",
+      "dix fois sept, soixante dix.",
+      "10 x 8 80",
+      "10 .9 .90",
+      "10x10 sans"
+     ]
+    }
+   ]
+  },
+  {
+   "prise": 2,
+   "duree": 24.4,
+   "entendu": "table de 10, 10 fois 1, 10 fois 2, 20, 10 fois 3, 30, 10 fois 4, 40, 10 fois 5, 50, 10 fois 6, 60, 10 fois 7, 70, 10 fois 8, 80, 10 fois 9, 90, 10 fois 10, 100.",
+   "decoupages": [
+    {
+     "methode": "mots",
+     "lignes_fausses": [
+      3,
+      8
+     ],
+     "entendu": [
+      "10 x 1",
+      "dix fois deux, vingt.",
+      "dix fois trois trente.",
+      "dix fois quatre, quarante.",
+      "10 x 5, 50",
+      "dix fois six, soixante.",
+      "10 x 7, 70",
+      "dix fois huit, quatre l 'un",
+      "10x9, 90",
+      "dix fois dix, 100."
+     ]
+    },
+    {
+     "methode": "structure 0.12",
+     "lignes_fausses": [
+      1,
+      2,
+      3,
+      8,
+      9,
       10
      ],
      "entendu": [
-      "dix fois un.",
-      "10, 10 fois 2, 20.",
-      "dix fois trois, trente.",
-      "dix fois quatre, quarante",
+      "10 fois.",
+      "un, dix.",
+      "Deux, vingt, dix fois trois, trente.",
+      "dix fois quatre, quarante.",
       "10 x 5, 50",
       "dix fois six, soixante.",
-      "10x7, 70",
-      "10 x 8, 80",
-      "dix fois neuf, quatre -vingt -dix.",
-      "dix fois dix cent."
+      "10 x 7, 70",
+      "dix fois huit, quatre l 'un, dix fois neuf.",
+      "90, 10x10",
+      "100"
      ]
     }
    ]
   },
   {
    "prise": 3,
-   "duree": 20.7,
-   "entendu": "table de 10, 10x1, 10x2, 20, 10x3, 30, 10x4, 40, 10x5, 50, 10x6, 60, 10x7, 70, 10x8, 80, 10x9, 90, 10x10.",
-   "decoupages": [
-    {
-     "methode": "mots",
-     "lignes_fausses": [
-      1,
-      2,
-      3,
-      4,
-      5,
-      7,
-      8,
-      9,
-      10
-     ],
-     "entendu": [
-      "dix.",
-      "10 x 1, 10 x 2",
-      "20, 10 x 3",
-      "30, 10 x 4",
-      "40, 10 x 5",
-      "dix fois six",
-      "60, 10 x 7",
-      "70, 10x8",
-      "80, 10x9",
-      "90, 10x10"
-     ]
-    }
-   ]
+   "duree": 26.0,
+   "entendu": "table de 10. 10 x 1, 10 x 2, 20, 10 x 3, 30, 10 x 4, 40, 10 x 5, 50, 10 x 6, 60, 10 x 7, 70, 10 x 8, 80, 10 x 8, 80, 10 x 9, 90, 10 x 10, 100.",
+   "decoupages": []
   },
   {
    "ligne_par_ligne": [
@@ -70,7 +86,7 @@
      "ligne": 1,
      "essais": 1,
      "juste": true,
-     "entendu": "dix fois un, dix."
+     "entendu": "10 x 1, 10"
     },
     {
      "ligne": 2,
@@ -80,27 +96,27 @@
     },
     {
      "ligne": 3,
-     "essais": 3,
-     "juste": false,
-     "entendu": "dix fois trois trente"
+     "essais": 1,
+     "juste": true,
+     "entendu": "Dix fois trois, tente."
     },
     {
      "ligne": 4,
      "essais": 1,
      "juste": true,
-     "entendu": "dix fois quatre, quarante."
+     "entendu": "dix fois quatre quarante. Quarante..."
     },
     {
      "ligne": 5,
      "essais": 2,
      "juste": true,
-     "entendu": "10 x 5, 50"
+     "entendu": "dix fois cinq, cinquante"
     },
     {
      "ligne": 6,
      "essais": 1,
      "juste": true,
-     "entendu": "Dix fois six, soixante, soixante..."
+     "entendu": "Dix fois six, soixante, voici !"
     },
     {
      "ligne": 7,
@@ -112,19 +128,19 @@
      "ligne": 8,
      "essais": 1,
      "juste": true,
-     "entendu": "10 x 8, 80"
+     "entendu": "10 x 8 80"
     },
     {
      "ligne": 9,
      "essais": 1,
      "juste": true,
-     "entendu": "dix fois neuf, quatre -vingt -dix."
+     "entendu": "10x9, 90"
     },
     {
      "ligne": 10,
      "essais": 1,
      "juste": true,
-     "entendu": "dix fois dix, cinq"
+     "entendu": "10 fois 10"
     }
    ]
   }

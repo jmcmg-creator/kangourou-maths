@@ -2,8 +2,14 @@
  "8": [
   {
    "prise": 1,
-   "duree": 23.2,
-   "entendu": "Table de 8. 8x1, 8x2, 16. 8x3, 24. 8x4, 32. 8x5, 40. 8x6, 48. 8x7, 56. 8x8, 64. 8x9, 72. 8x10, 80.",
+   "duree": 27.4,
+   "entendu": "table de 8, 8 x 1, 8 x 2, 16, 8 x 3, 24, 8 x 4, 32, 8 x 5, 40, 8 x 6, 48, 8 x 7, 56, 8 x 8, 64, 8 x 9, 72, 8 x 10, 80, 8 x 3",
+   "decoupages": []
+  },
+  {
+   "prise": 2,
+   "duree": 21.3,
+   "entendu": "table de 8, 8x1, 8x2, 16, 8x3, 24, 8x4, 32, 8x5, 40, 8x6, 48, 8x7, 56, 8x8, 64, 8x9, 72, 8x10, 80.",
    "decoupages": [
     {
      "methode": "mots",
@@ -19,80 +25,109 @@
       9
      ],
      "entendu": [
-      "8",
+      "8.",
       "8 x 1, 8 x 2",
-      "16, 8 x 3",
+      "16, 8 x 3.",
       "24, 8x4",
-      "32, 8 fois 5",
-      "40 8 fois 6",
+      "32, 8 x 5",
+      "40, 8 x 6",
       "48, 8x7",
-      "56 8 fois 8",
-      "64 8x9",
-      "72 8 x 10 80"
+      "56, 8x8",
+      "64, 8 choix 9",
+      "72, 8 x 10, 80."
+     ]
+    },
+    {
+     "methode": "structure 0.25",
+     "lignes_fausses": [
+      6,
+      7,
+      8,
+      9
+     ],
+     "entendu": [
+      "8x1",
+      "8 x 2, 16.",
+      "8x3, 24",
+      "8x4 32",
+      "8 x 5, 40",
+      "8 x 6, 48, 8 x 7, 56",
+      "8x8, 64",
+      "8 .9",
+      "72",
+      "8 × 10 × 80"
      ]
     }
    ]
   },
   {
-   "prise": 2,
-   "duree": 40.0,
-   "entendu": "table de 8, 8x1, 8x2, 16, 8x3, 24, 8x4, 32, 8x5, 40, 8x6, 48, 8x7, 56, 8x8, 64, 8x9, 72, 8x10, 80. x10, 80, 8x6, 46, 8...",
-   "decoupages": []
-  },
-  {
    "prise": 3,
-   "duree": 19.7,
-   "entendu": "table de 8. 8x1 8x2 16 8x3 24 8x4 32 8x5 40 8x6 48 8x7 56 8x8 64 8x9 72 8x10 80",
+   "duree": 19.0,
+   "entendu": "De 8, 8 fois 1, 8 fois 2, 16, 8 fois 3, 24, 8 fois 4, 32, 8 fois 5, 40, 8 fois 6, 48, 8 fois 7, 56, 8 fois 8, 64, 8 fois 9, 72, 8 fois 10, 80.",
    "decoupages": [
     {
      "methode": "mots",
+     "lignes_fausses": [
+      9
+     ],
+     "entendu": [
+      "8x1",
+      "8 x 2, 16.",
+      "8 x 3, 24",
+      "8 x 4 32",
+      "8, 3, 5, 40",
+      "8 x 6, 48.",
+      "8x7, 56",
+      "8x8, 64.",
+      "839 -72",
+      "8 -3 -10 -80"
+     ]
+    },
+    {
+     "methode": "structure 0.12",
      "lignes_fausses": [
       1,
       2,
       3,
       5,
-      6,
-      7,
-      8,
       9
      ],
      "entendu": [
-      "Sous -titres réalisés par la communauté d 'Amara .org",
       "8 x 1, 8 x 2",
-      "16 8 fois 3",
+      "16, 8 fois.",
+      "3, 24",
       "8 x 4",
-      "32 8 fois 5",
-      "40. 8, choisis.",
-      "48 8 fois 7",
-      "56, 8x8",
-      "64, 8x9",
-      "72, 8 x 10, 80."
+      "32, 8 -5",
+      "40, 8 x 6, 48.",
+      "8x7, 56",
+      "huit fois suite, 64.",
+      "839 -72",
+      "8, 3, 10, 80."
      ]
     },
     {
-     "methode": "structure 0.18",
+     "methode": "structure 0.25",
      "lignes_fausses": [
       1,
       2,
       3,
       4,
-      5,
-      6,
       7,
       8,
-      9
+      9,
+      10
      ],
      "entendu": [
-      "8x1, 8x2, 16",
+      "8 x 1, 8 x 2, 16.",
       "8 x 3, 24",
-      "8x4 32 8x5",
-      "40.",
-      "8 x 6 x 48",
-      "8 x 7, 56.",
-      "8 x 8 ,64",
-      "8x9",
-      "72.",
-      "8 × 10 × 80"
+      "8 x 4",
+      "Tendu.",
+      "8 x 5 x 40",
+      "8 x 6, 48.",
+      "8x7, 56, 8x8",
+      "64",
+      "839, 72, 830.",
+      "80"
      ]
     }
    ]
@@ -103,7 +138,7 @@
      "ligne": 1,
      "essais": 1,
      "juste": true,
-     "entendu": "8 x 1, 8."
+     "entendu": "8 x 8"
     },
     {
      "ligne": 2,
@@ -115,25 +150,25 @@
      "ligne": 3,
      "essais": 1,
      "juste": true,
-     "entendu": "8 x 3, 24"
+     "entendu": "huit fois trois, vingt -quatre"
     },
     {
      "ligne": 4,
      "essais": 1,
      "juste": true,
-     "entendu": "8x4 32"
+     "entendu": "8 × 4, 32"
     },
     {
      "ligne": 5,
      "essais": 1,
      "juste": true,
-     "entendu": "8 x 5, 40 40"
+     "entendu": "8 x 5, 40."
     },
     {
      "ligne": 6,
-     "essais": 2,
+     "essais": 1,
      "juste": true,
-     "entendu": "8 × 6, 48"
+     "entendu": "8 x 6, 48"
     },
     {
      "ligne": 7,
@@ -151,13 +186,13 @@
      "ligne": 9,
      "essais": 1,
      "juste": true,
-     "entendu": "8x9, 72"
+     "entendu": "8 x 9, 72"
     },
     {
      "ligne": 10,
      "essais": 1,
      "juste": true,
-     "entendu": "8 × 10, 80"
+     "entendu": "8 x 10, 80"
     }
    ]
   }
