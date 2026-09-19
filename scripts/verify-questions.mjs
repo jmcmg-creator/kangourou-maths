@@ -277,6 +277,10 @@ async function main() {
 
   writeFileSync('verify-report.md', lines.join('\n') + '\n');
   console.log(`Rapport écrit : ${issues.length} à corriger, ${ok} OK, ${errors.length} erreurs, ${rateLimited.length} remises à plus tard`);
+  // Le rapport détaillé part dans un artefact séparé (pas toujours accessible,
+  // p. ex. depuis une session sans accès au stockage qui l'héberge) : on met
+  // aussi les premières erreurs dans le journal du job, qui lui reste toujours lisible.
+  for (const r of errors.slice(0, 5)) console.log(`  ❌ ${r.ex.id} : ${r.error}`);
 
   // Échec du job seulement si une VRAIE erreur de contenu est trouvée (la PR
   // ne peut pas être mergée). Un quota épuisé n'est pas un problème de
