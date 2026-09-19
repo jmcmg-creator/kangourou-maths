@@ -1,9 +1,13 @@
-name: Vérif factuelle des questions (Claude)
+name: Vérif factuelle des questions (Kimi K2, gratuit)
 
 # Agent IA qui relit chaque question + ses 4 choix + l'index de la bonne réponse
 # et vérifie que la réponse marquée est bien factuellement correcte.
-# Coût : ~1 ¢ par question avec Sonnet 4.5 (~7 € pour 720 questions). On limite
-# donc l'exécution aux PR qui touchent les exercices, plus un run hebdomadaire.
+# Modèle : Kimi K2 (Moonshot AI) via OpenRouter — gratuit (0 € par requête).
+# Compte gratuit OpenRouter : 20 requêtes/minute, 50/jour (1000/jour si un jour
+# 10 € de crédit ont été achetés, une fois pour toutes — voir scripts/verify-
+# questions.mjs). Le run hebdomadaire ne balaie donc qu'un lot tournant de la
+# banque de questions ; les pull requests, elles, vérifient toujours en entier
+# ce qu'elles touchent.
 
 on:
   pull_request:
@@ -12,11 +16,15 @@ on:
       - 'exercises_extra.js'
       - 'scripts/verify-questions.mjs'
   schedule:
-    - cron: '0 4 * * 1' # tous les lundis 4h UTC
+    - cron: '0 4 * * 1' # tous les lundis 4h UTC — un nouveau lot de la banque
   workflow_dispatch:
     inputs:
       limit:
-        description: 'Nombre max de questions à vérifier (vide = toutes)'
+        description: 'Nombre max de questions à vérifier (vide = toutes, ou le lot du jour)'
+        required: false
+        default: ''
+      offset:
+        description: 'Index de départ dans la banque (pour cibler un lot précis)'
         required: false
         default: ''
 
@@ -34,37 +42,40 @@ jobs:
         with:
           node-version: '20'
 
-      - name: Install
-        run: npm install @anthropic-ai/sdk@latest
+      # Rien à installer : le script appelle OpenRouter en fetch() natif
+      # (Node 20+), pas de SDK.
 
-      # Sans le secret ANTHROPIC_API_KEY, ce contrôle ne peut rien relire. Il
+      # Sans le secret OPENROUTER_API_KEY, ce contrôle ne peut rien relire. Il
       # échouait alors sur CHAQUE pull request : un rouge permanent, qui a
       # exactement la même couleur qu'un vrai problème et qu'on finit par ne
       # plus lire. C'est ce qui a déjà laissé semgrep éteint une semaine.
       # Il dit désormais clairement qu'il n'a rien vérifié, et laisse passer :
       # « personne n'a relu les questions » est une information, pas une panne.
-      # Pour l'allumer : Settings → Secrets and variables → Actions →
-      # New repository secret → nom ANTHROPIC_API_KEY.
+      # Pour l'allumer : créer une clé gratuite sur openrouter.ai, puis
+      # Settings → Secrets and variables → Actions → New repository secret
+      # → nom OPENROUTER_API_KEY.
       - name: Vérification
         env:
-          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
           LIMIT: ${{ github.event.inputs.limit }}
+          OFFSET: ${{ github.event.inputs.offset }}
           ONLY_CHANGED: ${{ github.event_name == 'pull_request' && 'true' || 'false' }}
         run: |
-          if [ -z "$ANTHROPIC_API_KEY" ]; then
+          if [ -z "$OPENROUTER_API_KEY" ]; then
             {
               echo "### 🤖 Vérif factuelle des questions — NON exécutée"
               echo
-              echo "Le secret \`ANTHROPIC_API_KEY\` n'est pas configuré sur ce dépôt."
+              echo "Le secret \`OPENROUTER_API_KEY\` n'est pas configuré sur ce dépôt."
               echo "**Aucune question n'a été relue par l'IA dans cette PR.**"
               echo
               echo "Les contrôles mécaniques (\`npm test\`) sont passés, mais ils ne"
               echo "vérifient pas qu'une réponse est factuellement juste."
               echo
-              echo "Pour l'activer : Settings → Secrets and variables → Actions →"
-              echo "New repository secret → nom \`ANTHROPIC_API_KEY\`."
+              echo "Pour l'activer (gratuit) : créer une clé sur openrouter.ai, puis"
+              echo "Settings → Secrets and variables → Actions → New repository"
+              echo "secret → nom \`OPENROUTER_API_KEY\`."
             } > verify-report.md
-            echo "::warning::ANTHROPIC_API_KEY absent — les questions n'ont pas été relues."
+            echo "::warning::OPENROUTER_API_KEY absent — les questions n'ont pas été relues."
             exit 0
           fi
           node scripts/verify-questions.mjs
