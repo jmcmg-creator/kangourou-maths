@@ -7,12 +7,9 @@
   "scripts": {
     "verify:questions": "node scripts/verify-questions.mjs",
     "verify:questions:sample": "LIMIT=20 node scripts/verify-questions.mjs",
-    "test": "node scripts/test-battle.mjs && node scripts/test-echappement.mjs && node scripts/test-versions.mjs && node scripts/test-drapeaux.mjs && node scripts/test-livraison.mjs && node scripts/test-sujets.mjs && node scripts/test-cartes.mjs && node scripts/test-parcours.mjs && node scripts/test-zoom.mjs && node scripts/test-answer-history.mjs && node scripts/test-sections.mjs && node scripts/test-memory-geometry.mjs",
+    "test": "node scripts/test-battle.mjs && node scripts/test-echappement.mjs && node scripts/test-versions.mjs && node scripts/test-drapeaux.mjs && node scripts/test-livraison.mjs && node scripts/test-sujets.mjs && node scripts/test-cartes.mjs && node scripts/test-parcours.mjs && node scripts/test-zoom.mjs && node scripts/test-answer-history.mjs && node scripts/test-sections.mjs && node scripts/test-memory-geometry.mjs && node scripts/test-verify-questions.mjs",
     "test:echappement": "node scripts/test-echappement.mjs",
     "audit:categories": "node scripts/audit-categories.mjs"
-  },
-  "devDependencies": {
-    "@anthropic-ai/sdk": "^0.40.0"
   },
   "engines": {
     "node": ">=20"

@@ -6,7 +6,7 @@
 
 | Agent | Fichier | Déclenchement | Coût |
 |---|---|---|---|
-| **Vérif questions Claude** | `verify-questions.yml` | PR sur exercises*.js + lundi 4h | ~1 ¢/question |
+| **Vérif questions Kimi K2** | `verify-questions.yml` | PR sur exercises*.js + lundi 4h | gratuit (OpenRouter) |
 | **Liens cassés (lychee)** | `check-links.yml` | Push main + PR + lundi 5h | gratuit |
 | **Secrets (gitleaks)** | `security.yml` job `secrets` | Push + PR + lundi 6h | gratuit |
 | **Semgrep OWASP** | `security.yml` job `semgrep` | Push + PR + lundi 6h | gratuit (CE) |
@@ -16,15 +16,22 @@
 
 ## Setup requis (1 fois)
 
-### 1. Secret `ANTHROPIC_API_KEY`
+### 1. Secret `OPENROUTER_API_KEY`
 
-Pour l'agent de vérif des questions :
+Pour l'agent de vérif des questions — modèle Kimi K2 (Moonshot AI), gratuit :
 
-1. Aller sur https://console.anthropic.com → API Keys → Create Key
+1. Aller sur https://openrouter.ai → créer un compte → Keys → Create Key
 2. Sur GitHub : Settings → Secrets and variables → Actions → New repository secret
-3. Name : `ANTHROPIC_API_KEY`, Value : la clé `sk-ant-…`
+3. Name : `OPENROUTER_API_KEY`, Value : la clé `sk-or-…`
 
 ⚠️ Si le secret manque, le job échoue proprement sans rien casser.
+
+Compte gratuit : 20 requêtes/minute, 50/jour. Un run hebdomadaire ne balaie donc
+qu'un lot tournant de la banque de questions (voir scripts/verify-questions.mjs) ;
+les pull requests, elles, vérifient toujours en entier ce qu'elles touchent.
+Pour balayer toute la banque en une seule fois chaque semaine, un achat unique
+de 10 € de crédit OpenRouter (jamais consommé, Kimi K2 reste à 0 €) fait
+passer le plafond gratuit à 1000 requêtes/jour, à vie.
 
 ### 2. Activer CodeQL
 

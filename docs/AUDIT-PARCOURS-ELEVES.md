@@ -124,7 +124,7 @@ Deux modes visibles : **Jouer à mon rythme** (sans chrono, adaptation existante
 ```sh
 npm test
 npm run audit:categories
-npm run verify:questions # nécessite ANTHROPIC_API_KEY
+npm run verify:questions # nécessite OPENROUTER_API_KEY (Kimi K2, gratuit — voir .github/AGENTS_CI.md)
 ```
 
 Complément finalisé le 13 septembre 2026 : mini-quiz des fiches, conservation du registre lors d’une sauvegarde provenant d’un ancien écran et reprise de la synchronisation au démarrage.
