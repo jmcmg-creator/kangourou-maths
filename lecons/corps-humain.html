@@ -33,6 +33,13 @@ body{background:#0a0815;color:#e8e0ff;font-family:'Trebuchet MS',sans-serif;min-
 .stat{background:rgba(255,255,255,.04);border-radius:10px;padding:10px 14px;text-align:center;min-width:110px;border:1px solid rgba(255,255,255,.05)}
 .stat b{display:block;font-size:20px;font-family:Georgia,serif}
 .stat span{font-size:11px;color:#7a5a6a}
+
+.bx-card{background:rgba(0,0,0,.35);border:1px solid rgba(255,255,255,.08);border-radius:18px;padding:14px;margin:18px 0}
+.bx-card canvas{width:100%;display:block;border-radius:12px;background:radial-gradient(ellipse at 50% 40%,#1b1033,#0a0815);touch-action:pan-y;cursor:grab}
+.bx-layers{display:flex;gap:8px;flex-wrap:wrap;justify-content:center;margin:12px 0 2px}
+.bx-layers button{background:transparent;border:2px solid rgba(255,255,255,.14);color:#e8e0ff;border-radius:22px;padding:8px 14px;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit;min-height:40px}
+.bx-layers button.on{background:#dc5078;border-color:#dc5078;color:#0a0815}
+.bx-help{font-size:13px;color:#a98fbf;text-align:center;margin-bottom:8px}
 </style>
 <style>/* iOS : le bouton Retour etait sous la barre d'etat/encoche -> intappable */
 .back-btn{top:calc(12px + env(safe-area-inset-top,0px))!important;left:calc(12px + env(safe-area-inset-left,0px))!important;z-index:9999!important;min-height:44px;min-width:44px;display:inline-flex;align-items:center}
@@ -47,6 +54,11 @@ body{background:#0a0815;color:#e8e0ff;font-family:'Trebuchet MS',sans-serif;min-
   <p>Ton corps est composé d'environ <b>37 000 milliards de cellules</b> qui travaillent ensemble 24h/24. Chaque seconde, des millions de réactions chimiques se produisent. Ton cœur bat, tes poumons respirent, ton cerveau pense — tout ça sans que tu aies besoin d'y réfléchir !</p>
 </div>
 
+<div class="bx-card">
+  <p class="bx-help">Glisse le doigt pour faire tourner le corps. Touche un organe pour le découvrir. Allume ou éteins les couches.</p>
+  <canvas id="bodyCanvas" height="520" aria-label="Corps humain en 3D"></canvas>
+  <div class="bx-layers" id="bxLayers"></div>
+</div>
 <div class="organ-list" id="organs"></div>
 <div class="detail-panel" id="detail"></div>
 </div>
@@ -71,7 +83,7 @@ desc:"Tu as plus de 640 muscles qui te permettent de bouger, sourire, mâcher, r
 let selOrgan=0;
 function render(){
   let h='';ORGANS.forEach((o,i)=>{
-    h+=`<div class="organ-btn ${selOrgan===i?'active':''}" style="--oc:${o.color}" onclick="selOrgan=${i};render()">
+    h+=`<div class="organ-btn ${selOrgan===i?'active':''}" style="--oc:${o.color}" onclick="selOrgan=${i};render();if(window.bodyFocus)bodyFocus(${i})">
       <div class="emoji">${o.emoji}</div>
       <div><div class="name" style="color:${selOrgan===i?o.color:'#e8e0ff'}">${o.name}</div><div class="hint">${o.role}</div></div>
     </div>`;
@@ -90,6 +102,101 @@ function render(){
   `;
 }
 render();
+
+/* ════════ CORPS EN 3D ════════
+   Petit moteur 3D maison (ellipsoïdes ombrés, perspective, tri en profondeur) : aucune bibliothèque,
+   tout marche hors connexion. Les index d'organe correspondent à la liste ORGANS ci-dessus. */
+(function(){
+const cv=document.getElementById('bodyCanvas');if(!cv)return;const cx=cv.getContext('2d');
+let W=320,H=520,DPR=1;
+function resize(){DPR=Math.min(window.devicePixelRatio||1,2);W=Math.max(260,cv.parentElement.clientWidth-28);H=Math.round(Math.min(620,Math.max(440,W*1.25)));cv.width=W*DPR;cv.height=H*DPR;cv.style.height=H+'px'}
+resize();window.addEventListener('resize',resize);
+const sprites={};
+function sprite(c){const k=c.join(',');if(sprites[k])return sprites[k];
+  const S=96,o=document.createElement('canvas');o.width=o.height=S;const g=o.getContext('2d');
+  const gr=g.createRadialGradient(S*.36,S*.32,S*.04,S*.5,S*.5,S*.5);
+  const l=v=>Math.min(255,v+85),d=v=>Math.round(v*.35);
+  gr.addColorStop(0,`rgb(${l(c[0])},${l(c[1])},${l(c[2])})`);gr.addColorStop(.55,`rgb(${c[0]},${c[1]},${c[2]})`);gr.addColorStop(1,`rgb(${d(c[0])},${d(c[1])},${d(c[2])})`);
+  g.fillStyle=gr;g.beginPath();g.arc(S/2,S/2,S/2-1,0,6.2832);g.fill();return sprites[k]=o}
+const ITEMS=[];
+function E(layer,organ,x,y,z,a,b,c,col,al,pulse){ITEMS.push({layer,organ,x,y,z,a,b,c,col,al:al==null?1:al,pulse:pulse||null})}
+function pair(f){f(1);f(-1)}
+// PEAU (organe 5)
+const SK=[224,168,132];
+E('peau',5,0,4.3,0,.82,.9,.95,SK,.22);E('peau',5,0,3.45,0,.36,.36,.45,SK,.22);E('peau',5,0,1.2,0,1.4,.82,2.15,SK,.22);E('peau',5,0,-1.1,0,1.25,.8,.85,SK,.22);
+pair(m=>{E('peau',5,m*1.95,2.1,0,.42,.42,1.15,SK,.22);E('peau',5,m*2.1,.45,0,.34,.34,1.1,SK,.22);E('peau',5,m*2.15,-.85,0,.3,.25,.4,SK,.22);
+ E('peau',5,m*.68,-2.7,0,.58,.58,1.6,SK,.22);E('peau',5,m*.68,-5.2,0,.42,.42,1.55,SK,.22);E('peau',5,m*.7,-7,.3,.36,.7,.22,SK,.22)});
+// MUSCLES (organe 6)
+const MU=[205,70,70];
+pair(m=>{E('muscles',6,m*.58,2.4,.5,.62,.3,.5,MU,.8);E('muscles',6,m*1.55,3,0,.42,.42,.42,MU,.8);E('muscles',6,m*1.95,2.2,0,.34,.34,.95,MU,.8);E('muscles',6,m*2.1,.5,0,.3,.3,.95,MU,.8);
+ E('muscles',6,m*.68,-2.7,.1,.5,.48,1.45,MU,.8);E('muscles',6,m*.68,-5.3,-.05,.34,.34,1.15,MU,.8);E('muscles',6,m*.3,.9,.62,.28,.25,1.05,MU,.8)});
+E('muscles',6,0,3.5,0,.28,.28,.4,MU,.8);
+// OS (organe 4)
+const BO=[238,228,196];
+E('os',4,0,4.38,0,.7,.8,.75,BO,1);E('os',4,0,3.75,.3,.3,.18,.18,BO,1);
+for(let k=0;k<14;k++)E('os',4,0,3.4-k*.3,-.38,.14,.14,.14,BO,1);
+for(let k=0;k<6;k++){const y=2.9-k*.38;for(let t=-75;t<=75;t+=25){const r=t*Math.PI/180;E('os',4,Math.sin(r)*(1.05-k*.05),y-Math.abs(t)*.002,Math.cos(r)*.55-.05,.09,.09,.09,BO,1)}}
+for(let k=0;k<5;k++)E('os',4,0,2.9-k*.38,.62,.1,.07,.18,BO,1);
+E('os',4,0,-.9,0,1.0,.4,.5,BO,1);
+pair(m=>{E('os',4,m*.7,3.1,.15,.55,.1,.1,BO,1);E('os',4,m*1.9,2.2,0,.14,.14,1.0,BO,1);E('os',4,m*2.1,.45,0,.11,.11,1.0,BO,1);E('os',4,m*.68,-2.7,0,.19,.19,1.5,BO,1);E('os',4,m*.68,-5.3,0,.15,.15,1.4,BO,1)});
+// ORGANES
+E('organes',null,-.5,1.05,.15,.6,.34,.32,[150,70,50],1);
+for(let i=0;i<9;i++){const a=i/9*6.28;E('organes',null,Math.cos(a)*.5,-.35+Math.sin(a)*.3,.15,.24,.22,.22,[235,160,140],1)}
+E('organes',3,.42,.62,.2,.46,.3,.42,[64,192,128],1,'est');
+pair(m=>E('organes',2,m*.78,2.15,0,.52,.38,.85,[112,176,255],.95,'poumon'));
+E('organes',1,.2,1.85,.28,.4,.32,.45,[255,80,112],1,'coeur');
+for(const [dx,dy,dz,r] of [[0,.1,0,.5],[-.28,.12,.05,.34],[.28,.12,.05,.34],[0,.28,-.05,.34],[-.2,-.1,.1,.28],[.2,-.1,.1,.28]])E('organes',0,dx,4.45+dy,dz,r,r*.9,r*.8,[200,150,255],1,'cerveau');
+const L={organes:true,os:false,muscles:false,peau:true};let focus=null;
+window.bodyFocus=function(i){focus=i;if(i===4)L.os=true;if(i===5)L.peau=true;if(i===6)L.muscles=true;if([0,1,2,3].includes(i))L.organes=true;layers()};
+let yaw=.5,userRot=false,t0=0,drag=null,moved=0,camY=-1,zoom=1;
+function layers(){document.getElementById('bxLayers').innerHTML=[['organes','🫀 Organes'],['os','🦴 Os'],['muscles','💪 Muscles'],['peau','🖐️ Peau']].map(([k,n])=>`<button class="${L[k]?'on':''}" onclick="bxToggle('${k}')">${n}</button>`).join('')}
+window.bxToggle=function(k){L[k]=!L[k];layers()};layers();
+cv.addEventListener('pointerdown',e=>{drag={x:e.clientX};moved=0;userRot=true;try{cv.setPointerCapture(e.pointerId)}catch(_){}});
+cv.addEventListener('pointermove',e=>{if(!drag)return;yaw+=(e.clientX-drag.x)*.012;moved+=Math.abs(e.clientX-drag.x);drag.x=e.clientX});
+cv.addEventListener('pointerup',e=>{const was=moved;drag=null;if(was<6)pick(e)});
+cv.addEventListener('pointercancel',()=>{drag=null});
+let drawn=[];
+function pick(e){const r=cv.getBoundingClientRect(),px=(e.clientX-r.left)*(W/r.width),py=(e.clientY-r.top)*(H/r.height);
+  for(let i=drawn.length-1;i>=0;i--){const d=drawn[i];if(d.it.organ!=null&&L[d.it.layer]&&((px-d.x)/d.rx)**2+((py-d.y)/d.ry)**2<=1){selOrgan=d.it.organ;render();bodyFocus(d.it.organ);return}}
+  focus=null}
+function scale(it,t){let k=1;
+  if(it.pulse==='coeur'){const ph=(t/1000*1.2)%1;k=1+.14*(Math.max(0,Math.sin(ph*Math.PI*2*2))**4)}
+  else if(it.pulse==='poumon')k=1+.09*Math.sin(t/1000*1.4);
+  else if(it.pulse==='est')k=1+.05*Math.sin(t/1000*2.2);
+  else if(it.pulse==='cerveau')k=1+.025*Math.sin(t/1000*3);
+  return k}
+function frame(t){
+  if(!userRot)yaw=.5+Math.sin(t/4000)*.6;
+  cx.setTransform(DPR,0,0,DPR,0,0);cx.clearRect(0,0,W,H);
+  let ty=-1,tz=1;
+  if(focus!=null&&[0,1,2,3].includes(focus)){const q=ITEMS.filter(i=>i.organ===focus);ty=q.reduce((a,i)=>a+i.y,0)/q.length;tz=2.3}
+  camY+=(ty-camY)*.08;zoom+=(tz-zoom)*.08;
+  const cyaw=Math.cos(yaw),syaw=Math.sin(yaw),f=H*.9*22/12.6*zoom,cy0=camY;
+  const list=[];
+  for(const it of ITEMS){if(!L[it.layer])continue;
+    const k=scale(it,t);
+    const X=it.x*cyaw-it.z*syaw,Z=it.x*syaw+it.z*cyaw;
+    const s=f/(22+Z);
+    list.push({it,k,x:W/2+X*s,y:H*.5-(it.y-cy0)*s,z:Z,s})}
+  list.sort((a,b)=>b.z-a.z);
+  drawn=[];
+  for(const d of list){const it=d.it;
+    let al=it.al*(focus==null?1:(it.organ===focus?1:(it.layer==='peau'?.5:.22)));
+    // les couches du dessus passent en transparence quand on regarde en dessous
+    if(it.layer==='peau'&&focus==null&&(L.organes||L.os||L.muscles))al=.2;
+    if(it.layer==='muscles'&&focus==null&&(L.organes||L.os))al=.45;
+    const rx=Math.sqrt((it.a*cyaw)**2+(it.b*syaw)**2)*d.s*d.k,ry=it.c*d.s*d.k;
+    cx.globalAlpha=Math.max(0,Math.min(1,al));
+    cx.drawImage(sprite(it.col),d.x-rx,d.y-ry,rx*2,ry*2);
+    if(focus!=null&&it.organ===focus&&al>.9){cx.globalAlpha=.25;cx.strokeStyle=ORGANS[focus].color;cx.lineWidth=2;cx.beginPath();cx.ellipse(d.x,d.y,rx+3,ry+3,0,0,6.2832);cx.stroke()}
+    drawn.push({it,x:d.x,y:d.y,rx,ry});
+  }
+  cx.globalAlpha=1;
+  if(focus!=null){cx.fillStyle=ORGANS[focus].color;cx.font='bold 15px Trebuchet MS';cx.textAlign='center';cx.fillText(ORGANS[focus].emoji+' '+ORGANS[focus].name,W/2,H-14);cx.textAlign='start'}
+  if(L.organes){cx.fillStyle='#ff9fb2';cx.font='12px Trebuchet MS';cx.textAlign='right';cx.fillText('❤️ 72 battements/min',W-12,22);cx.fillText('🫁 12 respirations/min',W-12,40);cx.textAlign='start'}
+  requestAnimationFrame(frame)}
+requestAnimationFrame(frame);
+})();
 </script>
 <script src="../zoom.js?v=2"></script>
 <script src="section-retour.js?v=2"></script>
