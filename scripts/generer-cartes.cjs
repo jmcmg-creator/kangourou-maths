@@ -72,9 +72,13 @@ for(const [cle,c] of Object.entries(CONT)){
     // quadratique — CodeQL la classe en gravité haute (déni de service).
     const dd=d;
     const centre=path.centroid(x.f);const b=path.bounds(x.f);
-    pays[x.a2]={name:article(x.A2,x.fr),nom:x.fr,cap:CAP_FR[x.cap]||x.cap,path:dd,cx:+centre[0].toFixed(1),cy:+centre[1].toFixed(1),w:+(b[1][0]-b[0][0]).toFixed(1),h:+(b[1][1]-b[0][1]).toFixed(1),km2:Math.round(x.km2)};
+    pays[x.a2]={name:article(x.A2,x.fr),nom:x.fr,cap:x.a2==='bo'?'La Paz':(CAP_FR[x.cap]||x.cap),path:dd,cx:+centre[0].toFixed(1),cy:+centre[1].toFixed(1),w:+(b[1][0]-b[0][0]).toFixed(1),h:+(b[1][1]-b[0][1]).toFixed(1),km2:Math.round(x.km2)};
   }
-  out[cle]={nom:c.nom,pays};
+  // Cadrage serré : la boîte englobante de tous les pays (marge 2), pour que la carte remplisse son cadre.
+  let x0=1e9,y0=1e9,x1=-1e9,y1=-1e9;
+  for(const v of Object.values(pays)){const m=v.path.match(/-?\d+\.?\d*/g).map(Number);for(let i=0;i+1<m.length;i+=2){x0=Math.min(x0,m[i]);x1=Math.max(x1,m[i]);y0=Math.min(y0,m[i+1]);y1=Math.max(y1,m[i+1])}}
+  const vb=[Math.floor(x0-2),Math.floor(y0-2),Math.ceil(x1-x0+4),Math.ceil(y1-y0+4)];
+  out[cle]={nom:c.nom,vb,pays};
   console.log(cle.padEnd(9),Object.keys(pays).length,'pays ·',Math.round(JSON.stringify(pays).length/1024),'Ko · ex:',Object.entries(pays).slice(0,5).map(([k,v])=>k+' '+v.name+'/'+v.cap).join(' · '));
 }
 

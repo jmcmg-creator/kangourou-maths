@@ -326,7 +326,7 @@ const STORAGE_ACTIVE="royaume_active_v1";
    distinguer « la fonctionnalité est cassée » de « le téléphone n'a pas
    encore la mise à jour ».
    À bumper avec CACHE_VERSION (sw.js) et le ?v= (index.html). */
-const APP_VERSION='v53';
+const APP_VERSION='v54';
 
 function loadProfilesDict(){
   try{const d=localStorage.getItem(STORAGE_PROFILES); if(d) return JSON.parse(d)||{};}catch(e){}
@@ -3026,8 +3026,12 @@ function renderCountryMapArea(ex){
       +'" r="'+TINY_HIT_R+'" data-id="'+cid+'" onclick="selectCountryAnswer(this.dataset.id)"/>').join('');
   /* Europe : la carte dessinée à la main déborde du cadre 0-100 (Grèce, Turquie, Russie, Scandinavie
      coupées sur mobile). On élargit la fenêtre pour tout montrer ; les autres continents sont déjà centrés. */
-  const vb=SET.id==='europe'?'-8 -14 132 132':'0 0 100 100';
-  return '<div class="map-wrap"><svg viewBox="'+vb+'">'
+  let vb=SET.id==='europe'?'-8 -14 132 132':'0 0 100 100',wrapStyle='';
+  /* Continent plus large que haut (Asie) : cadrage serré sur les pays et cadre au même format,
+     sans bande vide en haut et en bas ; plus large sur ordinateur. */
+  const box=SET.id!=='europe'&&typeof MAP_SETS_MONDE!=='undefined'&&MAP_SETS_MONDE[SET.id]&&MAP_SETS_MONDE[SET.id].vb;
+  if(box&&box[2]/box[3]>1.2){vb=box.join(' ');wrapStyle=' style="aspect-ratio:'+box[2]+'/'+box[3]+';max-width:680px"'}
+  return '<div class="map-wrap"'+wrapStyle+'><svg viewBox="'+vb+'">'
     +(SET.land?'<path class="map-land" style="pointer-events:none" d="'+SET.land+'"/>':'')
     +shapes+(done?'':tiny)+point+'</svg>'
     +'<p class="sub" style="position:absolute;bottom:6px;left:0;right:0;text-align:center;font-size:.7rem;pointer-events:none">'+(ex.cap?'Touche le pays de cette capitale !':'Touche le bon pays !')+'</p>'
