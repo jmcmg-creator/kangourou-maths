@@ -46,11 +46,12 @@ function article(a2,nom){
   const art=e||(/^[AEIOUÉÈÊÎÔÛH]/i.test(nom)?'l\'':/e$/.test(nom)?'la':'le');
   return art==='l\''?'l\''+nom:art+' '+nom;
 }
-const EXCLURE=['RU','GL','EH','PS','CY','PR','TW','GQ','SS'];
+const EXCLURE=['RU','GL','EH','PS','CY','PR','TW'];
+const MINA=+process.env.MINA||3000,MINF=+process.env.MINF||3000,MINM=+process.env.MINM||3000;
 const CONT={
-  asie:{nom:'Asie',regions:['Asia'],exclure:EXCLURE,minKm2:60000,proj:()=>d3.geoConicEqualArea().parallels([15,55]).rotate([-90,0])},
-  afrique:{nom:'Afrique',regions:['Africa'],exclure:EXCLURE,minKm2:25000,proj:()=>d3.geoConicEqualArea().parallels([-20,20]).rotate([-18,0])},
-  amerique:{nom:'Amérique',regions:['Americas'],exclure:EXCLURE,minKm2:40000,proj:()=>d3.geoConicEqualArea().parallels([-20,50]).rotate([85,0])},
+  asie:{nom:'Asie',regions:['Asia'],exclure:EXCLURE,minKm2:MINA,proj:()=>d3.geoConicEqualArea().parallels([15,55]).rotate([-90,0])},
+  afrique:{nom:'Afrique',regions:['Africa'],exclure:EXCLURE,minKm2:MINF,proj:()=>d3.geoConicEqualArea().parallels([-20,20]).rotate([-18,0])},
+  amerique:{nom:'Amérique',regions:['Americas'],exclure:EXCLURE,minKm2:MINM,proj:()=>d3.geoConicEqualArea().parallels([-20,50]).rotate([85,0])},
 };
 const out={};
 for(const [cle,c] of Object.entries(CONT)){
