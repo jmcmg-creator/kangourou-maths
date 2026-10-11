@@ -3024,7 +3024,10 @@ function renderCountryMapArea(ex){
     .sort((a,b)=>(MAP_COUNTRIES[b].w*MAP_COUNTRIES[b].h)-(MAP_COUNTRIES[a].w*MAP_COUNTRIES[a].h))
     .map(cid=>'<circle class="map-hit" cx="'+MAP_COUNTRIES[cid].cx+'" cy="'+MAP_COUNTRIES[cid].cy
       +'" r="'+TINY_HIT_R+'" data-id="'+cid+'" onclick="selectCountryAnswer(this.dataset.id)"/>').join('');
-  return '<div class="map-wrap"><svg viewBox="0 0 100 100">'
+  /* Europe : la carte dessinée à la main déborde du cadre 0-100 (Grèce, Turquie, Russie, Scandinavie
+     coupées sur mobile). On élargit la fenêtre pour tout montrer ; les autres continents sont déjà centrés. */
+  const vb=SET.id==='europe'?'-8 -14 132 132':'0 0 100 100';
+  return '<div class="map-wrap"><svg viewBox="'+vb+'">'
     +(SET.land?'<path class="map-land" style="pointer-events:none" d="'+SET.land+'"/>':'')
     +shapes+(done?'':tiny)+point+'</svg>'
     +'<p class="sub" style="position:absolute;bottom:6px;left:0;right:0;text-align:center;font-size:.7rem;pointer-events:none">'+(ex.cap?'Touche le pays de cette capitale !':'Touche le bon pays !')+'</p>'
