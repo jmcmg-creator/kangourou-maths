@@ -326,7 +326,7 @@ const STORAGE_ACTIVE="royaume_active_v1";
    distinguer « la fonctionnalité est cassée » de « le téléphone n'a pas
    encore la mise à jour ».
    À bumper avec CACHE_VERSION (sw.js) et le ?v= (index.html). */
-const APP_VERSION='v54';
+const APP_VERSION='v57';
 
 function loadProfilesDict(){
   try{const d=localStorage.getItem(STORAGE_PROFILES); if(d) return JSON.parse(d)||{};}catch(e){}
@@ -1377,7 +1377,7 @@ function renderHome(){
       if(first)app.insertBefore(d.firstElementChild,first);
     }
   },100);   // bannière "X te défie !" si un ami a lancé un défi
-  checkFinishedBattles(); // bannière "🏁 Léa a fini !" si une battle attendue est terminée
+  flushPendingScores().then(()=>checkFinishedBattles()).catch(()=>{}); // bannière "🏁 Léa a fini !" si une battle attendue est terminée
   // Total des XP de tous les royaumes
   const totalXp=Object.values(profile.royaumes||{}).reduce((s,r)=>s+(r.xp||0),0)+(profile.xp||0);
   const totalCristaux=Object.values(profile.royaumes||{}).reduce((s,r)=>s+(r.cristaux||0),0)+(profile.cristaux||0);
@@ -4684,13 +4684,22 @@ function normalizeBattleCode(raw){
   if(s.length>=6){
     const m=s.match(/^([A-Z]+)(\d{2})$/);
     if(m) return m[1]+'-'+m[2];
+    // Nouveau format MOT-NN-XXXX (4 caractères tirés au hasard en plus).
+    const n=s.match(/^([A-Z]+)(\d{2})([A-HJKMNP-Z2-9]{4})$/);
+    if(n) return n[1]+'-'+n[2]+'-'+n[3];
   }
   return s;
 }
+// Code MOT-NN-XXXX : 20 mots x 100 x 31^4 (environ 1,8 milliard) au lieu de 2 000.
+// Plus de collisions ni de code devinable. Les anciens codes MOT-NN restent acceptés.
+// Alphabet sans 0, 1, I, L, O pour éviter les confusions à l'oral et à l'écrit.
 function randomBattleCode(){
-  const w=BATTLE_WORDS[Math.floor(Math.random()*BATTLE_WORDS.length)];
-  const n=String(Math.floor(Math.random()*100)).padStart(2,'0');
-  return w+'-'+n;
+  const A='ABCDEFGHJKMNPQRSTUVWXYZ23456789';
+  const r=new Uint32Array(6);crypto.getRandomValues(r);
+  const w=BATTLE_WORDS[r[0]%BATTLE_WORDS.length];
+  const n=String(r[1]%100).padStart(2,'0');
+  let x='';for(let i=2;i<6;i++)x+=A[r[i]%A.length];
+  return w+'-'+n+'-'+x;
 }
 async function battleAid(code){
   const buf=await crypto.subtle.digest('SHA-256',new TextEncoder().encode('battle:'+normalizeBattleCode(code)));
@@ -4701,7 +4710,37 @@ async function fetchBattle(code){
 }
 async function pushBattle(battle){
   const aid=await battleAid(battle.code);
-  await fetch(API_BASE+'/profile/'+aid,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(battle)});
+  // Trois essais, et une vraie erreur si le serveur refuse (avant, une réponse en échec passait pour un succès).
+  let last;
+  for(let i=0;i<3;i++){
+    try{
+      const r=await fetch(API_BASE+'/profile/'+aid,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(battle)});
+      if(r.ok) return;
+      last=new Error('HTTP '+r.status);
+    }catch(e){last=e}
+    await new Promise(res=>setTimeout(res,600*(i+1)));
+  }
+  throw last;
+}
+// Score non envoyé (réseau coupé) : on le garde sur l'appareil et on réessaie à l'ouverture de l'accueil.
+async function flushPendingScores(){
+  const q=(profile.pendingScores||[]).slice(0,10);
+  if(!q.length) return 0;
+  let sent=0;
+  for(const p of q){
+    try{
+      const battle=await fetchBattle(p.code);
+      if(battle&&battle.battle){
+        battle.players=battle.players||{};
+        battle.players[p.player.name]=p.player;
+        await pushBattle(battle);
+      }
+      profile.pendingScores=(profile.pendingScores||[]).filter(x=>!(x.code===p.code&&x.player.name===p.player.name));
+      sent++;
+    }catch(e){break}
+  }
+  if(sent){saveProfile();toast('\u2705 '+sent+' score'+(sent>1?'s':'')+' de battle envoyé'+(sent>1?'s':''))}
+  return sent;
 }
 /* ════════ ANALYTICS PRODUIT (local, sans SDK tiers) ════════
    Aucune donnée personnelle n'est collectée : juste des compteurs
@@ -5148,13 +5187,21 @@ async function submitBattleResult(code,gameData){
     const battle=await fetchBattle(code);
     if(battle&&battle.battle){
       battle.players=battle.players||{};
-      battle.players[playerName()]={
+      const me0={
         name:playerName(),
         answers:state.results.map((r,i)=>({i,choice:r.choice,ok:!!r.correct})),
         score:gameData.score,total:gameData.total,maxStreak:gameData.maxStreak,
         duration:gameData.duration,finishedAt:new Date().toISOString()
       };
-      await pushBattle(battle);
+      battle.players[playerName()]=me0;
+      try{await pushBattle(battle)}
+      catch(e){
+        // Réseau coupé : on garde le score et on réessaiera tout seul.
+        if(!profile.pendingScores)profile.pendingScores=[];
+        profile.pendingScores.push({code,player:me0});
+        saveProfile();
+        alert('\ud83c\udf10 Ton score est gardé sur cet appareil. Il sera envoyé tout seul dès que la connexion revient (ouvre l\'accueil).');
+      }
       // Marque "j'ai jou\u00e9" dans l'historique local : c'est ce qui permet \u00e0
       // checkFinishedBattles de surveiller cette battle depuis l'accueil.
       const h=(profile.battleHistory||[]).find(x=>x.code===code);
