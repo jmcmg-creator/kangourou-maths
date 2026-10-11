@@ -20,10 +20,12 @@
  *   npm install world-atlas@2 topojson-client d3-geo i18n-iso-countries world-countries
  *   NODE_PATH=/tmp/cartes/node_modules node scripts/generer-cartes.cjs
  */
-const wa=require('world-atlas/countries-110m.json');const topo=require('topojson-client');const d3=require('d3-geo');
+const wa=require('world-atlas/countries-'+(process.env.ATLAS||'110m')+'.json');const topo=require('topojson-client');const d3=require('d3-geo');
 const i18n=require('i18n-iso-countries');i18n.registerLocale(require('i18n-iso-countries/langs/fr.json'));
 const wc=require('world-countries');const byN3={};wc.forEach(c=>byN3[c.ccn3]=c);
-const fc=topo.feature(wa,wa.objects.countries);
+const simp=require('topojson-simplify');
+const wa2=process.env.SIMP?simp.simplify(simp.presimplify(wa),+process.env.SIMP):wa;
+const fc=topo.feature(wa2,wa2.objects.countries);
 function sansParentheses(t){
   let out='',i=0;
   while(i<t.length){
@@ -57,11 +59,11 @@ const out={};
 for(const [cle,c] of Object.entries(CONT)){
   const feats=[];
   for(const f of fc.features){const n3=String(f.id).padStart(3,'0');const w=byN3[n3];if(!w||!c.regions.includes(w.region))continue;
-    if(c.exclure.includes(w.cca2))continue;const km2=d3.geoArea(f)*6371*6371;if(km2<c.minKm2)continue;
+    if(c.exclure.includes(w.cca2)||(process.env.ATLAS==='50m'&&!w.independent))continue;const km2=d3.geoArea(f)*6371*6371;if(km2<c.minKm2)continue;
     feats.push({f,a2:w.cca2.toLowerCase(),A2:w.cca2,fr:sansParentheses(NOM_FR[w.cca2]||i18n.getName(w.cca2,'fr')||w.name.common),cap:(w.capital||[])[0]||'',km2});}
   const coll={type:'FeatureCollection',features:feats.map(x=>x.f)};
   const proj=c.proj().fitExtent([[3,3],[97,97]],coll);
-  const path=d3.geoPath(proj).digits(2);
+  const path=d3.geoPath(proj).digits(+process.env.DIG||2);
   const pays={};
   for(const x of feats){
     const d=path(x.f);if(!d)continue;
