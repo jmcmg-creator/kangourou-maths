@@ -35,7 +35,7 @@ dire('« Où est le Kenya ? » (singulier)', ctx.ouEst('le Kenya') === 'Où est 
 
 console.log('\n── Les questions');
 const parNiveau = (lv) => ctx.EX.filter(e => e.lv === lv);
-for (const [lv, attendu] of [['geo-carte-asie', 43 * 2], ['geo-carte-afrique', 49 * 2], ['geo-carte-amerique', 29 * 2]]) {
+for (const [lv, attendu] of [['geo-carte-asie', 45 * 2], ['geo-carte-afrique', 53 * 2], ['geo-carte-amerique', 28 * 2]]) {
   const l = parNiveau(lv); const jouables = l.filter(ctx.isPlayableEx).length;
   dire(`${lv} : ${l.length} questions (pays + capitales), toutes jouables`, l.length === attendu && jouables === l.length, `${l.length}/${attendu}, jouables ${jouables}`);
 }

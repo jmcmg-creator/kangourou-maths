@@ -36,7 +36,24 @@ body{background:#0a0815;color:#e8e0ff;font-family:'Trebuchet MS',sans-serif;min-
 </style>
 <style>/* iOS : le bouton Retour etait sous la barre d'etat/encoche -> intappable */
 .back-btn{top:calc(12px + env(safe-area-inset-top,0px))!important;left:calc(12px + env(safe-area-inset-left,0px))!important;z-index:9999!important;min-height:44px;min-width:44px;display:inline-flex;align-items:center}
-</style></head>
+</style>
+<style>
+.atlas{background:rgba(15,12,30,.9);border:1px solid rgba(255,255,255,.08);border-radius:16px;padding:12px;margin:16px 0}
+.atlas canvas{width:100%;height:min(66vh,560px);min-height:360px;display:block;border-radius:12px;background:#0d1226;touch-action:none;cursor:grab}
+.at-chips{display:flex;flex-wrap:wrap;gap:6px;margin:10px 0}
+.at-chip{background:rgba(255,255,255,.05);border:2px solid rgba(255,255,255,.12);color:#cfc8ee;border-radius:20px;padding:7px 12px;font-size:13px;font-weight:700;cursor:pointer;min-height:38px}
+.at-chip.on{border-color:var(--c);color:#fff;background:rgba(255,255,255,.1)}
+.at-chip small{opacity:.6;font-weight:400}
+.at-row{display:flex;align-items:center;gap:10px;font-size:13px;color:#b8b0d8;margin:6px 0}
+.at-row input{flex:1;accent-color:#3fe0c0}
+.at-info{min-height:64px;background:rgba(255,255,255,.04);border-radius:10px;padding:10px 12px;font-size:14px;line-height:1.5}
+.at-en{font-size:12px;color:#9a92bd}
+.at-hint{color:#9a92bd;font-size:13px}
+.at-msg{display:none;background:rgba(63,224,192,.12);border:1px solid #3fe0c0;border-radius:10px;padding:8px 12px;font-size:13px;margin:8px 0}
+.at-credit{font-size:11px;color:#7a7298;margin-top:8px;line-height:1.5}
+.at-credit a{color:#9a92bd}
+</style>
+</head>
 <body>
 <a class="back-btn" href="../index.html#lecons">← Retour</a>
 <div class="header"><h1>🫀 Le Corps Humain</h1><p>Explore la machine la plus incroyable du monde</p></div>
@@ -46,6 +63,16 @@ body{background:#0a0815;color:#e8e0ff;font-family:'Trebuchet MS',sans-serif;min-
   <h2>🧬 Une machine extraordinaire</h2>
   <p>Ton corps est composé d'environ <b>37 000 milliards de cellules</b> qui travaillent ensemble 24h/24. Chaque seconde, des millions de réactions chimiques se produisent. Ton cœur bat, tes poumons respirent, ton cerveau pense — tout ça sans que tu aies besoin d'y réfléchir !</p>
 </div>
+
+<div class="atlas" id="atlas">
+  <canvas aria-label="Corps humain en 3D"></canvas>
+  <div class="at-msg"></div>
+  <div class="at-chips"></div>
+  <div class="at-row"><span>Assemblé</span><input class="at-expl" type="range" min="0" max="100" value="0" aria-label="Éclater le corps"><span>Éclaté</span></div>
+  <div class="at-info"></div>
+  <div class="at-credit">Modèle 3D : BodyParts3D 4.0, © The Database Center for Life Science, licence <a href="https://creativecommons.org/licenses/by/4.0/" target="_blank" rel="noopener">CC BY 4.0</a> (<a href="https://dbarchive.biosciencedbc.jp/en/bodyparts3d/lic.html" target="_blank" rel="noopener">source</a>). Données adaptées : simplifiées et regroupées par système, adulte homme. Visionneuse inspirée du projet open source Human Atlas (licence MIT) et construite avec three.js (licence MIT). Outil éducatif, pas un outil médical.</div>
+</div>
+<script type="module">import {initAtlas} from './atlas-3d.js?v=1';initAtlas(document.getElementById('atlas'));</script>
 
 <div class="organ-list" id="organs"></div>
 <div class="detail-panel" id="detail"></div>
@@ -71,7 +98,7 @@ desc:"Tu as plus de 640 muscles qui te permettent de bouger, sourire, mâcher, r
 let selOrgan=0;
 function render(){
   let h='';ORGANS.forEach((o,i)=>{
-    h+=`<div class="organ-btn ${selOrgan===i?'active':''}" style="--oc:${o.color}" onclick="selOrgan=${i};render()">
+    h+=`<div class="organ-btn ${selOrgan===i?'active':''}" style="--oc:${o.color}" onclick="selOrgan=${i};render();if(window.atlasFocus)atlasFocus(${i})">
       <div class="emoji">${o.emoji}</div>
       <div><div class="name" style="color:${selOrgan===i?o.color:'#e8e0ff'}">${o.name}</div><div class="hint">${o.role}</div></div>
     </div>`;
