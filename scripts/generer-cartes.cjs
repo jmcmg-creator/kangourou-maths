@@ -20,10 +20,12 @@
  *   npm install world-atlas@2 topojson-client d3-geo i18n-iso-countries world-countries
  *   NODE_PATH=/tmp/cartes/node_modules node scripts/generer-cartes.cjs
  */
-const wa=require('world-atlas/countries-110m.json');const topo=require('topojson-client');const d3=require('d3-geo');
+const wa=require('world-atlas/countries-'+(process.env.ATLAS||'50m')+'.json');const topo=require('topojson-client');const d3=require('d3-geo');
 const i18n=require('i18n-iso-countries');i18n.registerLocale(require('i18n-iso-countries/langs/fr.json'));
 const wc=require('world-countries');const byN3={};wc.forEach(c=>byN3[c.ccn3]=c);
-const fc=topo.feature(wa,wa.objects.countries);
+const simp=require('topojson-simplify');
+const wa2=simp.simplify(simp.presimplify(wa),+(process.env.SIMP||0.005));
+const fc=topo.feature(wa2,wa2.objects.countries);
 function sansParentheses(t){
   let out='',i=0;
   while(i<t.length){
@@ -47,7 +49,7 @@ function article(a2,nom){
   return art==='l\''?'l\''+nom:art+' '+nom;
 }
 const EXCLURE=['RU','GL','EH','PS','CY','PR','TW'];
-const MINA=+process.env.MINA||3000,MINF=+process.env.MINF||3000,MINM=+process.env.MINM||3000;
+const MINA=+process.env.MINA||200,MINF=+process.env.MINF||200,MINM=+process.env.MINM||1500;
 const CONT={
   asie:{nom:'Asie',regions:['Asia'],exclure:EXCLURE,minKm2:MINA,proj:()=>d3.geoConicEqualArea().parallels([15,55]).rotate([-90,0])},
   afrique:{nom:'Afrique',regions:['Africa'],exclure:EXCLURE,minKm2:MINF,proj:()=>d3.geoConicEqualArea().parallels([-20,20]).rotate([-18,0])},
@@ -57,11 +59,11 @@ const out={};
 for(const [cle,c] of Object.entries(CONT)){
   const feats=[];
   for(const f of fc.features){const n3=String(f.id).padStart(3,'0');const w=byN3[n3];if(!w||!c.regions.includes(w.region))continue;
-    if(c.exclure.includes(w.cca2))continue;const km2=d3.geoArea(f)*6371*6371;if(km2<c.minKm2)continue;
+    if(c.exclure.includes(w.cca2)||(!w.independent))continue;const km2=d3.geoArea(f)*6371*6371;if(km2<c.minKm2)continue;
     feats.push({f,a2:w.cca2.toLowerCase(),A2:w.cca2,fr:sansParentheses(NOM_FR[w.cca2]||i18n.getName(w.cca2,'fr')||w.name.common),cap:(w.capital||[])[0]||'',km2});}
   const coll={type:'FeatureCollection',features:feats.map(x=>x.f)};
   const proj=c.proj().fitExtent([[3,3],[97,97]],coll);
-  const path=d3.geoPath(proj).digits(2);
+  const path=d3.geoPath(proj).digits(+process.env.DIG||1);
   const pays={};
   for(const x of feats){
     const d=path(x.f);if(!d)continue;
@@ -78,7 +80,21 @@ for(const [cle,c] of Object.entries(CONT)){
   let x0=1e9,y0=1e9,x1=-1e9,y1=-1e9;
   for(const v of Object.values(pays)){const m=v.path.match(/-?\d+\.?\d*/g).map(Number);for(let i=0;i+1<m.length;i+=2){x0=Math.min(x0,m[i]);x1=Math.max(x1,m[i]);y0=Math.min(y0,m[i+1]);y1=Math.max(y1,m[i+1])}}
   const vb=[Math.floor(x0-2),Math.floor(y0-2),Math.ceil(x1-x0+4),Math.ceil(y1-y0+4)];
-  out[cle]={nom:c.nom,vb,pays};
+  // Terres voisines (Égypte/Sinaï, Turquie côté Europe, Russie, Afrique du Nord...) en fond estompé,
+  // non touchables : le contour de l'Arabie ou de l'Afrique ne paraît plus coupé net.
+  let land='';
+  if(cle!=='amerique'){
+    const utilises=new Set(feats.map(x=>x.f));
+    const pc=c.proj().fitExtent([[3,3],[97,97]],coll).clipExtent([[vb[0]-1,vb[1]-1],[vb[0]+vb[2]+1,vb[1]+vb[3]+1]]);
+    const pl=d3.geoPath(pc).digits(1);
+    for(const f of fc.features){
+      if(utilises.has(f)||f.id==='010')continue;
+      const b=pl.bounds(f);if(!isFinite(b[0][0]))continue;
+      if(b[1][0]<vb[0]-5||b[0][0]>vb[0]+vb[2]+5||b[1][1]<vb[1]-5||b[0][1]>vb[1]+vb[3]+5)continue;
+      const d=pl(f);if(d)land+=d;
+    }
+  }
+  out[cle]={nom:c.nom,vb,pays,land};
   console.log(cle.padEnd(9),Object.keys(pays).length,'pays ·',Math.round(JSON.stringify(pays).length/1024),'Ko · ex:',Object.entries(pays).slice(0,5).map(([k,v])=>k+' '+v.name+'/'+v.cap).join(' · '));
 }
 
