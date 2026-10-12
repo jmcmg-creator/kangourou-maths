@@ -2981,7 +2981,7 @@ function renderMapArea(ex){
    { name (avec article), path, cx, cy, w, h } — et cap pour la capitale. */
 function mapSetOf(ex){
   const m=ex&&ex.map;
-  if(m&&m!=='europe'&&typeof MAP_SETS_MONDE!=='undefined'&&MAP_SETS_MONDE[m]) return {id:m,pays:MAP_SETS_MONDE[m].pays,land:null};
+  if(m&&m!=='europe'&&typeof MAP_SETS_MONDE!=='undefined'&&MAP_SETS_MONDE[m]) return {id:m,pays:MAP_SETS_MONDE[m].pays,land:MAP_SETS_MONDE[m].land||null};
   return {id:'europe',pays:MAP_COUNTRIES,land:MAP_SVG_PATHS.europe};
 }
 // « Où est la France ? » mais « Où sont les Pays-Bas ? ».
@@ -3034,8 +3034,8 @@ function renderCountryMapArea(ex){
   return '<div class="map-wrap"'+wrapStyle+'><svg viewBox="'+vb+'">'
     +(SET.land?'<path class="map-land" style="pointer-events:none" d="'+SET.land+'"/>':'')
     +shapes+(done?'':tiny)+point+'</svg>'
-    +'<p class="sub" style="position:absolute;bottom:6px;left:0;right:0;text-align:center;font-size:.7rem;pointer-events:none">'+(ex.cap?'Touche le pays de cette capitale !':'Touche le bon pays !')+'</p>'
-  +'</div>';
+  +'</div>'
+  +'<p class="sub" style="text-align:center;font-size:.75rem;margin:6px 0 0">'+(ex.cap?'Touche le pays de cette capitale !':'Touche le bon pays !')+'</p>';
 }
 function selectCountryAnswer(id){
   if(state.selected!==null||state.gameOver) return;
