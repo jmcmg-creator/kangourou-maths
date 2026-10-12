@@ -326,7 +326,7 @@ const STORAGE_ACTIVE="royaume_active_v1";
    distinguer « la fonctionnalité est cassée » de « le téléphone n'a pas
    encore la mise à jour ».
    À bumper avec CACHE_VERSION (sw.js) et le ?v= (index.html). */
-const APP_VERSION='v57';
+const APP_VERSION='v56';
 
 function loadProfilesDict(){
   try{const d=localStorage.getItem(STORAGE_PROFILES); if(d) return JSON.parse(d)||{};}catch(e){}
@@ -2981,7 +2981,7 @@ function renderMapArea(ex){
    { name (avec article), path, cx, cy, w, h } — et cap pour la capitale. */
 function mapSetOf(ex){
   const m=ex&&ex.map;
-  if(m&&m!=='europe'&&typeof MAP_SETS_MONDE!=='undefined'&&MAP_SETS_MONDE[m]) return {id:m,pays:MAP_SETS_MONDE[m].pays,land:null};
+  if(m&&m!=='europe'&&typeof MAP_SETS_MONDE!=='undefined'&&MAP_SETS_MONDE[m]) return {id:m,pays:MAP_SETS_MONDE[m].pays,land:MAP_SETS_MONDE[m].land||null};
   return {id:'europe',pays:MAP_COUNTRIES,land:MAP_SVG_PATHS.europe};
 }
 // « Où est la France ? » mais « Où sont les Pays-Bas ? ».
@@ -3034,8 +3034,8 @@ function renderCountryMapArea(ex){
   return '<div class="map-wrap"'+wrapStyle+'><svg viewBox="'+vb+'">'
     +(SET.land?'<path class="map-land" style="pointer-events:none" d="'+SET.land+'"/>':'')
     +shapes+(done?'':tiny)+point+'</svg>'
-    +'<p class="sub" style="position:absolute;bottom:6px;left:0;right:0;text-align:center;font-size:.7rem;pointer-events:none">'+(ex.cap?'Touche le pays de cette capitale !':'Touche le bon pays !')+'</p>'
-  +'</div>';
+  +'</div>'
+  +'<p class="sub" style="text-align:center;font-size:.75rem;margin:6px 0 0">'+(ex.cap?'Touche le pays de cette capitale !':'Touche le bon pays !')+'</p>';
 }
 function selectCountryAnswer(id){
   if(state.selected!==null||state.gameOver) return;
@@ -4122,7 +4122,7 @@ let _recognition=null;
 let _recUserStopped=false;
 let _recRestartCount=0;
 const _IS_IOS=/iPad|iPhone|iPod/.test(navigator.userAgent)||(navigator.platform==='MacIntel'&&navigator.maxTouchPoints>1);
-function startRecording(onResult,onEnd){
+function startRecording(onResult,onEnd,hint){
   const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
   if(!SR){alert('Reconnaissance vocale non supportée. Utilise Safari sur iPhone ou Chrome.');return null}
   if(_recognition){try{_recognition.stop()}catch(e){}_recognition=null}
@@ -4134,11 +4134,18 @@ function startRecording(onResult,onEnd){
     _recognition.lang='fr-FR';
     _recognition.continuous=true;
     _recognition.interimResults=true;
+    _recognition.maxAlternatives=3;
     _recognition.onresult=(e)=>{
       let interim='';
       for(let i=e.resultIndex;i<e.results.length;i++){
-        if(e.results[i].isFinal) finalTxt+=e.results[i][0].transcript+' ';
-        else interim+=e.results[i][0].transcript;
+        const r=e.results[i];
+        let best=r[0].transcript;
+        if(hint&&r.length>1){
+          let bs=-1;
+          for(let k=0;k<r.length;k++){const sc=compareTexts(hint,r[k].transcript).matched;if(sc>bs){bs=sc;best=r[k].transcript}}
+        }
+        if(r.isFinal) finalTxt+=best+' ';
+        else interim+=best;
       }
       onResult(finalTxt+interim);
     };
@@ -4164,14 +4171,49 @@ function stopRecording(){
   if(_recognition){try{_recognition.stop()}catch(e){}_recognition=null}
 }
 
+// Comparaison récitation / texte : mots dans l'ordre (alignement LCS) avec
+// tolérance aux petites différences de reconnaissance (accents, pluriels,
+// une lettre de écart sur les mots longs). Un mot répété n'est plus compté
+// deux fois et un mot dit au mauvais endroit ne compte pas.
+function _normMots(s){
+  return s.toLowerCase().replace(/<br\s*\/?>/gi,' ').replace(/<[^>]+>/g,'')
+    .replace(/œ/g,'oe').replace(/æ/g,'ae').replace(/[’']/g,' ')
+    .normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z0-9\s]/g,' ')
+    .replace(/\s+/g,' ').trim().split(' ').filter(Boolean);
+}
+function _distMots(a,b){
+  if(a===b)return 0;
+  if(Math.abs(a.length-b.length)>2)return 9;
+  const d=[];for(let i=0;i<=a.length;i++){d[i]=[i];}
+  for(let j=1;j<=b.length;j++)d[0][j]=j;
+  for(let i=1;i<=a.length;i++)for(let j=1;j<=b.length;j++)
+    d[i][j]=Math.min(d[i-1][j]+1,d[i][j-1]+1,d[i-1][j-1]+(a[i-1]===b[j-1]?0:1));
+  return d[a.length][b.length];
+}
+function _memeMot(a,b){
+  if(a===b)return true;
+  const sa=a.replace(/[sx]$/,''),sb=b.replace(/[sx]$/,'');
+  if(sa===sb)return true;
+  const m=Math.max(sa.length,sb.length);
+  if(m>=5)return _distMots(sa,sb)<=1;
+  return false;
+}
 function compareTexts(orig,spoken){
-  const norm=s=>s.toLowerCase().replace(/<br\s*\/?>/gi,' ').replace(/<[^>]+>/g,'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^\w\s]/g,' ').replace(/\s+/g,' ').trim();
-  const o=norm(orig).split(' ');
-  const s=norm(spoken).split(' ');
-  const sSet=new Set(s);
-  let matched=0;
-  const result=o.map(w=>{const ok=sSet.has(w);if(ok)matched++;return {w,ok}});
-  return {matched,total:o.length,score:Math.round(matched/o.length*100),result};
+  const o=_normMots(orig),s=_normMots(spoken);
+  const n=o.length,m=s.length;
+  const L=[];for(let i=0;i<=n;i++){L[i]=new Array(m+1).fill(0)}
+  for(let i=1;i<=n;i++)for(let j=1;j<=m;j++)
+    L[i][j]=_memeMot(o[i-1],s[j-1])?L[i-1][j-1]+1:Math.max(L[i-1][j],L[i][j-1]);
+  const ok=new Array(n).fill(false);
+  let i=n,j=m;
+  while(i>0&&j>0){
+    if(_memeMot(o[i-1],s[j-1])&&L[i][j]===L[i-1][j-1]+1){ok[i-1]=true;i--;j--}
+    else if(L[i-1][j]>=L[i][j-1])i--;
+    else j--;
+  }
+  const result=o.map((w,k)=>({w,ok:ok[k]}));
+  const matched=ok.filter(Boolean).length;
+  return {matched,total:n,score:n?Math.round(matched/n*100):0,result};
 }
 
 /* ════════ POÉSIES PERSONNALISÉES (ajoutées par le parent) ════════ */
@@ -4361,7 +4403,7 @@ function renderPoesieFable(){
   </div>
   <div class="card mb-4" style="border-color:#22c55e">
     <h3 class="card-title" style="color:#34d399;margin-bottom:12px">\u{1F3A4} À toi de réciter !</h3>
-    <p class="sub mb-2">Clique sur le micro et récite la fable. L'app va comparer ce que tu dis au texte.</p>
+    <p class="sub mb-2">Clique sur le micro et récite la fable. Les mots que tu dis passent en vert au fur et à mesure. L'ordre compte, les petites erreurs de prononciation sont tolérées.</p>
     <button class="btn-fire" id="recBtn" onclick="togglePoesieRec()">\u{1F534} Démarrer le micro</button>
     <div id="recLive" style="margin-top:14px;padding:12px;background:rgba(52,211,153,0.06);border-radius:10px;border:1px solid #86efac;min-height:60px;color:#a7f3d0;font-style:italic;display:none"></div>
     <div id="recResult"></div>
@@ -4397,7 +4439,14 @@ function togglePoesieRec(){
   btn.classList.add('pulse');
   window._poesieRecording=true;
   startRecording(
-    (txt)=>{live.textContent=txt||'\u{1F3A4} Parle...'},
+    (txt)=>{
+      // Retour visuel en direct : les mots du texte déjà dits passent en vert, les autres restent grisés.
+      if(!txt){live.textContent='\u{1F3A4} Parle...';return}
+      const ftEl0=$('fableText');
+      const c0=compareTexts(ftEl0?ftEl0.innerText:f.text,txt);
+      live.innerHTML='<div style="font-size:.8rem;margin-bottom:6px">'+c0.matched+'/'+c0.total+' mots</div>'
+        +'<div style="white-space:normal;line-height:1.7;max-height:40vh;overflow:auto;font-style:normal">'+c0.result.map(x=>'<span style="color:'+(x.ok?'#4ade80':'#6b7280')+';margin:0 3px;display:inline-block">'+esc(x.w)+'</span>').join('')+'</div>';
+    },
     (finalTxt)=>{
       window._poesieRecording=false;
       btn.textContent='\u{1F504} Recommencer';
@@ -4427,6 +4476,7 @@ function togglePoesieRec(){
           <div style="font-size:.95rem;line-height:1.7">${wordsHTML}</div>
         </div>`;
     }
+  ,(function(){const e=$('fableText');return e?e.innerText:f.text})()
   );
 }
 
