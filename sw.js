@@ -8,7 +8,7 @@
  *
  * Bump CACHE_VERSION pour forcer une mise à jour du shell.
  */
-const CACHE_VERSION = 'royaume-v61';
+const CACHE_VERSION = 'royaume-v62';
 const SHELL_CACHE = CACHE_VERSION + '-shell';
 const RUNTIME_CACHE = CACHE_VERSION + '-runtime';
 
@@ -17,13 +17,13 @@ const SHELL_URLS = [
   './index.html',
   './manifest.json',
   './exercises.js?v=19',
-  './exercises_extra.js?v=11',
+  './exercises_extra.js?v=12',
   './exercises_logic.js?v=3',
   './cartes-monde.js?v=4',
   './config.js?v=2',
   './supa.js?v=3',
   './qr.js?v=1',
-  './game.js?v=81',
+  './game.js?v=82',
   './zoom.js?v=2',
   './lesson-questions.js?v=2',
   './lecons/planetes.html',
